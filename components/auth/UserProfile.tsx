@@ -4,8 +4,6 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../app/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 const UserProfile = () => {
   const { user, isClientSide } = useAuth();
@@ -27,8 +25,6 @@ const UserProfile = () => {
           width={32}
           height={32}
           className="rounded-full"
-          priority={false}
-          loading="lazy"
         />
       ) : null}
       <div className="flex flex-col">

@@ -18,15 +18,20 @@ const envSchema = z.object({
   // Database
   POSTGRES_URL: z.string(),
   REDIS_URL: z.string(),
+  DATABASE_URL: z.string(),
+
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
 
   // PWA
-  NEXT_PUBLIC_PWA_APP_NAME: z.string(),
-  NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string(),
+  NEXT_PUBLIC_PWA_APP_NAME: z.string().optional(),
+  NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string().optional(),
   NEXT_PUBLIC_PWA_APP_DESCRIPTION: z.string(),
 });
 
-// Required environment variables
-const requiredEnvVars = [
+// Export required environment variables for utility functions
+export const requiredEnvVars = [
   // Firebase
   'NEXT_PUBLIC_FIREBASE_API_KEY',
   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
@@ -43,6 +48,11 @@ const requiredEnvVars = [
   // Database
   'POSTGRES_URL',
   'REDIS_URL',
+  'DATABASE_URL',
+
+  // Google OAuth
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
 
   // PWA
   'NEXT_PUBLIC_PWA_APP_NAME',

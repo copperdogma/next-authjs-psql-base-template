@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
-  // Get the Firebase session token from the request
+  // Get the session token from the request - check for Firebase session cookie
   const sessionToken = request.cookies.get('session');
 
   // If it's a protected route and there's no session token, redirect to login

@@ -10,7 +10,7 @@ import { auth } from '../../lib/firebase';
 export default function SignInButton() {
   const router = useRouter();
   const [buttonLoading, setButtonLoading] = useState(false);
-  const { user, loading, isClientSide } = useAuth();
+  const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

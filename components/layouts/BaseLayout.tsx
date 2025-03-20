@@ -21,14 +21,6 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
     }
   }, [isClientSide]);
 
-  // Navigation links
-  const navLinks = [
-    { name: 'Home', href: '/', public: true },
-    { name: 'Dashboard', href: '/dashboard', public: false },
-    { name: 'Profile', href: '/profile', public: false },
-    // Settings link removed
-  ];
-
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-white shadow-sm" role="banner">
@@ -113,7 +105,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
 
       <footer className="bg-gray-100 py-6" role="contentinfo" data-testid="footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-600">
+          <p className="text-center text-gray-500">
             © {isClientSide ? currentYear : new Date().getFullYear()} My App. All rights reserved.
           </p>
         </div>
