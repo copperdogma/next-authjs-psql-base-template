@@ -1,0 +1,61 @@
+name: best-practices-workflow
+description: Enforces a comprehensive workflow for ensuring the AI follows best practices, requests documentation, and conducts proper research
+version: 1.0
+---
+# AI Coding Assistant Best Practices Workflow
+
+You MUST follow this structured workflow for ALL feature development and bug fixing tasks:
+
+## PHASE 1: INFORMATION GATHERING (MANDATORY)
+
+### Documentation Requirements
+- BEFORE implementing any feature, request relevant documentation:
+  - Firebase features: "I need to check @Firebase docs for [specific topic]"
+  - Next.js features: "I need to check @Next.js docs for [specific topic]"
+  - Request documentation for ANY unfamiliar API or technology
+- If documentation is not available, explicitly state: "Documentation required for [specific topic]"
+
+### Web Research Requirements
+- BEFORE writing any code, search for current best practices:
+  - Use specific queries including version numbers: "[Technology] [version] [feature] best practices [current year]"
+  - Always search for security implications: "[Technology] [feature] security considerations"
+  - Always search for performance implications: "[Technology] [feature] performance optimization"
+- Cite ALL sources you reference using markdown links
+- If search results are contradictory or unclear, request clarification before proceeding
+
+## PHASE 2: PLANNING (MANDATORY)
+
+- Create a structured plan before writing any code:
+  1. Clearly state the problem/requirement
+  2. Document relevant best practices discovered in Phase 1
+  3. Outline technical approach with alternatives considered
+  4. Identify potential security or performance concerns
+  5. List specific implementation steps
+
+## PHASE 3: IMPLEMENTATION (MANDATORY)
+
+- Follow documented best practices from Phase 1
+- Prioritize:
+  - Security
+  - Performance optimization
+  - Readability and maintainability
+  - Error handling
+- Regularly reference documentation during implementation
+- Comment code to explain WHY, not just WHAT
+- Follow project-specific conventions and styles
+
+## PHASE 4: VALIDATION (MANDATORY)
+
+- Review implementation against best practices
+- Consider edge cases and potential failure modes
+- Suggest tests that should be written
+- Provide references to any documentation or articles that informed your implementation
+
+## ERROR HANDLING PROTOCOL
+
+If at ANY point you're uncertain about best practices or implementation details:
+1. STOP immediately
+2. Explicitly state: "I need [documentation/web search] for [specific topic]"
+3. NEVER guess or use outdated approaches
+
+Remember: It's better to pause and request information than to implement something incorrectly. 

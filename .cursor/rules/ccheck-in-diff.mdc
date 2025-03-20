@@ -1,0 +1,10 @@
+---
+description: For checking in after completing a set of work
+globs: 
+alwaysApply: false
+---
+NOTE: If you weren't given access to @Diff you can't do this job. Halt and ask for @Diff access.
+
+1. Check the @Diff to get a sense of what was done.
+2. Using MCP git, check all changes into main
+3. Using MCP git, push to main

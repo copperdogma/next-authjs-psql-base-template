@@ -1,0 +1,210 @@
+---
+description: 
+globs: tests/**/*
+alwaysApply: false
+---
+# Testing Guide
+
+## Overview
+This rule provides guidance on testing practices for your Next.js application.
+
+## Testing in {{YOUR_PROJECT_NAME}}
+This directory contains all tests for the {{YOUR_PROJECT_NAME}} application, including:
+- Unit tests
+- API tests
+- Integration tests
+- End-to-end tests
+
+### Test Types
+1. Unit Tests (`/tests/unit`)
+   - Test individual components and functions
+   - Use Jest and React Testing Library
+   - Focus on isolated functionality
+
+2. API Tests (`/tests/api`)
+   - Test API endpoints
+   - Use Jest and Supertest
+   - Verify request/response handling
+
+3. Integration Tests (`/tests/integration`)
+   - Test component interactions
+   - Use Jest and React Testing Library
+   - Verify component integration
+
+4. E2E Tests (`/tests/e2e`)
+   - Test full user flows
+   - Use Playwright
+   - Verify end-to-end functionality
+
+### Running Tests
+- `npm test`: Run all tests
+- `npm run test:unit`: Run unit tests
+- `npm run test:api`: Run API tests
+- `npm run test:e2e`: Run E2E tests
+- `npm run test:watch`: Run tests in watch mode
+
+### Writing Tests
+Follow these best practices:
+1. Use descriptive test names
+2. Follow AAA pattern (Arrange, Act, Assert)
+3. Test edge cases and error conditions
+4. Keep tests focused and isolated
+5. Use meaningful assertions
+6. Mock external dependencies
+
+### Test Coverage
+- Aim for 80%+ coverage
+- Focus on critical paths
+- Use `npm run test:coverage` to check coverage
+
+## Directory Structure
+
+```
+/tests/                   # Centralized test directory
+  /unit/                  # Unit tests for components and APIs
+    /api/                 # API endpoint tests 
+    /components/          # React component tests
+  /integration/           # Integration tests
+  /e2e/                   # Playwright E2E tests
+    /auth/                # Authentication tests
+    /fixtures/            # Test fixtures
+    accessibility.spec.ts # Accessibility tests
+    navigation.spec.ts    # Navigation tests
+    performance.spec.ts   # Performance tests
+  /mocks/                 # Shared test mocks
+  /utils/                 # Shared test utilities
+  /config/                # Test configurations
+    /jest.config.js       # Jest configuration
+    /playwright.config.ts # Playwright configuration
+    /setup/               # Test setup files
+```
+
+## Unit Testing Patterns
+
+### Testing React Components
+
+```typescript
+import { render, screen, fireEvent } from '../../utils/test-utils';
+import Button from '../../../components/ui/Button';
+
+test('button handles click', async () => {
+  const handleClick = jest.fn();
+  render(<Button onClick={handleClick}>Click me</Button>);
+  await fireEvent.click(screen.getByRole('button'));
+  expect(handleClick).toHaveBeenCalled();
+});
+```
+
+### Testing Firebase Authentication
+
+Firebase auth is mocked directly in test files:
+
+```typescript
+// Mock modules before imports
+jest.mock('../../../lib/firebase', () => ({
+    getAuth: jest.fn(() => ({
+    currentUser: null
+  })),
+  signInWithPopup: jest.fn(),
+  signOut: jest.fn()
+}));
+
+// Test with mocked Firebase
+test('handles sign in', async () => {
+  (signInWithPopup as jest.Mock).mockResolvedValueOnce({
+    user: mockUser
+  });
+  await fireEvent.click(screen.getByTestId('sign-in-button'));
+  expect(signInWithPopup).toHaveBeenCalled();
+});
+```
+
+## API Testing Patterns
+
+```typescript
+import { NextRequest } from 'next/server';
+import { GET } from '../../../app/api/events/route';
+
+test('GET endpoint returns data', async () => {
+  const req = new NextRequest(new Request('https://test.com/api/events'));
+  const res = await GET(req);
+  
+  expect(res.status).toBe(200);
+  const data = await res.json();
+  expect(data).toHaveProperty('events');
+});
+```
+
+## E2E Testing Patterns
+
+### Authentication Testing
+
+```typescript
+test('authentication mock should work', async ({ page }) => {
+  // Mock the Firebase auth response
+  await page.evaluate(() => {
+    const mockUser = {
+      uid: 'test-uid-123',
+      email: 'test@example.com',
+      displayName: 'Test User'
+    };
+    
+    // Store in localStorage to simulate auth state
+    localStorage.setItem('firebase:authUser:test-project-id', JSON.stringify(mockUser));
+    
+    // Dispatch auth state change event
+    window.dispatchEvent(new CustomEvent('authStateChanged'));
+  });
+});
+```
+
+### Accessibility Testing
+
+```typescript
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('page should be accessible', async ({ page }) => {
+  await page.goto('/');
+  
+  const accessibilityScanResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    .analyze();
+  
+  expect(accessibilityScanResults.violations).toEqual([]);
+});
+```
+
+### Cross-Browser Compatibility
+
+For browser-specific features, implement feature detection:
+
+```typescript
+// Feature detection for CDP APIs
+const memoryInfo = await client.send('Memory.getBrowserMemoryUsage')
+  .catch(error => {
+    console.log('Memory API not available, skipping test');
+    return null;
+  });
+
+if (memoryInfo) {
+  // Perform tests that require this API
+}
+```
+
+## Best Practices
+
+1. **Test Isolation**: Each test should be independent
+2. **Stable Selectors**: Use data-testid attributes instead of text or CSS classes
+3. **Mock External Services**: Mock API calls, Firebase, databases
+4. **Clean Test Data**: Reset state between tests
+5. **Feature Detection**: Use try/catch for browser-specific features
+
+## Detailed Documentation
+
+For more detailed documentation, refer to:
+
+- [main.md](mdc:docs/testing/main.md): Main testing guide
+- [e2e-testing.md](mdc:docs/testing/e2e-testing.md): End-to-end testing details
+- [README-main.md](mdc:tests/README-main.md): Unit and API test implementation details
+- [README-e2e.md](mdc:tests/e2e/README-e2e.md): E2E test implementation details

@@ -1,0 +1,79 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+/.nyc_output
+/cypress/videos
+/cypress/screenshots
+/playwright-report
+/test-results
+/tests/reports
+/.swc
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Project specific
+/docs/references/novel-gcal-events-extractor/
+/docs/references/text-to-cal.com/
+/temp
+.env.local.example
+.cursor/rules/scratchpad.mdc
+scratchpad.md
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+debug.log
+
+# env files
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
+
+# Cache
+.cache/
+.turbo/
+
+# Bundle analyzer
+/analyze/

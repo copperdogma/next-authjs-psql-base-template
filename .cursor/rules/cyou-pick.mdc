@@ -1,0 +1,10 @@
+---
+description: For getting the AI to start working on the next highest priority task
+globs: src/tests/**/*
+alwaysApply: false
+---
+Think about what we need to to do get to our goal.
+
+What's the next most important task on the list to achieve that goal? Think about it.
+
+When you've figured it out, start working on that task.
