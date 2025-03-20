@@ -19,10 +19,6 @@ const envSchema = z.object({
   POSTGRES_URL: z.string(),
   REDIS_URL: z.string(),
 
-  // NextAuth.js
-  NEXTAUTH_URL: z.string(),
-  NEXTAUTH_SECRET: z.string(),
-
   // PWA
   NEXT_PUBLIC_PWA_APP_NAME: z.string(),
   NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string(),
@@ -47,10 +43,6 @@ const requiredEnvVars = [
   // Database
   'POSTGRES_URL',
   'REDIS_URL',
-
-  // NextAuth.js
-  'NEXTAUTH_URL',
-  'NEXTAUTH_SECRET',
 
   // PWA
   'NEXT_PUBLIC_PWA_APP_NAME',
