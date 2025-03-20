@@ -11,6 +11,7 @@ const mockRouter = {
   prefetch: jest.fn(),
 }
 
+/* istanbul ignore next */
 jest.mock('next/navigation', () => ({
   useRouter: () => mockRouter,
   usePathname: () => '/',
