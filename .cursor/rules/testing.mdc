@@ -123,15 +123,15 @@ test('handles sign in', async () => {
 
 ```typescript
 import { NextRequest } from 'next/server';
-import { GET } from '../../../app/api/events/route';
+import { GET } from '../../../app/api/health/route';
 
-test('GET endpoint returns data', async () => {
-  const req = new NextRequest(new Request('https://test.com/api/events'));
+test('Health endpoint returns ok status', async () => {
+  const req = new NextRequest(new Request('https://test.com/api/health'));
   const res = await GET(req);
   
   expect(res.status).toBe(200);
   const data = await res.json();
-  expect(data).toHaveProperty('events');
+  expect(data).toHaveProperty('status', 'ok');
 });
 ```
 

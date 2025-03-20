@@ -36,32 +36,6 @@ export class TestDatabase {
         }
       });
       
-      // Create some test events
-      await this.prisma.event.createMany({
-        data: [
-          {
-            id: 'test-event-1',
-            title: 'Team Meeting',
-            description: 'Weekly team sync',
-            start: new Date(Date.now() + 86400000), // tomorrow
-            end: new Date(Date.now() + 90000000),
-            userId: user.id,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'test-event-2',
-            title: 'Product Demo',
-            description: 'Showcase new features',
-            start: new Date(Date.now() + 172800000), // day after tomorrow
-            end: new Date(Date.now() + 176400000),
-            userId: user.id,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]
-      });
-      
       return { user };
     } catch (error) {
       console.error('Error setting up test data:', error);
@@ -75,7 +49,6 @@ export class TestDatabase {
   async clearTestData() {
     try {
       // Delete in correct order to handle foreign keys
-      await this.prisma.event.deleteMany({});
       await this.prisma.user.deleteMany({});
     } catch (error) {
       console.error('Error clearing test data:', error);
