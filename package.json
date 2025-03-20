@@ -31,6 +31,8 @@
     "test:e2e:simple": "./tests/simple-test-runner.sh",
     "test:e2e:direct": "PLAYWRIGHT_TEST_BASE_URL=http://localhost:3001 playwright test tests/e2e/debug.spec.ts --project=chromium",
     "test:debug-basic": "npx playwright test tests/e2e/debug.spec.ts",
+    "test:e2e:sequential": "playwright test --config tests/config/playwright.config.ts --workers=1",
+    "test:e2e:reliable": "npm run dev -- --port 3001 & sleep 10 && PLAYWRIGHT_TEST_BASE_URL=http://127.0.0.1:3001 playwright test --config tests/config/playwright.config.ts --workers=1",
     "setup": "node scripts/setup.js"
   },
   "dependencies": {

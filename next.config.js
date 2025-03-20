@@ -93,10 +93,27 @@ const nextConfig = {
       'lh3.googleusercontent.com', // Google profile images
       'firebasestorage.googleapis.com', // Firebase Storage (if you use it)
     ],
+    // Modern formats for better performance
+    formats: ['image/avif', 'image/webp'],
+    // Remotepatterns for more secure configuration
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '**',
+      },
+    ],
   },
-  experimental: {
-    forceSwcTransforms: true // Force SWC transforms
+  // Optimized compiler options
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Improved webpack configuration
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Don't bundle server-only modules on the client side
@@ -116,6 +133,10 @@ const nextConfig = {
         zlib: false,
       };
     }
+    
+    // Optimize bundle size
+    config.optimization.minimize = true;
+    
     return config;
   },
 };

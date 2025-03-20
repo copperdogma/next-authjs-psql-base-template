@@ -4,12 +4,17 @@ import type { NextRequest } from 'next/server';
 // Protected routes that require authentication
 const protectedRoutes = [
   '/dashboard',
+  '/profile',
+  '/settings',
   '/api/auth/session',
+  '/api/user',
 ];
 
 // Public routes that don't require authentication
 const publicRoutes = [
   '/login',
+  '/register',
+  '/forgot-password',
   '/api/health',
 ];
 
@@ -17,8 +22,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if the route is protected
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`));
+    
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`));
 
   // Get the session token from the request - check for Firebase session cookie
   const sessionToken = request.cookies.get('session');
@@ -26,6 +34,8 @@ export function middleware(request: NextRequest) {
   // If it's a protected route and there's no session token, redirect to login
   if (isProtectedRoute && !sessionToken) {
     const url = new URL('/login', request.url);
+    // Add the original URL as a query parameter to redirect after login
+    url.searchParams.set('callbackUrl', encodeURIComponent(request.url));
     return NextResponse.redirect(url);
   }
 
@@ -46,8 +56,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     * - api routes (we'll handle auth in the API routes themselves)
+     * - api routes except those we explicitly protect
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/|api/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/api/auth/session',
+    '/api/user/:path*',
   ],
 }; 
