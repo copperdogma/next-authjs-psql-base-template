@@ -5,12 +5,20 @@ import ThemeRegistry from './providers/ThemeRegistry';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import AuthProvider from './providers/AuthProvider';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+});
+
 const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
+  weight: ['400', '500', '700'],
   subsets: ['latin'],
   display: 'swap',
+  preload: true,
   variable: '--font-roboto',
+  fallback: ['system-ui', 'arial'],
 });
 
 export const viewport: Viewport = {
@@ -30,6 +38,29 @@ export const metadata: Metadata = {
   }
 };
 
+// Critical CSS for above-the-fold content
+const criticalCSS = `
+  :root {
+    --background: #ffffff;
+    --foreground: #111827;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0a0a0a;
+      --foreground: #f9fafb;
+    }
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    margin: 0;
+    padding: 0;
+    display: block !important;
+    visibility: visible !important;
+    min-height: 100vh;
+  }
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -38,9 +69,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body 
-        className={`${inter.className} ${roboto.variable}`}
+        className={`${inter.className} ${roboto.variable} min-h-screen`}
         suppressHydrationWarning={true}
       >
+        <style dangerouslySetInnerHTML={{ __html: criticalCSS }} />
         <ThemeRegistry>
           <AuthProvider>
             <BaseLayout>

@@ -29,19 +29,21 @@ const test = base.extend({
 test('super basic test', async ({ page }) => {
   console.log('Starting super basic test');
   
-  // Hard-code the URL to avoid dependency on environment variables
   console.log('Navigating to home page');
-  await page.goto('http://localhost:3001', { timeout: 60000 }); // Updated port and added longer timeout
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
   
-  // Log the current URL
   console.log('Current URL:', page.url());
   
-  // Take a screenshot for debugging
-  await page.screenshot({ path: 'debug-screenshot.png' });
+  // Wait for hydration to complete
+  await page.waitForFunction(() => {
+    return document.readyState === 'complete' && 
+           document.body.classList.length > 0;
+  }, { timeout: 30000 });
   
   // Simple assertion that should work
   console.log('Checking for page content');
-  await expect(page.locator('body')).toBeVisible();
+  await expect(page.locator('header')).toBeVisible({ timeout: 30000 });
   
   console.log('Test completed successfully');
 });

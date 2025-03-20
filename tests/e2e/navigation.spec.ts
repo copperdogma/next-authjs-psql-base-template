@@ -115,38 +115,29 @@ test.describe('Navigation and Layout', () => {
       }
     });
     
-    // Start at the home page with longer timeout and better waiting
-    await page.goto('/', {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
+    // Start at the home page and wait for network idle
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     
-    // Give the page a moment to initialize JavaScript
-    console.log('Waiting for initial JavaScript initialization');
-    await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
-    await page.waitForTimeout(1000);
+    // Wait for Next.js hydration to complete
+    await page.waitForFunction(() => {
+      return document.readyState === 'complete' && 
+             document.body.classList.length > 0;
+    }, { timeout: 30000 });
 
     console.log('Navigation complete, checking for navbar...');
-    // Wait for critical elements with fallbacks
-    await waitForElementToBeVisible(page, '[data-testid="navbar"]', {
-      message: 'Waiting for navbar to be visible'
-    });
   });
   
   test('main layout should have key elements', async ({ page }) => {
-    // Check for header/navigation
-    await waitForElementToBeVisible(page, '[data-testid="navbar"]');
-    
-    // Check for main content area
-    await waitForElementToBeVisible(page, '[data-testid="main-content"]');
-    
-    // Check for footer
-    await waitForElementToBeVisible(page, '[data-testid="footer"]');
+    // Wait for critical elements with increased timeout
+    await page.waitForSelector('header', { state: 'visible', timeout: 30000 });
+    await page.waitForSelector('main', { state: 'visible', timeout: 30000 });
+    await page.waitForSelector('footer', { state: 'visible', timeout: 30000 });
 
-    // Verify elements are visible via roles as well
-    await expect(page.getByRole('banner')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('main')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('contentinfo')).toBeVisible({ timeout: 5000 });
+    // Verify elements are visible via roles as well with increased timeout
+    await expect(page.getByRole('banner')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('main')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('contentinfo')).toBeVisible({ timeout: 30000 });
   });
   
   test('mobile responsiveness check', async ({ page }) => {

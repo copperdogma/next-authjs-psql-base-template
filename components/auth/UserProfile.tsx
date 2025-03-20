@@ -27,6 +27,8 @@ const UserProfile = () => {
           width={32}
           height={32}
           className="rounded-full"
+          priority={false}
+          loading="lazy"
         />
       ) : null}
       <div className="flex flex-col">

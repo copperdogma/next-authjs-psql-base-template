@@ -13,36 +13,29 @@ test.describe('Authentication Flow', () => {
   });
 
   test('login page should be accessible', async ({ page }) => {
-    // Navigate to login page with longer timeout
-    await page.goto('/login', {
-      waitUntil: 'networkidle',
-      timeout: 30000
-    });
+    // Navigate to login page and wait for network idle
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle');
     
-    // Verify we're on the login page by checking the URL
-    expect(page.url()).toContain('/login');
-    
-    // Wait for either the auth button or its placeholder to be visible
-    const authButton = page.getByTestId('auth-button');
-    const authButtonPlaceholder = page.getByTestId('auth-button-placeholder');
-    
-    // Wait for either button to be visible with increased timeout
-    const visibleButton = await Promise.race([
-      authButton.waitFor({ state: 'visible', timeout: 30000 })
-        .then(() => 'auth-button'),
-      authButtonPlaceholder.waitFor({ state: 'visible', timeout: 30000 })
+    // Wait for either the placeholder or the actual button to be visible
+    const button = await Promise.race([
+      page.waitForSelector('[data-testid="auth-button"]', { state: 'visible', timeout: 30000 })
+        .then(() => 'button'),
+      page.waitForSelector('[data-testid="auth-button-placeholder"]', { state: 'visible', timeout: 30000 })
         .then(() => 'placeholder')
     ]);
-    
-    if (visibleButton === 'placeholder') {
-      console.log('Placeholder visible, waiting for real button...');
-      await authButton.waitFor({ state: 'visible', timeout: 30000 });
-      await expect(authButtonPlaceholder).toBeHidden();
+
+    // If we see the placeholder, wait for it to be replaced by the actual button
+    if (button === 'placeholder') {
+      await page.waitForSelector('[data-testid="auth-button"]', { state: 'visible', timeout: 30000 });
+      await expect(page.getByTestId('auth-button-placeholder')).toBeHidden();
     }
     
-    // Verify the button is in sign-in state
+    // Verify the button is in the correct state
+    const authButton = page.getByTestId('auth-button');
     await expect(authButton).toBeVisible();
     await expect(authButton).toHaveAttribute('data-auth-state', 'sign-in');
+    await expect(authButton).not.toBeDisabled();
   });
   
   test('authentication mock should work', async ({ page }) => {
@@ -82,38 +75,8 @@ test.describe('Authentication Flow', () => {
     }
   });
   
-  test('protected route should require authentication', async ({ page, context }) => {
-    // Best practice: Use context.clearCookies() instead of localStorage manipulation
-    // This avoids SecurityError issues that can occur with localStorage access
-    await context.clearCookies();
-    
-    // Try to access a protected route
+  test('protected routes should redirect to login', async ({ page }) => {
     await page.goto('/dashboard');
-    
-    try {
-      // Check if redirected to login page (primary expected behavior)
-      const currentUrl = page.url();
-      if (currentUrl.includes('/login')) {
-        console.log('Protected route redirected to login - working as expected');
-        expect(currentUrl).toContain('/login');
-      } 
-      // Alternative: Check for auth message if not redirected
-      else {
-        const authRequiredMessage = page.getByText(/sign in|log in|authentication required/i);
-        await expect(authRequiredMessage).toBeVisible({ timeout: 2000 });
-        console.log('Auth required message displayed - working as expected');
-      }
-    } catch (error: any) {
-      // Use test.info() to add detailed diagnostic information
-      test.info().annotations.push({
-        type: 'issue',
-        description: `Auth protection check failed: ${error.message}`
-      });
-      
-      // Soft assertion to prevent test failure but flag the issue
-      console.error('Authentication test error:', error);
-      // We still want to pass this test since we're verifying proper functionality
-      expect(page.url()).not.toEqual('/dashboard');
-    }
+    await expect(page).toHaveURL('/login');
   });
 }); 
