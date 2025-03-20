@@ -17,7 +17,13 @@ const UserProfile = () => {
   }
 
   return (
-    <Link href="/profile" className="flex items-center gap-2" data-testid="user-profile">
+    <Link 
+      href="/profile" 
+      className="flex items-center gap-2 user-profile" 
+      data-testid="user-profile"
+      aria-label="User profile"
+      role="button"
+    >
       {user.photoURL ? (
         <Image
           src={user.photoURL}

@@ -63,19 +63,30 @@ export class FirebaseAuthUtils {
   /**
    * Check if user is authenticated
    * @param page Playwright page
+   * @param config Optional Firebase configuration with more flexibility
    * @returns Promise<boolean>
    */
-  static async isAuthenticated(page: Page): Promise<boolean> {
+  static async isAuthenticated(page: Page, config?: any): Promise<boolean> {
     return await page.evaluate((config) => {
+      // Use the provided config or fallback to default
+      const firebaseConfig = config || {};
+      
       // Check for Firebase auth data in localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.includes('firebase:auth') || key.includes('authUser'))) {
-          return true;
+        if (key && (
+          key.includes('firebase:auth') || 
+          key.includes('authUser') ||
+          // Check for project-specific keys if config is provided
+          (firebaseConfig.projectId && key.includes(firebaseConfig.projectId))
+        )) {
+          // If we found an auth item, verify it contains valid data
+          const value = localStorage.getItem(key);
+          return !!value && value !== 'null' && value !== '{}';
         }
       }
       return false;
-    }, TEST_CONFIG.FIREBASE);
+    }, config || TEST_CONFIG.FIREBASE);
   }
 }
 

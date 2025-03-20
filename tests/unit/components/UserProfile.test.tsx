@@ -71,7 +71,7 @@ describe('UserProfile', () => {
       'src',
       expect.stringContaining(encodeURIComponent('https://example.com/photo.jpg'))
     );
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('button')).toHaveAttribute('href', '/profile');
   });
 
   it('handles missing user information gracefully', () => {
@@ -87,7 +87,7 @@ describe('UserProfile', () => {
 
     expect(screen.getByTestId('profile-name')).toHaveTextContent('Anonymous');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('button')).toHaveAttribute('href', '/profile');
   });
 
   it('renders nothing when user is not authenticated', () => {
@@ -96,6 +96,6 @@ describe('UserProfile', () => {
     });
 
     expect(screen.queryByTestId('profile-name')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 }) 
