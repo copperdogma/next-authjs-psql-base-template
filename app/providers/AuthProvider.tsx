@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { onAuthStateChanged } from '@firebase/auth';
 import type { User, Auth } from '@firebase/auth';
 import { auth } from '../../lib/firebase';
@@ -9,13 +9,11 @@ import { auth } from '../../lib/firebase';
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  isClientSide: boolean;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  isClientSide: false,
 });
 
 // Hook to use the auth context
@@ -25,22 +23,16 @@ export const useAuth = () => useContext(AuthContext);
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isClientSide, setIsClientSide] = useState(false);
-  // Add state to track if we've fully mounted on the client
+  // Only track if we've mounted to prevent flicker during hydration
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    // Mark that we're now on the client and fully mounted
-    setIsClientSide(true);
+    // Mark that we're now mounted on the client
     setHasMounted(true);
     
-    // Skip if not on client side
-    if (typeof window === 'undefined') return undefined;
-    
     try {
-      // Only try to subscribe to auth state if we're on the client
-      // Since we're initializing auth conditionally in firebase.ts,
-      // we need to be careful about calling methods on it
+      // Since we've marked this file with 'use client', we know we're running on the client
+      // We still need to check if Firebase Auth is properly initialized
       if (auth && 'onAuthStateChanged' in auth) {
         const unsubscribe = onAuthStateChanged(auth as Auth, (user) => {
           setUser(user);
@@ -51,6 +43,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         return unsubscribe;
       } else {
         // Auth not available or properly initialized
+        console.warn('Firebase Auth not properly initialized');
         setLoading(false);
         return undefined;
       }
@@ -61,19 +54,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     user,
     loading,
-    isClientSide,
-  };
+  }), [user, loading]);
 
-  // Don't render anything until we've mounted on the client
+  // Don't render anything until we've mounted on the client to prevent hydration mismatch
   if (!hasMounted) {
     return null;
   }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={value} data-testid="auth-provider">
       {children}
     </AuthContext.Provider>
   );

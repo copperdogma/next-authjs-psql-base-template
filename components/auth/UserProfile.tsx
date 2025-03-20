@@ -1,14 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../app/providers/AuthProvider';
 
 const UserProfile = () => {
-  const { user, isClientSide } = useAuth();
-
-  if (!isClientSide) {
+  const { user, loading } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  
+  // Handle client-side mounting to prevent hydration errors
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Show nothing during server rendering or if not authenticated
+  if (!mounted || loading) {
     return <div data-testid="profile-loading">Loading...</div>;
   }
 

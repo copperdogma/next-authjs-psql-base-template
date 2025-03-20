@@ -2,7 +2,29 @@ import { test as base, Page } from '@playwright/test';
 import { TEST_CONFIG } from '../../utils/routes';
 
 // Test user data for authentication tests - use the centralized test configuration
-export const TEST_USER = TEST_CONFIG.TEST_USER;
+export const TEST_USER = {
+  uid: TEST_CONFIG.TEST_USER.UID,
+  email: TEST_CONFIG.TEST_USER.EMAIL,
+  displayName: TEST_CONFIG.TEST_USER.DISPLAY_NAME,
+  photoURL: TEST_CONFIG.TEST_USER.PHOTO_URL,
+  emailVerified: true,
+  isAnonymous: false,
+  // Add other properties expected by Firebase Auth
+  phoneNumber: null,
+  providerData: [
+    {
+      providerId: 'password', 
+      uid: TEST_CONFIG.TEST_USER.EMAIL, 
+      displayName: TEST_CONFIG.TEST_USER.DISPLAY_NAME, 
+      email: TEST_CONFIG.TEST_USER.EMAIL,
+      phoneNumber: null,
+      photoURL: TEST_CONFIG.TEST_USER.PHOTO_URL
+    }
+  ],
+  // Mock required methods
+  getIdToken: () => Promise.resolve('mock-id-token'),
+  metadata: { creationTime: new Date().toISOString(), lastSignInTime: new Date().toISOString() }
+};
 
 /**
  * Firebase Auth test utilities
@@ -15,20 +37,43 @@ export class FirebaseAuthUtils {
    * @param user User data to mock
    */
   static async mockSignedInUser(page: Page, user = TEST_USER) {
-    await page.evaluate((userData) => {
-      // Store in localStorage to simulate Firebase auth state
-      // This matches the pattern used by Firebase Web SDK
-      localStorage.setItem('firebase:authUser:test-project-id', JSON.stringify(userData));
-      
-      // Some applications might use custom events
-      try {
-        window.dispatchEvent(new CustomEvent('authStateChanged', { 
-          detail: { user: userData }
-        }));
-      } catch (e) {
-        console.log('Custom auth event dispatch failed, but localStorage mock should still work');
-      }
-    }, user);
+    const projectId = TEST_CONFIG.FIREBASE.PROJECT_ID;
+    const authKey = `firebase:authUser:${projectId}`;
+    
+    // Convert user object to JSON to avoid serialization issues
+    const userJson = JSON.stringify(user);
+    
+    await page.evaluate(
+      ([userJsonString, storageKey]) => {
+        const userData = JSON.parse(userJsonString);
+        console.log('Mocking Firebase auth with user:', userData);
+        
+        // Store in localStorage to simulate Firebase auth state
+        // This matches the pattern used by Firebase Web SDK
+        localStorage.setItem(storageKey, userJsonString);
+        
+        // Force reload auth state by dispatching storage event
+        try {
+          // This helps with auth state detection in some implementations
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: storageKey,
+            newValue: userJsonString,
+            storageArea: localStorage
+          }));
+          
+          // Some applications might use custom events
+          window.dispatchEvent(new CustomEvent('authStateChanged', { 
+            detail: { user: userData }
+          }));
+        } catch (e) {
+          console.log('Custom auth event dispatch failed, but localStorage mock should still work');
+        }
+      }, 
+      [userJson, authKey]
+    );
+    
+    // Add a small delay to let the auth state propagate
+    await page.waitForTimeout(300);
   }
   
   /**

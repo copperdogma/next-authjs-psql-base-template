@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import UserProfile from '@/components/auth/UserProfile';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -11,15 +11,38 @@ interface BaseLayoutProps {
 
 export default function BaseLayout({ children }: BaseLayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const { user, isClientSide } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  const { user } = useAuth();
   
+  // Handle client-side mounting
   useEffect(() => {
-    // Handle all client-side-only operations in useEffect
-    if (isClientSide) {
-      setCurrentYear(new Date().getFullYear());
+    setMounted(true);
+  }, []);
+  
+  // Current year as a derived value
+  const currentYear = mounted ? new Date().getFullYear() : 2024;
+  
+  // Memoized toggle handler
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen(prevState => !prevState);
+  }, []);
+  
+  // Memoize navigation links to prevent unnecessary re-renders
+  const navLinks = useMemo(() => {
+    const links = [
+      { href: '/', label: 'Home' }
+    ];
+    
+    // Only add authenticated routes if user is logged in
+    if (mounted && user) {
+      links.push(
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/profile', label: 'Profile' }
+      );
     }
-  }, [isClientSide]);
+    
+    return links;
+  }, [mounted, user]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -34,19 +57,15 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
             
             {/* Desktop menu (hidden on mobile) */}
             <div className="hidden md:flex space-x-4" data-testid="desktop-menu">
-              <Link href="/" className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-                Home
-              </Link>
-              {isClientSide && user && (
-                <>
-                  <Link href="/dashboard" className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-                    Dashboard
-                  </Link>
-                  <Link href="/profile" className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-                    Profile
-                  </Link>
-                </>
-              )}
+              {navLinks.map(link => (
+                <Link 
+                  key={link.href}
+                  href={link.href} 
+                  className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
 
             <div className="flex items-center">
@@ -55,7 +74,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
               {/* Mobile menu button (hidden on desktop) */}
               <button
                 type="button"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                onClick={toggleMenu}
                 className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 ml-2"
                 aria-expanded={isMenuOpen}
                 aria-label="Main menu"
@@ -80,19 +99,16 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
           {isMenuOpen && (
             <div className="md:hidden" role="menu" data-testid="mobile-menu">
               <div className="pt-2 pb-3 space-y-1">
-                <Link href="/" role="menuitem" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                  Home
-                </Link>
-                {isClientSide && user && (
-                  <>
-                    <Link href="/dashboard" role="menuitem" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                      Dashboard
-                    </Link>
-                    <Link href="/profile" role="menuitem" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                      Profile
-                    </Link>
-                  </>
-                )}
+                {navLinks.map(link => (
+                  <Link 
+                    key={link.href}
+                    href={link.href} 
+                    role="menuitem" 
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
             </div>
           )}
@@ -106,7 +122,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
       <footer className="bg-gray-100 py-6" role="contentinfo" data-testid="footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-700">
-            © {isClientSide ? currentYear : new Date().getFullYear()} My App. All rights reserved.
+            © {currentYear} My App. All rights reserved.
           </p>
         </div>
       </footer>

@@ -33,10 +33,10 @@ jest.mock('next/navigation', () => {
   }
 });
 
+// Define the auth context type based on our updated context structure
 type AuthState = {
   user: User | null;
   loading: boolean;
-  isClientSide: boolean;
 };
 
 // Options for custom render function
@@ -50,7 +50,7 @@ function customRender(
   ui: ReactElement,
   options: RenderOptions = {}
 ) {
-  const defaultAuthState = { user: null, loading: false, isClientSide: true };
+  const defaultAuthState = { user: null, loading: false };
   const authState = options.authState || defaultAuthState;
   
   // Configure router if provided in options

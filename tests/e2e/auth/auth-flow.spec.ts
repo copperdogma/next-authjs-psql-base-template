@@ -11,15 +11,21 @@ const UI_ELEMENTS = {
   USER_PROFILE: {
     // Primary selectors 
     TESTID: '[data-testid="user-profile"]',
+    // More specific selectors with parent context
+    NAV_USER_PROFILE: 'header nav [data-testid="user-profile"]',
+    HEADER_USER_PROFILE: 'header [data-testid="user-profile"]',
+    // Selectors with classes
+    CLASS_PATH: 'a.user-profile',
+    LINK_PROFILE: 'a[href="/profile"][data-testid="user-profile"]',
     // Role-based selectors
-    ROLE: 'a[role="button"][aria-label="User profile"]',
-    // Other selectors
-    CLASS: '.user-profile',
-    LINK: 'a[href="/profile"]',
-    // Additional selectors for more resilient tests
-    NAVBAR_PROFILE_LINK: 'nav [data-testid="navbar"] a[href="/profile"]',
-    PROFILE_IMAGE: '[data-testid="profile-image"]',
-    PROFILE_NAME: '[data-testid="profile-name"]'
+    ROLE_BUTTON: 'a[role="button"][aria-label="User profile"]',
+    // Additional attributes
+    IMAGE_TESTID: '[data-testid="profile-image"]',
+    NAME_TESTID: '[data-testid="profile-name"]',
+    // Loading state
+    LOADING: '[data-testid="profile-loading"]',
+    // Legacy selectors for backward compatibility
+    NAVBAR_PROFILE_LINK: 'nav [data-testid="navbar"] a[href="/profile"]'
   },
   NAVIGATION: {
     NAV: '[data-testid="navbar"]',
@@ -99,73 +105,51 @@ test.describe('Authentication Flow', () => {
     // Navigate to home page after login
     await page.goto(ROUTES.HOME);
     
+    // The primary focus of this test is to verify Firebase auth mocking works
+    // We accept that the UserProfile component might not be visible in test mode
+    // due to Next.js client/server rendering or auth initialization differences
+    
     // Wait for potential auth state changes to propagate
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Log the current page after navigation
     console.log('Current URL after auth navigation:', page.url());
     
-    // Enhanced authentication detection that's more resilient to UI changes
-    const authCheck = async () => {
-      // Step 1: Check for authenticated-only UI elements
-      let found = false;
-      
-      // Try each selector from the UI_ELEMENTS.USER_PROFILE object
-      const selectors = Object.values(UI_ELEMENTS.USER_PROFILE);
-      for (const selector of selectors) {
-        try {
-          const element = page.locator(selector);
-          const isVisible = await element.isVisible({ timeout: 1000 }).catch(() => false);
-          
-          if (isVisible) {
-            console.log(`User profile element found with selector: ${selector}`);
-            found = true;
-            break;
-          }
-        } catch (e) {
-          // Continue to next selector
-        }
-      }
-      
-      // Step 2: Check for auth-only links in the desktop menu
-      if (!found) {
-        try {
-          const dashboardLink = page.locator(`${UI_ELEMENTS.NAVIGATION.DESKTOP_MENU} a[href="/dashboard"]`);
-          const isDashboardVisible = await dashboardLink.isVisible({ timeout: 1000 }).catch(() => false);
-          
-          if (isDashboardVisible) {
-            console.log('Dashboard link visible - authenticated state detected');
-            found = true;
-          }
-        } catch (e) {
-          // Continue to localStorage check
-        }
-      }
-      
-      // If UI elements weren't found, provide debugging info
-      if (!found) {
-        console.log('User profile element not found with current selectors - may need updating');
-        
-        // Print DOM structure around where profile should be
-        const navbarHtml = await page.locator(UI_ELEMENTS.NAVIGATION.NAV).innerHTML().catch(() => 'Nav element not found');
-        console.log('Navbar HTML:', navbarHtml);
-        
-        // Take a screenshot to help debug but save it to the gitignored screenshots directory
-        await page.screenshot({ path: 'tests/e2e/screenshots/user-profile-debug.png' });
-        console.log('Screenshot saved to tests/e2e/screenshots/user-profile-debug.png');
-        
-        // Fallback to localStorage verification
-        console.log('Verifying authentication via localStorage as fallback...');
-      }
-      
-      // Final fallback: Check localStorage for authentication
-      return await FirebaseAuthUtils.isAuthenticated(page, TEST_CONFIG.FIREBASE);
-    };
+    // Check for auth state in localStorage (our main verification method)
+    const isAuthenticated = await FirebaseAuthUtils.isAuthenticated(page, TEST_CONFIG.FIREBASE);
+    console.log('Authentication status from localStorage:', isAuthenticated);
     
-    // Run the enhanced auth check
-    const isAuthenticated = await authCheck();
-    console.log('Authentication status:', isAuthenticated);
-    expect(isAuthenticated).toBe(true);
+    // For debugging, we still try to find the user profile element, but it's not critical
+    const userProfileElements = Object.entries(UI_ELEMENTS.USER_PROFILE);
+    console.log(`Checking ${userProfileElements.length} user profile selectors`);
+    
+    let foundProfile = false;
+    for (const [key, selector] of userProfileElements) {
+      const isVisible = await page.locator(selector).isVisible().catch(() => false);
+      if (isVisible) {
+        console.log(`✅ Found user profile with selector: ${key}`);
+        foundProfile = true;
+        break;
+      }
+    }
+    
+    if (!foundProfile) {
+      console.log('Note: UserProfile component not found visually in the DOM.');
+      console.log('This is acceptable in tests as we verify auth through localStorage.');
+      
+      // If we didn't find the profile visually, check for other authenticated-only elements
+      const dashboardLink = await page
+        .locator('a[href="/dashboard"]')
+        .isVisible()
+        .catch(() => false);
+      
+      if (dashboardLink) {
+        console.log('✅ Found dashboard link - authenticated-only content is visible');
+      }
+    }
+    
+    // For test success, we primarily rely on localStorage auth state
+    expect(isAuthenticated, 'User should be authenticated in localStorage').toBe(true);
   });
   
   test('protected route should require authentication', async ({ page, context }) => {

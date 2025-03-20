@@ -105,6 +105,11 @@ const customJestConfig = {
       globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
       globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
     },
+    {
+      displayName: 'utils',
+      testMatch: ['<rootDir>/tests/unit/utils/**/*.test.ts?(x)'],
+      testEnvironment: 'jsdom',
+    },
   ],
 }
 
