@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../app/providers/AuthProvider';
@@ -48,4 +48,5 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile; 
+// Memoize the entire component to prevent unnecessary re-renders
+export default memo(UserProfile); 

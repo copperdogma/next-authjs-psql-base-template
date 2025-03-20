@@ -6,21 +6,21 @@ import {
   MenuProps as MuiMenuProps,
   MenuItemProps as MuiMenuItemProps,
 } from '@mui/material';
-import { forwardRef, ReactNode } from 'react';
+import { forwardRef, ReactNode, memo } from 'react';
 
 export interface MenuItemProps extends MuiMenuItemProps {
   icon?: ReactNode;
 }
 
-export const MenuItem = forwardRef<HTMLLIElement, MenuItemProps>(
-  ({ icon, children, className = '', ...props }, ref) => {
+const MenuItem = forwardRef<HTMLLIElement, MenuItemProps>(
+  ({ children, icon, ...props }, ref) => {
     return (
       <MuiMenuItem
         {...props}
         ref={ref}
-        className={`flex items-center gap-2 ${className}`}
+        className={`flex items-center gap-2 ${props.className || ''}`}
       >
-        {icon && <span className="text-xl">{icon}</span>}
+        {icon && <span className="flex-shrink-0">{icon}</span>}
         {children}
       </MuiMenuItem>
     );
@@ -28,6 +28,9 @@ export const MenuItem = forwardRef<HTMLLIElement, MenuItemProps>(
 );
 
 MenuItem.displayName = 'MenuItem';
+
+// Memoize MenuItem to prevent unnecessary re-renders
+export const MemoMenuItem = memo(MenuItem);
 
 interface MenuProps extends MuiMenuProps {
   children: ReactNode;
@@ -53,4 +56,7 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
 
 Menu.displayName = 'Menu';
 
-export default Menu; 
+// Memoize Menu component to prevent unnecessary re-renders
+const MemoMenu = memo(Menu);
+export default MemoMenu;
+export { MenuItem }; 

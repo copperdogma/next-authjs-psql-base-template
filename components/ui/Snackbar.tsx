@@ -6,7 +6,7 @@ import {
   SnackbarProps as MuiSnackbarProps,
   AlertProps,
 } from '@mui/material';
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 
 interface SnackbarProps extends Omit<MuiSnackbarProps, 'children'> {
   message?: string;
@@ -38,4 +38,6 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
 
 Snackbar.displayName = 'Snackbar';
 
-export default Snackbar; 
+// Memoize to prevent unnecessary re-renders
+const MemoSnackbar = memo(Snackbar);
+export default MemoSnackbar; 

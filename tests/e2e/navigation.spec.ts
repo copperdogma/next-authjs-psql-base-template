@@ -177,9 +177,9 @@ test.describe('Navigation and Layout', () => {
     await waitForElementToBeVisible(page, 'FOOTER');
 
     // Verify elements are visible via roles as well
-    await expect(page.getByRole('banner')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('main')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('contentinfo')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('banner').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('main').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('contentinfo').first()).toBeVisible({ timeout: 5000 });
   });
   
   test('mobile responsiveness check', async ({ page }) => {
@@ -195,9 +195,9 @@ test.describe('Navigation and Layout', () => {
     await waitForElementToBeVisible(page, 'DESKTOP_MENU');
     
     // Get locators for desktop and mobile elements
-    const desktopMenu = page.getByTestId(UI_ELEMENTS.DESKTOP_MENU.testId);
-    const mobileMenuButton = page.getByTestId(UI_ELEMENTS.MOBILE_MENU_BUTTON.testId);
-    const mobileMenu = page.getByTestId(UI_ELEMENTS.MOBILE_MENU.testId);
+    const desktopMenu = page.getByTestId(UI_ELEMENTS.DESKTOP_MENU.testId).first();
+    const mobileMenuButton = page.getByTestId(UI_ELEMENTS.MOBILE_MENU_BUTTON.testId).first();
+    const mobileMenu = page.getByTestId(UI_ELEMENTS.MOBILE_MENU.testId).first();
     
     // Check desktop visibility states
     await expect(desktopMenu).toBeVisible({ timeout: 5000 });
@@ -239,7 +239,7 @@ test.describe('Navigation and Layout', () => {
     await expect(mobileMenu).toBeHidden({ timeout: 5000 });
     
     // Verify we can still access navigation elements even without the mobile menu
-    await expect(page.getByRole('banner')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('banner').first()).toBeVisible({ timeout: 5000 });
     
     console.log('Test completed successfully');
   });

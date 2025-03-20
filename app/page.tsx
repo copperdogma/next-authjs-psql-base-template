@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import SignInButton from '@/components/auth/SignInButton';
+import React, { useState, useEffect, Suspense } from 'react';
+import BaseLayout from '@/components/layouts/BaseLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Use dynamic import for components that might not be needed immediately
+const SignInButton = React.lazy(() => import('@/components/auth/SignInButton'));
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -11,29 +15,37 @@ export default function HomePage() {
     setMounted(true);
   }, []);
 
-  // App details - use environment variables with fallbacks
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}';
-  const appDescription = process.env.NEXT_PUBLIC_APP_DESCRIPTION || '{{YOUR_PROJECT_DESCRIPTION}}';
+  // Don't render anything until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
-          {appName}
-        </h1>
-        <p className="mt-4 text-xl text-gray-900 dark:text-gray-50">
-          {appDescription}
-        </p>
-        <div className="mt-8">
-          {mounted ? (
-            <SignInButton />
-          ) : (
-            <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-700 text-white h-10 px-4 py-2">
-              Loading...
-            </div>
-          )}
+    <BaseLayout>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Next.js Project Template</h1>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4">Welcome to Your Next.js App</h2>
+          <p className="mb-4">
+            This is a starter template with Next.js, Firebase Authentication, and PostgreSQL.
+          </p>
+          
+          <div className="mt-6">
+            <ErrorBoundary 
+              fallback={
+                <div className="p-4 border border-orange-300 bg-orange-50 rounded">
+                  Authentication component failed to load. Please refresh the page.
+                </div>
+              }
+            >
+              <Suspense fallback={<div className="py-2 px-4 text-center">Loading authentication...</div>}>
+                <SignInButton />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
-    </div>
+    </BaseLayout>
   );
 }
