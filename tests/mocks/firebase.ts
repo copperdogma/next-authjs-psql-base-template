@@ -1,10 +1,15 @@
 import type { User } from '@firebase/auth';
+import { v4 as uuidv4 } from 'uuid';
 
-// Create a mock user
-export const mockUser = {
+// Function to generate random tokens/IDs to avoid test collisions
+const generateToken = () => `mock-token-${uuidv4().slice(0, 8)}`;
+const generateUid = () => `test-uid-${uuidv4().slice(0, 8)}`;
+
+// Create a configurable mock user factory
+export const createMockUser = (overrides = {}) => ({
   displayName: 'Test User',
-  email: 'test@example.com',
-  uid: 'test-uid',
+  email: `test-${uuidv4().slice(0, 8)}@example.com`,
+  uid: generateUid(),
   emailVerified: true,
   isAnonymous: false,
   metadata: {},
@@ -12,28 +17,40 @@ export const mockUser = {
   refreshToken: '',
   tenantId: null,
   delete: jest.fn(),
-  getIdToken: jest.fn(() => Promise.resolve('mock-token')),
+  getIdToken: jest.fn(() => Promise.resolve(generateToken())),
   getIdTokenResult: jest.fn(),
   reload: jest.fn(),
   toJSON: jest.fn(),
-} as unknown as User;
+  ...overrides
+} as unknown as User);
 
-// Create a mock auth object
-export const mockAuth = {
+// Default mock user for backwards compatibility
+export const mockUser = createMockUser();
+
+// Create a configurable mock auth factory
+export const createMockAuth = (overrides = {}) => ({
   currentUser: null as User | null,
   signOut: jest.fn(() => Promise.resolve()),
   onAuthStateChanged: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
   signInWithPopup: jest.fn(),
-};
+  ...overrides
+});
 
-// Mock app object
-export const mockApp = {
-  name: 'mock-app',
+// Default mock auth for backwards compatibility
+export const mockAuth = createMockAuth();
+
+// Mock app object with configurable options
+export const createMockApp = (overrides = {}) => ({
+  name: `mock-app-${uuidv4().slice(0, 8)}`,
   options: {},
   automaticDataCollectionEnabled: false,
-};
+  ...overrides
+});
+
+// Default mock app for backwards compatibility
+export const mockApp = createMockApp();
 
 // Mock GoogleAuthProvider
 export const mockGoogleAuthProvider = jest.fn().mockImplementation(() => ({
@@ -60,8 +77,10 @@ export class GoogleAuthProvider {
   }
 }
 
-// Mock sign in function
-export const signInWithPopup = jest.fn();
+// Mock sign in function that generates a dynamic token
+export const signInWithPopup = jest.fn().mockImplementation(() => 
+  Promise.resolve({ user: createMockUser() })
+);
 
 // Mock sign out function
 export const signOut = jest.fn();

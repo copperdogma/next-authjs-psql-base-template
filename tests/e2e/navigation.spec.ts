@@ -1,4 +1,44 @@
 import { test, expect, Page } from '@playwright/test';
+import { TEST_CONFIG, ROUTES } from '../utils/routes';
+
+// Centralize UI element selectors for easier maintenance
+const UI_ELEMENTS = {
+  NAVBAR: {
+    testId: 'navbar',
+    role: 'navigation',
+    tag: 'nav',
+    css: 'header nav'
+  },
+  MAIN_CONTENT: {
+    testId: 'main-content',
+    role: 'main',
+    tag: 'main',
+    css: '.flex-grow'
+  },
+  FOOTER: {
+    testId: 'footer',
+    role: 'contentinfo',
+    tag: 'footer',
+    css: 'footer'
+  },
+  DESKTOP_MENU: {
+    testId: 'desktop-menu',
+    css: [
+      'nav div[class*="hidden md:flex"]',
+      'nav .hidden.md\\:flex'
+    ]
+  },
+  MOBILE_MENU_BUTTON: {
+    testId: 'mobile-menu-button',
+    role: { name: 'button', options: { name: 'Main menu' } },
+    css: 'button[aria-label="Main menu"]'
+  },
+  MOBILE_MENU: {
+    testId: 'mobile-menu',
+    role: 'menu',
+    css: 'div[role="menu"]'
+  }
+};
 
 // Define types for our selector strategies
 interface SelectorStrategy {
@@ -11,92 +51,85 @@ interface SelectorStrategy {
  * More comprehensive helper to make element waiting more resilient
  * This tries multiple selector strategies to find elements
  */
-async function waitForElementToBeVisible(page: Page, selector: string, options: Record<string, any> = {}) {
-  const defaultOptions = { timeout: 15000, message: `Waiting for ${selector}` };
+async function waitForElementToBeVisible(page: Page, elementKey: string, options: Record<string, any> = {}) {
+  const defaultOptions = { timeout: 15000, message: `Waiting for ${elementKey}` };
   const opts = { ...defaultOptions, ...options };
   
   console.log(opts.message);
   
-  // Define all possible ways to find the element
-  const selectorStrategies: Record<string, SelectorStrategy[]> = {
-    '[data-testid="navbar"]': [
-      { type: 'testId', selector: 'navbar' },
-      { type: 'role', selector: 'navigation' },
-      { type: 'tag', selector: 'nav' },
-      { type: 'css', selector: 'header nav' }
-    ],
-    '[data-testid="main-content"]': [
-      { type: 'testId', selector: 'main-content' },
-      { type: 'role', selector: 'main' },
-      { type: 'tag', selector: 'main' },
-      { type: 'css', selector: '.flex-grow' }
-    ],
-    '[data-testid="footer"]': [
-      { type: 'testId', selector: 'footer' },
-      { type: 'role', selector: 'contentinfo' },
-      { type: 'tag', selector: 'footer' },
-      { type: 'css', selector: 'footer' }
-    ],
-    '[data-testid="desktop-menu"]': [
-      { type: 'testId', selector: 'desktop-menu' },
-      { type: 'css', selector: 'nav div[class*="hidden md:flex"]' },
-      { type: 'css', selector: 'nav .hidden.md\\:flex' }
-    ],
-    '[data-testid="mobile-menu-button"]': [
-      { type: 'testId', selector: 'mobile-menu-button' },
-      { type: 'role', selector: 'button', options: { name: 'Main menu' } },
-      { type: 'css', selector: 'button[aria-label="Main menu"]' }
-    ],
-    '[data-testid="mobile-menu"]': [
-      { type: 'testId', selector: 'mobile-menu' },
-      { type: 'role', selector: 'menu' },
-      { type: 'css', selector: 'div[role="menu"]' }
-    ]
-  };
+  // Get element configuration from our centralized UI_ELEMENTS
+  const elementConfig = (UI_ELEMENTS as Record<string, any>)[elementKey];
   
-  // Get the strategies for this selector, or use an empty array if not defined
-  const strategies = selectorStrategies[selector] || [];
-  
-  // Try the original selector first
-  try {
-    await page.waitForSelector(selector, { state: 'visible', timeout: opts.timeout / 3 });
-    return true;
-  } catch (error) {
-    console.log(`Failed to find with direct selector ${selector}, trying alternatives...`);
+  if (!elementConfig) {
+    throw new Error(`Unknown element key: ${elementKey}`);
   }
   
-  // Try all the alternative selectors
-  for (const strategy of strategies) {
+  // Try by test ID first
+  if (elementConfig.testId) {
     try {
-      console.log(`Trying ${strategy.type} strategy with selector: ${strategy.selector}`);
-      
-      switch (strategy.type) {
-        case 'testId':
-          await page.getByTestId(strategy.selector).waitFor({ state: 'visible', timeout: opts.timeout / strategies.length });
-          console.log(`Found with testId: ${strategy.selector}`);
-          return true;
-        case 'role':
-          if (strategy.options) {
-            await page.getByRole(strategy.selector as any, strategy.options).waitFor({ state: 'visible', timeout: opts.timeout / strategies.length });
-          } else {
-            await page.getByRole(strategy.selector as any).waitFor({ state: 'visible', timeout: opts.timeout / strategies.length });
-          }
-          console.log(`Found with role: ${strategy.selector}`);
-          return true;
-        case 'tag':
-        case 'css':
-          await page.locator(strategy.selector).waitFor({ state: 'visible', timeout: opts.timeout / strategies.length });
-          console.log(`Found with ${strategy.type}: ${strategy.selector}`);
-          return true;
-      }
+      await page.getByTestId(elementConfig.testId).waitFor({ state: 'visible', timeout: opts.timeout / 3 });
+      console.log(`Found element ${elementKey} with testId: ${elementConfig.testId}`);
+      return true;
     } catch (error) {
-      console.log(`Failed with ${strategy.type} strategy: ${strategy.selector}`);
-      // Continue to the next strategy
+      console.log(`Failed to find with testId ${elementConfig.testId}, trying alternatives...`);
+    }
+  }
+  
+  // Try by role
+  if (elementConfig.role) {
+    try {
+      if (typeof elementConfig.role === 'object') {
+        await page.getByRole(elementConfig.role.name, elementConfig.role.options).waitFor({ 
+          state: 'visible', 
+          timeout: opts.timeout / 3 
+        });
+      } else {
+        await page.getByRole(elementConfig.role).waitFor({ 
+          state: 'visible', 
+          timeout: opts.timeout / 3 
+        });
+      }
+      console.log(`Found element ${elementKey} with role selector`);
+      return true;
+    } catch (error) {
+      console.log(`Failed to find with role selector, trying next strategy...`);
+    }
+  }
+  
+  // Try by tag
+  if (elementConfig.tag) {
+    try {
+      await page.locator(elementConfig.tag).first().waitFor({ 
+        state: 'visible', 
+        timeout: opts.timeout / 3 
+      });
+      console.log(`Found element ${elementKey} with tag: ${elementConfig.tag}`);
+      return true;
+    } catch (error) {
+      console.log(`Failed to find with tag ${elementConfig.tag}, trying next strategy...`);
+    }
+  }
+  
+  // Try by CSS selectors
+  if (elementConfig.css) {
+    const cssSelectors = Array.isArray(elementConfig.css) ? elementConfig.css : [elementConfig.css];
+    
+    for (const selector of cssSelectors) {
+      try {
+        await page.locator(selector).first().waitFor({ 
+          state: 'visible', 
+          timeout: opts.timeout / cssSelectors.length 
+        });
+        console.log(`Found element ${elementKey} with CSS: ${selector}`);
+        return true;
+      } catch (error) {
+        console.log(`Failed with CSS selector: ${selector}`);
+      }
     }
   }
   
   // If we get here, all strategies failed
-  throw new Error(`Failed to find element with selector ${selector} using all strategies`);
+  throw new Error(`Failed to find element ${elementKey} using all strategies`);
 }
 
 // Mark this test suite as slow to allow more time for execution
@@ -116,7 +149,7 @@ test.describe('Navigation and Layout', () => {
     });
     
     // Start at the home page with longer timeout and better waiting
-    await page.goto('/', {
+    await page.goto(ROUTES.HOME, {
       waitUntil: 'domcontentloaded',
       timeout: 60000
     });
@@ -128,20 +161,20 @@ test.describe('Navigation and Layout', () => {
 
     console.log('Navigation complete, checking for navbar...');
     // Wait for critical elements with fallbacks
-    await waitForElementToBeVisible(page, '[data-testid="navbar"]', {
+    await waitForElementToBeVisible(page, 'NAVBAR', {
       message: 'Waiting for navbar to be visible'
     });
   });
   
   test('main layout should have key elements', async ({ page }) => {
     // Check for header/navigation
-    await waitForElementToBeVisible(page, '[data-testid="navbar"]');
+    await waitForElementToBeVisible(page, 'NAVBAR');
     
     // Check for main content area
-    await waitForElementToBeVisible(page, '[data-testid="main-content"]');
+    await waitForElementToBeVisible(page, 'MAIN_CONTENT');
     
     // Check for footer
-    await waitForElementToBeVisible(page, '[data-testid="footer"]');
+    await waitForElementToBeVisible(page, 'FOOTER');
 
     // Verify elements are visible via roles as well
     await expect(page.getByRole('banner')).toBeVisible({ timeout: 5000 });
@@ -152,19 +185,19 @@ test.describe('Navigation and Layout', () => {
   test('mobile responsiveness check', async ({ page }) => {
     console.log('Setting desktop viewport');
     // Set desktop viewport first
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewportSize(TEST_CONFIG.VIEWPORT.DESKTOP);
     
     // Wait for viewport change to take effect
     await page.waitForTimeout(1000);
     
     // Try to find desktop menu using multiple strategies
     console.log('Checking desktop menu visibility');
-    await waitForElementToBeVisible(page, '[data-testid="desktop-menu"]');
+    await waitForElementToBeVisible(page, 'DESKTOP_MENU');
     
     // Get locators for desktop and mobile elements
-    const desktopMenu = page.getByTestId('desktop-menu');
-    const mobileMenuButton = page.getByTestId('mobile-menu-button');
-    const mobileMenu = page.getByTestId('mobile-menu');
+    const desktopMenu = page.getByTestId(UI_ELEMENTS.DESKTOP_MENU.testId);
+    const mobileMenuButton = page.getByTestId(UI_ELEMENTS.MOBILE_MENU_BUTTON.testId);
+    const mobileMenu = page.getByTestId(UI_ELEMENTS.MOBILE_MENU.testId);
     
     // Check desktop visibility states
     await expect(desktopMenu).toBeVisible({ timeout: 5000 });
@@ -175,7 +208,7 @@ test.describe('Navigation and Layout', () => {
     
     console.log('Setting mobile viewport');
     // Switch to mobile viewport
-    await page.setViewportSize({ width: 375, height: 667 });
+    await page.setViewportSize(TEST_CONFIG.VIEWPORT.MOBILE);
     
     // Wait for viewport change to take effect
     await page.waitForTimeout(1000);

@@ -27,4 +27,9 @@ if (typeof window !== 'undefined') {
   auth = {};
 }
 
+// Type guard function to check if auth is a Firebase Auth instance
+export function isFirebaseAuth(auth: Auth | Record<string, never>): auth is Auth {
+  return typeof window !== 'undefined' && Object.keys(auth).length > 0;
+}
+
 export { auth, firebaseApp }; 

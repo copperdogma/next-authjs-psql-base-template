@@ -1,9 +1,10 @@
 import { test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { ROUTES, ROUTE_GROUPS, TEST_CONFIG } from '../utils/routes';
 
 test.describe('Accessibility Tests', () => {
   test('login page should be accessible', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto(ROUTES.LOGIN);
     
     // Run axe accessibility analysis
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -21,22 +22,22 @@ test.describe('Accessibility Tests', () => {
   
   test('home page should be accessible when authenticated', async ({ page }) => {
     // Mock authentication
-    await page.goto('/login');
+    await page.goto(ROUTES.LOGIN);
     
-    await page.evaluate(() => {
+    await page.evaluate((config) => {
       const mockUser = {
-        uid: 'test-uid-123',
-        email: 'test@example.com',
-        displayName: 'Test User',
-        photoURL: 'https://via.placeholder.com/150',
+        uid: config.TEST_USER.UID,
+        email: config.TEST_USER.EMAIL,
+        displayName: config.TEST_USER.DISPLAY_NAME,
+        photoURL: config.TEST_USER.PHOTO_URL,
       };
       
-      localStorage.setItem('firebase:authUser:test-project-id', JSON.stringify(mockUser));
+      localStorage.setItem(config.FIREBASE.AUTH_USER_KEY, JSON.stringify(mockUser));
       window.dispatchEvent(new CustomEvent('authStateChanged'));
-    });
+    }, TEST_CONFIG);
     
     // Go to home page
-    await page.goto('/');
+    await page.goto(ROUTES.HOME);
     
     // Run axe accessibility analysis
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -51,27 +52,22 @@ test.describe('Accessibility Tests', () => {
   
   test('basic accessibility scan of all common pages', async ({ page }) => {
     // Mock authentication first
-    await page.goto('/login');
+    await page.goto(ROUTES.LOGIN);
     
-    await page.evaluate(() => {
+    await page.evaluate((config) => {
       const mockUser = {
-        uid: 'test-uid-123',
-        email: 'test@example.com',
-        displayName: 'Test User',
-        photoURL: 'https://via.placeholder.com/150',
+        uid: config.TEST_USER.UID,
+        email: config.TEST_USER.EMAIL,
+        displayName: config.TEST_USER.DISPLAY_NAME,
+        photoURL: config.TEST_USER.PHOTO_URL,
       };
       
-      localStorage.setItem('firebase:authUser:test-project-id', JSON.stringify(mockUser));
+      localStorage.setItem(config.FIREBASE.AUTH_USER_KEY, JSON.stringify(mockUser));
       window.dispatchEvent(new CustomEvent('authStateChanged'));
-    });
+    }, TEST_CONFIG);
     
-    // Define common routes to test
-    const routes = [
-      '/',
-      '/dashboard',
-      '/profile',
-      '/settings',
-    ];
+    // Use the centralized route group for accessibility testing
+    const routes = ROUTE_GROUPS.ACCESSIBILITY;
     
     // Test each route
     for (const route of routes) {
@@ -98,7 +94,7 @@ test.describe('Accessibility Tests', () => {
     // Color contrast is one of the most common accessibility issues
     // This test specifically focuses on it
     
-    await page.goto('/');
+    await page.goto(ROUTES.HOME);
     
     const contrastResults = await new AxeBuilder({ page })
       .withRules(['color-contrast']) 

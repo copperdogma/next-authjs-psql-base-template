@@ -60,6 +60,9 @@ export const requiredEnvVars = [
   'NEXT_PUBLIC_PWA_APP_DESCRIPTION',
 ] as const;
 
+// Define union type for NODE_ENV
+export type NodeEnv = 'development' | 'production' | 'test';
+
 // Validate environment variables
 export function validateEnv() {
   try {
@@ -75,7 +78,7 @@ export const env = envSchema.parse(process.env);
 
 // Optional environment variables with default values
 export const ENV = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  NODE_ENV: (process.env.NODE_ENV as NodeEnv) || 'development',
   APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   API_URL: process.env.API_URL || 'http://localhost:3000/api',
   IS_PRODUCTION: process.env.NODE_ENV === 'production',

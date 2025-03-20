@@ -1,13 +1,8 @@
 import { test as base, Page } from '@playwright/test';
+import { TEST_CONFIG } from '../../utils/routes';
 
-// Test user data for authentication tests
-export const TEST_USER = {
-  uid: 'test-uid-123',
-  email: 'test@example.com',
-  password: 'test-password-123',
-  displayName: 'Test User',
-  photoURL: 'https://via.placeholder.com/150',
-};
+// Test user data for authentication tests - use the centralized test configuration
+export const TEST_USER = TEST_CONFIG.TEST_USER;
 
 /**
  * Firebase Auth test utilities
@@ -71,7 +66,7 @@ export class FirebaseAuthUtils {
    * @returns Promise<boolean>
    */
   static async isAuthenticated(page: Page): Promise<boolean> {
-    return await page.evaluate(() => {
+    return await page.evaluate((config) => {
       // Check for Firebase auth data in localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -80,7 +75,7 @@ export class FirebaseAuthUtils {
         }
       }
       return false;
-    });
+    }, TEST_CONFIG.FIREBASE);
   }
 }
 

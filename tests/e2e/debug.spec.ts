@@ -1,4 +1,13 @@
 import { test as base, chromium, expect } from '@playwright/test';
+import { ROUTES } from '../utils/routes';
+
+// Configuration for debug tests
+const DEBUG_CONFIG = {
+  TEST_SERVER_PORT: 3001,
+  TEST_SERVER_URL: 'http://localhost:3001',
+  TIMEOUT: 60000,
+  SCREENSHOT_PATH: 'tests/e2e/screenshots/debug-screenshot.png'
+};
 
 // Create a custom test fixture that doesn't depend on any config files
 const test = base.extend({
@@ -29,16 +38,16 @@ const test = base.extend({
 test('super basic test', async ({ page }) => {
   console.log('Starting super basic test');
   
-  // Hard-code the URL to avoid dependency on environment variables
-  console.log('Navigating to home page');
-  await page.goto('http://localhost:3001', { timeout: 60000 }); // Updated port and added longer timeout
+  // Use the configuration constant instead of hardcoding
+  console.log('Navigating to home page via direct URL');
+  await page.goto(DEBUG_CONFIG.TEST_SERVER_URL, { timeout: DEBUG_CONFIG.TIMEOUT });
   
   // Log the current URL
   console.log('Current URL:', page.url());
   
   // Take a screenshot for debugging - save to gitignored screenshots directory
-  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
-  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
+  await page.screenshot({ path: DEBUG_CONFIG.SCREENSHOT_PATH });
+  console.log(`Screenshot saved to ${DEBUG_CONFIG.SCREENSHOT_PATH}`);
   
   // Simple assertion that should work
   console.log('Checking for page content');
@@ -51,20 +60,21 @@ test('super basic test', async ({ page }) => {
 test.skip('debug test - basic navigation', async ({ page }) => {
   console.log('Starting debug test');
   
-  // Navigate to the home page
+  // Navigate to the home page using the route constant
   console.log('Navigating to home page');
-  await page.goto('/');
+  await page.goto(ROUTES.HOME);
   
   // Log the current URL
   console.log('Current URL:', page.url());
   
   // Take a screenshot for debugging - save to gitignored screenshots directory
-  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
-  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
+  await page.screenshot({ path: DEBUG_CONFIG.SCREENSHOT_PATH });
+  console.log(`Screenshot saved to ${DEBUG_CONFIG.SCREENSHOT_PATH}`);
   
-  // Simple assertion that should work
-  console.log('Checking for page content');
-  await expect(page).toHaveTitle(/.*Next.js/);
+  // Use more resilient title check that doesn't rely on exact text
+  console.log('Checking for page title');
+  // Look for any title that contains "Next"
+  await expect(page).toHaveTitle(/Next/i);
   
   console.log('Test completed successfully');
 });
@@ -77,18 +87,19 @@ test.skip('debug test - alternative navigation (intentionally skipped)', async (
   
   // Navigate to the home page
   console.log('Navigating to home page');
-  await page.goto('/');
+  await page.goto(ROUTES.HOME);
   
   // Log the current URL
   console.log('Current URL:', page.url());
   
   // Take a screenshot for debugging - save to gitignored screenshots directory
-  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
-  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
+  await page.screenshot({ path: DEBUG_CONFIG.SCREENSHOT_PATH });
+  console.log(`Screenshot saved to ${DEBUG_CONFIG.SCREENSHOT_PATH}`);
   
-  // Simple assertion that should work
-  console.log('Checking for page content');
-  await expect(page).toHaveTitle(/.*Next.js/);
+  // Use more resilient title check that doesn't rely on exact text
+  console.log('Checking for page title');
+  // Look for any title that contains "Next"
+  await expect(page).toHaveTitle(/Next/i);
   
   console.log('Test completed successfully');
 }); 

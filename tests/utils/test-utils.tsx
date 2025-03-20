@@ -3,19 +3,35 @@ import { render } from '@testing-library/react'
 import { ReactElement } from 'react'
 import { AuthContext } from '../../app/providers/AuthProvider';
 import type { User } from '@firebase/auth';
+import { ROUTES } from './routes';
 
-// Mock Next.js router
-const mockRouter = {
-  push: jest.fn(),
-  replace: jest.fn(),
-  prefetch: jest.fn(),
-}
+// Create configurable mock router
+const createMockRouter = (config = {}) => {
+  const defaultConfig = {
+    pathname: ROUTES.HOME,
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn()
+  };
+  
+  return {
+    ...defaultConfig,
+    ...config
+  };
+};
 
-/* istanbul ignore next */
-jest.mock('next/navigation', () => ({
-  useRouter: () => mockRouter,
-  usePathname: () => '/',
-}))
+// Use a string literal in the mock to avoid reference issues
+jest.mock('next/navigation', () => {
+  // Using hardcoded string for the mock
+  const mockPathname = '/';
+  
+  return {
+    useRouter: jest.fn().mockImplementation(() => createMockRouter()),
+    usePathname: jest.fn().mockImplementation(() => mockPathname),
+  }
+});
 
 type AuthState = {
   user: User | null;
@@ -23,13 +39,32 @@ type AuthState = {
   isClientSide: boolean;
 };
 
+// Options for custom render function
+interface RenderOptions {
+  authState?: AuthState;
+  routerConfig?: Partial<ReturnType<typeof createMockRouter>>;
+}
+
 // Create a custom render function that includes providers
 function customRender(
   ui: ReactElement,
-  options: { authState?: AuthState } = {}
+  options: RenderOptions = {}
 ) {
   const defaultAuthState = { user: null, loading: false, isClientSide: true };
   const authState = options.authState || defaultAuthState;
+  
+  // Configure router if provided in options
+  if (options.routerConfig) {
+    const mockRouter = createMockRouter(options.routerConfig);
+    jest.requireMock('next/navigation').useRouter.mockImplementation(() => mockRouter);
+    
+    // Handle pathname property safely
+    const pathname = options.routerConfig.pathname !== undefined 
+      ? options.routerConfig.pathname 
+      : ROUTES.HOME;
+      
+    jest.requireMock('next/navigation').usePathname.mockImplementation(() => pathname);
+  }
 
   return {
     ...render(
@@ -37,7 +72,8 @@ function customRender(
         {ui}
       </AuthContext.Provider>
     ),
-    mockRouter,
+    // Return the mock router config for test assertions
+    mockRouter: jest.requireMock('next/navigation').useRouter(),
   }
 }
 

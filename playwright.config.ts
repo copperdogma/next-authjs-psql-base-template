@@ -1,67 +1,29 @@
-import { defineConfig, devices } from '@playwright/test';
+import { PlaywrightTestConfig } from '@playwright/test';
+import baseConfig from './tests/config/playwright.config';
 
 /**
- * Playwright configuration for {{YOUR_PROJECT_NAME}}
+ * Root-level Playwright configuration for {{YOUR_PROJECT_NAME}}
+ * 
+ * NOTE: This configuration file exists for two purposes:
+ * 1. To provide a convenient entry point for running tests from the project root
+ * 2. To allow IDE integrations to detect and run Playwright tests
+ * 
+ * The actual test configuration is defined in ./tests/config/playwright.config.ts
+ * This file simply re-exports that configuration with any project-specific overrides.
+ * 
+ * Run tests with either:
+ * - `npx playwright test` (uses this config)
+ * - `npm run test:e2e` (uses the config in tests/config)
+ * 
  * @see https://playwright.dev/docs/test-configuration
  */
-export default defineConfig({
-  testDir: './tests/e2e',
-  /* Maximum time one test can run for */
-  timeout: 30 * 1000,
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Reporter to use */
-  reporter: [
-    ['html', { open: 'never' }],
-    ['list']
-  ],
-  /* Shared settings for all the projects below */
-  use: {
-    /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000',
-    /* Collect trace when retrying the failed test */
-    trace: 'on-first-retry',
-    /* Record video only when retrying a test for the first time */
-    video: 'on-first-retry',
-    /* Take screenshot on test failure */
-    screenshot: 'only-on-failure',
-  },
 
-  /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    /* Test against mobile viewports */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
-  ],
+// Create the config by spreading the base config
+const config: PlaywrightTestConfig = {
+  ...baseConfig,
+  
+  // Override any settings needed for root-level execution if necessary
+  // Most settings should be defined in the base config
+};
 
-  /* Local development server setup */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
-}); 
+export default config; 

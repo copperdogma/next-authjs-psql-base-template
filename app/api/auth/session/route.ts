@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '../../../../lib/firebase-admin';
 import { prisma } from '../../../../lib/prisma';
+import { HttpStatusCode } from '../../../../types/index';
 
 // Session duration: 5 days
 const SESSION_DURATION = 5 * 24 * 60 * 60 * 1000;
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     const { token } = await request.json();
 
     if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 400 });
+      return NextResponse.json({ error: 'No token provided' }, { status: HttpStatusCode.BAD_REQUEST });
     }
 
     // Verify the Firebase ID token
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Session creation error:', error);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: HttpStatusCode.UNAUTHORIZED });
   }
 }
 
@@ -79,6 +80,6 @@ export async function DELETE() {
     return response;
   } catch (error) {
     console.error('Session deletion error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: HttpStatusCode.INTERNAL_SERVER_ERROR });
   }
 } 
