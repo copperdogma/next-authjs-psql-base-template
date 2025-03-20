@@ -20,6 +20,15 @@
 /tests/reports
 /.swc
 
+# Playwright test artifacts
+/tests/e2e/screenshots/
+**/test-results/*/trace.zip
+**/test-results/*/video.webm
+
+# Do NOT ignore snapshot reference images used for visual testing
+# These should be committed: 
+# !**/*.spec.ts-snapshots/**
+
 # next.js
 /.next/
 /out/

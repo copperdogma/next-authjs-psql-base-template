@@ -17,7 +17,7 @@ const UserProfile = () => {
   }
 
   return (
-    <Link href="/profile" className="flex items-center gap-2">
+    <Link href="/profile" className="flex items-center gap-2" data-testid="user-profile">
       {user.photoURL ? (
         <Image
           src={user.photoURL}
@@ -25,6 +25,7 @@ const UserProfile = () => {
           width={32}
           height={32}
           className="rounded-full"
+          data-testid="profile-image"
         />
       ) : null}
       <div className="flex flex-col">

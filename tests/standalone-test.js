@@ -27,9 +27,9 @@ const { chromium } = require('@playwright/test');
     // Log the current URL
     console.log('Current URL:', page.url());
     
-    // Take a screenshot for debugging
-    await page.screenshot({ path: 'standalone-screenshot.png' });
-    console.log('Screenshot saved to standalone-screenshot.png');
+    // Take a screenshot for debugging - save to gitignored screenshots directory
+    await page.screenshot({ path: 'tests/e2e/screenshots/standalone-screenshot.png' });
+    console.log('Screenshot saved to tests/e2e/screenshots/standalone-screenshot.png');
     
     // Simple assertions
     console.log('Checking for page content...');

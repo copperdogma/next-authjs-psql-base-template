@@ -35,9 +35,9 @@ const fs = require('fs');
     console.log('Waiting for additional hydration...');
     await page.waitForTimeout(2000);
 
-    // Take a screenshot for debugging
-    await page.screenshot({ path: 'layout-screenshot.png' });
-    console.log('Screenshot saved to layout-screenshot.png');
+    // Take a screenshot for debugging - save to gitignored screenshots directory
+    await page.screenshot({ path: 'tests/e2e/screenshots/layout-screenshot.png' });
+    console.log('Screenshot saved to tests/e2e/screenshots/layout-screenshot.png');
     
     // Save the complete HTML for inspection
     const htmlContent = await page.content();

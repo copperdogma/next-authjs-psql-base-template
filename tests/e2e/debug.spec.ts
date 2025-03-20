@@ -36,8 +36,9 @@ test('super basic test', async ({ page }) => {
   // Log the current URL
   console.log('Current URL:', page.url());
   
-  // Take a screenshot for debugging
-  await page.screenshot({ path: 'debug-screenshot.png' });
+  // Take a screenshot for debugging - save to gitignored screenshots directory
+  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
+  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
   
   // Simple assertion that should work
   console.log('Checking for page content');
@@ -57,8 +58,9 @@ test.skip('debug test - basic navigation', async ({ page }) => {
   // Log the current URL
   console.log('Current URL:', page.url());
   
-  // Take a screenshot for debugging
-  await page.screenshot({ path: 'debug-screenshot.png' });
+  // Take a screenshot for debugging - save to gitignored screenshots directory
+  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
+  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
   
   // Simple assertion that should work
   console.log('Checking for page content');
