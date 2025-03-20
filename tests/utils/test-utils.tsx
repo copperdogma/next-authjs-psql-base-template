@@ -2,7 +2,7 @@ import { jsx as _jsx } from 'react/jsx-runtime';
 import { render } from '@testing-library/react'
 import { ReactElement } from 'react'
 import { AuthContext } from '../../app/providers/AuthProvider';
-import { User } from 'firebase/auth';
+import type { User } from '@firebase/auth';
 
 // Mock Next.js router
 const mockRouter = {

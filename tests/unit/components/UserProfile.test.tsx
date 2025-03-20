@@ -2,7 +2,7 @@ import { jsx as _jsx } from 'react/jsx-runtime';
 import { render, screen } from '../../utils/test-utils'
 import '@testing-library/jest-dom'
 import UserProfile from '../../../components/auth/UserProfile'
-import { User } from 'firebase/auth'
+import type { User } from '@firebase/auth'
 
 // Mock Firebase auth
 jest.mock('../../../lib/firebase', () => {

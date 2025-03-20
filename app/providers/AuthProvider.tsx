@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, Auth } from 'firebase/auth';
+import { onAuthStateChanged } from '@firebase/auth';
+import type { User, Auth } from '@firebase/auth';
 import { auth } from '../../lib/firebase';
 
 // Create the auth context
@@ -34,7 +35,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setHasMounted(true);
     
     // Skip if not on client side
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return undefined;
     
     try {
       // Only try to subscribe to auth state if we're on the client
@@ -47,14 +48,16 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         });
     
         // Clean up subscription
-        return () => unsubscribe();
+        return unsubscribe;
       } else {
         // Auth not available or properly initialized
         setLoading(false);
+        return undefined;
       }
     } catch (error) {
       console.error('Auth provider setup error:', error);
       setLoading(false);
+      return undefined;
     }
   }, []);
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useAuth } from '@/app/providers/AuthProvider';
-import { signOut } from 'firebase/auth';
+import { signOut } from '@firebase/auth';
 import { auth } from '@/lib/firebase';
 import Image from 'next/image';
 import SignInButton from '@/components/auth/SignInButton';
+import type { Auth } from '@firebase/auth';
 
 export default function Profile() {
   const { user, isClientSide } = useAuth();
@@ -27,8 +28,10 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
-      window.location.href = '/';
+      if ('signOut' in auth) {
+        await signOut(auth as Auth);
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }

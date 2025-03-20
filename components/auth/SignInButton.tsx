@@ -2,7 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signOut, Auth } from 'firebase/auth';
+import { GoogleAuthProvider } from '@firebase/auth';
+import { signInWithPopup } from '@firebase/auth';
+import { signOut } from '@firebase/auth';
+import type { Auth } from '@firebase/auth';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { auth } from '../../lib/firebase';

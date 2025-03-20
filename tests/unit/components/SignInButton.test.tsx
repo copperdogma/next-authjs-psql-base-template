@@ -1,7 +1,7 @@
 // Mock modules directly in place
 import { jsx as _jsx } from 'react/jsx-runtime';
 
-jest.mock('firebase/auth', () => ({
+jest.mock('@firebase/auth', () => ({
   getAuth: jest.fn(() => ({
     currentUser: null
   })),
@@ -54,7 +54,8 @@ jest.mock('next/navigation', () => ({
 import { render, screen, fireEvent, waitFor, act } from '../../utils/test-utils';
 import '@testing-library/jest-dom';
 import SignInButton from '../../../components/auth/SignInButton';
-import { signInWithPopup, signOut, GoogleAuthProvider, User } from 'firebase/auth';
+import { signInWithPopup, signOut } from '@firebase/auth';
+import type { User } from '@firebase/auth';
 import { auth } from '../../../lib/firebase';
 
 // Mock user data
