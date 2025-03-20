@@ -34,7 +34,7 @@ test.describe('Performance Checks', () => {
       for (const route of routes) {
         try {
           // Clear performance metrics before each navigation
-          await client.send('Performance.clearMetrics');
+          await client.send('Performance.clearMetrics' as any);
           
           // Navigate to the page with network idle to ensure everything loads
           console.log(`Testing performance for route: ${route}`);
@@ -131,7 +131,7 @@ test.describe('Performance Checks', () => {
     
     try {
       // Get memory usage information - use try/catch for better error handling
-      const memoryInfo = await client.send('Memory.getBrowserMemoryUsage') as MemoryInfo;
+      const memoryInfo = await client.send('Memory.getBrowserMemoryUsage' as any) as MemoryInfo;
       
       // Log memory usage
       console.log('Browser memory usage:');

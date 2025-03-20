@@ -1,4 +1,4 @@
-import { test as base, Page, expect } from '@playwright/test';
+import { test as base, Page } from '@playwright/test';
 
 // Test user data for authentication tests
 export const TEST_USER = {
@@ -84,8 +84,14 @@ export class FirebaseAuthUtils {
   }
 }
 
+// Define the types for our custom fixtures
+type AuthFixtures = {
+  authUtils: typeof FirebaseAuthUtils;
+  authenticatedPage: Page;
+};
+
 // Auth fixture that extends the base test with authentication utilities
-export const test = base.extend({
+export const test = base.extend<AuthFixtures>({
   // Auth utilities directly available in tests
   authUtils: async ({}, use) => {
     await use(FirebaseAuthUtils);
@@ -105,6 +111,4 @@ export const test = base.extend({
     // Clean up - clear auth state
     await FirebaseAuthUtils.clearAuthState(page);
   }
-});
-
-export { expect } from '@playwright/test'; 
+}); 

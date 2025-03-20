@@ -81,7 +81,7 @@ async function main() {
     console.log(`Found available port: ${port}`);
     
     // Start the dev server with the available port
-    const devServer = spawnSync('npm', ['run', 'dev', '--', '-p', port.toString()], {
+    spawnSync('npm', ['run', 'dev', '--', '-p', port.toString()], {
       stdio: 'inherit',
       shell: true
     });

@@ -56,7 +56,6 @@ import '@testing-library/jest-dom';
 import SignInButton from '../../../components/auth/SignInButton';
 import { signInWithPopup, signOut } from '@firebase/auth';
 import type { User } from '@firebase/auth';
-import { auth } from '../../../lib/firebase';
 
 // Mock user data
 const mockUser = {

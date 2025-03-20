@@ -9,7 +9,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 const SESSION_DURATION = 5 * 24 * 60 * 60 * 1000
 
