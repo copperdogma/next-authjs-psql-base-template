@@ -105,7 +105,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
 
       <footer className="bg-gray-100 py-6" role="contentinfo" data-testid="footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-500">
+          <p className="text-center text-gray-700">
             © {isClientSide ? currentYear : new Date().getFullYear()} My App. All rights reserved.
           </p>
         </div>

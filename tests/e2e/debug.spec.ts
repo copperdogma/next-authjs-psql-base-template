@@ -67,4 +67,28 @@ test.skip('debug test - basic navigation', async ({ page }) => {
   await expect(page).toHaveTitle(/.*Next.js/);
   
   console.log('Test completed successfully');
+});
+
+// This test is intentionally skipped as it's only for manual debugging purposes
+// It's a duplicate of the test above but uses the routing system instead of direct URL
+// Uncomment the line below and comment out test.skip to run this test manually when needed
+test.skip('debug test - alternative navigation (intentionally skipped)', async ({ page }) => {
+  console.log('Starting debug test');
+  
+  // Navigate to the home page
+  console.log('Navigating to home page');
+  await page.goto('/');
+  
+  // Log the current URL
+  console.log('Current URL:', page.url());
+  
+  // Take a screenshot for debugging - save to gitignored screenshots directory
+  await page.screenshot({ path: 'tests/e2e/screenshots/debug-screenshot.png' });
+  console.log('Screenshot saved to tests/e2e/screenshots/debug-screenshot.png');
+  
+  // Simple assertion that should work
+  console.log('Checking for page content');
+  await expect(page).toHaveTitle(/.*Next.js/);
+  
+  console.log('Test completed successfully');
 }); 

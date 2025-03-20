@@ -67,6 +67,11 @@ test.describe('Authentication Flow', () => {
       '[data-testid="user-profile"]',
       '.user-profile',
       '[href="/profile"]', // The link that wraps the UserProfile component
+      // Add more precise selectors based on the current implementation
+      'a[href="/profile"]',
+      'a[href="/profile"][data-testid="user-profile"]',
+      'nav [data-testid="user-profile"]',
+      'header [data-testid="user-profile"]'
     ];
     
     let found = false;
