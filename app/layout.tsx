@@ -4,6 +4,7 @@ import "./globals.css";
 import ThemeRegistry from './providers/ThemeRegistry';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import AuthProvider from './providers/AuthProvider';
+import { ThemeProvider } from './providers/ThemeProvider';
 
 // Optimize font loading
 const inter = Inter({ 
@@ -106,21 +107,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Title is automatically set by Next.js based on metadata */}
       </head>
       <body 
         className={`${inter.className} ${inter.variable} ${roboto.variable}`}
-        suppressHydrationWarning={true}
       >
-        <ThemeRegistry>
-          <AuthProvider>
-            <BaseLayout>
-              {children}
-            </BaseLayout>
-          </AuthProvider>
-        </ThemeRegistry>
+        <ThemeProvider defaultTheme="system" storageKey="theme-preference">
+          <ThemeRegistry>
+            <AuthProvider>
+              <BaseLayout>
+                {children}
+              </BaseLayout>
+            </AuthProvider>
+          </ThemeRegistry>
+        </ThemeProvider>
       </body>
     </html>
   );

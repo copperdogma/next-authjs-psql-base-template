@@ -109,10 +109,6 @@ const nextConfig = {
       },
     ],
   },
-  // Optimized compiler options
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
   // Improved webpack configuration
   webpack: (config, { isServer }) => {
     if (!isServer) {

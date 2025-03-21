@@ -4,14 +4,37 @@
 import createCache from '@emotion/cache';
 import { useServerInsertedHTML } from 'next/navigation';
 import { CacheProvider } from '@emotion/react';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from '@/lib/theme';
-import { ReactNode, useState } from 'react';
+import { theme as baseTheme } from '@/lib/theme';
+import { ReactNode, useState, useMemo, useEffect } from 'react';
+import { useTheme } from './ThemeProvider';
+import './mui-overrides.css';
 
 // This implementation is from the Material UI with Next.js example
 // https://github.com/mui/material-ui/tree/master/examples/material-ui-nextjs
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
+  const { theme: mode } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  // Handle client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Create the MUI theme based on our dark/light mode
+  const muiTheme = useMemo(() => 
+    createTheme({
+      ...baseTheme,
+      palette: {
+        mode: mounted && (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) 
+          ? 'dark' 
+          : 'light',
+        ...baseTheme.palette,
+      },
+    }), 
+  [mode, mounted]);
+
   const [{ cache, flush }] = useState(() => {
     const cache = createCache({
       key: 'mui',
@@ -55,10 +78,10 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
 
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider theme={theme}>
+      <MuiThemeProvider theme={muiTheme}>
         <CssBaseline />
         {children}
-      </ThemeProvider>
+      </MuiThemeProvider>
     </CacheProvider>
   );
 } 
