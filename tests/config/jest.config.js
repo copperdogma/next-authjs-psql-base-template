@@ -24,6 +24,10 @@ const customJestConfig = {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
+    // Handle CSS imports (with CSS modules)
+    '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
+    // Handle CSS imports (without CSS modules)
+    '^.+\\.(css|sass|scss)$': '<rootDir>/tests/config/mocks/styleMock.js'
   },
   moduleDirectories: ['node_modules', '<rootDir>'],
   modulePathIgnorePatterns: ['/node_modules/'],
@@ -88,12 +92,13 @@ const customJestConfig = {
       displayName: 'components',
       testMatch: ['<rootDir>/tests/unit/components/**/*.test.ts?(x)'],
       testEnvironment: 'jsdom',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/browser-setup.js'],
     },
     {
       displayName: 'api',
       testMatch: ['<rootDir>/tests/unit/api/**/*.test.ts?(x)'],
       testEnvironment: 'node',
-      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/setup.js'],
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
       globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
       globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
     },
@@ -101,7 +106,7 @@ const customJestConfig = {
       displayName: 'integration',
       testMatch: ['<rootDir>/tests/integration/**/*.test.ts?(x)'],
       testEnvironment: 'node',
-      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/setup.js'],
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
       globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
       globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
     },
@@ -109,6 +114,7 @@ const customJestConfig = {
       displayName: 'utils',
       testMatch: ['<rootDir>/tests/unit/utils/**/*.test.ts?(x)'],
       testEnvironment: 'jsdom',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/browser-setup.js'],
     },
   ],
 }
