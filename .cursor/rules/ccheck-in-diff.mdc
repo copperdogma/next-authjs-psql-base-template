@@ -5,6 +5,9 @@ alwaysApply: false
 ---
 NOTE: If you weren't given access to @Diff you can't do this job. Halt and ask for @Diff access.
 
-1. Check the @Diff to get a sense of what was done.
-2. Using MCP git, check all changes into main
-3. Using MCP git, push to main
+1. Check all changes into main using: git add .
+2. Check what was added, verifying that all of those files should be committed and that no secrets or things that should be in .gitignore got in. If they did, fix it.
+3. Commit, adding an appropriate commit message based on the @Diff
+4. Push to main
+
+If any of the CI/triggered tests fail do NOT attempt to bypass them and check in. Halt.

@@ -9,8 +9,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // Core models
@@ -21,15 +21,25 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   sessions  Session[]
+
+  // Add index on createdAt for queries that sort or filter by creation date
+  @@index([createdAt])
+  // Add index on updatedAt for queries that need recent users
+  @@index([updatedAt])
 }
 
 model Session {
   id         String   @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // Existing index on userId
   @@index([userId])
+  // Add index on expiresAt for session cleanup queries
+  @@index([expiresAt])
+  // Add composite index for queries that filter by both userId and expiration
+  @@index([userId, expiresAt])
 }
