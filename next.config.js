@@ -108,10 +108,11 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: [
-      'lh3.googleusercontent.com', // Google profile images
-      'firebasestorage.googleapis.com', // Firebase Storage (if you use it)
-    ],
+    // Remove domains as remotePatterns is already configured
+    // domains: [
+    //   'lh3.googleusercontent.com', // Google profile images
+    //   'firebasestorage.googleapis.com', // Firebase Storage (if you use it)
+    // ],
     // Modern formats for better performance
     formats: ['image/avif', 'image/webp'],
     // Remotepatterns for more secure configuration

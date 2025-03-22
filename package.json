@@ -123,5 +123,10 @@
   "repository": {
     "type": "git",
     "url": "{{YOUR_REPOSITORY_URL}}"
+  },
+  "overrides": {
+    "whatwg-url": "^14.0.0",
+    "tr46": "^4.1.1",
+    "ajv": "^8.17.1"
   }
 }
