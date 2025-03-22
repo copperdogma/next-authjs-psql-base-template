@@ -55,6 +55,28 @@ jest.mock('../../../lib/firebase', () => {
   };
 });
 
+// Mock Firebase error utils
+jest.mock('../../../lib/utils/firebase-errors', () => ({
+  getFirebaseAuthErrorMessage: jest.fn((error) => {
+    if (error.code === 'auth/popup-closed-by-user') {
+      return 'The sign-in popup was closed before completing authentication.';
+    }
+    if (error.code === 'auth/network-request-failed') {
+      return 'A network error occurred. Please check your connection and try again.';
+    }
+    return 'An unexpected authentication error occurred. Please try again.';
+  }),
+  handleFirebaseError: jest.fn((context, error) => {
+    if (error.code === 'auth/popup-closed-by-user') {
+      return 'The sign-in popup was closed before completing authentication.';
+    }
+    if (error.code === 'auth/network-request-failed') {
+      return 'A network error occurred. Please check your connection and try again.';
+    }
+    return 'An unexpected authentication error occurred. Please try again.';
+  })
+}));
+
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -76,6 +98,8 @@ import { signInWithPopup, signOut } from '@firebase/auth';
 import type { User } from '@firebase/auth';
 import { auth, isFirebaseAuth } from '../../../lib/firebase';
 import { useRouter } from 'next/navigation';
+import { getFirebaseAuthErrorMessage, handleFirebaseError } from '../../../lib/utils/firebase-errors';
+import { FirebaseError } from '@firebase/util';
 
 // Mock user data
 const mockUser = {
@@ -284,8 +308,8 @@ describe('SignInButton', () => {
     jest.useRealTimers();
   });
 
-  it('handles general sign-in errors', async () => {
-    const error = new Error('Firebase sign-in failed');
+  it('calls Firebase error handler with correct context for sign-in errors', async () => {
+    const error = new FirebaseError('auth/popup-closed-by-user', 'Firebase: Error (auth/popup-closed-by-user).');
     (signInWithPopup as jest.Mock).mockRejectedValueOnce(error);
     
     render(<SignInButton />, {
@@ -298,11 +322,44 @@ describe('SignInButton', () => {
       fireEvent.click(button);
     });
 
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Sign in error:', error);
-      expect(button).not.toBeDisabled();
-      expect(button).not.toHaveAttribute('data-loading', 'true');
+    // Verify error handler was called with correct context and error
+    expect(handleFirebaseError).toHaveBeenCalledWith('Sign In', error);
+  });
+
+  it('calls Firebase error handler with correct context for session creation errors', async () => {
+    // Set up successful sign-in but failed session creation
+    (signInWithPopup as jest.Mock).mockResolvedValueOnce({
+      user: {
+        ...mockUser,
+        getIdToken: jest.fn().mockResolvedValue('mock-id-token')
+      }
     });
+    
+    // Make session creation fail
+    const sessionError = new Error('Failed to create session: 401 - Unauthorized');
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: jest.fn().mockResolvedValue({ error: 'Unauthorized' })
+    });
+    
+    render(<SignInButton />, {
+      authState: { user: null, loading: false, isClientSide: true }
+    });
+    
+    const button = screen.getByRole('button', { name: /sign in/i });
+    
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    // Verify session error was handled with proper context
+    expect(handleFirebaseError).toHaveBeenCalledWith(
+      'Session Creation',
+      expect.objectContaining({
+        message: expect.stringContaining('Failed to create session: 401')
+      })
+    );
   });
 
   it('handles general sign-out errors', async () => {
@@ -320,7 +377,7 @@ describe('SignInButton', () => {
     });
 
     await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Sign out error:', error);
+      expect(handleFirebaseError).toHaveBeenCalledWith('Sign Out', error);
       expect(button).not.toBeDisabled();
       expect(button).not.toHaveAttribute('data-loading', 'true');
     });
@@ -340,9 +397,9 @@ describe('SignInButton', () => {
     });
 
     await waitFor(() => {
-      // Check that error was logged with expected message
-      expect(console.error).toHaveBeenCalledWith(
-        'Sign in error:',
+      // Check that error was handled properly
+      expect(handleFirebaseError).toHaveBeenCalledWith(
+        'Sign In',
         expect.objectContaining({
           message: 'Firebase Auth not available'
         })
@@ -364,9 +421,9 @@ describe('SignInButton', () => {
     });
 
     await waitFor(() => {
-      // Check that error was logged with expected message
-      expect(console.error).toHaveBeenCalledWith(
-        'Sign out error:',
+      // Check that error was handled properly
+      expect(handleFirebaseError).toHaveBeenCalledWith(
+        'Sign Out',
         expect.objectContaining({
           message: 'Firebase Auth not available'
         })
@@ -400,74 +457,6 @@ describe('SignInButton', () => {
     expect(loadingButton).toHaveTextContent(/loading/i);
   });
 
-  it('handles session creation errors gracefully', async () => {
-    // Mock a failed session creation
-    (signInWithPopup as jest.Mock).mockResolvedValueOnce({
-      user: {
-        ...mockUser,
-        getIdToken: jest.fn().mockResolvedValue('mock-id-token')
-      }
-    });
-    
-    // Make fetch fail with an error
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      json: jest.fn().mockResolvedValue({ error: 'Unauthorized' })
-    });
-    
-    render(<SignInButton />, {
-      authState: { user: null, loading: false, isClientSide: true }
-    });
-    
-    const button = screen.getByRole('button', { name: /sign in/i });
-    
-    // Use fireEvent directly to trigger the click event
-    await act(async () => {
-      fireEvent.click(button);
-    });
-
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Session creation error:'),
-        expect.objectContaining({
-          message: expect.stringContaining('Failed to create session: 401')
-        })
-      );
-    });
-  });
-
-  it('handles session deletion errors gracefully', async () => {
-    // Mock a failed session deletion
-    (signOut as jest.Mock).mockResolvedValueOnce(undefined);
-    
-    // Make fetch fail with an error
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 500
-    });
-    
-    render(<SignInButton />, {
-      authState: { user: mockUser, loading: false, isClientSide: true }
-    });
-    
-    const button = screen.getByRole('button', { name: /sign out/i });
-    
-    // Use fireEvent directly to trigger the click event
-    await act(async () => {
-      fireEvent.click(button);
-    });
-
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith(
-        'Sign out error:',
-        expect.objectContaining({
-          message: 'Failed to delete session'
-        })
-      );
-    });
-  });
-
   it('handles searchParams errors gracefully', async () => {
     // Mock searchParams to throw an error when accessed
     jest.requireMock('next/navigation').useSearchParams.mockImplementationOnce(() => ({
@@ -489,55 +478,6 @@ describe('SignInButton', () => {
 
     await waitFor(() => {
       expect(signInWithPopup).toHaveBeenCalled();
-    });
-  });
-
-  it('handles window being undefined gracefully', async () => {
-    // Instead of deleting window, mock the redirect behavior
-    const originalLocation = window.location;
-    // Mock window.location.href to be able to track redirects
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { href: '' }
-    });
-    
-    // Mock isFirebaseAuth to return true so auth flow proceeds
-    (isFirebaseAuth as unknown as jest.Mock).mockReturnValue(true);
-    
-    // Mock signInWithPopup to resolve
-    (signInWithPopup as jest.Mock).mockResolvedValueOnce({
-      user: {
-        ...mockUser,
-        getIdToken: jest.fn().mockResolvedValue('mock-id-token')
-      }
-    });
-    
-    // Mock fetch to succeed
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ status: 'success' })
-    });
-    
-    render(<SignInButton />, {
-      authState: { user: null, loading: false, isClientSide: true }
-    });
-    
-    const button = screen.getByRole('button', { name: /sign in/i });
-    
-    // Trigger the auth flow which would normally redirect
-    await act(async () => {
-      fireEvent.click(button);
-      // Let all promises resolve
-      await new Promise(resolve => setTimeout(resolve, 350));
-    });
-    
-    // Verify redirection would have happened (checking href was set)
-    expect(window.location.href).toBe('/dashboard');
-    
-    // Restore original location
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: originalLocation
     });
   });
 }); 

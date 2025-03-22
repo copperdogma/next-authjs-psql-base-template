@@ -7,6 +7,7 @@ import type { Auth } from '@firebase/auth';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { auth, isFirebaseAuth } from '../../lib/firebase';
+import { handleFirebaseError } from '../../lib/utils/firebase-errors';
 
 type AuthMode = 'sign-in' | 'sign-out';
 
@@ -16,10 +17,18 @@ export default function SignInButton() {
   const [buttonLoading, setButtonLoading] = useState(false);
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Clear error message when auth state changes
+  useEffect(() => {
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
+  }, [user, errorMessage]);
 
   // Get the callback URL safely
   const getCallbackUrl = useCallback(() => {
@@ -33,6 +42,9 @@ export default function SignInButton() {
 
   // Unified authentication handler for both sign-in and sign-out
   const handleAuth = useCallback(async (mode: AuthMode) => {
+    // Clear any previous error
+    setErrorMessage(null);
+    
     try {
       setButtonLoading(true);
       
@@ -70,7 +82,12 @@ export default function SignInButton() {
         }
       }
     } catch (error) {
-      console.error(`${mode === 'sign-in' ? 'Sign in' : 'Sign out'} error:`, error);
+      // Get user-friendly error message for display
+      const contextName = mode === 'sign-in' ? 'Sign In' : 'Sign Out';
+      const userMessage = handleFirebaseError(contextName, error);
+      
+      // Set the error message for display
+      setErrorMessage(userMessage);
     } finally {
       setButtonLoading(false);
     }
@@ -93,19 +110,26 @@ export default function SignInButton() {
         throw new Error(`Failed to create session: ${response.status} - ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Session creation error:', error);
+      // Use our error handling utility with proper context
+      handleFirebaseError('Session Creation', error);
       throw error;
     }
   };
 
   const deleteSession = async () => {
-    const response = await fetch('/api/auth/session', {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to delete session');
+      if (!response.ok) {
+        throw new Error('Failed to delete session');
+      }
+    } catch (error) {
+      // Use our error handling utility with proper context
+      handleFirebaseError('Session Deletion', error);
+      throw error;
     }
   };
 
@@ -122,29 +146,35 @@ export default function SignInButton() {
     );
   }
 
-  if (user) {
-    return (
-      <Button
-        onClick={handleSignOut}
-        disabled={buttonLoading}
-        data-testid="auth-button"
-        data-auth-state="sign-out"
-        data-loading={buttonLoading.toString()}
-      >
-        {buttonLoading ? 'Signing out...' : 'Sign Out'}
-      </Button>
-    );
-  }
+  // Show button based on authentication state
+  const buttonProps = {
+    onClick: user ? handleSignOut : handleSignIn,
+    disabled: buttonLoading,
+    'data-testid': 'auth-button',
+    'data-auth-state': user ? 'sign-out' : 'sign-in',
+    'data-loading': buttonLoading.toString(),
+    'aria-label': user 
+      ? buttonLoading ? 'Signing out...' : 'Sign Out' 
+      : buttonLoading ? 'Signing in...' : 'Sign In with Google',
+  };
+
+  // Determine button text based on state
+  const buttonText = user
+    ? buttonLoading ? 'Signing out...' : 'Sign Out'
+    : buttonLoading ? 'Signing in...' : 'Sign In with Google';
 
   return (
-    <Button
-      onClick={handleSignIn}
-      disabled={buttonLoading}
-      data-testid="auth-button"
-      data-auth-state="sign-in"
-      data-loading={buttonLoading.toString()}
-    >
-      {buttonLoading ? 'Signing in...' : 'Sign In with Google'}
-    </Button>
+    <div className="flex flex-col">
+      <Button {...buttonProps}>
+        {buttonText}
+      </Button>
+      
+      {/* Show error message if present */}
+      {errorMessage && (
+        <p className="text-red-500 text-sm mt-2" role="alert" data-testid="auth-error">
+          {errorMessage}
+        </p>
+      )}
+    </div>
   );
 } 

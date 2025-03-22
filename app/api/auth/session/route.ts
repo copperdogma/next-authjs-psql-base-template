@@ -1,95 +1,166 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '../../../../lib/firebase-admin';
-import { prisma } from '../../../../lib/prisma';
-import { HttpStatusCode } from '../../../../types/index';
+import { cookies } from 'next/headers';
+import { auth } from '../../../../lib/firebase-admin';
+import { 
+  createSessionCookie, 
+  getSessionCookieOptions, 
+  verifySessionCookie as verifySession, 
+  SESSION_COOKIE_NAME
+} from '../../../../lib/auth/session';
 
-// Session duration: 5 days
-const SESSION_DURATION = 5 * 24 * 60 * 60 * 1000;
-
+/**
+ * Create a new session (POST)
+ * 
+ * @param request - Request object containing Firebase ID token
+ * @returns Response with session cookie
+ */
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
-    const body = await request.json().catch(() => ({}));
-    
-    const { token } = body;
+    // Parse request body to get ID token
+    const { token } = await request.json();
 
     if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: HttpStatusCode.BAD_REQUEST });
+      return NextResponse.json(
+        { error: 'ID token is required' },
+        { status: 400 }
+      );
     }
 
-    // Verify the Firebase ID token
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    // Verify the ID token
+    try {
+      await auth.verifyIdToken(token);
+    } catch (error) {
+      console.error('Error verifying ID token:', error);
+      return NextResponse.json(
+        { error: 'Invalid ID token' },
+        { status: 401 }
+      );
+    }
 
-    // Create a session cookie
-    const sessionCookie = await adminAuth.createSessionCookie(token, {
-      expiresIn: SESSION_DURATION,
-    });
+    // Create session cookie with 1 hour expiration (default)
+    const sessionCookie = await createSessionCookie(token);
+    const cookieOptions = getSessionCookieOptions();
 
-    // Ensure user exists in database
-    const user = await prisma.user.upsert({
-      where: { email: decodedToken.email || '' },
-      update: {
-        name: decodedToken.name || null,
-      },
-      create: {
-        id: decodedToken.uid,
-        email: decodedToken.email || '',
-        name: decodedToken.name || null,
-      },
-    });
+    // Create response
+    const response = NextResponse.json(
+      { status: 'success' },
+      { status: 200 }
+    );
 
-    // Store session in database
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        expiresAt: new Date(Date.now() + SESSION_DURATION),
-      },
-    });
-
-    // Set the session cookie with settings that work in both dev and production
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const cookieOptions = {
-      name: 'session',
+    // Set the session cookie in the response
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
       value: sessionCookie,
-      maxAge: SESSION_DURATION / 1000, // Convert to seconds for cookie expiry
-      httpOnly: true,
-      secure: !isDevelopment, // Only use secure in production to allow HTTP in development
-      path: '/',
-      sameSite: isDevelopment ? 'lax' : 'none' as 'lax' | 'none', // Use 'lax' in dev for HTTP, 'none' in prod
-    };
-
-    // Create response with cookie
-    const response = NextResponse.json({ status: 'success' });
-    response.cookies.set(cookieOptions);
+      ...cookieOptions,
+    });
 
     return response;
   } catch (error) {
-    console.error('Session creation error:', error);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: HttpStatusCode.UNAUTHORIZED });
+    console.error('Error creating session:', error);
+    return NextResponse.json(
+      { error: 'Failed to create session' },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE() {
+/**
+ * End the current session (DELETE)
+ * 
+ * @returns Response indicating session was deleted
+ */
+export async function DELETE(request: NextRequest) {
   try {
-    // Clear the session cookie
-    const response = NextResponse.json({ status: 'success' });
-    
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const cookieOptions = {
-      name: 'session',
+    // Get the current session cookie
+    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+    if (sessionCookie) {
+      try {
+        // Verify the session cookie to get user data
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        
+        // If valid session, revoke user's refresh tokens
+        if (decodedClaims?.uid) {
+          await auth.revokeRefreshTokens(decodedClaims.uid);
+        }
+      } catch (error) {
+        console.error('Error verifying session cookie:', error);
+        // Continue to clear the cookie even if verification fails
+      }
+    }
+
+    // Create response and clear the session cookie
+    const response = NextResponse.json(
+      { status: 'success' },
+      { status: 200 }
+    );
+
+    // Get cookie options and modify for deletion
+    const cookieOptions = getSessionCookieOptions();
+
+    // Delete the cookie by setting maxAge to 0
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
       value: '',
       maxAge: 0,
-      httpOnly: true,
-      secure: !isDevelopment, // Only use secure in production to allow HTTP in development
-      path: '/',
-      sameSite: isDevelopment ? 'lax' : 'none' as 'lax' | 'none', // Use 'lax' in dev for HTTP, 'none' in prod
-    };
-    
-    response.cookies.set(cookieOptions);
-    
+      path: cookieOptions.path,
+      httpOnly: cookieOptions.httpOnly,
+      secure: cookieOptions.secure,
+      sameSite: cookieOptions.sameSite,
+    });
+
     return response;
   } catch (error) {
-    console.error('Session deletion error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: HttpStatusCode.INTERNAL_SERVER_ERROR });
+    console.error('Error deleting session:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete session' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Validate the current session (GET)
+ * 
+ * @returns Response with session status and user data if authenticated
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Get the current session cookie
+    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionCookie) {
+      return NextResponse.json(
+        { authenticated: false },
+        { status: 401 }
+      );
+    }
+
+    // Verify the session cookie to get user data
+    try {
+      const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+      
+      return NextResponse.json({
+        authenticated: true,
+        user: {
+          uid: decodedClaims.uid,
+          email: decodedClaims.email,
+          displayName: decodedClaims.name,
+          emailVerified: decodedClaims.email_verified,
+        },
+      });
+    } catch (error) {
+      console.error('Session cookie verification failed:', error);
+      return NextResponse.json(
+        { authenticated: false },
+        { status: 401 }
+      );
+    }
+  } catch (error) {
+    console.error('Error validating session:', error);
+    return NextResponse.json(
+      { authenticated: false, error: 'Session validation failed' },
+      { status: 500 }
+    );
   }
 } 
