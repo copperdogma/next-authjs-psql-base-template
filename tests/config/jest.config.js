@@ -111,6 +111,14 @@ const customJestConfig = {
       globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
     },
     {
+      displayName: 'db',
+      testMatch: ['<rootDir>/tests/unit/db/**/*.test.ts?(x)'],
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
+      globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
+      globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
+    },
+    {
       displayName: 'integration',
       testMatch: ['<rootDir>/tests/integration/**/*.test.ts?(x)'],
       testEnvironment: 'node',

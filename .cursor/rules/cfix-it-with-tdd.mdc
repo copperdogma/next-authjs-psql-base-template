@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Fix any issue(s) we're discussing using TDD (red/green/refactor) where it makes sense.
+
+Do NOT proceed to fixing the issue until you're confident you've written a test that is failing because the code issue still exists or the feature isn't yet implemented. Only once you run the test and see it fail can you being work on coding.
