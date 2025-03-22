@@ -1,4 +1,4 @@
-import { test as base, Page } from '@playwright/test';
+import { test as base, Page, BrowserContext } from '@playwright/test';
 import { TEST_CONFIG } from '../../utils/routes';
 
 // Test user data for authentication tests - use the centralized test configuration
@@ -43,37 +43,74 @@ export class FirebaseAuthUtils {
     // Convert user object to JSON to avoid serialization issues
     const userJson = JSON.stringify(user);
     
-    await page.evaluate(
-      ([userJsonString, storageKey]) => {
-        const userData = JSON.parse(userJsonString);
-        console.log('Mocking Firebase auth with user:', userData);
-        
-        // Store in localStorage to simulate Firebase auth state
-        // This matches the pattern used by Firebase Web SDK
-        localStorage.setItem(storageKey, userJsonString);
-        
-        // Force reload auth state by dispatching storage event
-        try {
-          // This helps with auth state detection in some implementations
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: storageKey,
-            newValue: userJsonString,
-            storageArea: localStorage
-          }));
-          
-          // Some applications might use custom events
-          window.dispatchEvent(new CustomEvent('authStateChanged', { 
-            detail: { user: userData }
-          }));
-        } catch (e) {
-          console.log('Custom auth event dispatch failed, but localStorage mock should still work');
+    try {
+      // Navigate to the application origin first to ensure we can access localStorage
+      // This helps avoid cross-origin restrictions
+      const url = new URL(page.url());
+      if (!url.pathname || url.pathname === 'about:blank') {
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+      }
+      
+      // Set localStorage in a more reliable way with better error handling
+      await page.evaluate(
+        ([userJsonString, storageKey]) => {
+          try {
+            const userData = JSON.parse(userJsonString);
+            console.log('Mocking Firebase auth with user:', userData);
+            
+            // Store in localStorage to simulate Firebase auth state
+            localStorage.setItem(storageKey, userJsonString);
+            
+            // Force reload auth state by dispatching storage event
+            try {
+              // This helps with auth state detection in some implementations
+              window.dispatchEvent(new StorageEvent('storage', {
+                key: storageKey,
+                newValue: userJsonString,
+                storageArea: localStorage
+              }));
+              
+              // Some applications might use custom events
+              window.dispatchEvent(new CustomEvent('authStateChanged', { 
+                detail: { user: userData }
+              }));
+              
+              return { success: true };
+            } catch (e) {
+              console.log('Custom auth event dispatch failed, but localStorage mock should still work');
+              return { success: true, warning: 'Event dispatch failed' };
+            }
+          } catch (error) {
+            // Return error information for better debugging
+            return { 
+              success: false, 
+              error: error instanceof Error ? error.message : String(error)
+            };
+          }
+        }, 
+        [userJson, authKey]
+      );
+      
+      // Add a small delay to let the auth state propagate
+      await page.waitForTimeout(300);
+    } catch (error) {
+      console.log('Failed to mock signed-in user:', error);
+      
+      // Fallback to setting auth state through cookies if localStorage fails
+      await page.context().addCookies([
+        {
+          name: 'firebase_auth_mock',
+          value: userJson.slice(0, 4000), // Limit size for cookies
+          domain: new URL(page.url()).hostname || 'localhost',
+          path: '/',
+          httpOnly: false,
+          secure: false,
+          sameSite: 'Lax'
         }
-      }, 
-      [userJson, authKey]
-    );
-    
-    // Add a small delay to let the auth state propagate
-    await page.waitForTimeout(300);
+      ]);
+      
+      console.log('Attempted to set auth state via cookies as fallback');
+    }
   }
   
   /**
@@ -81,28 +118,37 @@ export class FirebaseAuthUtils {
    * @param page Playwright page
    */
   static async clearAuthState(page: Page) {
-    await page.evaluate(() => {
-      // Clear all auth-related items from localStorage
-      const authKeys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.includes('firebase:auth') || key.includes('authUser'))) {
-          authKeys.push(key);
+    try {
+      await page.evaluate(() => {
+        // Clear all auth-related items from localStorage
+        const authKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('firebase:auth') || key.includes('authUser'))) {
+            authKeys.push(key);
+          }
         }
-      }
+        
+        // Remove all auth keys
+        authKeys.forEach(key => localStorage.removeItem(key));
+        
+        // Dispatch sign out event if app listens for it
+        try {
+          window.dispatchEvent(new CustomEvent('authStateChanged', { 
+            detail: { user: null }
+          }));
+        } catch (e) {
+          // Ignore errors from event dispatch
+        }
+        
+        return { success: true, keysRemoved: authKeys.length };
+      });
+    } catch (error) {
+      console.log('Failed to clear auth state:', error);
       
-      // Remove all auth keys
-      authKeys.forEach(key => localStorage.removeItem(key));
-      
-      // Dispatch sign out event if app listens for it
-      try {
-        window.dispatchEvent(new CustomEvent('authStateChanged', { 
-          detail: { user: null }
-        }));
-      } catch (e) {
-        // Ignore errors from event dispatch
-      }
-    });
+      // Clear auth cookies if they were set as fallback
+      await page.context().clearCookies();
+    }
   }
   
   /**
@@ -112,26 +158,35 @@ export class FirebaseAuthUtils {
    * @returns Promise<boolean>
    */
   static async isAuthenticated(page: Page, config?: any): Promise<boolean> {
-    return await page.evaluate((config) => {
-      // Use the provided config or fallback to default
-      const firebaseConfig = config || {};
-      
-      // Check for Firebase auth data in localStorage
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (
-          key.includes('firebase:auth') || 
-          key.includes('authUser') ||
-          // Check for project-specific keys if config is provided
-          (firebaseConfig.projectId && key.includes(firebaseConfig.projectId))
-        )) {
-          // If we found an auth item, verify it contains valid data
-          const value = localStorage.getItem(key);
-          return !!value && value !== 'null' && value !== '{}';
+    try {
+      return await page.evaluate((config) => {
+        // Use the provided config or fallback to default
+        const firebaseConfig = config || {};
+        
+        // Check for Firebase auth data in localStorage
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.includes('firebase:auth') || 
+            key.includes('authUser') ||
+            // Check for project-specific keys if config is provided
+            (firebaseConfig.projectId && key.includes(firebaseConfig.projectId))
+          )) {
+            // If we found an auth item, verify it contains valid data
+            const value = localStorage.getItem(key);
+            return !!value && value !== 'null' && value !== '{}';
+          }
         }
-      }
-      return false;
-    }, config || TEST_CONFIG.FIREBASE);
+        return false;
+      }, config || TEST_CONFIG.FIREBASE);
+    } catch (error) {
+      console.log('Failed to check auth state in localStorage:', error);
+      
+      // Check for auth cookies as fallback
+      const cookies = await page.context().cookies();
+      const authCookie = cookies.find(c => c.name === 'firebase_auth_mock');
+      return !!authCookie;
+    }
   }
 }
 

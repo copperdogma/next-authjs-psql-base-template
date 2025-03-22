@@ -10,6 +10,8 @@
     --muted-foreground: #374151;
     --accent: #f3f4f6;
     --accent-foreground: #111827;
+    --focus-ring: #2563eb;
+    --focus-ring-offset: #ffffff;
   }
 
   .dark {
@@ -19,12 +21,32 @@
     --muted-foreground: #e5e7eb;
     --accent: #1f2937;
     --accent-foreground: #f9fafb;
+    --focus-ring: #3b82f6;
+    --focus-ring-offset: #0a0a0a;
   }
 
   body {
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-roboto), Arial, sans-serif;
+  }
+  
+  /* Enhanced focus styles for better keyboard navigation */
+  :focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  
+  /* Remove focus styles for mouse users, but keep them for keyboard navigation */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+  
+  /* Ensure focus-visible has strong styling */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--focus-ring-offset), 0 0 0 6px var(--focus-ring);
   }
 }
 
@@ -48,5 +70,18 @@
   
   .text-accent-foreground {
     color: var(--accent-foreground);
+  }
+  
+  /* Focus state utility classes */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    --tw-ring-color: var(--focus-ring);
+    --tw-ring-offset-color: var(--focus-ring-offset);
+  }
+  
+  .focus-within-ring {
+    @apply focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2;
+    --tw-ring-color: var(--focus-ring);
+    --tw-ring-offset-color: var(--focus-ring-offset);
   }
 }
