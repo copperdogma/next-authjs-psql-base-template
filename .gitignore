@@ -86,3 +86,6 @@ next-env.d.ts
 
 # Bundle analyzer
 /analyze/
+
+# Test screenshots
+tests/e2e/screenshots/

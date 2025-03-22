@@ -8,7 +8,10 @@ const SESSION_DURATION = 5 * 24 * 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
+    // Parse request body
+    const body = await request.json().catch(() => ({}));
+    
+    const { token } = body;
 
     if (!token) {
       return NextResponse.json({ error: 'No token provided' }, { status: HttpStatusCode.BAD_REQUEST });
@@ -43,14 +46,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Set the session cookie
+    // Set the session cookie with settings that work in both dev and production
+    const isDevelopment = process.env.NODE_ENV !== 'production';
     const cookieOptions = {
       name: 'session',
       value: sessionCookie,
-      maxAge: SESSION_DURATION,
+      maxAge: SESSION_DURATION / 1000, // Convert to seconds for cookie expiry
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: !isDevelopment, // Only use secure in production to allow HTTP in development
       path: '/',
+      sameSite: isDevelopment ? 'lax' : 'none' as 'lax' | 'none', // Use 'lax' in dev for HTTP, 'none' in prod
     };
 
     // Create response with cookie
@@ -68,15 +73,20 @@ export async function DELETE() {
   try {
     // Clear the session cookie
     const response = NextResponse.json({ status: 'success' });
-    response.cookies.set({
+    
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const cookieOptions = {
       name: 'session',
       value: '',
       maxAge: 0,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: !isDevelopment, // Only use secure in production to allow HTTP in development
       path: '/',
-    });
-
+      sameSite: isDevelopment ? 'lax' : 'none' as 'lax' | 'none', // Use 'lax' in dev for HTTP, 'none' in prod
+    };
+    
+    response.cookies.set(cookieOptions);
+    
     return response;
   } catch (error) {
     console.error('Session deletion error:', error);

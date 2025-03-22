@@ -2,19 +2,22 @@
 
 import SignInButton from '@/components/auth/SignInButton';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 
 export default function LoginPage() {
   const { user, isClientSide } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (isClientSide && user) {
-      router.push('/dashboard');
+      // If user is authenticated, redirect to the callback URL or dashboard
+      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+      router.push(callbackUrl);
     }
-  }, [user, isClientSide, router]);
+  }, [user, isClientSide, router, searchParams]);
 
   // Show loading state during server-side rendering
   if (!isClientSide) {

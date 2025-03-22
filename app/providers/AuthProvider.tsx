@@ -3,17 +3,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { onAuthStateChanged } from '@firebase/auth';
 import type { User, Auth } from '@firebase/auth';
-import { auth } from '../../lib/firebase';
+import { auth, isFirebaseAuth } from '../../lib/firebase';
+import { shouldRefreshToken, refreshUserTokenAndSession } from '../../lib/auth/token';
 
 // Create the auth context
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  isClientSide: boolean;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isClientSide: false,
 });
 
 // Hook to use the auth context
@@ -26,6 +29,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   // Only track if we've mounted to prevent flicker during hydration
   const [hasMounted, setHasMounted] = useState(false);
 
+  // Set up auth state listener and token refresh
   useEffect(() => {
     // Mark that we're now mounted on the client
     setHasMounted(true);
@@ -33,10 +37,35 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Since we've marked this file with 'use client', we know we're running on the client
       // We still need to check if Firebase Auth is properly initialized
-      if (auth && 'onAuthStateChanged' in auth) {
-        const unsubscribe = onAuthStateChanged(auth as Auth, (user) => {
-          setUser(user);
+      if (isFirebaseAuth(auth)) {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          // Update user state
+          setUser(firebaseUser);
           setLoading(false);
+          
+          // Check if we need to refresh the token
+          if (firebaseUser && shouldRefreshToken(firebaseUser)) {
+            try {
+              await refreshUserTokenAndSession(firebaseUser);
+            } catch (error) {
+              console.error('Failed to refresh token:', error);
+            }
+          }
+          
+          // Set up a periodic token refresh check
+          if (firebaseUser) {
+            const refreshInterval = setInterval(async () => {
+              if (firebaseUser && shouldRefreshToken(firebaseUser)) {
+                try {
+                  await refreshUserTokenAndSession(firebaseUser);
+                } catch (error) {
+                  console.error('Periodic token refresh failed:', error);
+                }
+              }
+            }, 5 * 60 * 1000); // Check every 5 minutes
+            
+            return () => clearInterval(refreshInterval);
+          }
         });
     
         // Clean up subscription
@@ -58,7 +87,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     user,
     loading,
-  }), [user, loading]);
+    isClientSide: hasMounted,
+  }), [user, loading, hasMounted]);
 
   // Don't render anything until we've mounted on the client to prevent hydration mismatch
   if (!hasMounted) {

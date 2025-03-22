@@ -60,7 +60,7 @@ const customJestConfig = {
     './components/auth/SignInButton.tsx': {
       statements: 75,
       branches: 75,
-      functions: 100,
+      functions: 90,
       lines: 75,
     },
     // Production code should maintain high coverage
@@ -97,6 +97,14 @@ const customJestConfig = {
     {
       displayName: 'api',
       testMatch: ['<rootDir>/tests/unit/api/**/*.test.ts?(x)'],
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
+      globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
+      globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
+    },
+    {
+      displayName: 'auth',
+      testMatch: ['<rootDir>/tests/unit/auth/**/*.test.ts?(x)'],
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
       globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',

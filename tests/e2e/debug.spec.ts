@@ -11,8 +11,8 @@ if (!fs.existsSync(screenshotsDir)) {
 
 // Configuration for debug tests
 const DEBUG_CONFIG = {
-  TEST_SERVER_PORT: 3001,
-  TEST_SERVER_URL: 'http://127.0.0.1:3001', // Changed to 127.0.0.1 instead of localhost for better DNS resolution
+  TEST_SERVER_PORT: 3000,
+  TEST_SERVER_URL: 'http://127.0.0.1:3000', // Changed to 127.0.0.1 instead of localhost for better DNS resolution
   TIMEOUT: 120000, // Increased timeout
   SCREENSHOT_PATH: 'tests/e2e/screenshots/debug-screenshot.png',
   MAX_RETRIES: 3, // Number of retries for resilience

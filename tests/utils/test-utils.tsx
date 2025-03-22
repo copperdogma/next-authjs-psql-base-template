@@ -30,6 +30,9 @@ jest.mock('next/navigation', () => {
   return {
     useRouter: jest.fn().mockImplementation(() => createMockRouter()),
     usePathname: jest.fn().mockImplementation(() => mockPathname),
+    useSearchParams: jest.fn().mockImplementation(() => ({
+      get: jest.fn().mockImplementation((key) => key === 'callbackUrl' ? '/dashboard' : null)
+    })),
   }
 });
 
@@ -37,6 +40,7 @@ jest.mock('next/navigation', () => {
 type AuthState = {
   user: User | null;
   loading: boolean;
+  isClientSide: boolean;
 };
 
 // Options for custom render function
@@ -50,7 +54,7 @@ function customRender(
   ui: ReactElement,
   options: RenderOptions = {}
 ) {
-  const defaultAuthState = { user: null, loading: false };
+  const defaultAuthState = { user: null, loading: false, isClientSide: true };
   const authState = options.authState || defaultAuthState;
   
   // Configure router if provided in options

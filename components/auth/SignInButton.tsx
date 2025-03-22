@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { GoogleAuthProvider, signInWithPopup, signOut } from '@firebase/auth';
 import type { Auth } from '@firebase/auth';
@@ -12,6 +12,7 @@ type AuthMode = 'sign-in' | 'sign-out';
 
 export default function SignInButton() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [buttonLoading, setButtonLoading] = useState(false);
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -20,42 +21,52 @@ export default function SignInButton() {
     setMounted(true);
   }, []);
 
+  // Get the callback URL safely
+  const getCallbackUrl = useCallback(() => {
+    try {
+      return searchParams?.get('callbackUrl') || '/dashboard';
+    } catch (error) {
+      // Fallback for test environment or if searchParams is not available
+      return '/dashboard';
+    }
+  }, [searchParams]);
+
   // Unified authentication handler for both sign-in and sign-out
   const handleAuth = useCallback(async (mode: AuthMode) => {
     try {
       setButtonLoading(true);
       
-      if (process.env.NODE_ENV === 'test') {
-        // Test environment handling
-        if (mode === 'sign-in') {
-          const provider = new GoogleAuthProvider();
-          const result = await signInWithPopup(auth as Auth, provider);
-          const idToken = await result.user.getIdToken();
-          
-          await createSession(idToken);
-          router.push('/dashboard');
-        } else {
-          await signOut(auth as Auth);
-          await deleteSession();
-          router.push('/');
-        }
-      } else {
-        // Production environment handling
+      // Get the callback URL if it exists
+      const callbackUrl = getCallbackUrl();
+      
+      if (mode === 'sign-in') {
         if (!isFirebaseAuth(auth)) {
           throw new Error('Firebase Auth not available');
         }
         
-        if (mode === 'sign-in') {
-          const provider = new GoogleAuthProvider();
-          const result = await signInWithPopup(auth, provider);
-          const idToken = await result.user.getIdToken();
-          
-          await createSession(idToken);
-          router.push('/dashboard');
-        } else {
-          await signOut(auth);
-          await deleteSession();
-          router.push('/');
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const idToken = await result.user.getIdToken();
+        
+        await createSession(idToken);
+        
+        // Add a delay before redirecting to ensure cookie is set
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Use window.location for a full page refresh to ensure cookie is used
+        if (typeof window !== 'undefined') {
+          window.location.href = callbackUrl;
+        }
+      } else {
+        if (!isFirebaseAuth(auth)) {
+          throw new Error('Firebase Auth not available');
+        }
+        
+        await signOut(auth);
+        await deleteSession();
+        
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
         }
       }
     } catch (error) {
@@ -63,26 +74,34 @@ export default function SignInButton() {
     } finally {
       setButtonLoading(false);
     }
-  }, [router]);
+  }, [getCallbackUrl]);
 
   // Helper functions to handle session API calls
   const createSession = async (idToken: string) => {
-    const response = await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token: idToken }),
-    });
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: idToken }),
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to create session');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(`Failed to create session: ${response.status} - ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Session creation error:', error);
+      throw error;
     }
   };
 
   const deleteSession = async () => {
     const response = await fetch('/api/auth/session', {
       method: 'DELETE',
+      credentials: 'include',
     });
 
     if (!response.ok) {
