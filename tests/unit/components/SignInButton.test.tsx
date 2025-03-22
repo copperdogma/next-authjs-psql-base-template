@@ -41,40 +41,25 @@ jest.mock('@firebase/auth', () => {
   };
 });
 
-// Mock Firebase library with a cleaner approach
+// Simplified Firebase library mock
 jest.mock('../../../lib/firebase', () => {
-  const mockAuth = {
-    currentUser: null
-  };
-  
   return {
-    auth: mockAuth,
+    auth: {
+      currentUser: null,
+      onAuthStateChanged: jest.fn((auth, callback) => {
+        callback(null);
+        return jest.fn(); // unsubscribe function
+      })
+    },
     app: {},
-    // Mock implementation that can be controlled in tests
     isFirebaseAuth: jest.fn(() => true)
   };
 });
 
-// Mock Firebase error utils
+// Simplified Firebase error utils mock
 jest.mock('../../../lib/utils/firebase-errors', () => ({
-  getFirebaseAuthErrorMessage: jest.fn((error) => {
-    if (error.code === 'auth/popup-closed-by-user') {
-      return 'The sign-in popup was closed before completing authentication.';
-    }
-    if (error.code === 'auth/network-request-failed') {
-      return 'A network error occurred. Please check your connection and try again.';
-    }
-    return 'An unexpected authentication error occurred. Please try again.';
-  }),
-  handleFirebaseError: jest.fn((context, error) => {
-    if (error.code === 'auth/popup-closed-by-user') {
-      return 'The sign-in popup was closed before completing authentication.';
-    }
-    if (error.code === 'auth/network-request-failed') {
-      return 'A network error occurred. Please check your connection and try again.';
-    }
-    return 'An unexpected authentication error occurred. Please try again.';
-  })
+  getFirebaseAuthErrorMessage: jest.fn((error) => 'An error occurred'),
+  handleFirebaseError: jest.fn((context, error) => 'An error occurred')
 }));
 
 // Mock next/navigation
@@ -151,13 +136,12 @@ describe('SignInButton', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset fetch mock
+    // Reset fetch mock with a simpler implementation
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ status: 'success' })
     });
-    // Spy on console.error
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
     // Set up router mock
     mockRouterPush = jest.fn();
     (useRouter as jest.Mock).mockImplementation(() => ({
@@ -175,41 +159,36 @@ describe('SignInButton', () => {
     window.location = originalLocation;
   });
 
-  it('shows authentication button in correct state when not authenticated', () => {
-    render(<SignInButton />, {
-      authState: { user: null, loading: false, isClientSide: true }
-    });
+  it('shows sign in button when user is not authenticated', () => {
+    // Arrange
+    const authState = { user: null, loading: false, isClientSide: true };
     
-    // Get by both testId and role for more robust tests
-    const button = screen.getByTestId(COMPONENT_STATES.TEST_IDS.AUTH_BUTTON);
-    const buttonByRole = screen.getByRole('button', { name: /sign in/i });
+    // Act
+    render(<SignInButton />, { authState });
     
-    // Check data attribute
-    expect(button).toHaveAttribute('data-auth-state', COMPONENT_STATES.AUTH_STATES.SIGN_IN);
-    
-    // More robust checks using text content and accessibility
-    expect(buttonByRole).toHaveTextContent(/sign in/i);
-    expect(buttonByRole).toBeEnabled();
+    // Assert
+    const signInButton = screen.getByRole('button', { name: /sign in with google/i });
+    expect(signInButton).toBeInTheDocument();
+    expect(signInButton).toBeEnabled();
+    expect(signInButton).toHaveTextContent('Sign In with Google');
   });
 
-  it('shows authentication button in correct state when authenticated', () => {
-    render(<SignInButton />, {
-      authState: { user: mockUser, loading: false, isClientSide: true }
-    });
+  it('shows sign out button when user is authenticated', () => {
+    // Arrange
+    const authState = { user: mockUser, loading: false, isClientSide: true };
     
-    // Get by both testId and role for more robust tests
-    const button = screen.getByTestId(COMPONENT_STATES.TEST_IDS.AUTH_BUTTON);
-    const buttonByRole = screen.getByRole('button', { name: /sign out/i });
+    // Act
+    render(<SignInButton />, { authState });
     
-    // Check data attribute
-    expect(button).toHaveAttribute('data-auth-state', COMPONENT_STATES.AUTH_STATES.SIGN_OUT);
-    
-    // More robust checks using text content and accessibility
-    expect(buttonByRole).toHaveTextContent(/sign out/i);
-    expect(buttonByRole).toBeEnabled();
+    // Assert
+    const signOutButton = screen.getByRole('button', { name: /sign out/i });
+    expect(signOutButton).toBeInTheDocument();
+    expect(signOutButton).toBeEnabled();
+    expect(signOutButton).toHaveTextContent('Sign Out');
   });
 
   it('handles sign in flow correctly', async () => {
+    // Arrange
     (signInWithPopup as jest.Mock).mockResolvedValueOnce({
       user: {
         ...mockUser,
@@ -217,16 +196,16 @@ describe('SignInButton', () => {
       }
     });
 
+    // Act
     render(<SignInButton />, {
       authState: { user: null, loading: false, isClientSide: true }
     });
     
     // Find by role with name pattern for better accessibility testing
     const button = screen.getByRole('button', { name: /sign in/i });
-    
-    // Use fireEvent directly to trigger the click event
     fireEvent.click(button);
 
+    // Assert
     await waitFor(() => {
       expect(signInWithPopup).toHaveBeenCalled();
       expect(global.fetch).toHaveBeenCalledWith(

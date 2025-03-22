@@ -11,7 +11,7 @@ jest.mock('next/image', () => ({
   __esModule: true,
   default: function Image(props: React.ImgHTMLAttributes<HTMLImageElement>) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />
+    return <img {...props} alt={props.alt || ''} />
   },
 }))
 
@@ -35,7 +35,12 @@ jest.mock('../../../lib/firebase', () => {
   return {
     auth: {
       currentUser: null,
-      onAuthStateChanged: jest.fn(),
+      onAuthStateChanged: jest.fn((auth, callback) => {
+        // Simulate initial auth state
+        callback(null);
+        // Return unsubscribe function
+        return jest.fn();
+      }),
     }
   }
 });
@@ -76,95 +81,93 @@ const Wrapper = ({ children, value }: { children: ReactNode, value: any }) => (
   </AuthContext.Provider>
 );
 
-// Mock useEffect to prevent hydration errors in tests
-const originalUseEffect = React.useEffect;
-jest.spyOn(React, 'useEffect').mockImplementation((callback, deps) => {
-  // Immediately invoke the mounting useEffect callback
-  if (deps && deps.length === 0) {
-    callback();
-    return () => {}; // Return empty cleanup function
-  }
-  // For other useEffects with dependencies, use the original
-  return originalUseEffect(callback, deps);
-});
-
 describe('UserProfile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset mocks
-    (React.useEffect as jest.Mock).mockImplementation((callback, deps) => {
-      if (deps && deps.length === 0) {
-        callback();
-        return () => {};
-      }
-      return originalUseEffect(callback, deps);
-    });
-  });
-
-  afterAll(() => {
-    // Restore the original useEffect
-    (React.useEffect as jest.Mock).mockRestore();
   });
 
   it('renders loading state when component is loading', () => {
-    render(<UserProfile />, {
-      wrapper: (props) => (
-        <Wrapper value={{ user: null, loading: true }}>
-          {props.children}
-        </Wrapper>
-      )
-    });
+    // Arrange
+    const authState = { user: null, loading: true };
+    const wrapper = (props: { children: ReactNode }) => (
+      <Wrapper value={authState}>
+        {props.children}
+      </Wrapper>
+    );
     
-    expect(screen.getByTestId('profile-loading')).toBeInTheDocument();
+    // Act
+    render(<UserProfile />, { wrapper });
+    
+    // Assert
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders authenticated user information correctly', () => {
-    render(<UserProfile />, {
-      wrapper: (props) => (
-        <Wrapper value={{ user: mockUser, loading: false }}>
-          {props.children}
-        </Wrapper>
-      )
-    });
-    
-    expect(screen.getByTestId('profile-name')).toHaveTextContent('Test User');
-    expect(screen.getByTestId('profile-image')).toHaveAttribute(
-      'src',
-      mockUser.photoURL
+    // Arrange
+    const authState = { user: mockUser, loading: false };
+    const wrapper = (props: { children: ReactNode }) => (
+      <Wrapper value={authState}>
+        {props.children}
+      </Wrapper>
     );
-    expect(screen.getByRole('button')).toHaveAttribute('href', '/profile');
+    
+    // Act
+    render(<UserProfile />, { wrapper });
+    
+    // Assert
+    const userName = screen.getByText('Test User');
+    const profileButton = screen.getByRole('button', { name: /user profile/i });
+    const profileImage = screen.getByAltText('Profile picture');
+    
+    expect(userName).toBeInTheDocument();
+    expect(profileButton).toHaveAttribute('href', '/profile');
+    expect(profileImage).toHaveAttribute('src', mockUser.photoURL);
   });
 
   it('handles missing user information gracefully', () => {
+    // Arrange
     const userWithoutInfo = {
       ...mockUser,
       displayName: null,
       photoURL: null
     } as unknown as User;
-
-    render(<UserProfile />, {
-      wrapper: (props) => (
-        <Wrapper value={{ user: userWithoutInfo, loading: false }}>
-          {props.children}
-        </Wrapper>
-      )
-    });
+    const authState = { user: userWithoutInfo, loading: false };
+    const wrapper = (props: { children: ReactNode }) => (
+      <Wrapper value={authState}>
+        {props.children}
+      </Wrapper>
+    );
     
-    expect(screen.getByTestId('profile-name')).toHaveTextContent('Anonymous');
-    expect(screen.queryByTestId('profile-image')).not.toBeInTheDocument();
-    expect(screen.getByRole('button')).toHaveAttribute('href', '/profile');
+    // Act
+    render(<UserProfile />, { wrapper });
+    
+    // Assert
+    const anonymousText = screen.getByText('Anonymous');
+    const profileButton = screen.getByRole('button', { name: /user profile/i });
+    const profileImage = screen.queryByAltText('Profile picture');
+    
+    expect(anonymousText).toBeInTheDocument();
+    expect(profileButton).toHaveAttribute('href', '/profile');
+    expect(profileImage).not.toBeInTheDocument();
   });
 
   it('renders nothing when user is not authenticated', () => {
-    render(<UserProfile />, {
-      wrapper: (props) => (
-        <Wrapper value={{ user: null, loading: false }}>
-          {props.children}
-        </Wrapper>
-      )
-    });
+    // Arrange
+    const authState = { user: null, loading: false };
+    const wrapper = (props: { children: ReactNode }) => (
+      <Wrapper value={authState}>
+        {props.children}
+      </Wrapper>
+    );
     
-    expect(screen.queryByTestId('profile-name')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // Act
+    render(<UserProfile />, { wrapper });
+    
+    // Assert
+    const profileButton = screen.queryByRole('button', { name: /user profile/i });
+    const userText = screen.queryByText('Anonymous');
+    
+    expect(profileButton).not.toBeInTheDocument();
+    expect(userText).not.toBeInTheDocument();
   });
 }) 

@@ -36,6 +36,7 @@ const customJestConfig = {
   coveragePathIgnorePatterns: [
     '/node_modules/',
     'components/ui/Card.tsx', // Explicitly ignore Card.tsx as it's intentionally not tested
+    'tests/utils/server-component-utils.tsx', // Exclude server component utils due to testing complexity
   ],
   collectCoverageFrom: [
     // Only collect coverage from files that have corresponding tests
@@ -130,7 +131,10 @@ const customJestConfig = {
       displayName: 'utils',
       testMatch: ['<rootDir>/tests/unit/utils/**/*.test.ts?(x)'],
       testEnvironment: 'jsdom',
-      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/browser-setup.js'],
+      setupFilesAfterEnv: [
+        '<rootDir>/tests/config/setup/browser-setup.js',
+        '<rootDir>/tests/config/setup/server-component-setup.js'
+      ],
     },
     {
       displayName: 'firebase',
