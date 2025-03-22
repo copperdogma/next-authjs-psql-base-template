@@ -1,15 +1,51 @@
 // This component must be a Client Component
 'use client';
 
-import createCache from '@emotion/cache';
-import { useServerInsertedHTML } from 'next/navigation';
-import { CacheProvider } from '@emotion/react';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme as baseTheme } from '@/lib/theme';
-import { ReactNode, useState, useMemo, useEffect } from 'react';
+import { ReactNode, useMemo, useEffect, useState } from 'react';
 import { useTheme } from './ThemeProvider';
 import './mui-overrides.css';
+
+// This helper resolves color channels for MUI
+const applyColorChannels = (theme: any) => {
+  // Only apply if cssVariables is enabled
+  return {
+    ...theme,
+    colorSchemes: {
+      light: {
+        palette: {
+          ...theme.palette,
+          primary: {
+            ...theme.palette.primary,
+            mainChannel: '14 165 233', // RGB for 0ea5e9 (primary.500)
+          },
+          secondary: {
+            ...theme.palette.secondary,
+            mainChannel: '156 39 176', // RGB for 9c27b0
+          },
+          background: {
+            ...theme.palette.background,
+            defaultChannel: '255 255 255', // RGB for white
+            paperChannel: '255 255 255', // RGB for white
+          }
+        },
+      },
+      dark: {
+        palette: {
+          ...theme.palette,
+          background: {
+            ...theme.palette.background,
+            defaultChannel: '3 7 18', // RGB for #030712
+            paperChannel: '3 7 18', // RGB for #030712
+          }
+        },
+      },
+    }
+  };
+};
 
 // This implementation is from the Material UI with Next.js example
 // https://github.com/mui/material-ui/tree/master/examples/material-ui-nextjs
@@ -23,65 +59,30 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
   }, []);
 
   // Create the MUI theme based on our dark/light mode
-  const muiTheme = useMemo(() => 
-    createTheme({
+  const muiTheme = useMemo(() => {
+    const themeOptions = {
       ...baseTheme,
+      // Enable CSS variables for better theme customization and dark mode
+      cssVariables: true,
       palette: {
         mode: mounted && (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) 
           ? 'dark' 
           : 'light',
         ...baseTheme.palette,
       },
-    }), 
-  [mode, mounted]);
-
-  const [{ cache, flush }] = useState(() => {
-    const cache = createCache({
-      key: 'mui',
-      prepend: true, // Ensures MUI styles are loaded first
-    });
-    cache.compat = true;
-    const prevInsert = cache.insert;
-    let inserted: string[] = [];
-    cache.insert = (...args) => {
-      const serialized = args[1];
-      if (cache.inserted[serialized.name] === undefined) {
-        inserted.push(serialized.name);
-      }
-      return prevInsert(...args);
     };
-    const flush = () => {
-      const prevInserted = inserted;
-      inserted = [];
-      return prevInserted;
-    };
-    return { cache, flush };
-  });
-
-  useServerInsertedHTML(() => {
-    const names = flush();
-    if (names.length === 0) {
-      return null;
-    }
-    let styles = '';
-    for (const name of names) {
-      styles += cache.inserted[name];
-    }
-    return (
-      <style
-        key={cache.key}
-        data-emotion={`${cache.key} ${names.join(' ')}`}
-        dangerouslySetInnerHTML={{ __html: styles }}
-      />
-    );
-  });
+    
+    // Apply the theme with color channels fixed
+    const enhancedTheme = applyColorChannels(themeOptions);
+    return createTheme(enhancedTheme);
+  }, [mode, mounted]);
 
   return (
-    <CacheProvider value={cache}>
+    <AppRouterCacheProvider options={{ key: 'mui' }}>
       <MuiThemeProvider theme={muiTheme}>
         <CssBaseline />
         {children}
       </MuiThemeProvider>
-    </CacheProvider>
+    </AppRouterCacheProvider>
   );
 } 

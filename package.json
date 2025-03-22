@@ -53,6 +53,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.8",
     "@mui/material": "^6.4.8",
+    "@mui/material-nextjs": "^6.4.3",
     "@mui/x-date-pickers": "^7.28.0",
     "@prisma/client": "^6.5.0",
     "class-variance-authority": "^0.7.1",

@@ -1,4 +1,4 @@
-Mar. 22, 2025 12:58:48 A.M. com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+Mar. 22, 2025 11:20:01 A.M. com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
 INFO: Started WebSocket server on ws://127.0.0.1:9150
 API endpoint: http://127.0.0.1:8080
 If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
@@ -12,15 +12,15 @@ If you are running a Firestore in Datastore Mode project, run:
 Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
 Dev App Server is now running.
 
-Mar. 22, 2025 12:58:54 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:06 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected non-HTTP/2 connection.
-Mar. 22, 2025 12:58:54 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:06 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Mar. 22, 2025 12:58:55 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:08 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Mar. 22, 2025 12:58:55 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:08 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Mar. 22, 2025 12:58:56 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:08 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, false for 'update' @ L27
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -51,7 +51,7 @@ false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, fa
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:56 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:09 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, evaluation error at L27:36 for 'update' @ L27, false for 'create' @ L20, false for 'create' @ L26
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -82,7 +82,7 @@ false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, ev
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:56 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:09 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, false for 'update' @ L27, false for 'create' @ L20, false for 'create' @ L26
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -113,7 +113,7 @@ false for 'create' @ L20, false for 'create' @ L26, false for 'update' @ L20, fa
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:56 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:09 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'update' @ L20, evaluation error at L27:36 for 'update' @ L27, false for 'update' @ L20, Property admin is undefined on object. for 'update' @ L27
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -171,7 +171,7 @@ Caused by: com.google.firebase.rules.runtime.common.EvaluationException: Error: 
 	at com.google.cloud.datastore.emulator.impl.rules.DefaultEmulatorRulesAuthorizer.withVerboseErrors(DefaultEmulatorRulesAuthorizer.java:290)
 	... 22 more
 
-Mar. 22, 2025 12:58:56 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:09 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'delete' @ L20, evaluation error at L28:36 for 'delete' @ L28, false for 'delete' @ L20, Property admin is undefined on object. for 'delete' @ L28
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -229,11 +229,11 @@ Caused by: com.google.firebase.rules.runtime.common.EvaluationException: Error: 
 	at com.google.cloud.datastore.emulator.impl.rules.DefaultEmulatorRulesAuthorizer.withVerboseErrors(DefaultEmulatorRulesAuthorizer.java:290)
 	... 22 more
 
-Mar. 22, 2025 12:58:58 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:09 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Mar. 22, 2025 12:58:58 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Mar. 22, 2025 11:20:10 A.M. io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Mar. 22, 2025 12:58:59 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:10 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L25, false for 'update' @ L20, false for 'update' @ L27
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -264,7 +264,7 @@ false for 'create' @ L20, false for 'create' @ L25, false for 'update' @ L20, fa
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:59 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:10 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L25, false for 'update' @ L20, false for 'update' @ L27
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -295,7 +295,7 @@ false for 'create' @ L20, false for 'create' @ L25, false for 'update' @ L20, fa
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:59 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:10 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, false for 'create' @ L34, false for 'update' @ L20, false for 'update' @ L34
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -326,7 +326,7 @@ false for 'create' @ L20, false for 'create' @ L34, false for 'update' @ L20, fa
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 	at java.base/java.lang.Thread.run(Thread.java:829)
 
-Mar. 22, 2025 12:58:59 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Mar. 22, 2025 11:20:10 A.M. com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 false for 'create' @ L20, Property admin is undefined on object. for 'create' @ L34, false for 'update' @ L20, Property admin is undefined on object. for 'update' @ L34, false for 'create' @ L20, Property admin is undefined on object. for 'create' @ L34
 com.google.cloud.datastore.core.exception.DatastoreException: 

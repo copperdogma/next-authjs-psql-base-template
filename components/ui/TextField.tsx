@@ -1,28 +1,42 @@
 'use client';
 
 import { TextField as MuiTextField, TextFieldProps as MuiTextFieldProps } from '@mui/material';
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 
-type TextFieldProps = MuiTextFieldProps & {
+export type TextFieldProps = MuiTextFieldProps & {
   fullWidth?: boolean;
-}
+  variant?: 'outlined' | 'filled' | 'standard';
+  size?: 'small' | 'medium' | 'large';
+};
 
 const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
-  ({ className = '', fullWidth = true, ...props }, ref) => {
+  ({ 
+    className = '', 
+    fullWidth = true, 
+    variant = 'outlined',
+    size = 'medium',
+    ...props 
+  }, ref) => {
     return (
       <MuiTextField
         {...props}
         ref={ref}
         fullWidth={fullWidth}
-        className={`${className} min-w-[120px]`}
-        variant="outlined"
+        variant={variant}
+        size={size}
+        className={`${className} transition-all duration-200`}
         InputLabelProps={{
           ...(props.InputLabelProps || {}),
-          className: 'text-foreground',
+          className: `text-muted ${props.InputLabelProps?.className || ''}`,
+          shrink: true,
         }}
         InputProps={{
           ...(props.InputProps || {}),
-          className: `bg-background border-foreground/20 ${props.InputProps?.className || ''}`,
+          className: `bg-background border-foreground/20 rounded-md ${props.InputProps?.className || ''}`,
+        }}
+        FormHelperTextProps={{
+          ...(props.FormHelperTextProps || {}),
+          className: `text-xs mt-1 ${props.FormHelperTextProps?.className || ''}`,
         }}
       />
     );
@@ -31,4 +45,5 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
 
 TextField.displayName = 'TextField';
 
-export default TextField; 
+// Memoize to prevent unnecessary re-renders
+export default memo(TextField); 
