@@ -33,6 +33,11 @@
     "test:debug-basic": "npx playwright test tests/e2e/debug.spec.ts",
     "test:e2e:sequential": "playwright test --config tests/config/playwright.config.ts --workers=1",
     "test:e2e:reliable": "npm run dev -- --port 3001 & sleep 10 && PLAYWRIGHT_TEST_BASE_URL=http://127.0.0.1:3001 playwright test --config tests/config/playwright.config.ts --workers=1",
+    "firebase:emulators": "firebase emulators:start",
+    "firebase:emulators:export": "firebase emulators:export ./firebase-emulator-data",
+    "firebase:emulators:import": "firebase emulators:start --import=./firebase-emulator-data",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules",
+    "test:rules": "jest tests/firebase/security-rules.test.ts",
     "setup": "node scripts/setup.js"
   },
   "dependencies": {
@@ -66,6 +71,7 @@
     "@babel/plugin-transform-typescript": "^7.26.8",
     "@babel/preset-typescript": "^7.26.0",
     "@eslint/eslintrc": "^3",
+    "@firebase/rules-unit-testing": "^3.0.3",
     "@next/bundle-analyzer": "^15.2.2",
     "@playwright/test": "^1.51.1",
     "@tailwindcss/container-queries": "^0.1.1",
@@ -87,6 +93,7 @@
     "eslint-config-next": "15.2.2",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.3",
+    "firebase-tools": "^13.5.2",
     "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "inquirer": "^9.3.7",
