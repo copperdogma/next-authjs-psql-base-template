@@ -89,6 +89,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 │   │   └── api/            # API tests
 │   ├── integration/        # Integration tests
 │   ├── e2e/                # E2E tests with Playwright
+│   ├── firebase/           # Firebase tests
+│   │   ├── security-rules.test.ts # Firestore security rules tests
+│   │   └── task-rules.test.ts # Task collection rules tests
 │   ├── mocks/              # Test mocks
 │   ├── utils/              # Test utilities
 │   └── config/             # Test configuration
@@ -96,6 +99,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 │       └── setup/          # Test setup files
 ├── docs/                   # Project documentation
 │   └── testing/            # Testing documentation
+├── firebase.json           # Firebase configuration
+├── firestore.rules         # Firestore security rules
+├── firestore.indexes.json  # Firestore indexes configuration
 ├── jest.config.js          # Jest configuration wrapper
 └── next.config.js          # Next.js configuration
 ```
@@ -149,6 +155,20 @@ npm test -- --coverage # Run tests with coverage
 npm run lint      # Check ESLint issues
 npm run lint:fix  # Fix ESLint issues
 npm run format    # Format with Prettier
+
+# Firebase
+npm run firebase:emulators         # Start Firebase emulators
+npm run firebase:emulators:export  # Export emulator data to ./firebase-emulator-data
+npm run firebase:emulators:import  # Import data from ./firebase-emulator-data
+npm run firebase:deploy:rules      # Deploy Firestore security rules
+
+# Firebase Testing
+npm run test:rules                 # Run security rules tests
+npm run test:rules:with-emulator   # Run security rules tests with emulator
+npm run test:task-rules            # Run task collection rules tests
+npm run test:task-rules:with-emulator # Run task rules tests with emulator
+npm run test:all-rules             # Run all Firebase rules tests
+npm run test:all-rules:with-emulator # Run all Firebase rules tests with emulator
 ```
 
 ## Authentication
@@ -158,6 +178,45 @@ This project uses Firebase Authentication. The authentication flow is handled by
 1. Initiates authentication using Firebase
 2. Creates a session using the `/api/auth/session` endpoint
 3. Redirects to the dashboard on successful sign-in
+
+## Firebase Security Rules
+
+This project uses Firebase Firestore for real-time database capabilities alongside the primary PostgreSQL database. The Firestore security rules are defined in `firestore.rules` and follow secure patterns:
+
+### User Collection Rules
+- Authenticated users can read any user profile
+- Users can create and update their own profiles
+- Admin users can update or delete any user profile
+- Regular users cannot delete profiles
+
+### Public Collection Rules
+- Anyone can read public documents
+- Only admin users can write to public documents
+
+### Tasks Collection Rules  
+- Users can read, update, and delete only their own tasks
+- Admin users can read, update, and delete any task
+- Users can only create tasks for themselves
+
+### Firebase Security Rules Testing
+
+The project includes comprehensive tests for Firebase security rules:
+
+1. **User Collection Rules Tests**: Validates permissions for user profiles
+2. **Public Collection Rules Tests**: Ensures public data is readable but write-protected
+3. **Task Collection Rules Tests**: Verifies task ownership and access control
+4. **Default Deny Tests**: Confirms default-deny policy works for undefined collections
+
+To run the tests with Firebase emulators:
+
+```bash
+# Start Firebase emulators and run all security rules tests
+npm run test:all-rules:with-emulator
+
+# Run specific test suites with emulator
+npm run test:rules:with-emulator    # Only user/public collection rules
+npm run test:task-rules:with-emulator # Only task collection rules
+```
 
 ## Testing
 The project includes comprehensive testing with Jest for unit tests and Playwright for end-to-end tests.
@@ -171,6 +230,7 @@ For detailed testing information, see [the testing guide](docs/testing/main.md) 
 - **Framework**: Next.js 13+ with App Router
 - **Authentication**: Firebase Auth
 - **Database**: PostgreSQL 
+- **Real-time Database**: Firebase Firestore
 - **Caching**: Redis (optional)
 - **UI**: React with Tailwind CSS
 - **Testing**: Jest with React Testing Library

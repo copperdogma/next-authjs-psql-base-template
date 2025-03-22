@@ -128,26 +128,43 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
         {children}
       </main>
 
-      <footer className="bg-accent py-6 mt-auto" role="contentinfo" data-testid="footer">
+      {/* Footer with copyright information */}
+      <footer role="contentinfo" className="mt-auto py-8 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-center md:text-left text-muted">
-              © {currentYear} My App. All rights reserved.
-            </p>
-            <nav className="mt-4 md:mt-0" aria-label="Footer navigation">
-              <ul className="flex space-x-4">
-                <li>
-                  <Link href="/privacy" className="text-sm text-muted hover:text-foreground">
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-sm text-muted hover:text-foreground">
-                    Terms
-                  </Link>
-                </li>
-              </ul>
-            </nav>
+            <div className="text-gray-700 dark:text-gray-300">
+              © {new Date().getFullYear()} {process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_PROJECT_NAME}}'}. All rights reserved.
+            </div>
+            <div className="mt-4 md:mt-0">
+              <nav aria-label="Footer Navigation">
+                <ul className="flex space-x-6">
+                  <li>
+                    <Link 
+                      href="/privacy" 
+                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                    >
+                      Privacy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/terms" 
+                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                    >
+                      Terms
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/contact" 
+                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                    >
+                      Contact
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
         </div>
       </footer>

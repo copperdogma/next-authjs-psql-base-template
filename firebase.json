@@ -14,5 +14,8 @@
       "enabled": true,
       "port": 4000
     }
+  },
+  "project": {
+    "id": "next-firebase-base-template"
   }
 } 

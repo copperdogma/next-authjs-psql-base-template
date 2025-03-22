@@ -124,6 +124,12 @@ const customJestConfig = {
       testEnvironment: 'jsdom',
       setupFilesAfterEnv: ['<rootDir>/tests/config/setup/browser-setup.js'],
     },
+    {
+      displayName: 'firebase',
+      testMatch: ['<rootDir>/tests/firebase/**/*.test.ts?(x)'],
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/firebase-setup.js'],
+    },
   ],
 }
 
