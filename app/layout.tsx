@@ -5,6 +5,7 @@ import ThemeRegistry from './providers/ThemeRegistry';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import AuthProvider from './providers/AuthProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
+import ServiceWorkerProvider from './providers/ServiceWorkerProvider';
 
 // Optimize font loading
 const inter = Inter({
@@ -66,9 +67,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-192x192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-512x512.png', type: 'image/png', sizes: '512x512' },
     ],
-    apple: { url: '/apple-icon.png', type: 'image/png', sizes: '180x180' },
+    apple: { url: '/icon-192x192.png', type: 'image/png', sizes: '192x192' },
     shortcut: '/favicon.ico',
   },
   openGraph: {
@@ -109,7 +111,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider defaultTheme="system" storageKey="theme-preference">
           <ThemeRegistry>
             <AuthProvider>
-              <BaseLayout>{children}</BaseLayout>
+              <ServiceWorkerProvider>
+                <BaseLayout>{children}</BaseLayout>
+              </ServiceWorkerProvider>
             </AuthProvider>
           </ThemeRegistry>
         </ThemeProvider>

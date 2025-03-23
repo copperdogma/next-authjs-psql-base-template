@@ -11,9 +11,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/tests/config/setup/setup.js'],
   globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
-  testPathIgnorePatterns: [
-    '/node_modules/'
-  ],
+  testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],

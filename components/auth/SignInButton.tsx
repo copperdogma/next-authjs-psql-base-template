@@ -32,10 +32,7 @@ export default function SignInButton() {
   // Show loading state when not mounted or while auth is loading
   if (!isMounted || loading) {
     return (
-      <Button 
-        disabled 
-        data-testid="auth-button-placeholder"
-      >
+      <Button disabled data-testid="auth-button-placeholder">
         Loading...
       </Button>
     );
@@ -43,16 +40,20 @@ export default function SignInButton() {
 
   // Show the auth button for normal states
   return (
-    <Button 
-      onClick={handleAuth} 
+    <Button
+      onClick={handleAuth}
       variant={user ? 'destructive' : 'default'}
       data-testid="auth-button"
       data-loading={isLoading ? 'true' : 'false'}
       disabled={isLoading}
     >
-      {isLoading 
-        ? (user ? 'Signing Out...' : 'Signing In...') 
-        : (user ? 'Sign Out' : 'Sign In with Google')}
+      {isLoading
+        ? user
+          ? 'Signing Out...'
+          : 'Signing In...'
+        : user
+          ? 'Sign Out'
+          : 'Sign In with Google'}
     </Button>
   );
 }

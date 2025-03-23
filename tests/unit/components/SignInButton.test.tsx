@@ -42,7 +42,7 @@ describe('SignInButton', () => {
 
   it('renders sign out button when user is authenticated', () => {
     const mockUser = { uid: '123', displayName: 'Test User' };
-    
+
     render(
       <AuthContext.Provider
         value={{
@@ -109,7 +109,7 @@ describe('SignInButton', () => {
 
   it('calls signOut when clicked in signed in state', async () => {
     const mockUser = { uid: '123', displayName: 'Test User' };
-    
+
     render(
       <AuthContext.Provider
         value={{
