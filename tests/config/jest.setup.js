@@ -1,10 +1,17 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
-import { TextEncoder, TextDecoder } from 'util'
-import { jest } from '@jest/globals'
+import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
+
+import { jest } from '@jest/globals';
 
 // Import our mock objects
-import { mockAuth, mockApp, mockSignInWithPopup, mockSignOut, mockGoogleAuthProvider } from '../mocks/firebase';
+import {
+  mockAuth,
+  mockApp,
+  mockSignInWithPopup,
+  mockSignOut,
+  mockGoogleAuthProvider,
+} from '../mocks/firebase';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -13,7 +20,7 @@ jest.mock('next/navigation', () => ({
     replace: jest.fn(),
     prefetch: jest.fn(),
   })),
-}))
+}));
 
 // Mock Next.js headers
 jest.mock('next/headers', () => ({
@@ -22,7 +29,7 @@ jest.mock('next/headers', () => ({
     set: jest.fn(),
     delete: jest.fn(),
   })),
-}))
+}));
 
 // Mock environment variables for Firebase
 process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'mock-api-key';
@@ -52,11 +59,11 @@ global.mockApp = mockApp;
 global.fetch = jest.fn();
 
 // Mock TextEncoder/TextDecoder
-global.TextEncoder = TextEncoder
-global.TextDecoder = TextDecoder
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock window.location
-delete window.location
+delete window.location;
 window.location = {
   href: 'http://localhost:3000',
   pathname: '/',
@@ -65,115 +72,115 @@ window.location = {
   reload: jest.fn(),
   replace: jest.fn(),
   assign: jest.fn(),
-}
+};
 
 // Standard browser API mocks
 global.Response = class Response {
   constructor(body, init) {
-    this.body = body
-    this.init = init
-    this.status = init?.status || 200
-    this.ok = this.status >= 200 && this.status < 300
-    this.headers = new Headers(init?.headers)
+    this.body = body;
+    this.init = init;
+    this.status = init?.status || 200;
+    this.ok = this.status >= 200 && this.status < 300;
+    this.headers = new Headers(init?.headers);
   }
 
   json() {
-    return Promise.resolve(JSON.parse(this.body))
+    return Promise.resolve(JSON.parse(this.body));
   }
 
   text() {
-    return Promise.resolve(this.body)
+    return Promise.resolve(this.body);
   }
 
   get statusText() {
-    return this.init?.statusText || ''
+    return this.init?.statusText || '';
   }
 
   get type() {
-    return 'basic'
+    return 'basic';
   }
 
   get url() {
-    return 'http://localhost:3000'
+    return 'http://localhost:3000';
   }
-}
+};
 
 global.Headers = class Headers {
   constructor(init) {
-    this.headers = new Map()
+    this.headers = new Map();
     if (init) {
       Object.entries(init).forEach(([key, value]) => {
-        this.headers.set(key.toLowerCase(), value)
-      })
+        this.headers.set(key.toLowerCase(), value);
+      });
     }
   }
 
   append(key, value) {
-    this.headers.set(key.toLowerCase(), value)
+    this.headers.set(key.toLowerCase(), value);
   }
 
   delete(key) {
-    this.headers.delete(key.toLowerCase())
+    this.headers.delete(key.toLowerCase());
   }
 
   get(key) {
-    return this.headers.get(key.toLowerCase()) || null
+    return this.headers.get(key.toLowerCase()) || null;
   }
 
   has(key) {
-    return this.headers.has(key.toLowerCase())
+    return this.headers.has(key.toLowerCase());
   }
 
   set(key, value) {
-    this.headers.set(key.toLowerCase(), value)
+    this.headers.set(key.toLowerCase(), value);
   }
 
   entries() {
-    return this.headers.entries()
+    return this.headers.entries();
   }
 
   keys() {
-    return this.headers.keys()
+    return this.headers.keys();
   }
 
   values() {
-    return this.headers.values()
+    return this.headers.values();
   }
 
   forEach(callback) {
-    this.headers.forEach(callback)
+    this.headers.forEach(callback);
   }
-}
+};
 
 global.Request = class Request {
   constructor(input, init) {
-    this.url = input
-    this.method = init?.method || 'GET'
-    this.headers = new Headers(init?.headers)
-    this.body = init?.body
+    this.url = input;
+    this.method = init?.method || 'GET';
+    this.headers = new Headers(init?.headers);
+    this.body = init?.body;
   }
 
   json() {
-    return Promise.resolve(JSON.parse(this.body))
+    return Promise.resolve(JSON.parse(this.body));
   }
 
   text() {
-    return Promise.resolve(this.body)
+    return Promise.resolve(this.body);
   }
-}
+};
 
 global.URL = class URL {
   constructor(url) {
-    const parsedUrl = new globalThis.URL(url)
-    this.href = parsedUrl.href
-    this.pathname = parsedUrl.pathname
-    this.search = parsedUrl.search
-    this.searchParams = parsedUrl.searchParams
-    this.hash = parsedUrl.hash
-    this.host = parsedUrl.host
-    this.hostname = parsedUrl.hostname
-    this.port = parsedUrl.port
-    this.protocol = parsedUrl.protocol
-    this.origin = parsedUrl.origin
+    const parsedUrl = new globalThis.URL(url);
+    this.href = parsedUrl.href;
+    this.pathname = parsedUrl.pathname;
+    this.search = parsedUrl.search;
+    this.searchParams = parsedUrl.searchParams;
+    this.hash = parsedUrl.hash;
+    this.host = parsedUrl.host;
+    this.hostname = parsedUrl.hostname;
+    this.port = parsedUrl.port;
+    this.protocol = parsedUrl.protocol;
+    this.origin = parsedUrl.origin;
   }
-} 
+};

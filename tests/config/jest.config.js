@@ -1,12 +1,10 @@
-const nextJest = require('next/jest')
+const nextJest = require('next/jest');
 
 // Providing the path to your Next.js app which will enable loading next.config.js and .env files
-const createJestConfig = nextJest({ 
+const createJestConfig = nextJest({
   dir: './',
-  transformIgnorePatterns: [
-    '/node_modules/(?!(@swc|@babel)/)',
-  ]
-})
+  transformIgnorePatterns: ['/node_modules/(?!(@swc|@babel)/)'],
+});
 
 // Any custom config you want to pass to Jest
 const customJestConfig = {
@@ -16,7 +14,7 @@ const customJestConfig = {
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'jsdom',
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }]
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
@@ -24,14 +22,17 @@ const customJestConfig = {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
+
     // Handle CSS imports (with CSS modules)
     '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
+
     // Handle CSS imports (without CSS modules)
-    '^.+\\.(css|sass|scss)$': '<rootDir>/tests/config/mocks/styleMock.js'
+    '^.+\\.(css|sass|scss)$': '<rootDir>/tests/config/mocks/styleMock.js',
   },
   moduleDirectories: ['node_modules', '<rootDir>'],
   modulePathIgnorePatterns: ['/node_modules/'],
   detectOpenHandles: true,
+
   // Explicitly ignore certain files from coverage
   coveragePathIgnorePatterns: [
     '/node_modules/',
@@ -45,6 +46,7 @@ const customJestConfig = {
     'tests/mocks/app/api/**/*.ts',
     'tests/utils/**/*.{ts,tsx}',
     'lib/utils.ts',
+
     // Exclude type definitions and node_modules
     '!**/*.d.ts',
     '!**/node_modules/**',
@@ -57,6 +59,7 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
+
     // SignInButton has specific threshold due to environment-specific code
     './components/auth/SignInButton.tsx': {
       statements: 75,
@@ -64,6 +67,7 @@ const customJestConfig = {
       functions: 90,
       lines: 75,
     },
+
     // Production code should maintain high coverage
     './components/auth/UserProfile.tsx': {
       statements: 80,
@@ -71,6 +75,7 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
+
     // Test utilities can have lower coverage as they're not production code
     './tests/utils/**/*.tsx': {
       statements: 60,
@@ -78,6 +83,7 @@ const customJestConfig = {
       functions: 55,
       lines: 65,
     },
+
     // API mocks should maintain high coverage for reliability
     './tests/mocks/app/api/**/*.ts': {
       statements: 90,
@@ -86,6 +92,7 @@ const customJestConfig = {
       lines: 90,
     },
   },
+
   // Add comments to coverage report
   coverageReporters: ['text', 'text-summary'],
   projects: [
@@ -133,7 +140,7 @@ const customJestConfig = {
       testEnvironment: 'jsdom',
       setupFilesAfterEnv: [
         '<rootDir>/tests/config/setup/browser-setup.js',
-        '<rootDir>/tests/config/setup/server-component-setup.js'
+        '<rootDir>/tests/config/setup/server-component-setup.js',
       ],
     },
     {
@@ -143,7 +150,7 @@ const customJestConfig = {
       setupFilesAfterEnv: ['<rootDir>/tests/config/setup/firebase-setup.js'],
     },
   ],
-}
+};
 
 // createJestConfig is exported in this way to ensure that next/jest can load the Next.js configuration, which is async
-module.exports = createJestConfig(customJestConfig) 
+module.exports = createJestConfig(customJestConfig);

@@ -15,4 +15,4 @@ process.env.NEXT_PUBLIC_FIREBASE_APP_ID = FIREBASE_TEST_CONFIG.APP_ID;
 // Configure Jest environment
 global.React = require('react');
 
-// Add any additional global test setup here for Node environment 
+// Add any additional global test setup here for Node environment

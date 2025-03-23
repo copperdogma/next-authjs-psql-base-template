@@ -30,6 +30,7 @@ async function isEmulatorRunning() {
   try {
     // Try to connect to the Firestore emulator UI
     await axios.get('http://localhost:8080/', { timeout: 1000 });
+
     return true;
   } catch (error) {
     return false;
@@ -39,13 +40,13 @@ async function isEmulatorRunning() {
 // Before all tests, check if emulator is running
 beforeAll(async () => {
   const emulatorRunning = await isEmulatorRunning();
-  
+
   if (!emulatorRunning) {
     console.warn('\n⚠️  Firebase emulator is not running!');
     console.warn('The Firebase security rules tests will be skipped.');
     console.warn('To run these tests, start the emulator with:');
     console.warn('npm run firebase:emulators\n');
-    
+
     // Skip all tests in this file if emulator is not running
     jest.resetModules();
     jest.doMock('@firebase/rules-unit-testing', () => {
@@ -58,4 +59,4 @@ beforeAll(async () => {
       };
     });
   }
-}); 
+});

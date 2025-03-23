@@ -16,13 +16,15 @@ process.env.NEXT_PUBLIC_FIREBASE_APP_ID = FIREBASE_TEST_CONFIG.APP_ID;
 global.React = require('react');
 
 // Mock matchMedia for responsive design testing
-window.matchMedia = window.matchMedia || function() {
-  return {
-    matches: false,
-    addListener: function() {},
-    removeListener: function() {}
+window.matchMedia =
+  window.matchMedia ||
+  function () {
+    return {
+      matches: false,
+      addListener: function () {},
+      removeListener: function () {},
+    };
   };
-};
 
 // Mock Tailwind CSS classes
 // This allows Jest to recognize classes like 'hidden' for visibility testing
@@ -30,21 +32,22 @@ document.documentElement.classList.add('js-test-env');
 
 // Override the getComputedStyle method to handle Tailwind's 'hidden' class
 const originalGetComputedStyle = window.getComputedStyle;
-window.getComputedStyle = function(element) {
+window.getComputedStyle = function (element) {
   const computedStyle = originalGetComputedStyle(element);
-  
+
   // Special handling for the 'hidden' class
   if (element.classList && element.classList.contains('hidden')) {
     const styleOverrides = {
       display: 'none',
-      getPropertyValue: function(prop) {
+      getPropertyValue: function (prop) {
         return prop === 'display' ? 'none' : computedStyle.getPropertyValue(prop);
-      }
+      },
     };
+
     return Object.assign({}, computedStyle, styleOverrides);
   }
-  
+
   return computedStyle;
 };
 
-// Add any additional global test setup here 
+// Add any additional global test setup here

@@ -12,4 +12,4 @@ global.MessageChannel = class MessageChannel {
   }
 };
 
-// Add any other missing globals required for server component tests 
+// Add any other missing globals required for server component tests

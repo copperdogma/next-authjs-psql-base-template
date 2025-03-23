@@ -51,7 +51,7 @@ module.exports = {
         xl: '0.75rem',
         '2xl': '1rem',
       },
-      typography: (theme) => ({
+      typography: theme => ({
         DEFAULT: {
           css: {
             color: 'var(--foreground)',
@@ -95,9 +95,6 @@ module.exports = {
       }),
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/container-queries'),
-  ],
+  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/container-queries')],
   darkMode: 'class',
-}; 
+};
