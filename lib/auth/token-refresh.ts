@@ -33,7 +33,7 @@ export const DEFAULT_OPTIONS: TokenRefreshOptions = {
 
 /**
  * Calculate backoff time based on attempt number and options
- * 
+ *
  * @param attempt Current attempt number (starting from 1)
  * @param options Backoff options
  * @returns Time to wait in milliseconds
@@ -44,16 +44,16 @@ export const calculateBackoffTime = (
 ): number => {
   // Calculate delay with exponential backoff: initialDelay * (factor ^ (attempt - 1))
   const exponentialDelay = options.initialDelay * Math.pow(options.factor, attempt - 1);
-  
+
   // Cap at maximum delay
   const cappedDelay = Math.min(exponentialDelay, options.maxDelay);
-  
+
   // Add jitter if enabled (±20% randomness)
   if (options.jitter) {
-    const jitterFactor = 0.8 + (Math.random() * 0.4); // 0.8-1.2 range for ±20%
+    const jitterFactor = 0.8 + Math.random() * 0.4; // 0.8-1.2 range for ±20%
     return Math.floor(cappedDelay * jitterFactor);
   }
-  
+
   return Math.floor(cappedDelay);
 };
 
@@ -64,7 +64,7 @@ export type TokenRefreshFunction<T> = (user: User) => Promise<T>;
 
 /**
  * Refresh a token with exponential backoff on failure
- * 
+ *
  * @param user Firebase user
  * @param refreshFn Function to refresh the token
  * @param options Backoff options
@@ -78,7 +78,7 @@ export const refreshTokenWithBackoff = async <T>(
 ): Promise<T> => {
   let attempt = 1;
   let lastError: Error | null = null;
-  
+
   while (attempt <= options.maxRetries) {
     try {
       // Attempt to refresh the token
@@ -87,30 +87,32 @@ export const refreshTokenWithBackoff = async <T>(
     } catch (error) {
       console.warn(`Token refresh attempt ${attempt} failed:`, error);
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // If we've reached max retries, throw the last error
       if (attempt >= options.maxRetries) {
         break;
       }
-      
+
       // Calculate backoff time
       const backoffTime = calculateBackoffTime(attempt, options);
       console.log(`Retrying in ${backoffTime}ms (attempt ${attempt}/${options.maxRetries})`);
-      
+
       // Wait for the backoff time
       await new Promise(resolve => setTimeout(resolve, backoffTime));
-      
+
       // Increment attempt counter
       attempt++;
     }
   }
-  
-  throw new Error(`Token refresh failed after ${options.maxRetries} attempts: ${lastError?.message}`);
+
+  throw new Error(
+    `Token refresh failed after ${options.maxRetries} attempts: ${lastError?.message}`
+  );
 };
 
 /**
  * Refresh user token with exponential backoff
- * 
+ *
  * @param user Firebase user
  * @param options Backoff options
  * @returns Result from refreshUserTokenAndSession
@@ -120,4 +122,4 @@ export const refreshUserTokenWithBackoff = async (
   options: TokenRefreshOptions = DEFAULT_OPTIONS
 ): Promise<void> => {
   return refreshTokenWithBackoff(user, refreshUserTokenAndSession, options);
-}; 
+};

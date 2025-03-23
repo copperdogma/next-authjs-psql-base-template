@@ -11,15 +11,15 @@ function initializeFirebaseAdmin() {
         // Replace escaped newlines in the private key
         privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       };
-      
+
       // Initialize app with service account
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
       });
-      
+
       console.log('Firebase Admin SDK initialized successfully');
     }
-    
+
     return admin;
   } catch (error) {
     console.error('Error initializing Firebase Admin SDK:', error);
@@ -32,4 +32,4 @@ const firebaseAdmin = initializeFirebaseAdmin();
 
 // Export the admin instance and auth module for use in other files
 export const auth = firebaseAdmin.auth();
-export default firebaseAdmin; 
+export default firebaseAdmin;

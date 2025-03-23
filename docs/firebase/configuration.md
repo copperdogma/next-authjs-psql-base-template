@@ -42,11 +42,13 @@ To enhance security, follow these steps to restrict your Firebase API key:
    - Add your domains (including localhost for development)
 
 Example HTTP referrer pattern for local development:
+
 ```
 localhost:*
 ```
 
 Example HTTP referrer pattern for production:
+
 ```
 https://your-domain.com/*
 ```
@@ -56,11 +58,13 @@ https://your-domain.com/*
 For optimal security and development workflow, maintain separate Firebase projects for each environment:
 
 1. **Development Environment**
+
    - Project name: `your-project-dev`
    - Less restrictive settings for development
    - Emulators for local testing
 
 2. **Testing Environment**
+
    - Project name: `your-project-test`
    - Used for integration tests and staging
    - Isolated from both development and production data
@@ -90,4 +94,4 @@ The Admin SDK is initialized in `lib/firebase-admin.ts` and only runs on the ser
 
 ## Continuous Integration
 
-For CI/CD pipelines, use GitHub secrets or other secure methods to store environment variables. Never commit actual Firebase credentials to the repository. 
+For CI/CD pipelines, use GitHub secrets or other secure methods to store environment variables. Never commit actual Firebase credentials to the repository.

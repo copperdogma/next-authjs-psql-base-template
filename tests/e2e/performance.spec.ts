@@ -21,50 +21,57 @@ interface RequestInfo {
 test.describe('Performance Checks', () => {
   // Skip CDP-dependent tests on non-Chromium browsers with a clear explanation
   test('basic page load performance', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'Chrome DevTools Protocol (CDP) features are only available in Chromium browsers');
-    
+    test.skip(
+      browserName !== 'chromium',
+      'Chrome DevTools Protocol (CDP) features are only available in Chromium browsers'
+    );
+
     try {
       // Enable performance metrics
       const client = await page.context().newCDPSession(page);
       await client.send('Performance.enable');
-      
+
       // Array of common routes to test
       const routes = ['/', '/login', '/dashboard'];
-      
+
       for (const route of routes) {
         try {
           try {
             // Clear performance metrics before each navigation
             await client.send('Performance.clearMetrics' as any);
           } catch (clearError) {
-            console.log(`Note: Performance.clearMetrics not available - this is expected in some browser versions`);
+            console.log(
+              `Note: Performance.clearMetrics not available - this is expected in some browser versions`
+            );
             // Continue without clearing metrics - this is non-blocking
           }
-          
+
           // Navigate to the page with network idle to ensure everything loads
           console.log(`Testing performance for route: ${route}`);
           const navigationStart = Date.now();
           await page.goto(route, { waitUntil: 'networkidle', timeout: 10000 });
           const navigationEnd = Date.now();
-          
+
           // Get performance metrics
-          const performanceMetrics = await client.send('Performance.getMetrics') as PerformanceMetrics;
-          
+          const performanceMetrics = (await client.send(
+            'Performance.getMetrics'
+          )) as PerformanceMetrics;
+
           // Log metrics
           console.log(`Navigation timing for ${route}:`);
           console.log(`  - Navigation time: ${navigationEnd - navigationStart}ms`);
-          
+
           // Extract useful metrics
           const metrics: Record<string, number> = {};
           for (const metric of performanceMetrics.metrics) {
             metrics[metric.name] = metric.value;
           }
-          
+
           // Log specific metrics of interest
           console.log(`  - First Paint: ${Math.round(metrics['FirstPaint'] || 0)}ms`);
           console.log(`  - DOM Content Loaded: ${Math.round(metrics['DOMContentLoaded'] || 0)}ms`);
           console.log(`  - Load Event: ${Math.round(metrics['LoadEvent'] || 0)}ms`);
-          
+
           // Set basic performance expectations
           // Note: These are very generous thresholds and should be adjusted for your app
           const navigationTime = navigationEnd - navigationStart;
@@ -85,7 +92,7 @@ test.describe('Performance Checks', () => {
       test.skip(true, `Performance API not available: ${error.message}`);
     }
   });
-  
+
   // This test doesn't use CDP and can run in all browsers
   test('check for render-blocking resources', async ({ page }) => {
     // Listen for all requests
@@ -97,17 +104,19 @@ test.describe('Performance Checks', () => {
         method: request.method(),
       });
     });
-    
+
     // Navigate to home page
     await page.goto('/', { waitUntil: 'networkidle' });
-    
+
     // Analyze requests for render-blocking resources
     const renderBlockingResources = requests.filter(req => {
-      return ['script', 'stylesheet'].includes(req.resourceType) && 
-             !req.url.includes('async') && 
-             !req.url.includes('defer');
+      return (
+        ['script', 'stylesheet'].includes(req.resourceType) &&
+        !req.url.includes('async') &&
+        !req.url.includes('defer')
+      );
     });
-    
+
     // Log results
     if (renderBlockingResources.length > 0) {
       console.log('⚠️ Potential render-blocking resources found:');
@@ -118,45 +127,53 @@ test.describe('Performance Checks', () => {
       console.log('✓ No obvious render-blocking resources found');
     }
   });
-  
+
   // Skip CDP-dependent tests on non-Chromium browsers with a clear explanation
   test('memory usage check', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Memory API is only available in Chromium browsers');
-    
+
     try {
       // Connect to CDP session for memory metrics
       const client = await page.context().newCDPSession(page);
-      
+
       // Navigate to the page
       await page.goto('/', { waitUntil: 'load' });
-      
+
       // Perform some basic interactions to simulate user behavior
       await page.mouse.move(100, 100);
       await page.waitForTimeout(300);
       await page.mouse.move(200, 200);
       await page.waitForTimeout(300);
-      
+
       try {
         // Get memory usage information - use try/catch for better error handling
-        const memoryInfo = await client.send('Memory.getBrowserMemoryUsage' as any) as MemoryInfo;
-        
+        const memoryInfo = (await client.send('Memory.getBrowserMemoryUsage' as any)) as MemoryInfo;
+
         // Log memory usage
         console.log('Browser memory usage:');
         for (const [key, value] of Object.entries(memoryInfo)) {
           console.log(`  - ${key}: ${value}`);
         }
-        
+
         // Additional performance metrics if needed
-        const performanceMetrics = await client.send('Performance.getMetrics') as PerformanceMetrics;
-        
-        const jsHeapSizeLimit = performanceMetrics.metrics?.find(m => m.name === 'JSHeapUsedSize')?.value;
-        const jsHeapSize = performanceMetrics.metrics?.find(m => m.name === 'JSHeapTotalSize')?.value;
-        
+        const performanceMetrics = (await client.send(
+          'Performance.getMetrics'
+        )) as PerformanceMetrics;
+
+        const jsHeapSizeLimit = performanceMetrics.metrics?.find(
+          m => m.name === 'JSHeapUsedSize'
+        )?.value;
+        const jsHeapSize = performanceMetrics.metrics?.find(
+          m => m.name === 'JSHeapTotalSize'
+        )?.value;
+
         if (jsHeapSize && jsHeapSizeLimit) {
           const usedPercentage = (jsHeapSize / jsHeapSizeLimit) * 100;
-          console.log(`  - JS Heap: ${Math.round(jsHeapSize / 1024 / 1024)}MB / ${Math.round(jsHeapSizeLimit / 1024 / 1024)}MB (${Math.round(usedPercentage)}%)`);
+          console.log(
+            `  - JS Heap: ${Math.round(jsHeapSize / 1024 / 1024)}MB / ${Math.round(jsHeapSizeLimit / 1024 / 1024)}MB (${Math.round(usedPercentage)}%)`
+          );
         }
-        
+
         // Perform basic assertions to ensure memory usage is reasonable
         expect(memoryInfo).toBeTruthy();
       } catch (error: any) {
@@ -171,4 +188,4 @@ test.describe('Performance Checks', () => {
       test.skip(true, `Memory API not available: ${error.message}`);
     }
   });
-}); 
+});

@@ -17,14 +17,14 @@ jest.mock('../../../../lib/firebase-admin', () => {
   const mockCreateSessionCookie = jest.fn().mockResolvedValue('test-session-cookie');
   const mockVerifySessionCookie = jest.fn().mockResolvedValue({ uid: 'test-uid' });
   const mockRevokeRefreshTokens = jest.fn().mockResolvedValue(undefined);
-  
+
   return {
     auth: {
       verifyIdToken: mockVerifyIdToken,
       createSessionCookie: mockCreateSessionCookie,
       verifySessionCookie: mockVerifySessionCookie,
-      revokeRefreshTokens: mockRevokeRefreshTokens
-    }
+      revokeRefreshTokens: mockRevokeRefreshTokens,
+    },
   };
 });
 
@@ -41,7 +41,7 @@ describe('Session API Endpoints Security', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  
+
   describe('POST /api/auth/session', () => {
     it('should set a secure session cookie in the response', async () => {
       // Create mock request with token
@@ -55,31 +55,31 @@ describe('Session API Endpoints Security', () => {
 
       // Get API response
       const response = await POST(request);
-      
+
       // Extract cookie from response
       const setCookieHeader = response.headers.get('Set-Cookie');
-      
+
       // Verify cookie contains security attributes
       expect(setCookieHeader).toBeDefined();
       expect(setCookieHeader).toContain(SESSION_COOKIE_NAME);
       expect(setCookieHeader).toContain('HttpOnly');
       expect(setCookieHeader).toContain('Path=/');
       expect(setCookieHeader).toContain('SameSite=lax');
-      
+
       // In production, should have Secure flag
       if (process.env.NODE_ENV === 'production') {
         expect(setCookieHeader).toContain('Secure');
       }
     });
   });
-  
+
   describe('DELETE /api/auth/session', () => {
     it('should clear the session cookie securely when logging out', async () => {
       // Create mock request
       const request = new NextRequest('http://localhost/api/auth/session', {
         method: 'DELETE',
       });
-      
+
       // Mock cookies
       Object.defineProperty(request, 'cookies', {
         value: {
@@ -90,18 +90,18 @@ describe('Session API Endpoints Security', () => {
 
       // Get API response
       const response = await DELETE(request);
-      
+
       // Extract cookie from response
       const setCookieHeader = response.headers.get('Set-Cookie');
-      
+
       // Verify cookie is being cleared
       expect(setCookieHeader).toBeDefined();
       expect(setCookieHeader).toContain(SESSION_COOKIE_NAME);
       expect(setCookieHeader).toContain('Max-Age=0'); // Cookie expiration
-      
+
       // Should still have security attributes when clearing
       expect(setCookieHeader).toContain('HttpOnly');
       expect(setCookieHeader).toContain('Path=/');
     });
   });
-}); 
+});

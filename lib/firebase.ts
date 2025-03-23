@@ -17,10 +17,10 @@ const firebaseConfig = {
 /**
  * This file is imported by both server and client components.
  * We use this technique to handle Firebase initialization differently based on the environment.
- * 
+ *
  * For server components: Empty objects are exported since Firebase client SDK cannot run on the server.
  * For client components: Proper Firebase instances are initialized and exported.
- * 
+ *
  * Each consumer component should check if they're running on the client with isFirebaseAuth()
  * before attempting to use Firebase methods.
  */
@@ -45,4 +45,4 @@ export function isFirebaseAuth(auth: Auth | Record<string, never>): auth is Auth
   return typeof window !== 'undefined' && Object.keys(auth).length > 0;
 }
 
-export { auth, firebaseApp }; 
+export { auth, firebaseApp };

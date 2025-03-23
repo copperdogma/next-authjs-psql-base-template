@@ -8,12 +8,12 @@ import { useAuth } from '../../app/providers/AuthProvider';
 const UserProfile = () => {
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
-  
+
   // Handle client-side mounting to prevent hydration errors
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Show nothing during server rendering or if not authenticated
   if (!mounted || loading) {
     return <div data-testid="profile-loading">Loading...</div>;
@@ -24,9 +24,9 @@ const UserProfile = () => {
   }
 
   return (
-    <Link 
-      href="/profile" 
-      className="flex items-center gap-2 user-profile" 
+    <Link
+      href="/profile"
+      className="flex items-center gap-2 user-profile"
       data-testid="user-profile"
       aria-label="User profile"
       role="button"
@@ -42,11 +42,13 @@ const UserProfile = () => {
         />
       ) : null}
       <div className="flex flex-col">
-        <span className="sr-only" data-testid="profile-name">{user.displayName || 'Anonymous'}</span>
+        <span className="sr-only" data-testid="profile-name">
+          {user.displayName || 'Anonymous'}
+        </span>
       </div>
     </Link>
   );
 };
 
 // Memoize the entire component to prevent unnecessary re-renders
-export default memo(UserProfile); 
+export default memo(UserProfile);

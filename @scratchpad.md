@@ -7,6 +7,7 @@ I've made a copy of it (the current project) and I want to use this as a base pr
 So what we need to do is scrub anything related to ai-calendar-helper from the setup/code/docs to make this a pristine project ready to be used as a template.
 
 ## Current Status
+
 - Successfully implemented React best practices across the codebase
 - Improved test coverage to 88.29% for statements and 93.18% for branches
 - Verified all unit tests (36 tests) and e2e tests (13 tests) are passing
@@ -15,10 +16,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## React Best Practices Evaluation
 
 ### Component Structure and Organization
+
 - [x] **Use functional components consistently**
   - [x] Most components are already functional
   - [x] All components are now functional
-- [x] **Implement proper component memoization** 
+- [x] **Implement proper component memoization**
   - [x] Use React.memo for components that render often but rarely change
     - Applied to UserProfile, Input, Menu, MenuItem, and Snackbar components
   - [x] Implement useMemo for expensive calculations
@@ -30,6 +32,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Create design system for UI patterns
 
 ### Hooks Usage
+
 - [x] **Fix useEffect dependencies**
   - [x] Review all useEffect hooks for proper dependency arrays
   - [x] Remove unnecessary dependencies
@@ -42,6 +45,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - Created useForm hook for form state management and validation
 
 ### Performance Optimizations
+
 - [x] **Reduce unnecessary re-renders**
   - [x] Profile components with React DevTools
   - [x] Optimize event handlers with useCallback
@@ -54,6 +58,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Implement proper context optimization
 
 ### Specific Issues Found
+
 - [x] **SignInButton.tsx duplication**
   - [x] Extract duplicate code between sign in/out methods
   - [x] Create a single authentication handler with mode parameter
@@ -72,6 +77,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [ ] Add proper error boundaries for sections that might fail
 
 ### Best Practices
+
 - [x] **Follow proper naming conventions**
   - [x] Use consistent naming for props, components, and files
   - [x] Use semantic naming that clearly conveys purpose
@@ -87,13 +93,16 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Test for accessibility compliance
 
 ## Scrubbing Tasks
+
 - [x] **Package Files**
+
   - [x] Update package.json (name, description, version, repository)
     - [x] Change "name": "ai-calender-helper" to a generic template name
   - [x] Update package-lock.json if present
     - [x] Will be automatically updated when package.json is changed
 
 - [x] **Documentation**
+
   - [x] Update README.md to describe this as a template
     - [x] Remove all AI Calendar Helper specific content
     - [x] Add template usage instructions
@@ -102,11 +111,12 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Update docs/design.md
     - [x] Update docs/architecture.md
     - [x] Update docs/stories.md
-    - [x] Update docs/testing/* files
+    - [x] Update docs/testing/\* files
   - [x] Update any comments in code files with app-specific references
   - [x] Create template placeholders for project-specific docs
 
 - [x] **Configuration Files**
+
   - [x] Generalize .env.example with placeholder values
     - [x] Remove AI Calendar Helper specific database names (lines 18, 46, 49, 52)
     - [x] Remove "AI Calendar Helper" from NEXT_PUBLIC_PWA_APP_NAME (line 40)
@@ -116,6 +126,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Check build/deployment configurations
 
 - [x] **Code Base**
+
   - [x] Remove app-specific logic while keeping structure
   - [x] Replace app-specific names in components, variables, files
     - [x] app/page.tsx (line 7)
@@ -129,29 +140,34 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Clean up calendar-specific API endpoints
 
 - [x] **UI Elements**
+
   - [x] Replace app-specific branding, colors, logos
   - [x] Update title, metadata, and favicon
   - [x] Generalize any specific UI text
   - [x] Remove calendar-specific UI components
 
 - [x] **Database/Storage**
+
   - [x] Generalize database schemas
     - [x] Prisma schema looks generic, but double-check for app specifics
   - [x] Remove any seed data specific to original app (none found)
   - [x] Update data models to be template-friendly (models look generic already)
 
 - [x] **Authentication**
+
   - [x] Generalize Firebase/auth configuration (already uses generic placeholders)
   - [x] Update any app-specific auth scopes or permissions
   - [x] Remove calendar-specific OAuth scopes
 
 - [x] **Testing**
+
   - [x] Update test files to remove app-specific test cases
     - [x] Check tests directory for specific test cases
   - [x] Generalize test fixtures and mock data
   - [x] Update test documentation to remove calendar references
 
 - [x] **GitHub Setup**
+
   - [x] Update GitHub-specific files (.github folder) (not present)
   - [x] Set up template configuration in GitHub
   - [x] Update issue/PR templates if present (none found)
@@ -165,7 +181,9 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [ ] Replace content of `.cursor/rules/project-reference.mdc` with updated version
 
 ## Template Preparation
+
 - [x] **Placeholder Naming Convention**
+
   - [x] Define a consistent placeholder format (e.g., `{{YOUR_PROJECT_NAME}}`, `NEXT_TEMPLATE_NAME`)
     - [x] Use double curly braces format like `{{YOUR_PROJECT_NAME}}` for high visibility
     - [x] Ensure placeholders are case-consistent (all caps for visibility)
@@ -174,6 +192,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Ensure placeholders are visually distinct from regular text
 
 - [x] **Environment Variable Centralization**
+
   - [x] Move hardcoded app name references to environment variables
     - [x] Update app/layout.tsx to use process.env.NEXT_PUBLIC_APP_NAME
     - [x] Update app/manifest.ts to use environment variables
@@ -182,6 +201,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Set DATABASE_URL to use `{{YOUR_PROJECT_NAME}}-db` instead of "ai-calendar-helper"
 
 - [x] **Setup Script Automation**
+
   - [x] Create a `setup.js` script using Node.js
     - [x] Add inquirer package for interactive prompts
     - [x] Implement project name, description, repository input
@@ -192,6 +212,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Document script usage in README.md
 
 - [x] **Required Placeholders**
+
   - [x] Project name (package.json, README, manifest, layout)
   - [x] Database name (environment files)
   - [x] Repository URLs (package.json, docs)
@@ -200,6 +221,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Copyright information (license, components)
 
 - [x] **Placeholder Documentation**
+
   - [x] Create a SETUP.md guide explaining what needs to be replaced
     - [x] Include a step-by-step guide for manual replacement
     - [x] Add a "Getting Started" section at the top of README.md
@@ -208,6 +230,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add comments next to placeholders explaining what should go there
 
 - [x] **Template Configuration**
+
   - [x] Add GitHub template configuration
     - [x] Create a `.github/template.yml` file with metadata
     - [x] Add GitHub template topics for discoverability
@@ -221,6 +244,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Add troubleshooting section for common setup issues
 
 - [ ] **Best Practices**
+
   - [x] Get rid of NextAuth.js as we use Firebase Auth
   - [x] Remove support for Event entity (db, code) as that was part of the original calendar app we're trying to remove
     - [x] Prisma schema doesn't contain Event model (it was already removed)
@@ -233,7 +257,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Run npm run type-check and fix all issues
   - [x] e2e tests: address line 16 in the test-utils.tsx (ignore or write test)
   - [x] e2e tests: address all warnings and non-blocking issues
-  - [x] npm run dev issue:  ⚠ Invalid next.config.js options detected:  ⚠     Unrecognized key(s) in object: 'swcMinify'  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+  - [x] npm run dev issue: ⚠ Invalid next.config.js options detected: ⚠ Unrecognized key(s) in object: 'swcMinify' ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
   - [x] get rid of random screenshots in the app... via .gitignore? Some sort of auto-cleanup?
     - Created a dedicated `/tests/e2e/screenshots/` directory to store all manual debug screenshots
     - Updated screenshot paths in all test files to save to this directory
@@ -268,7 +292,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] `auth-flow.spec.ts` contains extensive hardcoded selectors for user profile element (lines 55-63)
       - [x] `auth-flow.spec.ts` has brittle authentication checks with regex for auth messages (/sign in|log in|authentication required/i)
       - [x] `debug.spec.ts` uses a hardcoded localhost URL with port (http://localhost:3001)
-      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.*Next.js/))
+      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.\*Next.js/))
     - [x] **Unit Tests**:
       - [x] `SignInButton.test.tsx` uses getAttribute('data-auth-state', 'sign-in') which is brittle to UI changes
       - [x] `health.test.ts` has exact equality check on response structure that might break with minor additions
@@ -304,19 +328,23 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] Update .env.test to use template variable for database name
 
 ## Key Improvements Made
+
 1. **Performance Optimization**
+
    - Added `useMemo` and `useCallback` to prevent unnecessary re-renders
    - Replaced state variables with derived values (currentYear in footer)
    - Improved conditional rendering logic for better performance
    - Added proper dependency arrays to useEffect hooks
 
 2. **Code Organization**
+
    - Consolidated duplicate auth logic in SignInButton into a single handler
    - Created helper functions for API calls (createSession, deleteSession)
    - Extracted repeated JSX patterns in BaseLayout for navigation links
    - Added better TypeScript types for authentication functions
 
 3. **React Component Structure**
+
    - Made naming more consistent for state variables (mounted vs isMounted)
    - Added proper dependency arrays to all useEffect hooks
    - Implemented better error handling with meaningful messages
@@ -329,6 +357,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
    - Enhanced test reliability with better selectors and assertions
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -336,8 +365,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -345,6 +377,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -357,6 +390,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -364,6 +398,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -371,12 +406,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -387,18 +424,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -408,19 +449,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -431,6 +476,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -438,8 +484,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -447,6 +496,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -459,6 +509,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -466,6 +517,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -473,12 +525,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -489,18 +543,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -510,19 +568,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -533,6 +595,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -540,8 +603,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -549,6 +615,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -561,6 +628,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -568,6 +636,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -575,12 +644,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -591,18 +662,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -612,19 +687,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -635,6 +714,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -642,8 +722,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -651,6 +734,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -663,6 +747,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -670,6 +755,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -677,12 +763,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -693,18 +781,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -714,19 +806,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -737,6 +833,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -744,8 +841,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -753,6 +853,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -765,6 +866,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -772,6 +874,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -779,12 +882,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -795,18 +900,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -816,19 +925,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -839,6 +952,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -846,8 +960,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -855,6 +972,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -867,6 +985,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -874,6 +993,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -881,12 +1001,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -897,18 +1019,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -918,19 +1044,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -941,6 +1071,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -948,8 +1079,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -957,6 +1091,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -969,6 +1104,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -976,6 +1112,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -983,12 +1120,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -999,18 +1138,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1020,19 +1163,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1043,6 +1190,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1050,8 +1198,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1059,6 +1210,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1071,6 +1223,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1078,6 +1231,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1085,12 +1239,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1101,18 +1257,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1122,19 +1282,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1145,6 +1309,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1152,6 +1317,7 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
+
 # Scratchpad
 
 This project was originally set up to be an actual app (ai-calendar-helper).
@@ -1161,6 +1327,7 @@ I've made a copy of it (the current project) and I want to use this as a base pr
 So what we need to do is scrub anything related to ai-calendar-helper from the setup/code/docs to make this a pristine project ready to be used as a template.
 
 ## Current Status
+
 - Successfully implemented React best practices across the codebase
 - Improved test coverage to 88.29% for statements and 93.18% for branches
 - Verified all unit tests (36 tests) and e2e tests (13 tests) are passing
@@ -1169,10 +1336,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## React Best Practices Evaluation
 
 ### Component Structure and Organization
+
 - [x] **Use functional components consistently**
   - [x] Most components are already functional
   - [x] Replace any remaining class components
-- [x] **Implement proper component memoization** 
+- [x] **Implement proper component memoization**
   - [x] Use React.memo for components that render often but rarely change
   - [x] Implement useMemo for expensive calculations (added to AuthProvider and BaseLayout)
   - [x] Use useCallback for functions passed as props (implemented in SignInButton and BaseLayout)
@@ -1181,6 +1349,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Create a design system for UI patterns
 
 ### Hooks Usage
+
 - [x] **Fix useEffect dependencies**
   - [x] Review all useEffect hooks for proper dependency arrays
   - [x] Remove unnecessary dependencies
@@ -1192,6 +1361,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Extract shared logic into custom hooks (auth handling via useAuth)
 
 ### Performance Optimizations
+
 - [x] **Reduce unnecessary re-renders**
   - [x] Profile components with React DevTools
   - [x] Optimize event handlers with useCallback
@@ -1204,6 +1374,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Implement proper context optimization (optimized AuthContext with useMemo)
 
 ### Specific Issues Found
+
 - [x] **SignInButton.tsx duplication**
   - [x] Extract duplicate code between sign in/out methods
   - [x] Create a single authentication handler with mode parameter
@@ -1220,6 +1391,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add proper error boundaries for sections that might fail
 
 ### Best Practices
+
 - [x] **Follow proper naming conventions**
   - [x] Use consistent naming for props, components, and files
   - [x] Use semantic naming that clearly conveys purpose
@@ -1233,13 +1405,16 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add test coverage for test-utils.tsx file
 
 ## Scrubbing Tasks
+
 - [x] **Package Files**
+
   - [x] Update package.json (name, description, version, repository)
     - [x] Change "name": "ai-calender-helper" to a generic template name
   - [x] Update package-lock.json if present
     - [x] Will be automatically updated when package.json is changed
 
 - [x] **Documentation**
+
   - [x] Update README.md to describe this as a template
     - [x] Remove all AI Calendar Helper specific content
     - [x] Add template usage instructions
@@ -1248,11 +1423,12 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Update docs/design.md
     - [x] Update docs/architecture.md
     - [x] Update docs/stories.md
-    - [x] Update docs/testing/* files
+    - [x] Update docs/testing/\* files
   - [x] Update any comments in code files with app-specific references
   - [x] Create template placeholders for project-specific docs
 
 - [x] **Configuration Files**
+
   - [x] Generalize .env.example with placeholder values
     - [x] Remove AI Calendar Helper specific database names (lines 18, 46, 49, 52)
     - [x] Remove "AI Calendar Helper" from NEXT_PUBLIC_PWA_APP_NAME (line 40)
@@ -1262,6 +1438,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Check build/deployment configurations
 
 - [x] **Code Base**
+
   - [x] Remove app-specific logic while keeping structure
   - [x] Replace app-specific names in components, variables, files
     - [x] app/page.tsx (line 7)
@@ -1275,29 +1452,34 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Clean up calendar-specific API endpoints
 
 - [x] **UI Elements**
+
   - [x] Replace app-specific branding, colors, logos
   - [x] Update title, metadata, and favicon
   - [x] Generalize any specific UI text
   - [x] Remove calendar-specific UI components
 
 - [x] **Database/Storage**
+
   - [x] Generalize database schemas
     - [x] Prisma schema looks generic, but double-check for app specifics
   - [x] Remove any seed data specific to original app (none found)
   - [x] Update data models to be template-friendly (models look general already)
 
 - [x] **Authentication**
+
   - [x] Generalize Firebase/auth configuration (already uses generic placeholders)
   - [x] Update any app-specific auth scopes or permissions
   - [x] Remove calendar-specific OAuth scopes
 
 - [x] **Testing**
+
   - [x] Update test files to remove app-specific test cases
     - [x] Check tests directory for specific test cases
   - [x] Generalize test fixtures and mock data
   - [x] Update test documentation to remove calendar references
 
 - [x] **GitHub Setup**
+
   - [x] Update GitHub-specific files (.github folder) (not present)
   - [x] Set up template configuration in GitHub
   - [x] Update issue/PR templates if present (none found)
@@ -1311,7 +1493,9 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [ ] Replace content of `.cursor/rules/project-reference.mdc` with updated version
 
 ## Template Preparation
+
 - [x] **Placeholder Naming Convention**
+
   - [x] Define a consistent placeholder format (e.g., `{{YOUR_PROJECT_NAME}}`, `NEXT_TEMPLATE_NAME`)
     - [x] Use double curly braces format like `{{YOUR_PROJECT_NAME}}` for high visibility
     - [x] Ensure placeholders are case-consistent (all caps for visibility)
@@ -1320,6 +1504,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Ensure placeholders are visually distinct from regular text
 
 - [x] **Environment Variable Centralization**
+
   - [x] Move hardcoded app name references to environment variables
     - [x] Update app/layout.tsx to use process.env.NEXT_PUBLIC_APP_NAME
     - [x] Update app/manifest.ts to use environment variables
@@ -1328,6 +1513,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Set DATABASE_URL to use `{{YOUR_PROJECT_NAME}}-db` instead of "ai-calendar-helper"
 
 - [x] **Setup Script Automation**
+
   - [x] Create a `setup.js` script using Node.js
     - [x] Add inquirer package for interactive prompts
     - [x] Implement project name, description, repository input
@@ -1338,6 +1524,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Document script usage in README.md
 
 - [x] **Required Placeholders**
+
   - [x] Project name (package.json, README, manifest, layout)
   - [x] Database name (environment files)
   - [x] Repository URLs (package.json, docs)
@@ -1346,6 +1533,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Copyright information (license, components)
 
 - [x] **Placeholder Documentation**
+
   - [x] Create a SETUP.md guide explaining what needs to be replaced
     - [x] Include a step-by-step guide for manual replacement
     - [x] Add a "Getting Started" section at the top of README.md
@@ -1354,6 +1542,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add comments next to placeholders explaining what should go there
 
 - [x] **Template Configuration**
+
   - [x] Add GitHub template configuration
     - [x] Create a `.github/template.yml` file with metadata
     - [x] Add GitHub template topics for discoverability
@@ -1367,6 +1556,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Add troubleshooting section for common setup issues
 
 - [ ] **Best Practices**
+
   - [x] Get rid of NextAuth.js as we use Firebase Auth
   - [x] Remove support for Event entity (db, code) as that was part of the original calendar app we're trying to remove
     - [x] Prisma schema doesn't contain Event model (it was already removed)
@@ -1379,7 +1569,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Run npm run type-check and fix all issues
   - [x] e2e tests: address line 16 in the test-utils.tsx (ignore or write test)
   - [x] e2e tests: address all warnings and non-blocking issues
-  - [x] npm run dev issue:  ⚠ Invalid next.config.js options detected:  ⚠     Unrecognized key(s) in object: 'swcMinify'  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+  - [x] npm run dev issue: ⚠ Invalid next.config.js options detected: ⚠ Unrecognized key(s) in object: 'swcMinify' ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
   - [x] get rid of random screenshots in the app... via .gitignore? Some sort of auto-cleanup?
     - Created a dedicated `/tests/e2e/screenshots/` directory to store all manual debug screenshots
     - Updated screenshot paths in all test files to save to this directory
@@ -1414,7 +1604,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] `auth-flow.spec.ts` contains extensive hardcoded selectors for user profile element (lines 55-63)
       - [x] `auth-flow.spec.ts` has brittle authentication checks with regex for auth messages (/sign in|log in|authentication required/i)
       - [x] `debug.spec.ts` uses a hardcoded localhost URL with port (http://localhost:3001)
-      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.*Next.js/))
+      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.\*Next.js/))
     - [x] **Unit Tests**:
       - [x] `SignInButton.test.tsx` uses getAttribute('data-auth-state', 'sign-in') which is brittle to UI changes
       - [x] `health.test.ts` has exact equality check on response structure that might break with minor additions
@@ -1450,19 +1640,23 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] Update .env.test to use template variable for database name
 
 ## Key Improvements Made
+
 1. **Performance Optimization**
+
    - Added `useMemo` and `useCallback` to prevent unnecessary re-renders
    - Replaced state variables with derived values (currentYear in footer)
    - Improved conditional rendering logic for better performance
    - Added proper dependency arrays to useEffect hooks
 
 2. **Code Organization**
+
    - Consolidated duplicate auth logic in SignInButton into a single handler
    - Created helper functions for API calls (createSession, deleteSession)
    - Extracted repeated JSX patterns in BaseLayout for navigation links
    - Added better TypeScript types for authentication functions
 
 3. **React Component Structure**
+
    - Made naming more consistent for state variables (mounted vs isMounted)
    - Added proper dependency arrays to all useEffect hooks
    - Implemented better error handling with meaningful messages
@@ -1475,6 +1669,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
    - Enhanced test reliability with better selectors and assertions
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1482,8 +1677,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist at the top of @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist at the top of @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1491,6 +1689,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1503,6 +1702,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1510,6 +1710,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1517,12 +1718,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1533,18 +1736,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1554,19 +1761,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1577,6 +1788,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1584,8 +1796,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1593,6 +1808,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1605,6 +1821,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1612,6 +1829,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1619,12 +1837,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1635,18 +1855,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1656,19 +1880,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1679,6 +1907,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1686,8 +1915,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1695,6 +1927,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1707,6 +1940,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1714,6 +1948,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1721,12 +1956,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1737,18 +1974,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1758,19 +1999,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1781,6 +2026,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1788,8 +2034,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1797,6 +2046,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1809,6 +2059,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1816,6 +2067,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1823,12 +2075,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1839,18 +2093,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1860,19 +2118,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1883,6 +2145,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1890,8 +2153,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -1899,6 +2165,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -1911,6 +2178,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -1918,6 +2186,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -1925,12 +2194,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -1941,18 +2212,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -1962,19 +2237,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -1985,6 +2264,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -1992,8 +2272,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2001,6 +2284,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2013,6 +2297,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2020,6 +2305,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2027,12 +2313,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2043,18 +2331,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2064,19 +2356,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2087,6 +2383,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2094,8 +2391,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2103,6 +2403,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2115,6 +2416,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2122,6 +2424,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2129,12 +2432,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2145,18 +2450,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2166,19 +2475,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2189,6 +2502,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2196,8 +2510,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2205,6 +2522,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2217,6 +2535,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2224,6 +2543,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2231,12 +2551,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2247,18 +2569,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2268,19 +2594,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2291,6 +2621,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2298,8 +2629,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2307,6 +2641,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2319,6 +2654,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2326,6 +2662,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2333,12 +2670,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2349,18 +2688,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2370,19 +2713,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2393,6 +2740,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2400,8 +2748,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2409,6 +2760,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2421,6 +2773,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2428,6 +2781,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2435,12 +2789,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2451,18 +2807,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2472,19 +2832,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2495,6 +2859,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2502,8 +2867,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2511,6 +2879,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2523,6 +2892,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2530,6 +2900,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2537,12 +2908,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2553,18 +2926,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2574,19 +2951,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2597,6 +2978,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2604,8 +2986,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2613,6 +2998,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2625,6 +3011,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2632,6 +3019,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2639,12 +3027,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2655,18 +3045,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2676,19 +3070,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2699,6 +3097,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2706,8 +3105,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2715,6 +3117,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2727,6 +3130,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2734,6 +3138,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2741,12 +3146,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2757,18 +3164,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2778,19 +3189,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2801,6 +3216,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2808,8 +3224,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2817,6 +3236,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2829,6 +3249,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2836,6 +3257,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2843,12 +3265,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2859,18 +3283,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2880,19 +3308,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -2903,6 +3335,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -2910,8 +3343,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -2919,6 +3355,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -2931,6 +3368,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -2938,6 +3376,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -2945,12 +3384,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -2961,18 +3402,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -2982,19 +3427,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3005,6 +3454,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3012,8 +3462,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3021,6 +3474,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3033,6 +3487,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3040,6 +3495,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3047,12 +3503,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3063,18 +3521,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3084,19 +3546,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3107,6 +3573,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3114,8 +3581,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3123,6 +3593,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3135,6 +3606,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3142,6 +3614,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3149,12 +3622,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3165,18 +3640,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3186,19 +3665,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3209,6 +3692,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3216,8 +3700,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3225,6 +3712,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3237,6 +3725,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3244,6 +3733,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3251,12 +3741,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3267,18 +3759,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3288,19 +3784,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3311,6 +3811,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3318,8 +3819,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3327,6 +3831,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3339,6 +3844,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3346,6 +3852,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3353,12 +3860,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3369,18 +3878,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3390,19 +3903,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3413,6 +3930,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3420,8 +3938,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3429,6 +3950,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3441,6 +3963,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3448,6 +3971,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3455,12 +3979,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3471,18 +3997,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3492,19 +4022,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3515,6 +4049,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3522,8 +4057,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3531,6 +4069,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3543,6 +4082,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3550,6 +4090,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3557,12 +4098,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3573,18 +4116,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3594,19 +4141,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3617,6 +4168,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3624,8 +4176,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3633,6 +4188,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3645,6 +4201,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3652,6 +4209,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3659,12 +4217,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3675,18 +4235,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3696,19 +4260,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3719,6 +4287,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3726,8 +4295,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3735,6 +4307,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3747,6 +4320,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3754,6 +4328,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3761,12 +4336,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3777,18 +4354,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3798,19 +4379,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3821,6 +4406,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3828,8 +4414,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3837,6 +4426,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3849,6 +4439,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3856,6 +4447,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3863,12 +4455,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3879,18 +4473,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -3900,19 +4498,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -3923,6 +4525,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -3930,8 +4533,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -3939,6 +4545,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -3951,6 +4558,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -3958,6 +4566,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -3965,12 +4574,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -3981,18 +4592,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4002,19 +4617,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4025,6 +4644,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4032,8 +4652,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4041,6 +4664,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4053,6 +4677,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4060,6 +4685,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4067,12 +4693,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4083,18 +4711,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4104,19 +4736,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4127,6 +4763,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4134,8 +4771,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4143,6 +4783,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4155,6 +4796,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4162,6 +4804,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4169,12 +4812,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4185,18 +4830,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4206,19 +4855,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4229,6 +4882,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4236,8 +4890,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4245,6 +4902,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4257,6 +4915,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4264,6 +4923,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4271,12 +4931,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4287,18 +4949,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4308,19 +4974,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4331,6 +5001,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4338,8 +5009,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4347,6 +5021,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4359,6 +5034,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4366,6 +5042,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4373,12 +5050,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4389,18 +5068,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4410,19 +5093,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4433,6 +5120,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4440,8 +5128,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4449,6 +5140,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4461,6 +5153,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4468,6 +5161,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4475,12 +5169,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4491,18 +5187,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4512,19 +5212,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4535,6 +5239,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4542,8 +5247,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4551,6 +5259,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4563,6 +5272,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4570,6 +5280,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4577,12 +5288,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4593,18 +5306,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4614,19 +5331,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4637,6 +5358,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4644,8 +5366,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4653,6 +5378,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4665,6 +5391,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4672,6 +5399,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4679,12 +5407,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4695,18 +5425,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4716,19 +5450,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4739,6 +5477,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4746,8 +5485,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4755,6 +5497,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4767,6 +5510,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4774,6 +5518,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4781,12 +5526,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4797,18 +5544,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4818,19 +5569,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4841,6 +5596,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4848,8 +5604,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4857,6 +5616,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4869,6 +5629,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4876,6 +5637,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4883,12 +5645,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -4899,18 +5663,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -4920,19 +5688,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -4943,6 +5715,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -4950,8 +5723,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -4959,6 +5735,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -4971,6 +5748,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -4978,6 +5756,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -4985,12 +5764,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5001,18 +5782,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5022,19 +5807,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5045,6 +5834,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5052,8 +5842,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5061,6 +5854,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5073,6 +5867,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5080,6 +5875,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5087,12 +5883,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5103,18 +5901,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5124,19 +5926,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5147,6 +5953,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5154,8 +5961,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5163,6 +5973,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5175,6 +5986,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5182,6 +5994,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5189,12 +6002,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5205,18 +6020,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5226,19 +6045,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5249,6 +6072,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5256,8 +6080,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5265,6 +6092,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5277,6 +6105,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5284,6 +6113,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5291,12 +6121,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5307,18 +6139,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5328,19 +6164,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5351,6 +6191,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5358,8 +6199,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5367,6 +6211,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5379,6 +6224,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5386,6 +6232,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5393,12 +6240,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5409,18 +6258,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5430,19 +6283,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5453,6 +6310,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5460,8 +6318,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5469,6 +6330,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5481,6 +6343,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5488,6 +6351,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5495,12 +6359,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5511,18 +6377,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5532,19 +6402,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5555,6 +6429,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5562,8 +6437,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5571,6 +6449,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5583,6 +6462,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5590,6 +6470,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5597,12 +6478,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5613,18 +6496,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5634,19 +6521,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5657,6 +6548,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5664,8 +6556,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5673,6 +6568,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5685,6 +6581,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5692,6 +6589,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5699,12 +6597,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5715,18 +6615,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5736,19 +6640,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5759,6 +6667,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5766,8 +6675,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5775,6 +6687,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5787,6 +6700,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5794,6 +6708,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5801,12 +6716,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5817,18 +6734,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5838,19 +6759,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5861,6 +6786,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5868,8 +6794,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5877,6 +6806,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5889,6 +6819,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5896,6 +6827,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -5903,12 +6835,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -5919,18 +6853,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -5940,19 +6878,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -5963,6 +6905,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -5970,8 +6913,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -5979,6 +6925,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -5991,6 +6938,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -5998,6 +6946,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6005,12 +6954,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6021,18 +6972,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6042,19 +6997,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6065,6 +7024,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6072,8 +7032,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6081,6 +7044,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6093,6 +7057,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6100,6 +7065,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6107,12 +7073,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6123,18 +7091,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6144,19 +7116,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6167,6 +7143,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6174,8 +7151,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6183,6 +7163,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6195,6 +7176,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6202,6 +7184,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6209,12 +7192,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6225,18 +7210,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6246,19 +7235,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6269,6 +7262,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6276,8 +7270,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6285,6 +7282,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6297,6 +7295,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6304,6 +7303,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6311,12 +7311,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6327,18 +7329,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6348,19 +7354,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6371,6 +7381,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6378,8 +7389,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6387,6 +7401,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6399,6 +7414,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6406,6 +7422,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6413,12 +7430,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6429,18 +7448,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6450,19 +7473,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6473,6 +7500,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6480,8 +7508,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6489,6 +7520,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6501,6 +7533,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6508,6 +7541,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6515,12 +7549,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6531,18 +7567,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6552,19 +7592,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6575,6 +7619,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6582,8 +7627,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6591,6 +7639,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6603,6 +7652,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6610,6 +7660,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6617,12 +7668,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6633,18 +7686,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6654,19 +7711,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6677,6 +7738,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6684,8 +7746,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6693,6 +7758,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6705,6 +7771,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6712,6 +7779,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6719,12 +7787,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6735,18 +7805,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6756,19 +7830,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6779,6 +7857,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6786,8 +7865,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6795,6 +7877,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6807,6 +7890,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6814,6 +7898,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6821,12 +7906,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6837,18 +7924,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6858,19 +7949,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6881,6 +7976,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6888,8 +7984,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6897,6 +7996,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -6909,6 +8009,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -6916,6 +8017,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -6923,12 +8025,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -6939,18 +8043,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -6960,19 +8068,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -6983,6 +8095,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -6990,8 +8103,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -6999,6 +8115,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7011,6 +8128,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7018,6 +8136,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7025,12 +8144,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7041,18 +8162,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7062,19 +8187,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7085,6 +8214,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7092,8 +8222,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7101,6 +8234,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7113,6 +8247,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7120,6 +8255,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7127,12 +8263,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7143,18 +8281,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7164,19 +8306,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7187,6 +8333,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7194,8 +8341,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7203,6 +8353,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7215,6 +8366,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7222,6 +8374,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7229,12 +8382,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7245,18 +8400,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7266,19 +8425,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7289,6 +8452,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7296,8 +8460,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7305,6 +8472,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7317,6 +8485,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7324,6 +8493,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7331,12 +8501,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7347,18 +8519,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7368,19 +8544,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7391,6 +8571,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7398,8 +8579,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7407,6 +8591,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7419,6 +8604,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7426,6 +8612,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7433,12 +8620,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7449,18 +8638,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7470,19 +8663,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7493,6 +8690,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7500,8 +8698,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7509,6 +8710,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7521,6 +8723,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7528,6 +8731,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7535,12 +8739,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7551,18 +8757,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7572,19 +8782,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7595,6 +8809,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7602,8 +8817,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7611,6 +8829,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7623,6 +8842,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7630,6 +8850,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7637,12 +8858,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7653,18 +8876,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7674,19 +8901,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7697,6 +8928,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7704,8 +8936,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7713,6 +8948,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7725,6 +8961,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7732,6 +8969,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7739,12 +8977,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -7755,18 +8995,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -7776,19 +9020,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -7799,6 +9047,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -7806,8 +9055,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -7815,6 +9067,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -7827,6 +9080,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -7834,6 +9088,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -7841,8 +9096,10 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
+
 # Scratchpad
 
 This project was originally set up to be an actual app (ai-calendar-helper).
@@ -7852,6 +9109,7 @@ I've made a copy of it (the current project) and I want to use this as a base pr
 So what we need to do is scrub anything related to ai-calendar-helper from the setup/code/docs to make this a pristine project ready to be used as a template.
 
 ## Current Status
+
 - Successfully implemented React best practices across the codebase
 - Improved test coverage to 88.29% for statements and 93.18% for branches
 - Verified all unit tests (36 tests) and e2e tests (13 tests) are passing
@@ -7860,10 +9118,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## React Best Practices Evaluation
 
 ### Component Structure and Organization
+
 - [x] **Use functional components consistently**
   - [x] Most components are already functional
   - [x] Replace any remaining class components
-- [x] **Implement proper component memoization** 
+- [x] **Implement proper component memoization**
   - [x] Use React.memo for components that render often but rarely change
   - [x] Implement useMemo for expensive calculations (added to AuthProvider and BaseLayout)
   - [x] Use useCallback for functions passed as props (implemented in SignInButton and BaseLayout)
@@ -7872,6 +9131,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Create a design system for UI patterns
 
 ### Hooks Usage
+
 - [x] **Fix useEffect dependencies**
   - [x] Review all useEffect hooks for proper dependency arrays
   - [x] Remove unnecessary dependencies
@@ -7883,6 +9143,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Extract shared logic into custom hooks (auth handling via useAuth)
 
 ### Performance Optimizations
+
 - [x] **Reduce unnecessary re-renders**
   - [x] Profile components with React DevTools
   - [x] Optimize event handlers with useCallback
@@ -7895,6 +9156,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Implement proper context optimization (optimized AuthContext with useMemo)
 
 ### Specific Issues Found
+
 - [x] **SignInButton.tsx duplication**
   - [x] Extract duplicate code between sign in/out methods
   - [x] Create a single authentication handler with mode parameter
@@ -7911,6 +9173,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add proper error boundaries for sections that might fail
 
 ### Best Practices
+
 - [x] **Follow proper naming conventions**
   - [x] Use consistent naming for props, components, and files
   - [x] Use semantic naming that clearly conveys purpose
@@ -7924,13 +9187,16 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add test coverage for test-utils.tsx file
 
 ## Scrubbing Tasks
+
 - [x] **Package Files**
+
   - [x] Update package.json (name, description, version, repository)
     - [x] Change "name": "ai-calender-helper" to a generic template name
   - [x] Update package-lock.json if present
     - [x] Will be automatically updated when package.json is changed
 
 - [x] **Documentation**
+
   - [x] Update README.md to describe this as a template
     - [x] Remove all AI Calendar Helper specific content
     - [x] Add template usage instructions
@@ -7939,11 +9205,12 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Update docs/design.md
     - [x] Update docs/architecture.md
     - [x] Update docs/stories.md
-    - [x] Update docs/testing/* files
+    - [x] Update docs/testing/\* files
   - [x] Update any comments in code files with app-specific references
   - [x] Create template placeholders for project-specific docs
 
 - [x] **Configuration Files**
+
   - [x] Generalize .env.example with placeholder values
     - [x] Remove AI Calendar Helper specific database names (lines 18, 46, 49, 52)
     - [x] Remove "AI Calendar Helper" from NEXT_PUBLIC_PWA_APP_NAME (line 40)
@@ -7953,6 +9220,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Check build/deployment configurations
 
 - [x] **Code Base**
+
   - [x] Remove app-specific logic while keeping structure
   - [x] Replace app-specific names in components, variables, files
     - [x] app/page.tsx (line 7)
@@ -7966,29 +9234,34 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Clean up calendar-specific API endpoints
 
 - [x] **UI Elements**
+
   - [x] Replace app-specific branding, colors, logos
   - [x] Update title, metadata, and favicon
   - [x] Generalize any specific UI text
   - [x] Remove calendar-specific UI components
 
 - [x] **Database/Storage**
+
   - [x] Generalize database schemas
     - [x] Prisma schema looks generic, but double-check for app specifics
   - [x] Remove any seed data specific to original app (none found)
   - [x] Update data models to be template-friendly (models look general already)
 
 - [x] **Authentication**
+
   - [x] Generalize Firebase/auth configuration (already uses generic placeholders)
   - [x] Update any app-specific auth scopes or permissions
   - [x] Remove calendar-specific OAuth scopes
 
 - [x] **Testing**
+
   - [x] Update test files to remove app-specific test cases
     - [x] Check tests directory for specific test cases
   - [x] Generalize test fixtures and mock data
   - [x] Update test documentation to remove calendar references
 
 - [x] **GitHub Setup**
+
   - [x] Update GitHub-specific files (.github folder) (not present)
   - [x] Set up template configuration in GitHub
   - [x] Update issue/PR templates if present (none found)
@@ -8002,7 +9275,9 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [ ] Replace content of `.cursor/rules/project-reference.mdc` with updated version
 
 ## Template Preparation
+
 - [x] **Placeholder Naming Convention**
+
   - [x] Define a consistent placeholder format (e.g., `{{YOUR_PROJECT_NAME}}`, `NEXT_TEMPLATE_NAME`)
     - [x] Use double curly braces format like `{{YOUR_PROJECT_NAME}}` for high visibility
     - [x] Ensure placeholders are case-consistent (all caps for visibility)
@@ -8011,6 +9286,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Ensure placeholders are visually distinct from regular text
 
 - [x] **Environment Variable Centralization**
+
   - [x] Move hardcoded app name references to environment variables
     - [x] Update app/layout.tsx to use process.env.NEXT_PUBLIC_APP_NAME
     - [x] Update app/manifest.ts to use environment variables
@@ -8019,6 +9295,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Set DATABASE_URL to use `{{YOUR_PROJECT_NAME}}-db` instead of "ai-calendar-helper"
 
 - [x] **Setup Script Automation**
+
   - [x] Create a `setup.js` script using Node.js
     - [x] Add inquirer package for interactive prompts
     - [x] Implement project name, description, repository input
@@ -8029,6 +9306,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Document script usage in README.md
 
 - [x] **Required Placeholders**
+
   - [x] Project name (package.json, README, manifest, layout)
   - [x] Database name (environment files)
   - [x] Repository URLs (package.json, docs)
@@ -8037,6 +9315,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Copyright information (license, components)
 
 - [x] **Placeholder Documentation**
+
   - [x] Create a SETUP.md guide explaining what needs to be replaced
     - [x] Include a step-by-step guide for manual replacement
     - [x] Add a "Getting Started" section at the top of README.md
@@ -8045,6 +9324,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Add comments next to placeholders explaining what should go there
 
 - [x] **Template Configuration**
+
   - [x] Add GitHub template configuration
     - [x] Create a `.github/template.yml` file with metadata
     - [x] Add GitHub template topics for discoverability
@@ -8058,6 +9338,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
     - [x] Add troubleshooting section for common setup issues
 
 - [ ] **Best Practices**
+
   - [x] Get rid of NextAuth.js as we use Firebase Auth
   - [x] Remove support for Event entity (db, code) as that was part of the original calendar app we're trying to remove
     - [x] Prisma schema doesn't contain Event model (it was already removed)
@@ -8070,7 +9351,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
   - [x] Run npm run type-check and fix all issues
   - [x] e2e tests: address line 16 in the test-utils.tsx (ignore or write test)
   - [x] e2e tests: address all warnings and non-blocking issues
-  - [x] npm run dev issue:  ⚠ Invalid next.config.js options detected:  ⚠     Unrecognized key(s) in object: 'swcMinify'  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+  - [x] npm run dev issue: ⚠ Invalid next.config.js options detected: ⚠ Unrecognized key(s) in object: 'swcMinify' ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
   - [x] get rid of random screenshots in the app... via .gitignore? Some sort of auto-cleanup?
     - Created a dedicated `/tests/e2e/screenshots/` directory to store all manual debug screenshots
     - Updated screenshot paths in all test files to save to this directory
@@ -8105,7 +9386,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] `auth-flow.spec.ts` contains extensive hardcoded selectors for user profile element (lines 55-63)
       - [x] `auth-flow.spec.ts` has brittle authentication checks with regex for auth messages (/sign in|log in|authentication required/i)
       - [x] `debug.spec.ts` uses a hardcoded localhost URL with port (http://localhost:3001)
-      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.*Next.js/))
+      - [x] `debug.spec.ts` contains brittle title check (expect(page).toHaveTitle(/.\*Next.js/))
     - [x] **Unit Tests**:
       - [x] `SignInButton.test.tsx` uses getAttribute('data-auth-state', 'sign-in') which is brittle to UI changes
       - [x] `health.test.ts` has exact equality check on response structure that might break with minor additions
@@ -8141,19 +9422,23 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
       - [x] Update .env.test to use template variable for database name
 
 ## Key Improvements Made
+
 1. **Performance Optimization**
+
    - Added `useMemo` and `useCallback` to prevent unnecessary re-renders
    - Replaced state variables with derived values (currentYear in footer)
    - Improved conditional rendering logic for better performance
    - Added proper dependency arrays to useEffect hooks
 
 2. **Code Organization**
+
    - Consolidated duplicate auth logic in SignInButton into a single handler
    - Created helper functions for API calls (createSession, deleteSession)
    - Extracted repeated JSX patterns in BaseLayout for navigation links
    - Added better TypeScript types for authentication functions
 
 3. **React Component Structure**
+
    - Made naming more consistent for state variables (mounted vs isMounted)
    - Added proper dependency arrays to all useEffect hooks
    - Implemented better error handling with meaningful messages
@@ -8166,6 +9451,7 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
    - Enhanced test reliability with better selectors and assertions
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8173,8 +9459,11 @@ So what we need to do is scrub anything related to ai-calendar-helper from the s
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8182,6 +9471,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8194,6 +9484,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8201,6 +9492,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8208,12 +9500,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8224,18 +9518,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8245,19 +9543,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8268,6 +9570,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8275,8 +9578,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8284,6 +9590,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8296,6 +9603,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8303,6 +9611,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8310,12 +9619,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8326,18 +9637,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8347,19 +9662,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8370,6 +9689,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8377,8 +9697,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8386,6 +9709,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8398,6 +9722,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8405,6 +9730,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8412,12 +9738,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8428,18 +9756,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8449,19 +9781,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8472,6 +9808,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8479,8 +9816,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8488,6 +9828,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8500,6 +9841,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8507,6 +9849,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8514,12 +9857,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8530,18 +9875,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8551,19 +9900,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8574,6 +9927,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8581,8 +9935,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8590,6 +9947,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8602,6 +9960,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8609,6 +9968,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8616,12 +9976,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8632,18 +9994,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8653,19 +10019,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8676,6 +10046,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8683,8 +10054,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8692,6 +10066,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8704,6 +10079,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8711,6 +10087,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8718,12 +10095,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8734,18 +10113,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8755,19 +10138,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8778,6 +10165,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8785,8 +10173,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8794,6 +10185,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8806,6 +10198,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8813,6 +10206,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8820,12 +10214,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8836,18 +10232,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8857,19 +10257,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8880,6 +10284,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8887,8 +10292,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8896,6 +10304,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -8908,6 +10317,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -8915,6 +10325,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -8922,12 +10333,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -8938,18 +10351,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -8959,19 +10376,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -8982,6 +10403,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -8989,8 +10411,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -8998,6 +10423,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9010,6 +10436,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9017,6 +10444,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9024,12 +10452,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9040,18 +10470,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9061,19 +10495,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9084,6 +10522,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9091,8 +10530,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9100,6 +10542,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9112,6 +10555,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9119,6 +10563,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9126,12 +10571,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9142,18 +10589,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9163,19 +10614,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9186,6 +10641,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9193,8 +10649,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9202,6 +10661,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9214,6 +10674,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9221,6 +10682,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9228,12 +10690,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9244,18 +10708,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9265,19 +10733,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9288,6 +10760,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9295,8 +10768,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9304,6 +10780,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9316,6 +10793,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9323,6 +10801,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9330,12 +10809,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9346,18 +10827,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9367,19 +10852,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9390,6 +10879,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9397,8 +10887,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9406,6 +10899,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9418,6 +10912,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9425,6 +10920,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9432,12 +10928,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9448,18 +10946,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9469,19 +10971,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9492,6 +10998,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9499,8 +11006,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9508,6 +11018,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9520,6 +11031,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9527,6 +11039,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9534,12 +11047,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9550,18 +11065,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9571,19 +11090,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9594,6 +11117,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9601,8 +11125,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9610,6 +11137,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9622,6 +11150,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9629,6 +11158,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9636,12 +11166,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9652,18 +11184,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9673,19 +11209,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9696,6 +11236,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9703,8 +11244,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9712,6 +11256,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9724,6 +11269,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9731,6 +11277,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9738,12 +11285,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9754,18 +11303,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9775,19 +11328,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9798,6 +11355,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9805,8 +11363,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9814,6 +11375,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9826,6 +11388,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9833,6 +11396,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9840,12 +11404,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9856,18 +11422,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9877,19 +11447,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -9900,6 +11474,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -9907,8 +11482,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -9916,6 +11494,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -9928,6 +11507,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -9935,6 +11515,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -9942,12 +11523,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -9958,18 +11541,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -9979,19 +11566,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10002,6 +11593,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10009,8 +11601,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10018,6 +11613,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10030,6 +11626,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10037,6 +11634,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10044,12 +11642,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10060,18 +11660,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10081,19 +11685,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10104,6 +11712,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10111,8 +11720,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10120,6 +11732,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10132,6 +11745,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10139,6 +11753,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10146,12 +11761,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10162,18 +11779,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10183,19 +11804,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10206,6 +11831,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10213,8 +11839,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10222,6 +11851,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10234,6 +11864,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10241,6 +11872,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10248,12 +11880,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10264,18 +11898,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10285,19 +11923,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10308,6 +11950,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10315,8 +11958,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10324,6 +11970,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10336,6 +11983,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10343,6 +11991,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10350,12 +11999,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10366,18 +12017,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10387,19 +12042,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10410,6 +12069,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10417,8 +12077,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10426,6 +12089,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10438,6 +12102,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10445,6 +12110,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10452,12 +12118,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10468,18 +12136,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10489,19 +12161,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10512,6 +12188,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10519,8 +12196,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10528,6 +12208,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10540,6 +12221,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10547,6 +12229,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10554,12 +12237,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10570,18 +12255,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10591,19 +12280,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10614,6 +12307,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10621,8 +12315,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10630,6 +12327,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10642,6 +12340,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10649,6 +12348,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10656,12 +12356,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10672,18 +12374,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10693,19 +12399,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10716,6 +12426,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10723,8 +12434,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10732,6 +12446,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10744,6 +12459,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10751,6 +12467,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10758,12 +12475,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10774,18 +12493,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10795,19 +12518,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10818,6 +12545,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10825,8 +12553,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10834,6 +12565,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10846,6 +12578,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10853,6 +12586,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10860,12 +12594,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10876,18 +12612,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10897,19 +12637,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -10920,6 +12664,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -10927,8 +12672,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -10936,6 +12684,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -10948,6 +12697,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -10955,6 +12705,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -10962,12 +12713,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -10978,18 +12731,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -10999,19 +12756,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11022,6 +12783,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11029,8 +12791,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11038,6 +12803,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11050,6 +12816,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11057,6 +12824,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11064,12 +12832,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11080,18 +12850,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11101,19 +12875,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11124,6 +12902,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11131,8 +12910,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11140,6 +12922,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11152,6 +12935,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11159,6 +12943,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11166,12 +12951,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11182,18 +12969,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11203,19 +12994,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11226,6 +13021,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11233,8 +13029,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11242,6 +13041,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11254,6 +13054,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11261,6 +13062,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11268,12 +13070,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11284,18 +13088,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11305,19 +13113,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11328,6 +13140,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11335,8 +13148,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11344,6 +13160,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11356,6 +13173,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11363,6 +13181,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11370,12 +13189,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11386,18 +13207,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11407,19 +13232,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11430,6 +13259,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11437,8 +13267,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11446,6 +13279,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11458,6 +13292,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11465,6 +13300,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11472,12 +13308,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11488,18 +13326,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11509,19 +13351,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11532,6 +13378,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11539,8 +13386,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11548,6 +13398,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11560,6 +13411,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11567,6 +13419,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11574,12 +13427,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11590,18 +13445,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11611,19 +13470,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11634,6 +13497,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11641,8 +13505,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11650,6 +13517,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11662,6 +13530,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11669,6 +13538,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11676,12 +13546,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11692,18 +13564,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11713,19 +13589,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11736,6 +13616,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11743,8 +13624,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11752,6 +13636,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11764,6 +13649,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11771,6 +13657,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11778,12 +13665,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11794,18 +13683,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11815,19 +13708,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11838,6 +13735,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11845,8 +13743,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11854,6 +13755,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11866,6 +13768,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11873,6 +13776,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11880,12 +13784,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11896,18 +13802,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -11917,19 +13827,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -11940,6 +13854,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -11947,8 +13862,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -11956,6 +13874,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -11968,6 +13887,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -11975,6 +13895,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -11982,12 +13903,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -11998,18 +13921,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12019,19 +13946,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12042,6 +13973,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12049,8 +13981,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12058,6 +13993,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12070,6 +14006,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12077,6 +14014,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12084,12 +14022,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12100,18 +14040,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12121,19 +14065,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12144,6 +14092,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12151,8 +14100,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12160,6 +14112,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12172,6 +14125,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12179,6 +14133,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12186,12 +14141,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12202,18 +14159,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12223,19 +14184,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12246,6 +14211,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12253,8 +14219,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12262,6 +14231,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12274,6 +14244,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12281,6 +14252,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12288,12 +14260,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12304,18 +14278,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12325,19 +14303,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12348,6 +14330,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12355,8 +14338,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12364,6 +14350,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12376,6 +14363,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12383,6 +14371,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12390,12 +14379,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12406,18 +14397,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12427,19 +14422,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12450,6 +14449,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12457,8 +14457,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12466,6 +14469,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12478,6 +14482,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12485,6 +14490,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12492,12 +14498,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12508,18 +14516,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12529,19 +14541,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12552,6 +14568,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12559,8 +14576,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12568,6 +14588,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12580,6 +14601,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12587,6 +14609,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12594,12 +14617,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12610,18 +14635,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12631,19 +14660,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12654,6 +14687,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12661,8 +14695,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12670,6 +14707,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12682,6 +14720,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12689,6 +14728,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12696,12 +14736,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12712,18 +14754,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12733,19 +14779,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12756,6 +14806,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12763,8 +14814,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12772,6 +14826,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12784,6 +14839,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12791,6 +14847,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12798,12 +14855,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12814,18 +14873,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12835,19 +14898,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12858,6 +14925,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12865,8 +14933,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12874,6 +14945,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12886,6 +14958,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12893,6 +14966,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -12900,12 +14974,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -12916,18 +14992,22 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**
+
    - Replaced `any` types with more specific `unknown` types
    - Added proper type guards before type assertions
    - Created custom type utilities for User objects
 
 2. **Better Type Organization**
+
    - Added enums for HTTP status codes and user roles
    - Created union types for environmental variables
 
 3. **Test Compatibility**
+
    - Modified SignInButton.tsx to maintain test compatibility
    - All unit tests and E2E tests are now passing
 
@@ -12937,19 +15017,23 @@ We've made several improvements to the TypeScript codebase:
    - Consider adding additional TypeScript-specific ESLint rules
 
 ## React Best Practices Improvements
+
 We've successfully implemented many React best practices:
 
 1. **Component Structure**
+
    - Replaced all class components with functional components
    - Added proper component memoization with useMemo and useCallback
    - Created reusable patterns for navigation links in BaseLayout
 
 2. **Hooks Usage**
+
    - Fixed useEffect dependencies in all components
    - Replaced useState with derived values where appropriate
    - Used useCallback for event handlers to prevent unnecessary re-renders
 
 3. **Performance Optimizations**
+
    - Memoized context values to prevent unnecessary re-renders
    - Optimized AuthProvider with useMemo to improve performance
    - Improved rendering through better conditionals
@@ -12960,6 +15044,7 @@ We've successfully implemented many React best practices:
    - Enhanced testing of auth-related functionality
 
 ## Next Steps
+
 1. Replace content of `.cursor/rules/project-reference.mdc` with updated version
 2. Remove any unused packages from package.json
 3. Remove any unused code from the codebase
@@ -12967,8 +15052,11 @@ We've successfully implemented many React best practices:
 ## Languages and Packages Checklist
 
 For each item in these lists, I want to find the best practices for each using their docs + web search. Make a list of any egregious best practices violations as checklists under each item.
->> With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
+> > With regard to xxxxx : Check the docs and web for best practices, then check our entire codebase for things that violate best practices and make a checklist in @scratchpad.md for us to work on.
+
 ### Languages/Frameworks
+
 - [x] TypeScript
 - [x] React
 - [ ] Next.js
@@ -12976,6 +15064,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] PostgreSQL (via Prisma)
 
 ### Major Packages
+
 - [ ] Firebase (Authentication)
 - [ ] Firebase Admin
 - [ ] Prisma (ORM)
@@ -12988,6 +15077,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] Zod (Validation)
 
 ### Build/Dev Tools
+
 - [ ] Webpack
 - [ ] PostCSS
 - [ ] SWC
@@ -12995,6 +15085,7 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] ts-node
 
 ### Utility Libraries
+
 - [ ] date-fns
 - [ ] uuid
 - [ ] clsx
@@ -13002,12 +15093,14 @@ For each item in these lists, I want to find the best practices for each using t
 - [ ] class-variance-authority
 
 ### Testing Libraries
+
 - [ ] @testing-library/react
 - [ ] @testing-library/jest-dom
 - [ ] msw (Mock Service Worker)
 - [ ] supertest
 
 ## TypeScript Issues to Address
+
 - [x] Replace `any` in ApiResponse with `unknown` in types/index.ts
 - [x] Add proper type checking before type assertions (auth as Auth) in firebase.ts
 - [x] Increase usage of TypeScript utility types where appropriate
@@ -13018,6 +15111,7 @@ For each item in these lists, I want to find the best practices for each using t
   - Added HttpStatusCode and UserRole enums
 
 ## TypeScript Improvements Summary
+
 We've made several improvements to the TypeScript codebase:
 
 1. **Enhanced Type Safety**

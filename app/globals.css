@@ -30,23 +30,25 @@
     color: var(--foreground);
     font-family: var(--font-roboto), Arial, sans-serif;
   }
-  
+
   /* Enhanced focus styles for better keyboard navigation */
   :focus {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
-  
+
   /* Remove focus styles for mouse users, but keep them for keyboard navigation */
   :focus:not(:focus-visible) {
     outline: none;
   }
-  
+
   /* Ensure focus-visible has strong styling */
   :focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--focus-ring-offset), 0 0 0 6px var(--focus-ring);
+    box-shadow:
+      0 0 0 4px var(--focus-ring-offset),
+      0 0 0 6px var(--focus-ring);
   }
 }
 
@@ -55,30 +57,30 @@
   .text-muted {
     color: var(--muted);
   }
-  
+
   .text-high-contrast {
     color: var(--foreground);
   }
-  
+
   .text-medium-contrast {
     color: var(--muted-foreground);
   }
-  
+
   .bg-accent {
     background-color: var(--accent);
   }
-  
+
   .text-accent-foreground {
     color: var(--accent-foreground);
   }
-  
+
   /* Focus state utility classes */
   .focus-ring {
     @apply focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
     --tw-ring-color: var(--focus-ring);
     --tw-ring-offset-color: var(--focus-ring-offset);
   }
-  
+
   .focus-within-ring {
     @apply focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2;
     --tw-ring-color: var(--focus-ring);

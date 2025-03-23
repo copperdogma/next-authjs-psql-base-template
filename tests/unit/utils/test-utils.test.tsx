@@ -11,22 +11,30 @@ jest.mock('next/navigation', () => ({
     replace: jest.fn(),
     prefetch: jest.fn(),
     back: jest.fn(),
-    forward: jest.fn()
+    forward: jest.fn(),
   })),
-  usePathname: jest.fn().mockImplementation(() => '/')
+  usePathname: jest.fn().mockImplementation(() => '/'),
 }));
 
 // Simple test component
-const TestComponent = ({ requiresAuth = false, onNavigate = () => {} }: { requiresAuth?: boolean, onNavigate?: () => void }) => {
+const TestComponent = ({
+  requiresAuth = false,
+  onNavigate = () => {},
+}: {
+  requiresAuth?: boolean;
+  onNavigate?: () => void;
+}) => {
   const handleClick = () => {
     onNavigate();
   };
-  
+
   return (
     <div>
       <h1>Test Component</h1>
       {requiresAuth && <p data-testid="auth-content">Authenticated content</p>}
-      <button onClick={handleClick} data-testid="nav-button">Navigate</button>
+      <button onClick={handleClick} data-testid="nav-button">
+        Navigate
+      </button>
     </div>
   );
 };
@@ -49,7 +57,7 @@ describe('test-utils', () => {
     } as any;
 
     render(<TestComponent requiresAuth />, {
-      authState: { user: mockUser, loading: false }
+      authState: { user: mockUser, loading: false },
     });
 
     expect(screen.getByText('Test Component')).toBeTruthy();
@@ -61,13 +69,13 @@ describe('test-utils', () => {
     const { mockRouter } = render(<TestComponent />, {
       routerConfig: {
         pathname: ROUTES.DASHBOARD,
-        push: mockPush
-      }
+        push: mockPush,
+      },
     });
 
     // Test that the router is properly configured
     expect(mockRouter.pathname).toBe(ROUTES.DASHBOARD);
-    
+
     // Verify mock function was properly set up
     mockRouter.push('/test');
     expect(mockPush).toHaveBeenCalledWith('/test');
@@ -75,15 +83,15 @@ describe('test-utils', () => {
 
   it('handles loading state correctly', () => {
     render(<TestComponent />, {
-      authState: { user: null, loading: true }
+      authState: { user: null, loading: true },
     });
-    
+
     expect(screen.getByText('Test Component')).toBeTruthy();
   });
 
   it('uses default router methods when not specified', () => {
     const { mockRouter } = render(<TestComponent />);
-    
+
     mockRouter.push('/some-route');
     mockRouter.replace('/replace-route');
     mockRouter.back();
@@ -100,12 +108,12 @@ describe('test-utils', () => {
 
   it('uses custom pathname when specified', () => {
     const customPathname = '/custom-path';
-    
+
     // Render with custom pathname
     const { mockRouter } = render(<TestComponent />, {
       routerConfig: {
-        pathname: customPathname
-      }
+        pathname: customPathname,
+      },
     });
 
     // Verify the pathname was set correctly
@@ -119,11 +127,11 @@ describe('test-utils', () => {
       replace: jest.fn(),
       prefetch: jest.fn(),
       back: jest.fn(),
-      forward: jest.fn()
+      forward: jest.fn(),
     };
 
     const { mockRouter } = render(<TestComponent />, {
-      routerConfig: mockRouterConfig
+      routerConfig: mockRouterConfig,
     });
 
     mockRouter.push('/test-push');
@@ -141,16 +149,16 @@ describe('test-utils', () => {
 
   it('works with partial router configuration', () => {
     const mockPush = jest.fn();
-    
+
     const { mockRouter } = render(<TestComponent />, {
       routerConfig: {
-        push: mockPush
+        push: mockPush,
         // Not specifying other properties
-      }
+      },
     });
-    
+
     // Test that the router has the custom push but default pathname
     mockRouter.push('/partial-test');
     expect(mockPush).toHaveBeenCalledWith('/partial-test');
   });
-}); 
+});

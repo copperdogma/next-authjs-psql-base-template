@@ -38,4 +38,4 @@ declare module 'firebase-admin/firestore' {
 
 declare module 'firebase' {
   // Types are provided by the Firebase npm package
-} 
+}

@@ -22,11 +22,11 @@ export function getDatabaseErrorType(error: unknown): DatabaseErrorType {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return error.code as DatabaseErrorType;
   }
-  
+
   if (error instanceof Prisma.PrismaClientInitializationError) {
     return DatabaseErrorType.ConnectionError;
   }
-  
+
   return DatabaseErrorType.Unknown;
 }
 
@@ -53,8 +53,8 @@ export async function checkDatabaseConnection(): Promise<boolean> {
  */
 export async function withDatabaseRetry<T>(
   operation: () => Promise<T>,
-  options: { 
-    retries?: number; 
+  options: {
+    retries?: number;
     delayMs?: number;
     retryableErrors?: DatabaseErrorType[];
   } = {}
@@ -62,38 +62,37 @@ export async function withDatabaseRetry<T>(
   const {
     retries = 3,
     delayMs = 500,
-    retryableErrors = [
-      DatabaseErrorType.ConnectionError,
-      DatabaseErrorType.Timeout,
-    ],
+    retryableErrors = [DatabaseErrorType.ConnectionError, DatabaseErrorType.Timeout],
   } = options;
-  
+
   let lastError: unknown;
-  
+
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
       const errorType = getDatabaseErrorType(error);
-      
+
       // Only retry on certain error types
       if (!retryableErrors.includes(errorType)) {
         throw error;
       }
-      
+
       // Last attempt, don't delay just throw
       if (attempt >= retries - 1) {
         throw error;
       }
-      
+
       // Wait with exponential backoff before retry
       const delay = delayMs * Math.pow(2, attempt);
-      console.warn(`Database operation failed (attempt ${attempt + 1}/${retries}). Retrying in ${delay}ms...`);
+      console.warn(
+        `Database operation failed (attempt ${attempt + 1}/${retries}). Retrying in ${delay}ms...`
+      );
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError;
 }
 
@@ -101,7 +100,12 @@ export async function withDatabaseRetry<T>(
  * Execute operations in a transaction with appropriate error handling
  */
 export async function withTransaction<T>(
-  operations: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
+  operations: (
+    tx: Omit<
+      PrismaClient,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  ) => Promise<T>,
   options?: {
     timeout?: number;
     isolationLevel?: Prisma.TransactionIsolationLevel;
@@ -132,13 +136,13 @@ export function buildPartialMatchFilter(field: string, searchTerm: string): any 
   if (!searchTerm?.trim()) {
     return {};
   }
-  
+
   // Basic case-insensitive search
   return {
     [field]: {
       contains: searchTerm,
-      mode: 'insensitive'
-    }
+      mode: 'insensitive',
+    },
   };
 }
 
@@ -147,21 +151,18 @@ export function buildPartialMatchFilter(field: string, searchTerm: string): any 
  * @param options Pagination options
  * @returns Prisma pagination configuration
  */
-export function getPaginationConfig(options: {
-  page?: number;
-  pageSize?: number;
-  orderBy?: string;
-  orderDirection?: 'asc' | 'desc';
-} = {}) {
-  const {
-    page = 1,
-    pageSize = 20,
-    orderBy = 'createdAt',
-    orderDirection = 'desc',
-  } = options;
-  
+export function getPaginationConfig(
+  options: {
+    page?: number;
+    pageSize?: number;
+    orderBy?: string;
+    orderDirection?: 'asc' | 'desc';
+  } = {}
+) {
+  const { page = 1, pageSize = 20, orderBy = 'createdAt', orderDirection = 'desc' } = options;
+
   const skip = (page - 1) * pageSize;
-  
+
   return {
     skip,
     take: pageSize,
@@ -169,4 +170,4 @@ export function getPaginationConfig(options: {
       [orderBy]: orderDirection,
     },
   };
-} 
+}

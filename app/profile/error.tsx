@@ -17,9 +17,7 @@ export default function ProfileError({
 
   return (
     <div className="container mx-auto p-6 text-center">
-      <h2 className="text-2xl font-bold text-red-600 mb-4">
-        Profile Error
-      </h2>
+      <h2 className="text-2xl font-bold text-red-600 mb-4">Profile Error</h2>
       <p className="text-gray-600 mb-6">
         {error.message || 'An error occurred while loading your profile.'}
       </p>
@@ -30,13 +28,10 @@ export default function ProfileError({
         >
           Try again
         </button>
-        <Link
-          href="/"
-          className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
-        >
+        <Link href="/" className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">
           Return to Home
         </Link>
       </div>
     </div>
   );
-} 
+}

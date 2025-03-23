@@ -22,17 +22,20 @@ export interface SnackbarProps extends Omit<MuiSnackbarProps, 'children'> {
 }
 
 const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
-  ({ 
-    message, 
-    severity = 'info', 
-    onClose, 
-    showCloseButton = true,
-    title,
-    autoHideDuration = 6000,
-    variant = 'filled',
-    elevation = 6,
-    ...props 
-  }, ref) => {
+  (
+    {
+      message,
+      severity = 'info',
+      onClose,
+      showCloseButton = true,
+      title,
+      autoHideDuration = 6000,
+      variant = 'filled',
+      elevation = 6,
+      ...props
+    },
+    ref
+  ) => {
     const handleClose = useCallback(() => {
       if (onClose) onClose();
     }, [onClose]);
@@ -53,12 +56,7 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
           elevation={elevation}
           action={
             showCloseButton && (
-              <IconButton
-                size="small"
-                aria-label="close"
-                color="inherit"
-                onClick={handleClose}
-              >
+              <IconButton size="small" aria-label="close" color="inherit" onClick={handleClose}>
                 <CloseIcon fontSize="small" />
               </IconButton>
             )
@@ -75,4 +73,4 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
 Snackbar.displayName = 'Snackbar';
 
 // Memoize to prevent unnecessary re-renders
-export default memo(Snackbar); 
+export default memo(Snackbar);

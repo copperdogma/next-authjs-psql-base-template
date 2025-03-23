@@ -10,7 +10,7 @@ export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
-  INTERNAL_SERVER_ERROR: 500
+  INTERNAL_SERVER_ERROR: 500,
 };
 
 // Authentication
@@ -19,7 +19,7 @@ export const AUTH = {
   MOCK_SESSION_COOKIE: 'mock-session-cookie',
   COOKIE_NAME: 'session',
   FIREBASE_PROJECT_ID: 'test-project-id',
-  INVALID_TOKEN: 'invalid-token'
+  INVALID_TOKEN: 'invalid-token',
 };
 
 // User data
@@ -29,7 +29,7 @@ export const TEST_USER = {
   NAME: 'Test User',
   DISPLAY_NAME: 'Test User',
   PHOTO_URL: 'https://via.placeholder.com/150',
-  PASSWORD: 'TestPassword123!'
+  PASSWORD: 'TestPassword123!',
 };
 
 // Database
@@ -37,31 +37,31 @@ export const DATABASE = {
   VALID_CONNECTION_TEST_QUERY: 'SELECT 1',
   EXPECTED_RESULT: { result: 1 },
   INVALID_CONNECTION_STRING: 'postgresql://invalid:invalid@localhost:5432/invalid?schema=public',
-  TEST_DB_PREFIX: '{{YOUR_PROJECT_NAME}}-test-'
+  TEST_DB_PREFIX: '{{YOUR_PROJECT_NAME}}-test-',
 };
 
 // Component states
 export const COMPONENT_STATES = {
   AUTH_STATES: {
     SIGN_IN: 'sign-in',
-    SIGN_OUT: 'sign-out'
+    SIGN_OUT: 'sign-out',
   },
   LOADING: 'true',
   TEST_IDS: {
     AUTH_BUTTON: 'auth-button',
-    AUTH_BUTTON_PLACEHOLDER: 'auth-button-placeholder'
-  }
+    AUTH_BUTTON_PLACEHOLDER: 'auth-button-placeholder',
+  },
 };
 
 // API endpoints
 export const API_ENDPOINTS = {
   SESSION: '/api/auth/session',
-  HEALTH: '/api/health'
+  HEALTH: '/api/health',
 };
 
 // Common test domains
 export const TEST_DOMAINS = {
-  LOCAL: 'http://localhost:3000'
+  LOCAL: 'http://localhost:3000',
 };
 
 // Firebase configuration for tests
@@ -81,4 +81,4 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   SETTINGS: '/settings',
-}; 
+};

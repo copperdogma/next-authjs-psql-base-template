@@ -34,9 +34,9 @@ export function ThemeProvider({
   // Don't do anything on the server
   useEffect(() => {
     setMounted(true);
-    
+
     const savedTheme = localStorage.getItem(storageKey) as Theme | null;
-    
+
     if (savedTheme) {
       setTheme(savedTheme);
     } else {
@@ -47,9 +47,9 @@ export function ThemeProvider({
   // Set the theme class only on the client side to avoid hydration issues
   useEffect(() => {
     if (!mounted) return;
-    
+
     const root = window.document.documentElement;
-    
+
     // Remove the class if it exists
     root.classList.remove('light', 'dark');
 
@@ -57,7 +57,7 @@ export function ThemeProvider({
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
-      
+
       root.classList.add(systemTheme);
     } else {
       root.classList.add(theme);
@@ -84,10 +84,10 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
-  
+
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
-  
+
   return context;
-}; 
+};

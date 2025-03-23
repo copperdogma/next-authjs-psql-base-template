@@ -1,23 +1,23 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Global PrismaClient instance with optimized connection settings.
  * Uses singleton pattern to prevent multiple instances in development.
  */
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 // Configuration based on environment
 const getPrismaConfig = () => {
-  const config: any = {}
-  
+  const config: any = {};
+
   // Only log errors in production, more verbose in development
   if (process.env.NODE_ENV === 'production') {
-    config.log = ['error', 'warn']
+    config.log = ['error', 'warn'];
   } else {
     // Development logging - queries can be enabled for debugging
-    config.log = process.env.DEBUG_PRISMA ? ['query', 'error', 'warn'] : ['error', 'warn']
+    config.log = process.env.DEBUG_PRISMA ? ['query', 'error', 'warn'] : ['error', 'warn'];
   }
-  
+
   // Configure connection pool for specific scenarios
   if (process.env.NODE_ENV === 'production') {
     // Adjust connection pool for production environment
@@ -25,19 +25,19 @@ const getPrismaConfig = () => {
     // For serverless, keep it small (typically 1-3)
     config.datasources = {
       db: {
-        url: process.env.DATABASE_URL
-      }
-    }
+        url: process.env.DATABASE_URL,
+      },
+    };
   }
-  
-  return config
-}
+
+  return config;
+};
 
 // Create or reuse PrismaClient instance
-export const prisma = globalForPrisma.prisma || new PrismaClient(getPrismaConfig())
+export const prisma = globalForPrisma.prisma || new PrismaClient(getPrismaConfig());
 
 // Prevent multiple instances during hot reloading in development
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 /**
  * Disconnect from the database.
@@ -45,6 +45,6 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
  */
 export async function disconnectPrisma() {
   if (globalForPrisma.prisma) {
-    await globalForPrisma.prisma.$disconnect()
+    await globalForPrisma.prisma.$disconnect();
   }
-} 
+}

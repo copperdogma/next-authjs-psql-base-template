@@ -7,11 +7,11 @@ jest.mock('next/server', () => ({
     redirect: jest.fn(() => ({ type: 'redirect' })),
     next: jest.fn(() => ({ type: 'next' })),
   },
-  NextRequest: jest.fn().mockImplementation((url) => ({
+  NextRequest: jest.fn().mockImplementation(url => ({
     nextUrl: new URL(url),
     url,
     cookies: {
-      get: jest.fn().mockImplementation((name) => {
+      get: jest.fn().mockImplementation(name => {
         if (name === 'session' && !url.includes('no-auth')) {
           return { name: 'session', value: 'mock-session-token' };
         }
@@ -37,13 +37,13 @@ describe('Auth Middleware Module', () => {
         loginPath: '/custom-login',
         defaultAuthenticatedRedirect: '/custom-dashboard',
       };
-      
+
       const middleware = createAuthMiddleware(customOptions);
-      
+
       // Test redirection to custom login path
       const unauthRequest = new NextRequest('http://localhost:3000/dashboard/no-auth');
       middleware(unauthRequest);
-      
+
       expect(NextResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (NextResponse.redirect as jest.Mock).mock.calls[0][0];
       expect(redirectUrl.pathname).toBe('/custom-login');
@@ -52,58 +52,60 @@ describe('Auth Middleware Module', () => {
 
   describe('authMiddleware behavior', () => {
     const middleware = createAuthMiddleware();
-    
+
     it('should redirect unauthenticated users to login from protected routes', () => {
       const request = new NextRequest('http://localhost:3000/dashboard/no-auth');
       middleware(request);
-      
+
       expect(NextResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (NextResponse.redirect as jest.Mock).mock.calls[0][0];
       expect(redirectUrl.pathname).toBe('/login');
-      expect(redirectUrl.searchParams.get('callbackUrl')).toBe('http://localhost:3000/dashboard/no-auth');
+      expect(redirectUrl.searchParams.get('callbackUrl')).toBe(
+        'http://localhost:3000/dashboard/no-auth'
+      );
     });
-    
+
     it('should allow authenticated users to access protected routes', () => {
       const request = new NextRequest('http://localhost:3000/dashboard');
       middleware(request);
-      
+
       expect(NextResponse.next).toHaveBeenCalled();
       expect(NextResponse.redirect).not.toHaveBeenCalled();
     });
-    
+
     it('should redirect authenticated users from public routes to dashboard', () => {
       const request = new NextRequest('http://localhost:3000/login');
       middleware(request);
-      
+
       expect(NextResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (NextResponse.redirect as jest.Mock).mock.calls[0][0];
       expect(redirectUrl.pathname).toBe('/dashboard');
     });
-    
+
     it('should allow unauthenticated users to access public routes', () => {
       const request = new NextRequest('http://localhost:3000/login/no-auth');
       middleware(request);
-      
+
       expect(NextResponse.next).toHaveBeenCalled();
       expect(NextResponse.redirect).not.toHaveBeenCalled();
     });
-    
+
     it('should allow access to unspecified routes regardless of auth status', () => {
       // Unauthenticated user on unspecified route
       const unauthRequest = new NextRequest('http://localhost:3000/about/no-auth');
       middleware(unauthRequest);
-      
+
       expect(NextResponse.next).toHaveBeenCalled();
       expect(NextResponse.redirect).not.toHaveBeenCalled();
-      
+
       jest.clearAllMocks();
-      
+
       // Authenticated user on unspecified route
       const authRequest = new NextRequest('http://localhost:3000/about');
       middleware(authRequest);
-      
+
       expect(NextResponse.next).toHaveBeenCalled();
       expect(NextResponse.redirect).not.toHaveBeenCalled();
     });
   });
-}); 
+});

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { error: 'No token provided' }, 
+        { error: 'No token provided' },
         { status: HttpStatusCode.BAD_REQUEST }
       );
     }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: !isDevelopment, // Only use secure in production to allow HTTP in development
       path: '/',
-      sameSite: isDevelopment ? 'lax' : 'none' as 'lax' | 'none', // Use 'lax' in dev for HTTP, 'none' in prod
+      sameSite: isDevelopment ? 'lax' : ('none' as 'lax' | 'none'), // Use 'lax' in dev for HTTP, 'none' in prod
     };
 
     // Create response with cookie
@@ -44,11 +44,11 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Session refresh error:', error);
-    
+
     // More detailed error handling
     let errorMessage = 'Unauthorized';
     let statusCode = HttpStatusCode.UNAUTHORIZED;
-    
+
     if (error instanceof Error) {
       // Handle specific error types
       if (error.message.includes('expired')) {
@@ -60,10 +60,7 @@ export async function POST(request: NextRequest) {
         errorMessage = 'Session refresh failed';
       }
     }
-    
-    return NextResponse.json(
-      { error: errorMessage }, 
-      { status: statusCode }
-    );
+
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
-} 
+}

@@ -86,11 +86,13 @@ When writing or maintaining E2E tests:
 
 ## Challenges and Solutions
 
-1. **Authentication Testing**: 
+1. **Authentication Testing**:
+
    - **Challenge**: Testing OAuth flows
    - **Solution**: Mock authentication state using localStorage and custom events
 
 2. **Test Reliability**:
+
    - **Challenge**: Flaky tests due to timing or network issues
    - **Solution**: Implement proper waiting strategies and retry mechanisms
 
@@ -103,13 +105,13 @@ When writing or maintaining E2E tests:
 To ensure tests run reliably across different browsers:
 
 1. **Feature Detection**: Always check if browser features exist before using them
+
    ```typescript
-   const memoryInfo = await client.send('Memory.getBrowserMemoryUsage')
-     .catch(error => {
-       console.log('Memory API not available, skipping test');
-       return null;
-     });
-   
+   const memoryInfo = await client.send('Memory.getBrowserMemoryUsage').catch(error => {
+     console.log('Memory API not available, skipping test');
+     return null;
+   });
+
    if (memoryInfo) {
      // Perform tests that require this API
    }
@@ -125,6 +127,7 @@ To ensure tests run reliably across different browsers:
 While our current E2E testing foundation is solid, the following enhancements are recommended for future implementation:
 
 1. **Visual Testing**:
+
    - Implement screenshot comparison for critical UI components
    - Compare visual snapshots against baselines to detect visual regressions
    - Example:
@@ -136,20 +139,24 @@ While our current E2E testing foundation is solid, the following enhancements ar
      ```
 
 2. **Network Request Mocking**:
+
    - Mock API responses for consistent test behavior
    - Test error states and edge cases more reliably
    - Example:
      ```typescript
      test('test with mocked API', async ({ page }) => {
-       await page.route('/api/data', route => route.fulfill({
-         status: 200,
-         body: JSON.stringify({ key: 'test-data' })
-       }));
+       await page.route('/api/data', route =>
+         route.fulfill({
+           status: 200,
+           body: JSON.stringify({ key: 'test-data' }),
+         })
+       );
        await page.goto('/dashboard');
      });
      ```
 
 3. **Mobile Device Emulation**:
+
    - Add specific device profiles for mobile testing
    - Test touch interactions and mobile-specific behavior
    - Example:
@@ -161,6 +168,7 @@ While our current E2E testing foundation is solid, the following enhancements ar
      ```
 
 4. **Test Tracing for Debugging**:
+
    - Implement trace collection for complex test scenarios
    - Help with troubleshooting failures in CI environments
    - Example:
@@ -177,4 +185,4 @@ While our current E2E testing foundation is solid, the following enhancements ar
    - Test components in isolation before integration
    - Requires setup with the appropriate framework adapter (React, Vue, etc.)
 
-These enhancements would elevate our testing approach and provide more comprehensive coverage, but they are not critical for the initial implementation phase. 
+These enhancements would elevate our testing approach and provide more comprehensive coverage, but they are not critical for the initial implementation phase.

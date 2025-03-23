@@ -25,12 +25,12 @@ export interface UseFormResult<T> {
 
 /**
  * Custom hook for managing form state with validation
- * 
+ *
  * @param initialValues - Initial form values
  * @param onSubmit - Function to call on form submission after validation passes
  * @param validate - Optional validation function
  * @returns Form state and handlers
- * 
+ *
  * @example
  * const { values, errors, handleChange, handleSubmit } = useForm(
  *   { email: '', password: '' },
@@ -60,47 +60,53 @@ export function useForm<T extends Record<string, any>>(
     return validate(values);
   }, [values, validate]);
 
-  const handleChange = useCallback((e: FieldChange) => {
-    const { name, value } = e.target;
-    let fieldValue: any = value;
-    
-    // Handle checkbox inputs specifically
-    if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
-      fieldValue = e.target.checked;
-    }
-    
-    setValues((prevValues) => ({
-      ...prevValues,
-      [name]: fieldValue,
-    }));
-    
-    // Clear error when field is changed
-    if (errors[name as keyof T]) {
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors[name as keyof T];
-        return newErrors;
-      });
-    }
-  }, [errors]);
+  const handleChange = useCallback(
+    (e: FieldChange) => {
+      const { name, value } = e.target;
+      let fieldValue: any = value;
 
-  const handleBlur = useCallback((field: keyof T) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    
-    if (validate) {
-      const validationErrors = validate(values);
-      if (validationErrors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: validationErrors[field] }));
+      // Handle checkbox inputs specifically
+      if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
+        fieldValue = e.target.checked;
       }
-    }
-  }, [values, validate]);
+
+      setValues(prevValues => ({
+        ...prevValues,
+        [name]: fieldValue,
+      }));
+
+      // Clear error when field is changed
+      if (errors[name as keyof T]) {
+        setErrors(prevErrors => {
+          const newErrors = { ...prevErrors };
+          delete newErrors[name as keyof T];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
+
+  const handleBlur = useCallback(
+    (field: keyof T) => {
+      setTouched(prev => ({ ...prev, [field]: true }));
+
+      if (validate) {
+        const validationErrors = validate(values);
+        if (validationErrors[field]) {
+          setErrors(prev => ({ ...prev, [field]: validationErrors[field] }));
+        }
+      }
+    },
+    [values, validate]
+  );
 
   const setFieldValue = useCallback((field: keyof T, value: any) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
+    setValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
   const setFieldError = useCallback((field: keyof T | 'form', error: string) => {
-    setErrors((prev) => ({ ...prev, [field]: error }));
+    setErrors(prev => ({ ...prev, [field]: error }));
   }, []);
 
   const reset = useCallback(() => {
@@ -110,35 +116,38 @@ export function useForm<T extends Record<string, any>>(
     setIsSubmitting(false);
   }, [initialValues]);
 
-  const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    const validationErrors = validateForm();
-    const hasErrors = Object.keys(validationErrors).length > 0;
-    
-    setErrors(validationErrors);
-    
-    if (!hasErrors) {
-      setIsSubmitting(true);
-      try {
-        await onSubmit(values);
-      } catch (error) {
-        console.error('Form submission error:', error);
-        if (error instanceof Error) {
-          setErrors((prev) => ({ ...prev, form: error.message }));
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      const validationErrors = validateForm();
+      const hasErrors = Object.keys(validationErrors).length > 0;
+
+      setErrors(validationErrors);
+
+      if (!hasErrors) {
+        setIsSubmitting(true);
+        try {
+          await onSubmit(values);
+        } catch (error) {
+          console.error('Form submission error:', error);
+          if (error instanceof Error) {
+            setErrors(prev => ({ ...prev, form: error.message }));
+          }
+        } finally {
+          setIsSubmitting(false);
         }
-      } finally {
-        setIsSubmitting(false);
+      } else {
+        // Mark all fields with errors as touched
+        const touchedFields = Object.keys(validationErrors).reduce(
+          (acc, key) => ({ ...acc, [key]: true }),
+          {}
+        );
+        setTouched(prev => ({ ...prev, ...touchedFields }));
       }
-    } else {
-      // Mark all fields with errors as touched
-      const touchedFields = Object.keys(validationErrors).reduce(
-        (acc, key) => ({ ...acc, [key]: true }),
-        {}
-      );
-      setTouched((prev) => ({ ...prev, ...touchedFields }));
-    }
-  }, [values, onSubmit, validateForm]);
+    },
+    [values, onSubmit, validateForm]
+  );
 
   return {
     values,
@@ -153,4 +162,4 @@ export function useForm<T extends Record<string, any>>(
     reset,
     setValues: (newValues: Partial<T>) => setValues(prev => ({ ...prev, ...newValues })),
   };
-} 
+}

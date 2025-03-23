@@ -30,7 +30,7 @@ const applyColorChannels = (theme: any) => {
             ...theme.palette.background,
             defaultChannel: '255 255 255', // RGB for white
             paperChannel: '255 255 255', // RGB for white
-          }
+          },
         },
       },
       dark: {
@@ -40,10 +40,10 @@ const applyColorChannels = (theme: any) => {
             ...theme.palette.background,
             defaultChannel: '3 7 18', // RGB for #030712
             paperChannel: '3 7 18', // RGB for #030712
-          }
+          },
         },
       },
-    }
+    },
   };
 };
 
@@ -52,7 +52,7 @@ const applyColorChannels = (theme: any) => {
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
   const { theme: mode } = useTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   // Handle client-side mounting
   useEffect(() => {
     setMounted(true);
@@ -65,13 +65,16 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
       // Enable CSS variables for better theme customization and dark mode
       cssVariables: true,
       palette: {
-        mode: mounted && (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) 
-          ? 'dark' 
-          : 'light',
+        mode:
+          mounted &&
+          (mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches))
+            ? 'dark'
+            : 'light',
         ...baseTheme.palette,
       },
     };
-    
+
     // Apply the theme with color channels fixed
     const enhancedTheme = applyColorChannels(themeOptions);
     return createTheme(enhancedTheme);
@@ -85,4 +88,4 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
       </MuiThemeProvider>
     </AppRouterCacheProvider>
   );
-} 
+}

@@ -24,7 +24,9 @@ export default function LoginPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-24">
         <h1 className="mb-8 text-4xl font-bold text-gray-900 dark:text-white">Welcome</h1>
-        <p className="mb-8 text-xl text-gray-900 dark:text-gray-50">Sign in to access your account</p>
+        <p className="mb-8 text-xl text-gray-900 dark:text-gray-50">
+          Sign in to access your account
+        </p>
         <Button data-testid="auth-button-placeholder" disabled>
           Loading...
         </Button>
@@ -44,4 +46,4 @@ export default function LoginPage() {
       <SignInButton />
     </div>
   );
-} 
+}

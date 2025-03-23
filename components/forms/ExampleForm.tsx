@@ -18,21 +18,21 @@ const initialValues: FormValues = {
 };
 
 // Form validation function
-const validate: ValidationFn<FormValues> = (values) => {
+const validate: ValidationFn<FormValues> = values => {
   const errors: Partial<Record<keyof FormValues, string>> = {};
-  
+
   if (!values.email) {
     errors.email = 'Email is required';
   } else if (!/\S+@\S+\.\S+/.test(values.email)) {
     errors.email = 'Invalid email address';
   }
-  
+
   if (!values.password) {
     errors.password = 'Password is required';
   } else if (values.password.length < 8) {
     errors.password = 'Password must be at least 8 characters';
   }
-  
+
   return errors;
 };
 
@@ -117,18 +117,9 @@ const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps
         </label>
       </div>
 
-      {formError && (
-        <div className="p-3 bg-red-50 text-red-700 rounded-md">
-          {formError}
-        </div>
-      )}
+      {formError && <div className="p-3 bg-red-50 text-red-700 rounded-md">{formError}</div>}
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full"
-        data-testid="form-submit"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full" data-testid="form-submit">
         {isSubmitting ? 'Submitting...' : submitButtonText}
       </Button>
     </form>
@@ -136,4 +127,4 @@ const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps
 };
 
 // Memoize to prevent unnecessary re-renders
-export default memo(ExampleForm); 
+export default memo(ExampleForm);

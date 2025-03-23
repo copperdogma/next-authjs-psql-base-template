@@ -19,7 +19,10 @@ interface DateTimePickerProps {
 }
 
 const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
-  ({ label, value, onChange, minDate, maxDate, disabled, className, error, helperText, ...props }, ref) => {
+  (
+    { label, value, onChange, minDate, maxDate, disabled, className, error, helperText, ...props },
+    ref
+  ) => {
     return (
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <MuiDateTimePicker
@@ -32,13 +35,8 @@ const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
           disabled={disabled}
           className={className}
           slots={{
-            textField: (params) => (
-              <TextField
-                {...params}
-                error={error}
-                helperText={helperText}
-                className="w-full"
-              />
+            textField: params => (
+              <TextField {...params} error={error} helperText={helperText} className="w-full" />
             ),
           }}
           ref={ref}
@@ -50,4 +48,4 @@ const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
 
 DateTimePicker.displayName = 'DateTimePicker';
 
-export default DateTimePicker; 
+export default DateTimePicker;

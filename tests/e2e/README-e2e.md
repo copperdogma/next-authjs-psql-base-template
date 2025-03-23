@@ -91,4 +91,4 @@ When adding new tests, focus on these customization points:
 
 1. `auth-fixtures.ts`: Update mock user data for your auth implementation
 2. Navigation tests: Update route list to match your application
-3. Accessibility tests: Adjust excluded rules if needed 
+3. Accessibility tests: Adjust excluded rules if needed

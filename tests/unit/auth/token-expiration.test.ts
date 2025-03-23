@@ -3,11 +3,11 @@ jest.mock('../../../lib/auth/session', () => {
   // Constants defined in session.ts
   const DEFAULT_SESSION_EXPIRATION = 3600; // 1 hour in seconds
   const MAX_SESSION_EXPIRATION = 14 * 24 * 60 * 60; // 14 days in seconds
-  
+
   // Actual function implementation copied from session.ts
   const getSessionCookieOptions = (expiresIn = DEFAULT_SESSION_EXPIRATION) => {
     const validExpiresIn = Math.min(expiresIn, MAX_SESSION_EXPIRATION);
-    
+
     return {
       maxAge: validExpiresIn,
       httpOnly: true,
@@ -31,11 +31,11 @@ import { getSessionCookieOptions } from '../../../lib/auth/session';
 describe('Firebase Token Expiration', () => {
   // Store the original NODE_ENV value
   const originalNodeEnv = process.env.NODE_ENV;
-  
+
   beforeEach(() => {
     // No need to save originalEnv again, already stored above
   });
-  
+
   afterEach(() => {
     // Restore original NODE_ENV using Object.defineProperty
     Object.defineProperty(process.env, 'NODE_ENV', {
@@ -44,10 +44,10 @@ describe('Firebase Token Expiration', () => {
     });
     jest.clearAllMocks();
   });
-  
+
   it('should set session cookie expiration to 1 hour by default', () => {
     const options = getSessionCookieOptions();
-    
+
     // Default maxAge should be 1 hour (3600 seconds)
     expect(options.maxAge).toBe(3600);
   });
@@ -56,7 +56,7 @@ describe('Firebase Token Expiration', () => {
     // Test with 30 minutes (1800 seconds)
     const thirtyMinOptions = getSessionCookieOptions(1800);
     expect(thirtyMinOptions.maxAge).toBe(1800);
-    
+
     // Test with 2 hours (7200 seconds)
     const twoHourOptions = getSessionCookieOptions(7200);
     expect(twoHourOptions.maxAge).toBe(7200);
@@ -65,7 +65,7 @@ describe('Firebase Token Expiration', () => {
   it('should cap expiration at maximum allowed value', () => {
     // 30 days is longer than maximum allowed (14 days)
     const maxOptions = getSessionCookieOptions(30 * 24 * 60 * 60);
-    
+
     // Should be capped at 14 days (1209600 seconds)
     expect(maxOptions.maxAge).toBe(14 * 24 * 60 * 60);
   });
@@ -76,9 +76,9 @@ describe('Firebase Token Expiration', () => {
       value: 'test',
       configurable: true,
     });
-    
+
     const options = getSessionCookieOptions();
-    
+
     // Verify security settings
     expect(options.httpOnly).toBe(true);
     expect(options.secure).toBe(false); // Not secure in test environment
@@ -91,10 +91,10 @@ describe('Firebase Token Expiration', () => {
       value: 'production',
       configurable: true,
     });
-    
+
     const options = getSessionCookieOptions();
-    
+
     // Secure should be true in production
     expect(options.secure).toBe(true);
   });
-}); 
+});

@@ -20,8 +20,8 @@ export class UserService {
       ...options,
       // Include sessions in a single query to prevent N+1 problem
       include: {
-        sessions: true
-      }
+        sessions: true,
+      },
     });
   }
 
@@ -34,8 +34,8 @@ export class UserService {
     return prisma.user.findUnique({
       where: { id: userId },
       include: {
-        sessions: true
-      }
+        sessions: true,
+      },
     });
   }
 
@@ -51,7 +51,7 @@ export class UserService {
     expiresAfter?: Date;
   }) {
     const { expiresAfter = new Date(), skip, take } = options || {};
-    
+
     return prisma.user.findMany({
       skip,
       take,
@@ -60,21 +60,21 @@ export class UserService {
           // Filter sessions within the include
           where: {
             expiresAt: {
-              gt: expiresAfter
-            }
-          }
-        }
+              gt: expiresAfter,
+            },
+          },
+        },
       },
       // Only include users who have active sessions
       where: {
         sessions: {
           some: {
             expiresAt: {
-              gt: expiresAfter
-            }
-          }
-        }
-      }
+              gt: expiresAfter,
+            },
+          },
+        },
+      },
     });
   }
 
@@ -83,12 +83,9 @@ export class UserService {
    * @param options Query options for pagination and filtering
    * @returns Array of users with session counts
    */
-  static async getUsersWithSessionCounts(options?: {
-    skip?: number;
-    take?: number;
-  }) {
+  static async getUsersWithSessionCounts(options?: { skip?: number; take?: number }) {
     const { skip, take } = options || {};
-    
+
     // Using Prisma's count in select for performance
     return prisma.user.findMany({
       skip,
@@ -101,10 +98,10 @@ export class UserService {
         updatedAt: true,
         _count: {
           select: {
-            sessions: true
-          }
-        }
-      }
+            sessions: true,
+          },
+        },
+      },
     });
   }
-} 
+}

@@ -2,12 +2,13 @@ module.exports = {
   // Lint TypeScript files
   '**/*.ts?(x)': filenames => [
     `npm run lint:fix -- ${filenames.join(' ')}`,
-    `npm run format:check -- ${filenames.join(' ')}`,
+    `npm run format -- ${filenames.join(' ')}`,
+    'git add',
   ],
 
   // Format MarkDown files
-  '**/*.md': filenames => `npm run format -- ${filenames.join(' ')}`,
+  '**/*.md': filenames => [`npm run format -- ${filenames.join(' ')}`, 'git add'],
 
   // Format JSON files
-  '**/*.json': filenames => `npm run format -- ${filenames.join(' ')}`,
+  '**/*.json': filenames => [`npm run format -- ${filenames.join(' ')}`, 'git add'],
 };

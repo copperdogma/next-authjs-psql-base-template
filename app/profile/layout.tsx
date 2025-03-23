@@ -6,11 +6,7 @@ export const metadata: Metadata = {
   description: 'Manage your user profile',
 };
 
-export default function ProfileLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="py-4">
@@ -20,7 +16,7 @@ export default function ProfileLayout({
           </div>
         </div>
       </div>
-      
+
       <main>
         <Suspense fallback={<div className="p-6 text-center">Loading profile content...</div>}>
           {children}
@@ -28,4 +24,4 @@ export default function ProfileLayout({
       </main>
     </div>
   );
-} 
+}

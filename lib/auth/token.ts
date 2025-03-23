@@ -13,21 +13,21 @@ export function shouldRefreshToken(user: User): boolean {
   try {
     // Firebase doesn't expose token expiration directly in the public API
     // We'll use the last refresh time if available
-    const lastRefreshTime = user.metadata.lastSignInTime 
-      ? new Date(user.metadata.lastSignInTime).getTime() 
-      : user.metadata.creationTime 
-        ? new Date(user.metadata.creationTime).getTime() 
+    const lastRefreshTime = user.metadata.lastSignInTime
+      ? new Date(user.metadata.lastSignInTime).getTime()
+      : user.metadata.creationTime
+        ? new Date(user.metadata.creationTime).getTime()
         : 0;
-    
+
     // If we have no timestamp, we should refresh
     if (lastRefreshTime === 0) {
       return true;
     }
-    
+
     // Firebase tokens expire after 1 hour by default
-    const estimatedExpirationTime = lastRefreshTime + (60 * 60 * 1000);
+    const estimatedExpirationTime = lastRefreshTime + 60 * 60 * 1000;
     const expiresIn = estimatedExpirationTime - Date.now();
-    
+
     // Return true if token expiration is within our refresh threshold
     return expiresIn < TOKEN_REFRESH_THRESHOLD_MS;
   } catch (error) {
@@ -45,7 +45,7 @@ export async function refreshUserTokenAndSession(user: User): Promise<void> {
   try {
     // Get a fresh token
     const idToken = await user.getIdToken(true);
-    
+
     // Update the session with the new token
     await updateSession(idToken);
   } catch (error) {
@@ -71,10 +71,12 @@ async function updateSession(idToken: string): Promise<void> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(`Failed to refresh session: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      throw new Error(
+        `Failed to refresh session: ${response.status} - ${errorData.error || 'Unknown error'}`
+      );
     }
   } catch (error) {
     console.error('Error updating session:', error);
     throw error;
   }
-} 
+}

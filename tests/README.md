@@ -28,10 +28,10 @@ it('renders loading state initially', () => {
       {props.children}
     </Wrapper>
   );
-  
+
   // Act
   render(<UserProfile />, { wrapper });
-  
+
   // Assert
   expect(screen.getByText('Loading...')).toBeInTheDocument();
 });
@@ -55,10 +55,7 @@ We use realistic mocks that closely match actual behavior:
 
 ```typescript
 // Example from token.test.ts
-const createMockUser = (options: {
-  lastSignInTime?: string;
-  creationTime?: string;
-}): User => {
+const createMockUser = (options: { lastSignInTime?: string; creationTime?: string }): User => {
   return {
     metadata: {
       lastSignInTime: options.lastSignInTime,
@@ -77,14 +74,14 @@ We ensure proper cleanup in all component tests:
 describe('Component with Proper Cleanup', () => {
   // Store original values
   const originalDateNow = Date.now;
-  
+
   afterEach(() => {
     // Clean up DOM
     cleanup();
-    
+
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Restore original values
     global.Date.now = originalDateNow;
   });
@@ -113,11 +110,11 @@ describe('shouldRefreshToken', () => {
   it('should return true if token is about to expire', () => {
     // Test implementation...
   });
-  
+
   it('should use creation time if last sign in time is not available', () => {
     // Test implementation...
   });
-  
+
   it('should return true if no time stamps are available', () => {
     // Test implementation...
   });
@@ -138,4 +135,4 @@ npm run test:integration
 
 # Run e2e tests with Playwright
 npm run test:e2e
-``` 
+```

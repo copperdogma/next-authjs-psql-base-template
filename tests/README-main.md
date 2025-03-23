@@ -45,16 +45,19 @@ npm run test:coverage
 ## Test Types
 
 ### Unit Tests
+
 - Test individual components and functions
 - Use Jest and React Testing Library
 - Focus on isolated functionality
 
 ### Integration Tests
+
 - Test component interactions
 - Use Jest and React Testing Library
 - Verify component integration
 
 ### E2E Tests
+
 - Test full user flows
 - Use Playwright
 - Verify end-to-end functionality
@@ -62,16 +65,19 @@ npm run test:coverage
 ## Best Practices
 
 1. Test Isolation
+
    - Each test should be independent
    - Clean up after each test
    - Use proper mocking
 
 2. Naming Conventions
+
    - Descriptive test names
    - Follow `describe` and `it` patterns
    - Group related tests
 
 3. Coverage
+
    - Aim for 80%+ coverage
    - Focus on critical paths
    - Don't test implementation details
@@ -84,6 +90,7 @@ npm run test:coverage
 ## Example Tests
 
 ### Component Test
+
 ```typescript
 import { render, screen } from '@testing-library/react';
 import Button from '@/components/ui/Button';
@@ -97,6 +104,7 @@ describe('Button', () => {
 ```
 
 ### API Test
+
 ```typescript
 import { GET } from '@/app/api/health/route';
 
@@ -109,6 +117,7 @@ describe('Health Check API', () => {
 ```
 
 ### E2E Test
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -123,4 +132,4 @@ test('user can sign in', async ({ page }) => {
 
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-- [Playwright Documentation](https://playwright.dev/docs/intro) 
+- [Playwright Documentation](https://playwright.dev/docs/intro)

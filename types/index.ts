@@ -10,7 +10,8 @@ export interface User {
 
 // User type variants using utility types
 export type ReadonlyUser = Readonly<User>;
-export type UserWithRequiredProfile = Required<Pick<User, 'name' | 'image'>> & Omit<User, 'name' | 'image'>;
+export type UserWithRequiredProfile = Required<Pick<User, 'name' | 'image'>> &
+  Omit<User, 'name' | 'image'>;
 export type PublicUser = Omit<User, 'id'>;
 export type UserUpdate = Partial<Omit<User, 'id'>>;
 
@@ -28,7 +29,7 @@ export enum HttpStatusCode {
   CREATED = 201,
   ACCEPTED = 202,
   NO_CONTENT = 204,
-  
+
   // 4xx Client Errors
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
@@ -36,7 +37,7 @@ export enum HttpStatusCode {
   NOT_FOUND = 404,
   METHOD_NOT_ALLOWED = 405,
   CONFLICT = 409,
-  
+
   // 5xx Server Errors
   INTERNAL_SERVER_ERROR = 500,
   NOT_IMPLEMENTED = 501,
@@ -65,4 +66,4 @@ export interface CacheConfig {
   host: string;
   port: number;
   password?: string;
-} 
+}

@@ -12,7 +12,7 @@ import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '../../../lib/auth/
 
 describe('Session Cookie Security', () => {
   const originalNodeEnv = process.env.NODE_ENV;
-  
+
   afterEach(() => {
     // Restore original NODE_ENV
     Object.defineProperty(process.env, 'NODE_ENV', {
@@ -29,22 +29,22 @@ describe('Session Cookie Security', () => {
     });
 
     const options = getSessionCookieOptions();
-    
+
     // Essential security properties
     expect(options.httpOnly).toBe(true); // Prevents client-side JavaScript access
-    expect(options.secure).toBe(true);   // Ensures cookies are sent only over HTTPS
+    expect(options.secure).toBe(true); // Ensures cookies are sent only over HTTPS
   });
 
   it('should use SameSite=lax to prevent CSRF', () => {
     const options = getSessionCookieOptions();
-    
+
     // SameSite=lax prevents CSRF while allowing normal navigation
     expect(options.sameSite).toBe('lax');
   });
 
   it('should set appropriate path restriction', () => {
     const options = getSessionCookieOptions();
-    
+
     // Cookie should be available throughout the application
     expect(options.path).toBe('/');
   });
@@ -54,4 +54,4 @@ describe('Session Cookie Security', () => {
     expect(SESSION_COOKIE_NAME).toBeDefined();
     expect(SESSION_COOKIE_NAME).toBe('session');
   });
-}); 
+});

@@ -19,9 +19,7 @@ export default function GlobalError({
     <html>
       <body>
         <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-          <h2 className="text-3xl font-bold text-red-600 mb-4">
-            Something went wrong!
-          </h2>
+          <h2 className="text-3xl font-bold text-red-600 mb-4">Something went wrong!</h2>
           <p className="text-gray-600 mb-8 max-w-md">
             {error.message || 'An unexpected error occurred. We apologize for the inconvenience.'}
           </p>
@@ -43,4 +41,4 @@ export default function GlobalError({
       </body>
     </html>
   );
-} 
+}

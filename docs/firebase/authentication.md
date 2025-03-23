@@ -14,17 +14,20 @@ The application uses Firebase Authentication for user management, with the follo
 ### Authentication Process
 
 1. **User Authentication**:
+
    - User clicks the sign-in button
    - Firebase Auth handles the OAuth flow with Google
    - On successful authentication, Firebase returns a user object and ID token
 
 2. **Session Creation**:
+
    - The ID token is sent to our API endpoint (`/api/auth/session`)
    - The server verifies the token using Firebase Admin SDK
    - A secure HTTP-only cookie is set with the session information
    - This cookie is used for subsequent requests
 
 3. **Server-Side Validation**:
+
    - Each protected API route validates the session cookie
    - Next.js middleware checks authentication for protected pages
    - If validation fails, the user is redirected to the login page
@@ -52,38 +55,38 @@ export function SignInButton() {
   const handleSignIn = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Check if Firebase Auth is available (client-side only)
       if (!isFirebaseAuth(auth)) {
         throw new Error('Authentication is not available');
       }
-      
+
       // Sign in with Google
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
+
       // Get ID token
       const idToken = await result.user.getIdToken();
-      
+
       // Create server-side session
       const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
       });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Failed to create session');
       }
-      
+
       // Redirect or update UI
       window.location.href = '/dashboard';
     } catch (err) {
       const authError = err as AuthError;
       console.error('Authentication error:', authError);
-      
+
       // Handle specific error cases
       switch (authError.code) {
         case 'auth/popup-closed-by-user':
@@ -102,8 +105,8 @@ export function SignInButton() {
 
   return (
     <div>
-      <Button 
-        onClick={handleSignIn} 
+      <Button
+        onClick={handleSignIn}
         disabled={isLoading}
         variant="primary"
       >
@@ -130,22 +133,25 @@ export async function POST(request: NextRequest) {
   try {
     // Get ID token from request body
     const { idToken } = await request.json();
-    
+
     if (!idToken) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'ID token is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'ID token is required',
+        },
+        { status: 400 }
+      );
     }
-    
+
     // Verify the ID token using Firebase Admin SDK
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    
+
     // Create a session cookie
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
       expiresIn: SESSION_EXPIRY * 1000, // milliseconds
     });
-    
+
     // Set the cookie in the response
     cookies().set({
       name: 'session',
@@ -156,8 +162,8 @@ export async function POST(request: NextRequest) {
       path: '/',
       sameSite: 'lax',
     });
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       success: true,
       message: 'Session created successfully',
       user: {
@@ -165,26 +171,29 @@ export async function POST(request: NextRequest) {
         email: decodedToken.email,
         displayName: decodedToken.name,
         photoURL: decodedToken.picture,
-      }
+      },
     });
   } catch (error) {
     console.error('Session creation error:', error);
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to create session',
-      error: error.message,
-    }, { status: 401 });
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to create session',
+        error: error.message,
+      },
+      { status: 401 }
+    );
   }
 }
 
 export async function DELETE() {
   // Clear the session cookie
   cookies().delete('session');
-  
-  return NextResponse.json({ 
-    success: true, 
-    message: 'Session deleted successfully' 
+
+  return NextResponse.json({
+    success: true,
+    message: 'Session deleted successfully',
   });
 }
 ```
@@ -214,10 +223,10 @@ export async function refreshIdToken(retryCount = 0, delay = INITIAL_RETRY_DELAY
     if (!isFirebaseAuth(auth) || !auth.currentUser) {
       throw new Error('User not authenticated');
     }
-    
+
     // Force token refresh
     const newToken = await auth.currentUser.getIdToken(true);
-    
+
     return newToken;
   } catch (error) {
     // If maximum retries reached, throw the error
@@ -225,14 +234,14 @@ export async function refreshIdToken(retryCount = 0, delay = INITIAL_RETRY_DELAY
       console.error(`Token refresh failed after ${MAX_RETRIES} retries:`, error);
       throw error;
     }
-    
+
     // Calculate next delay with exponential backoff
     const nextDelay = Math.min(delay * 2, MAX_RETRY_DELAY);
     console.warn(`Token refresh attempt ${retryCount + 1} failed. Retrying in ${nextDelay}ms...`);
-    
+
     // Wait before retrying
     await new Promise(resolve => setTimeout(resolve, delay));
-    
+
     // Retry with increased delay
     return refreshIdToken(retryCount + 1, nextDelay);
   }
@@ -246,27 +255,27 @@ export function setupTokenRefresh() {
   if (typeof window === 'undefined' || !isFirebaseAuth(auth) || !auth.currentUser) {
     return;
   }
-  
+
   // Listen for auth state changes
-  auth.onAuthStateChanged(async (user) => {
+  auth.onAuthStateChanged(async user => {
     if (!user) return;
-    
+
     try {
       // Get current token
       const token = await user.getIdTokenResult();
-      
+
       // Calculate when to refresh (5 minutes before expiration)
       const expirationTime = new Date(token.expirationTime).getTime();
-      const refreshTime = expirationTime - (5 * 60 * 1000); // 5 minutes before expiry
+      const refreshTime = expirationTime - 5 * 60 * 1000; // 5 minutes before expiry
       const timeUntilRefresh = refreshTime - Date.now();
-      
+
       // Schedule token refresh
       if (timeUntilRefresh > 0) {
         setTimeout(async () => {
           try {
             await refreshIdToken();
             console.log('Token refreshed successfully');
-            
+
             // Setup next refresh
             setupTokenRefresh();
           } catch (error) {
@@ -277,7 +286,7 @@ export function setupTokenRefresh() {
         // Token is already near expiration, refresh immediately
         await refreshIdToken();
         console.log('Token refreshed immediately');
-        
+
         // Setup next refresh
         setupTokenRefresh();
       }
@@ -296,37 +305,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from './lib/firebase-admin';
 
 // Paths that require authentication
-const PROTECTED_PATHS = [
-  '/dashboard',
-  '/profile',
-  '/settings',
-  '/api/user',
-];
+const PROTECTED_PATHS = ['/dashboard', '/profile', '/settings', '/api/user'];
 
 // Paths that should redirect authenticated users (e.g., login page)
-const AUTH_PATHS = [
-  '/login',
-  '/signup',
-];
+const AUTH_PATHS = ['/login', '/signup'];
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
-  
+
   // Check if the path requires authentication
-  const requiresAuth = PROTECTED_PATHS.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  );
-  
+  const requiresAuth = PROTECTED_PATHS.some(path => request.nextUrl.pathname.startsWith(path));
+
   // Check if the path is specifically for non-authenticated users
-  const isAuthPath = AUTH_PATHS.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  );
-  
+  const isAuthPath = AUTH_PATHS.some(path => request.nextUrl.pathname.startsWith(path));
+
   try {
     if (session) {
       // Verify the session
       const decodedToken = await auth.verifySessionCookie(session, true);
-      
+
       // User is authenticated
       if (isAuthPath) {
         // Redirect authenticated users away from auth pages
@@ -348,7 +345,7 @@ export async function middleware(request: NextRequest) {
       return response;
     }
   }
-  
+
   // Continue with the request for all other cases
   return NextResponse.next();
 }
@@ -409,4 +406,4 @@ Common authentication issues and solutions:
 2. **CORS Errors**: Add your domain to Firebase Authentication authorized domains
 3. **Token Expiration**: Check that token refresh is working correctly
 4. **Missing Permissions**: Verify Firebase project configuration
-5. **Session Cookie Issues**: Check cookie settings (domain, path, expiry) 
+5. **Session Cookie Issues**: Check cookie settings (domain, path, expiry)

@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 
 /**
  * Global teardown function for test environment
- * 
+ *
  * This function safely cleans up the test database after tests run.
  * It's designed to be schema-agnostic and resilient to model changes.
  */
@@ -19,12 +19,12 @@ async function globalTeardown() {
 
   try {
     console.log('🧹 Cleaning up test database...');
-    
+
     // First try: Disable foreign key checks and truncate all tables
     try {
       // Temporarily disable foreign key constraints
       await prisma.$executeRaw`SET session_replication_role = 'replica';`;
-      
+
       // Get all table names from the current schema
       const tables = await prisma.$queryRaw`
         SELECT tablename 
@@ -32,7 +32,7 @@ async function globalTeardown() {
         WHERE schemaname = 'public'
         AND tablename != '_prisma_migrations' -- Skip Prisma migrations table
       `;
-      
+
       // If no tables found, nothing to clean
       if (tables.length === 0) {
         console.log('ℹ️ No tables found in database');
@@ -40,16 +40,16 @@ async function globalTeardown() {
       }
 
       // Truncate all tables in a single transaction
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async tx => {
         for (const { tablename } of tables) {
           await tx.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE`);
         }
       });
-      
+
       cleanupSuccessful = true;
     } catch (error) {
       console.warn('⚠️ Standard cleanup failed, attempting fallback method:', error);
-      
+
       // Second try: Delete records from each table (fallback approach)
       try {
         // Get all tables with their dependencies ordered
@@ -59,7 +59,7 @@ async function globalTeardown() {
           AND tablename != '_prisma_migrations'
           ORDER BY tablename;
         `;
-        
+
         // Try to delete from each table in reverse order (dependencies last)
         for (const { tablename } of [...tableOrder].reverse()) {
           try {
@@ -68,7 +68,7 @@ async function globalTeardown() {
             console.warn(`- Could not clean table ${tablename}:`, tableError);
           }
         }
-        
+
         cleanupSuccessful = true;
       } catch (fallbackError) {
         console.error('❌ Fallback cleanup also failed:', fallbackError);
@@ -90,4 +90,4 @@ async function globalTeardown() {
   }
 }
 
-module.exports = globalTeardown; 
+module.exports = globalTeardown;

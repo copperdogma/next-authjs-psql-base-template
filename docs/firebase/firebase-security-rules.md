@@ -3,6 +3,7 @@
 This document explains the Firestore security rules implemented in this project and how they protect the data.
 
 ## Table of Contents
+
 - [Introduction](#introduction)
 - [Security Rules Structure](#security-rules-structure)
 - [Helper Functions](#helper-functions)
@@ -70,6 +71,7 @@ match /users/{userId} {
 ```
 
 These rules ensure that:
+
 - Only authenticated users can read user profiles
 - Users can only create their own profiles
 - Users can update their own profiles, and admins can update any profile
@@ -87,6 +89,7 @@ match /public/{document=**} {
 ```
 
 These rules ensure that:
+
 - Anyone (including unauthenticated users) can read public documents
 - Only admin users can create, update, or delete public documents
 
@@ -104,6 +107,7 @@ match /tasks/{taskId} {
 ```
 
 These rules ensure that:
+
 - Users can only read their own tasks (based on the `userId` field in the document)
 - Admin users can read any task
 - Users can only create tasks where the `userId` matches their own UID
@@ -131,6 +135,7 @@ We test our security rules using Firebase's rules testing library (@firebase/rul
 3. The default deny rule works correctly
 
 Tests are located in the `tests/firebase` directory:
+
 - `security-rules.test.ts`: Tests for user and public collection rules
 - `task-rules.test.ts`: Tests for task collection rules
 
@@ -179,4 +184,4 @@ This will deploy the rules defined in `firestore.rules` to your Firebase project
 
 - [Firebase Security Rules Documentation](https://firebase.google.com/docs/firestore/security/get-started)
 - [Common Security Rules Patterns](https://firebase.google.com/docs/firestore/security/rules-structure)
-- [Testing Security Rules](https://firebase.google.com/docs/firestore/security/test-rules) 
+- [Testing Security Rules](https://firebase.google.com/docs/firestore/security/test-rules)

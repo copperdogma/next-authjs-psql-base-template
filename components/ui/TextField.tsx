@@ -10,13 +10,7 @@ export type TextFieldProps = MuiTextFieldProps & {
 };
 
 const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
-  ({ 
-    className = '', 
-    fullWidth = true, 
-    variant = 'outlined',
-    size = 'medium',
-    ...props 
-  }, ref) => {
+  ({ className = '', fullWidth = true, variant = 'outlined', size = 'medium', ...props }, ref) => {
     return (
       <MuiTextField
         {...props}
@@ -46,4 +40,4 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
 TextField.displayName = 'TextField';
 
 // Memoize to prevent unnecessary re-renders
-export default memo(TextField); 
+export default memo(TextField);

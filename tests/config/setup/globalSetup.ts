@@ -12,15 +12,14 @@ async function globalSetup() {
   try {
     // Reset and set up the test database
     console.log('🗄️  Setting up test database...');
-    execSync('npx prisma db push --force-reset', { 
+    execSync('npx prisma db push --force-reset', {
       env: { ...process.env, NODE_ENV: 'test' },
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     // Verify database connection
     await prisma.$connect();
     console.log('✅ Database connection verified');
-
   } catch (error) {
     console.error('❌ Database setup failed:', error);
     throw error;
@@ -29,4 +28,4 @@ async function globalSetup() {
   }
 }
 
-module.exports = globalSetup; 
+module.exports = globalSetup;

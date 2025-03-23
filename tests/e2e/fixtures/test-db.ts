@@ -10,13 +10,13 @@ import { prisma } from '../../../lib/prisma'; // Import the singleton PrismaClie
 export class TestDatabase {
   private testRunId: string;
   private useTransactions: boolean;
-  
+
   constructor(useTransactions = true) {
     // Generate a unique ID for this test run to isolate data between test runs
     this.testRunId = uuidv4().substring(0, 8);
     this.useTransactions = useTransactions;
   }
-  
+
   /**
    * Initialize the database with test data
    */
@@ -24,32 +24,35 @@ export class TestDatabase {
     try {
       // Clear existing data for clean tests
       await this.clearTestData();
-      
+
       // Create a unique ID for this user to avoid conflicts
       const userId = `test-${this.testRunId}-${uuidv4().substring(0, 6)}`;
       const email = `test-${this.testRunId}@example.com`;
-      
+
       // Create test data within a transaction if enabled
       let user;
-      
+
       if (this.useTransactions) {
         // Use transaction for atomic operations
-        user = await prisma.$transaction(async (tx) => {
-          // Create a test user with the unique ID
-          return tx.user.create({
-            data: {
-              id: userId,
-              email: email,
-              name: `${TEST_USER.NAME} ${this.testRunId}`,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          });
-        }, {
-          // Set transaction timeout and isolation level
-          timeout: 10000, // 10 seconds
-          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
-        });
+        user = await prisma.$transaction(
+          async tx => {
+            // Create a test user with the unique ID
+            return tx.user.create({
+              data: {
+                id: userId,
+                email: email,
+                name: `${TEST_USER.NAME} ${this.testRunId}`,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            });
+          },
+          {
+            // Set transaction timeout and isolation level
+            timeout: 10000, // 10 seconds
+            isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+          }
+        );
       } else {
         // Create without transaction for scenarios where it's not appropriate
         user = await prisma.user.create({
@@ -58,18 +61,18 @@ export class TestDatabase {
             email: email,
             name: `${TEST_USER.NAME} ${this.testRunId}`,
             createdAt: new Date(),
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         });
       }
-      
+
       return { user };
     } catch (error) {
       console.error('Error setting up test data:', error);
       throw error;
     }
   }
-  
+
   /**
    * Clean up all test data
    */
@@ -78,24 +81,24 @@ export class TestDatabase {
       // Delete in correct order to handle foreign keys
       // Delete only test data created with this test run ID (improved isolation)
       if (this.useTransactions) {
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async tx => {
           // We need to delete sessions first due to foreign key constraints
           await tx.session.deleteMany({
             where: {
               user: {
                 email: {
-                  contains: this.testRunId
-                }
-              }
-            }
+                  contains: this.testRunId,
+                },
+              },
+            },
           });
-          
+
           await tx.user.deleteMany({
             where: {
               email: {
-                contains: this.testRunId
-              }
-            }
+                contains: this.testRunId,
+              },
+            },
           });
         });
       } else {
@@ -104,18 +107,18 @@ export class TestDatabase {
           where: {
             user: {
               email: {
-                contains: this.testRunId
-              }
-            }
-          }
+                contains: this.testRunId,
+              },
+            },
+          },
         });
-        
+
         await prisma.user.deleteMany({
           where: {
             email: {
-              contains: this.testRunId
-            }
-          }
+              contains: this.testRunId,
+            },
+          },
         });
       }
     } catch (error) {
@@ -123,14 +126,14 @@ export class TestDatabase {
       throw error;
     }
   }
-  
+
   /**
    * Get the test run ID for this instance
    */
   getTestRunId() {
     return this.testRunId;
   }
-  
+
   /**
    * No need to disconnect since we're using the shared Prisma instance
    * This is left for API compatibility with existing tests
@@ -152,4 +155,4 @@ export function getTestDatabase(useTransactions = true): TestDatabase {
     testDbInstance = new TestDatabase(useTransactions);
   }
   return testDbInstance;
-} 
+}

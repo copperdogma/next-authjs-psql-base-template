@@ -53,11 +53,15 @@
 }
 
 .MuiPaper-elevation1 {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .MuiPaper-elevation2 {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.05);
 }
 
 /* ===== Typography Components ===== */
@@ -66,8 +70,12 @@
   margin: 0;
 }
 
-.MuiTypography-h1, .MuiTypography-h2, .MuiTypography-h3, 
-.MuiTypography-h4, .MuiTypography-h5, .MuiTypography-h6 {
+.MuiTypography-h1,
+.MuiTypography-h2,
+.MuiTypography-h3,
+.MuiTypography-h4,
+.MuiTypography-h5,
+.MuiTypography-h6 {
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.2;
@@ -139,7 +147,9 @@
 /* ===== Menu Components ===== */
 .MuiMenu-paper {
   margin-top: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   border-radius: 0.5rem;
   border: 1px solid var(--accent);
   min-width: 10rem;
@@ -159,7 +169,9 @@
 .dark .MuiPaper-root {
   background-color: var(--background);
   border-color: var(--accent, #1f2937);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .dark .MuiButton-containedPrimary {
@@ -212,10 +224,10 @@
     margin: 0.5rem;
     max-width: calc(100% - 1rem) !important;
   }
-  
+
   .MuiDialogTitle-root,
   .MuiDialogContent-root,
   .MuiDialogActions-root {
     padding: 1rem;
   }
-} 
+}

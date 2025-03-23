@@ -9,7 +9,7 @@ We've centralized all tests in a unified `/tests` directory with the following s
 ```
 /tests/                   # Centralized test directory
   /unit/                  # Unit tests for components and APIs
-    /api/                 # API endpoint tests 
+    /api/                 # API endpoint tests
     /components/          # React component tests
   /integration/           # Integration tests
   /e2e/                   # Playwright E2E tests
@@ -77,13 +77,13 @@ Authentication is mocked directly in the test files to ensure proper isolation b
 // Mock modules before imports (with relative path)
 jest.mock('../../../lib/firebase', () => ({
   getAuth: jest.fn(() => ({
-    currentUser: null
+    currentUser: null,
   })),
   signInWithPopup: jest.fn(),
   signOut: jest.fn(),
   GoogleAuthProvider: jest.fn(() => ({
-    addScope: jest.fn()
-  }))
+    addScope: jest.fn(),
+  })),
 }));
 
 // Then import components and Firebase modules
@@ -101,7 +101,7 @@ const mockUser = {
   displayName: 'Test User',
   email: 'test@example.com',
   uid: 'test-user-id',
-  getIdToken: jest.fn().mockResolvedValue('mock-id-token')
+  getIdToken: jest.fn().mockResolvedValue('mock-id-token'),
 };
 
 beforeEach(() => {
@@ -118,6 +118,7 @@ test('signed in state', () => {
 ## Coverage Requirements
 
 ### Global Thresholds
+
 - Statements: 85%
 - Branches: 75%
 - Functions: 70%
@@ -136,18 +137,21 @@ test('signed in state', () => {
 ## Test Types
 
 1. **Unit Tests**
+
    - Individual component testing
    - Function and utility testing
    - API endpoint testing
    - Isolated testing with mocks
 
 2. **Integration Tests**
+
    - Component interaction testing
    - API integration testing
    - Database integration testing
    - Service integration testing
 
 3. **E2E Tests**
+
    - User flow testing
    - Authentication flows
    - Critical path testing
@@ -163,12 +167,14 @@ test('signed in state', () => {
 ## Test Data Management
 
 1. **Test Fixtures**
+
    - Maintain in `/tests/fixtures`
    - Use TypeScript interfaces
    - Keep data minimal
    - Version control fixtures
 
 2. **Mock Data**
+
    - Centralize in `/tests/mocks`
    - Use TypeScript types
    - Document mock behavior

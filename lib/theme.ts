@@ -73,7 +73,7 @@ const baseThemeOptions: ThemeOptions = {
           '--primary-800': '#075985',
           '--primary-900': '#0c4a6e',
           '--primary-950': '#082f49',
-          
+
           '--gray-50': '#f9fafb',
           '--gray-100': '#f3f4f6',
           '--gray-200': '#e5e7eb',
@@ -85,7 +85,7 @@ const baseThemeOptions: ThemeOptions = {
           '--gray-800': '#1f2937',
           '--gray-900': '#111827',
           '--gray-950': '#030712',
-          
+
           // Semantic colors
           '--background': '#ffffff',
           '--foreground': '#111827',
@@ -93,7 +93,7 @@ const baseThemeOptions: ThemeOptions = {
           '--muted-foreground': '#9ca3af',
           '--accent': '#f3f4f6',
           '--accent-foreground': '#1f2937',
-          
+
           // Color channels for MUI
           '--primary-channel': '14 165 233',
           '--secondary-channel': '156 39 176',
@@ -113,8 +113,8 @@ const baseThemeOptions: ThemeOptions = {
           '--accent-foreground': '#f3f4f6',
           '--background-channel': '3 7 18',
           '--text-channel': '249 250 251',
-        }
-      }
+        },
+      },
     },
     MuiButton: {
       styleOverrides: {
@@ -138,7 +138,7 @@ const baseThemeOptions: ThemeOptions = {
       },
       defaultProps: {
         disableElevation: true, // Consistent with flat design principles
-      }
+      },
     },
     MuiPaper: {
       styleOverrides: {
@@ -159,7 +159,7 @@ const baseThemeOptions: ThemeOptions = {
       defaultProps: {
         variant: 'outlined',
         fullWidth: true,
-      }
+      },
     },
     MuiOutlinedInput: {
       styleOverrides: {
@@ -183,24 +183,24 @@ const baseThemeOptions: ThemeOptions = {
       styleOverrides: {
         root: {
           color: 'var(--foreground)',
-        }
-      }
+        },
+      },
     },
     MuiDialog: {
       styleOverrides: {
         paper: {
           borderRadius: '0.75rem', // Larger rounded corners for dialogs
           overflow: 'hidden',
-        }
-      }
+        },
+      },
     },
     MuiMenuItem: {
       styleOverrides: {
         root: {
           minHeight: '2.5rem',
           padding: '0.5rem 1rem',
-        }
-      }
+        },
+      },
     },
   },
 };
@@ -251,4 +251,4 @@ export const theme: ThemeOptions = {
       secondary: '#4b5563', // Tailwind's gray-600 (muted)
     },
   },
-}; 
+};

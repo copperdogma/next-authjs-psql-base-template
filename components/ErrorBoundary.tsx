@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     super(props);
     this.state = {
       hasError: false,
-      error: null
+      error: null,
     };
   }
 
@@ -30,14 +30,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     // Update state so the next render will show the fallback UI
     return {
       hasError: true,
-      error
+      error,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log the error to an error reporting service
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
-    
+
     // Call onError callback if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -50,7 +50,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <h2 className="text-lg font-semibold text-red-800 mb-2">Something went wrong</h2>
@@ -59,9 +59,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           </p>
           <details className="text-xs text-gray-700 bg-white p-2 rounded border">
             <summary>Error details</summary>
-            <pre className="mt-2 whitespace-pre-wrap">
-              {this.state.error?.toString()}
-            </pre>
+            <pre className="mt-2 whitespace-pre-wrap">{this.state.error?.toString()}</pre>
           </details>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
@@ -77,4 +75,4 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

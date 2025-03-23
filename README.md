@@ -249,18 +249,24 @@ For detailed testing information, see [the testing guide](docs/testing/main.md) 
 
 This project maintains high code quality standards through:
 
-### Prettier
+### Automatic Code Formatting
 
-This project uses [Prettier](https://prettier.io/) for consistent code formatting:
+This template uses Prettier for automatic code formatting at multiple stages in the development workflow:
 
-- **Usage**:
-  - Format all files: `npm run format`
-  - Check formatting: `npm run format:check`
-- **Editor Integration**:
+- **During Development**: Files are automatically formatted when you run `npm run dev` or `npm run build`
+- **During Git Commits**: Files are automatically formatted before commit via a pre-commit hook
+- **Manual Formatting**: Run `npm run format` at any time to format all files
+- **VS Code Integration**: Files are automatically formatted on save when using VS Code
 
-  - VS Code is configured for format-on-save
-  - Install the [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for your editor
+For AI-driven workflows or when making multiple changes, use these convenience scripts:
 
-- **Configuration**:
-  - See `.prettierrc` for project-specific settings
-  - Runs automatically on git commit via lint-staged
+```bash
+npm run dev:clean   # Format, lint, and start dev server
+npm run build:clean # Format, lint, and build for production
+```
+
+These ensure consistent code style without manual intervention, even when using AI-assisted coding.
+
+### ESLint
+
+This project uses ESLint to enforce code quality rules:

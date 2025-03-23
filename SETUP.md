@@ -41,19 +41,23 @@ If you prefer to set up manually, you'll need to replace the following placehold
 The following files need to be updated with your project's information:
 
 1. `package.json`
+
    - name
    - description
    - repository url
 
 2. `.env.example` and `.env`
+
    - Database URLs
    - App name
 
 3. `app/manifest.ts`
+
    - PWA name and short name
    - Description
 
 4. `app/layout.tsx`
+
    - Page title
    - Meta description
 
@@ -63,6 +67,7 @@ The following files need to be updated with your project's information:
 ## Environment Setup
 
 1. Copy `.env.example` to `.env.local`:
+
    ```bash
    cp .env.example .env.local
    ```
@@ -91,4 +96,4 @@ If you encounter any issues during setup:
 3. Verify that Firebase and PostgreSQL are properly configured
 4. Run `npm run validate` to check for any code issues
 
-For more detailed information about the template structure and features, refer to the README.md file. 
+For more detailed information about the template structure and features, refer to the README.md file.

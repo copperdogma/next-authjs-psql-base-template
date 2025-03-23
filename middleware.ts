@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
-  
+
   return authMiddleware(request);
 }
 
@@ -23,4 +23,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
   ],
-}; 
+};

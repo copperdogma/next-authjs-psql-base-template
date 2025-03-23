@@ -3,13 +3,13 @@ import { render, RenderResult } from '@testing-library/react';
 
 /**
  * Helper function for testing server components
- * 
+ *
  * Note: This is a simplified testing utility that treats server components
  * as if they were client components for testing purposes only.
- * 
+ *
  * For complete server component testing, E2E tests are recommended as
  * Jest has limited support for async Server Components.
- * 
+ *
  * @param Component - The server component to test
  * @param props - Props to pass to the component
  */
@@ -24,13 +24,11 @@ export async function renderServerComponent<P extends object>(
   queryAllBySelector: (selector: string) => Element[];
 }> {
   // For testing purposes, we'll render the component as if it were a client component
-  const renderResult: RenderResult = render(
-    <Component {...(props || {} as P)} />
-  );
-  
+  const renderResult: RenderResult = render(<Component {...(props || ({} as P))} />);
+
   // Get the HTML content
   const html = renderResult.container.innerHTML;
-  
+
   return {
     // Return the rendered HTML
     html: html || '',
@@ -39,7 +37,7 @@ export async function renderServerComponent<P extends object>(
     // Query helpers
     getByText: (text: string): Element | null => {
       if (!text) return null;
-      
+
       try {
         return renderResult.getByText(text);
       } catch (e) {
@@ -50,10 +48,8 @@ export async function renderServerComponent<P extends object>(
       return selector ? renderResult.container.querySelector(selector) : null;
     },
     queryAllBySelector: (selector: string): Element[] => {
-      return selector 
-        ? Array.from(renderResult.container.querySelectorAll(selector))
-        : [];
-    }
+      return selector ? Array.from(renderResult.container.querySelectorAll(selector)) : [];
+    },
   };
 }
 
@@ -61,4 +57,4 @@ export async function renderServerComponent<P extends object>(
 // to avoid TypeScript errors while maintaining test coverage
 function mockRenderToHTML(element: React.ReactElement): string {
   return element ? 'mock-html-content' : '';
-} 
+}

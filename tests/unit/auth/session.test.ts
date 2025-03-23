@@ -8,14 +8,14 @@ jest.mock('../../../lib/firebase-admin', () => {
   const mockCreateSessionCookie = jest.fn().mockResolvedValue('test-session-cookie');
   const mockVerifySessionCookie = jest.fn().mockResolvedValue({ uid: 'test-uid' });
   const mockRevokeRefreshTokens = jest.fn().mockResolvedValue(undefined);
-  
+
   return {
     auth: {
       verifyIdToken: mockVerifyIdToken,
       createSessionCookie: mockCreateSessionCookie,
       verifySessionCookie: mockVerifySessionCookie,
-      revokeRefreshTokens: mockRevokeRefreshTokens
-    }
+      revokeRefreshTokens: mockRevokeRefreshTokens,
+    },
   };
 });
 
@@ -40,7 +40,7 @@ jest.mock('next/server', () => {
     };
     return response;
   });
-  
+
   return {
     ...originalModule,
     NextResponse: {
@@ -60,7 +60,7 @@ jest.mock('../../../lib/auth/session', () => ({
     path: '/',
     sameSite: 'lax',
   }),
-  createSessionCookie: jest.fn().mockImplementation(async (token) => {
+  createSessionCookie: jest.fn().mockImplementation(async token => {
     return 'mock-session-cookie';
   }),
   verifySessionCookie: jest.fn(),
@@ -79,7 +79,7 @@ describe('Session API', () => {
         json: jest.fn().mockResolvedValue({ token: mockToken }),
         cookies: {
           get: jest.fn(),
-        }
+        },
       } as unknown as NextRequest;
 
       // Call the API
@@ -87,13 +87,15 @@ describe('Session API', () => {
 
       // Verify response was created
       expect(response.status).toBe(200);
-      
+
       // Verify cookie was set with proper security settings
-      expect(response.cookies.set).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'session',
-        httpOnly: true,
-        path: '/',
-      }));
+      expect(response.cookies.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'session',
+          httpOnly: true,
+          path: '/',
+        })
+      );
     });
   });
 
@@ -103,22 +105,24 @@ describe('Session API', () => {
       const mockRequest = {
         cookies: {
           get: jest.fn().mockReturnValue({ value: 'test-session-cookie' }),
-        }
+        },
       } as unknown as NextRequest;
-      
+
       // Call the API
       const response = await DELETE(mockRequest);
 
       // Verify response was created
       expect(response.status).toBe(200);
-      
+
       // Verify cookie was cleared
-      expect(response.cookies.set).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'session',
-        value: '',
-        maxAge: 0,
-        httpOnly: true,
-      }));
+      expect(response.cookies.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'session',
+          value: '',
+          maxAge: 0,
+          httpOnly: true,
+        })
+      );
     });
   });
-}); 
+});

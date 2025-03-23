@@ -32,11 +32,11 @@ export function createAuthMiddleware(options: Partial<AuthMiddlewareOptions> = {
 
     // Check if the route is protected or public
     const isProtectedRoute = config.protectedRoutes.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
+      route => pathname === route || pathname.startsWith(`${route}/`)
     );
-    
+
     const isPublicRoute = config.publicRoutes.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
+      route => pathname === route || pathname.startsWith(`${route}/`)
     );
 
     // Get the session token from the request - check for Firebase session cookie
@@ -63,4 +63,4 @@ export function createAuthMiddleware(options: Partial<AuthMiddlewareOptions> = {
 }
 
 // Export a pre-configured middleware for convenience
-export const authMiddleware = createAuthMiddleware(); 
+export const authMiddleware = createAuthMiddleware();

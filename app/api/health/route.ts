@@ -5,4 +5,4 @@ export async function GET() {
     status: 'healthy',
     timestamp: new Date().toISOString(),
   });
-} 
+}

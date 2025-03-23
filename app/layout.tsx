@@ -1,14 +1,14 @@
-import type { Metadata, Viewport } from "next";
-import { Inter, Roboto } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Inter, Roboto } from 'next/font/google';
+import './globals.css';
 import ThemeRegistry from './providers/ThemeRegistry';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import AuthProvider from './providers/AuthProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
 
 // Optimize font loading
-const inter = Inter({ 
-  subsets: ["latin"],
+const inter = Inter({
+  subsets: ['latin'],
   display: 'swap',
   preload: true,
   variable: '--font-inter',
@@ -30,8 +30,8 @@ export const viewport: Viewport = {
   userScalable: true,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' }
-  ]
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
 };
 
 // Enhanced metadata configuration
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: {
     template: `%s | ${process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}'}`,
-    default: process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}'
+    default: process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}',
   },
   description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || '{{YOUR_PROJECT_DESCRIPTION}}',
   applicationName: process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}',
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '192x192' }
+      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
     ],
     apple: { url: '/apple-icon.png', type: 'image/png', sizes: '180x180' },
     shortcut: '/favicon.ico',
@@ -83,8 +83,8 @@ export const metadata: Metadata = {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}'
-      }
+        alt: process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_TITLE}}',
+      },
     ],
   },
   twitter: {
@@ -101,25 +101,15 @@ export const metadata: Metadata = {
   category: 'technology',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Title is automatically set by Next.js based on metadata */}
-      </head>
-      <body 
-        className={`${inter.className} ${inter.variable} ${roboto.variable}`}
-      >
+      <head>{/* Title is automatically set by Next.js based on metadata */}</head>
+      <body className={`${inter.className} ${inter.variable} ${roboto.variable}`}>
         <ThemeProvider defaultTheme="system" storageKey="theme-preference">
           <ThemeRegistry>
             <AuthProvider>
-              <BaseLayout>
-                {children}
-              </BaseLayout>
+              <BaseLayout>{children}</BaseLayout>
             </AuthProvider>
           </ThemeRegistry>
         </ThemeProvider>

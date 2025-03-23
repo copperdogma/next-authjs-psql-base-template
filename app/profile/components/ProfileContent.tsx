@@ -8,7 +8,7 @@ import type { Auth } from '@firebase/auth';
 
 export default function ProfileContent() {
   const { user } = useAuth();
-  
+
   if (!user) {
     return null;
   }
@@ -44,19 +44,19 @@ export default function ProfileContent() {
               </div>
             )}
           </div>
-          
+
           {/* Profile Information */}
           <div className="flex-1 space-y-4">
             <div>
               <p className="text-sm font-medium text-gray-500">Display Name</p>
               <p className="text-lg font-semibold">{user.displayName || 'Not provided'}</p>
             </div>
-            
+
             <div>
               <p className="text-sm font-medium text-gray-500">Email</p>
               <p className="text-lg font-semibold">{user.email}</p>
             </div>
-            
+
             <div>
               <p className="text-sm font-medium text-gray-500">Email Verified</p>
               <p className="text-lg font-semibold">{user.emailVerified ? 'Yes' : 'No'}</p>
@@ -75,4 +75,4 @@ export default function ProfileContent() {
       </div>
     </div>
   );
-} 
+}

@@ -36,19 +36,16 @@ const Dialog = ({
     <MuiDialog
       {...props}
       onClose={handleClose}
-      aria-labelledby={title ? "dialog-title" : undefined}
+      aria-labelledby={title ? 'dialog-title' : undefined}
       aria-describedby="dialog-description"
       PaperProps={{
         elevation: 24,
         className: 'overflow-hidden',
-        ...(props.PaperProps || {})
+        ...(props.PaperProps || {}),
       }}
     >
       {(title || showCloseButton) && (
-        <DialogTitle 
-          id="dialog-title" 
-          className="flex items-center justify-between py-4 px-6"
-        >
+        <DialogTitle id="dialog-title" className="flex items-center justify-between py-4 px-6">
           <div className="text-xl font-semibold">{title}</div>
           {showCloseButton && onClose && (
             <IconButton
@@ -76,4 +73,4 @@ const Dialog = ({
 };
 
 // Export memoized component to prevent unnecessary re-renders
-export default memo(Dialog); 
+export default memo(Dialog);

@@ -33,16 +33,16 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Mark that we're now mounted on the client
     setHasMounted(true);
-    
+
     try {
       // Since we've marked this file with 'use client', we know we're running on the client
       // We still need to check if Firebase Auth is properly initialized
       if (isFirebaseAuth(auth)) {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async firebaseUser => {
           // Update user state
           setUser(firebaseUser);
           setLoading(false);
-          
+
           // Check if we need to refresh the token
           if (firebaseUser && shouldRefreshToken(firebaseUser)) {
             try {
@@ -51,23 +51,26 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
               console.error('Failed to refresh token:', error);
             }
           }
-          
+
           // Set up a periodic token refresh check
           if (firebaseUser) {
-            const refreshInterval = setInterval(async () => {
-              if (firebaseUser && shouldRefreshToken(firebaseUser)) {
-                try {
-                  await refreshUserTokenAndSession(firebaseUser);
-                } catch (error) {
-                  console.error('Periodic token refresh failed:', error);
+            const refreshInterval = setInterval(
+              async () => {
+                if (firebaseUser && shouldRefreshToken(firebaseUser)) {
+                  try {
+                    await refreshUserTokenAndSession(firebaseUser);
+                  } catch (error) {
+                    console.error('Periodic token refresh failed:', error);
+                  }
                 }
-              }
-            }, 5 * 60 * 1000); // Check every 5 minutes
-            
+              },
+              5 * 60 * 1000
+            ); // Check every 5 minutes
+
             return () => clearInterval(refreshInterval);
           }
         });
-    
+
         // Clean up subscription
         return unsubscribe;
       } else {
@@ -84,11 +87,14 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo(() => ({
-    user,
-    loading,
-    isClientSide: hasMounted,
-  }), [user, loading, hasMounted]);
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      isClientSide: hasMounted,
+    }),
+    [user, loading, hasMounted]
+  );
 
   // Don't render anything until we've mounted on the client to prevent hydration mismatch
   if (!hasMounted) {
@@ -100,4 +106,4 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-} 
+}

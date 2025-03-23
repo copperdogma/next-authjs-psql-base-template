@@ -19,40 +19,41 @@ export interface MenuItemProps extends MuiMenuItemProps {
   disabled?: boolean;
 }
 
-export const MenuItem = memo(forwardRef<HTMLLIElement, MenuItemProps>(
-  ({ children, icon, primary, secondary, danger, disabled = false, className = '', ...props }, ref) => {
-    return (
-      <MuiMenuItem
-        {...props}
-        ref={ref}
-        disabled={disabled}
-        className={`
+export const MenuItem = memo(
+  forwardRef<HTMLLIElement, MenuItemProps>(
+    (
+      { children, icon, primary, secondary, danger, disabled = false, className = '', ...props },
+      ref
+    ) => {
+      return (
+        <MuiMenuItem
+          {...props}
+          ref={ref}
+          disabled={disabled}
+          className={`
           flex items-center gap-2 transition-colors duration-150
           ${danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20' : ''}
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           ${className}
         `}
-      >
-        {icon && (
-          <ListItemIcon className={danger ? 'text-red-600' : ''}>
-            {icon}
-          </ListItemIcon>
-        )}
-        {(primary || secondary) ? (
-          <ListItemText
-            primary={primary}
-            secondary={secondary}
-            primaryTypographyProps={{ 
-              className: danger ? 'text-red-600' : ''
-            }}
-          />
-        ) : (
-          children
-        )}
-      </MuiMenuItem>
-    );
-  }
-));
+        >
+          {icon && <ListItemIcon className={danger ? 'text-red-600' : ''}>{icon}</ListItemIcon>}
+          {primary || secondary ? (
+            <ListItemText
+              primary={primary}
+              secondary={secondary}
+              primaryTypographyProps={{
+                className: danger ? 'text-red-600' : '',
+              }}
+            />
+          ) : (
+            children
+          )}
+        </MuiMenuItem>
+      );
+    }
+  )
+);
 
 MenuItem.displayName = 'MenuItem';
 
@@ -66,13 +67,16 @@ export interface MenuProps extends MuiMenuProps {
 const Menu = forwardRef<HTMLDivElement, MenuProps>(
   ({ children, className = '', width, ...props }, ref) => {
     // Don't use CSS transitions during initial mount
-    const TransitionProps = useCallback(() => ({
-      timeout: {
-        appear: 0,
-        enter: 225,
-        exit: 195,
-      },
-    }), []);
+    const TransitionProps = useCallback(
+      () => ({
+        timeout: {
+          appear: 0,
+          enter: 225,
+          exit: 195,
+        },
+      }),
+      []
+    );
 
     return (
       <MuiMenu
@@ -99,7 +103,7 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
             minWidth: 180,
             maxHeight: 'calc(100% - 96px)',
             ...(props.PaperProps?.sx || {}),
-          }
+          },
         }}
       >
         {children}
@@ -111,4 +115,4 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
 Menu.displayName = 'Menu';
 
 // Export the memoized component
-export default memo(Menu); 
+export default memo(Menu);

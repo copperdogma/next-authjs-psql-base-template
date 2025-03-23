@@ -1,6 +1,6 @@
 /**
  * Database utilities and services
- * 
+ *
  * This module exports database-related utilities and service classes
  * that help prevent common issues like N+1 queries and provide
  * better error handling.
@@ -15,4 +15,4 @@ export { SessionCleanupService } from './session-cleanup-service';
 
 // Query optimization utilities
 export { QueryOptimizer } from './query-optimizer';
-export { RawQueryService } from './raw-query-service'; 
+export { RawQueryService } from './raw-query-service';

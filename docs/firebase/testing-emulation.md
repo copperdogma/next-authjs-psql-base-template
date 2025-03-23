@@ -31,6 +31,7 @@ firebase init
 ```
 
 During the initialization process, select the services you want to emulate:
+
 - Firestore
 - Authentication
 - Functions
@@ -102,18 +103,18 @@ import { getStorage, connectStorageEmulator } from 'firebase/storage';
 export function connectToEmulators() {
   // Only connect to emulators in development or test environments
   if (process.env.NODE_ENV === 'production') return;
-  
+
   const auth = getAuth();
   const db = getFirestore();
   const functions = getFunctions();
   const storage = getStorage();
-  
+
   // Connect to emulators
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectFirestoreEmulator(db, 'localhost', 8080);
   connectFunctionsEmulator(functions, 'localhost', 5001);
   connectStorageEmulator(storage, 'localhost', 9199);
-  
+
   console.log('Connected to Firebase Emulators');
 }
 ```
@@ -198,7 +199,7 @@ import * as testing from '@firebase/rules-unit-testing';
 
 describe('Firestore Security Rules', () => {
   let testEnv: testing.RulesTestEnvironment;
-  
+
   beforeAll(async () => {
     testEnv = await testing.initializeTestEnvironment({
       projectId: 'test-project-id',
@@ -217,35 +218,35 @@ describe('Firestore Security Rules', () => {
       },
     });
   });
-  
+
   afterAll(async () => {
     await testEnv.cleanup();
   });
-  
+
   it('allows authenticated users to read any user profile', async () => {
     // Create an authenticated context
     const authenticatedContext = testEnv.authenticatedContext('user1');
-    
+
     // Try to read a user document that isn't the authenticated user's
     await testing.assertSucceeds(
       authenticatedContext.firestore().collection('users').doc('user2').get()
     );
   });
-  
+
   it('prevents unauthenticated users from reading profiles', async () => {
     // Create an unauthenticated context
     const unauthenticatedContext = testEnv.unauthenticatedContext();
-    
+
     // Try to read a user document
     await testing.assertFails(
       unauthenticatedContext.firestore().collection('users').doc('user1').get()
     );
   });
-  
+
   it('allows users to update their own profiles', async () => {
     // Create an authenticated context
     const authenticatedContext = testEnv.authenticatedContext('user1');
-    
+
     // Try to update the user's own document
     await testing.assertSucceeds(
       authenticatedContext.firestore().collection('users').doc('user1').update({
@@ -253,11 +254,11 @@ describe('Firestore Security Rules', () => {
       })
     );
   });
-  
+
   it('prevents users from updating other users profiles', async () => {
     // Create an authenticated context
     const authenticatedContext = testEnv.authenticatedContext('user1');
-    
+
     // Try to update another user's document
     await testing.assertFails(
       authenticatedContext.firestore().collection('users').doc('user2').update({
@@ -298,18 +299,18 @@ describe('Cloud Functions', () => {
     // Clear the database before each test
     await testing.clearFirestoreData({ projectId: 'test-project-id' });
   });
-  
+
   afterAll(async () => {
     await testApp.delete();
   });
-  
+
   it('createUser function creates a user document', async () => {
     // Mock data
     const data = {
       displayName: 'Test User',
       email: 'test@example.com',
     };
-    
+
     // Mock auth context
     const context = {
       auth: {
@@ -319,14 +320,14 @@ describe('Cloud Functions', () => {
         },
       },
     };
-    
+
     // Call the function
     await myFunctions.createUser(data, context);
-    
+
     // Verify the result
     const db = admin.firestore();
     const userDoc = await db.collection('users').doc('test-user-id').get();
-    
+
     expect(userDoc.exists).toBe(true);
     expect(userDoc.data()).toEqual({
       displayName: 'Test User',
@@ -334,20 +335,19 @@ describe('Cloud Functions', () => {
       createdAt: expect.any(admin.firestore.Timestamp),
     });
   });
-  
+
   it('createUser function rejects unauthenticated requests', async () => {
     // Mock data
     const data = {
       displayName: 'Test User',
       email: 'test@example.com',
     };
-    
+
     // Mock context without auth
     const context = {};
-    
+
     // Expect function to throw an error
-    await expect(myFunctions.createUser(data, context))
-      .rejects.toThrow(/not authenticated/i);
+    await expect(myFunctions.createUser(data, context)).rejects.toThrow(/not authenticated/i);
   });
 });
 ```
@@ -397,23 +397,23 @@ describe('Authentication Flow', () => {
     // Visit the app connected to emulators
     cy.visit('/');
   });
-  
+
   it('allows a user to log in', () => {
     // Seed a test user into the auth emulator first
     cy.login('test@example.com', 'password');
-    
+
     // Check that the UI reflects logged-in state
     cy.get('[data-testid=user-profile]').should('be.visible');
     cy.get('[data-testid=user-email]').should('contain', 'test@example.com');
   });
-  
+
   it('allows a user to log out', () => {
     // Log in first
     cy.login('test@example.com', 'password');
-    
+
     // Log out
     cy.get('[data-testid=logout-button]').click();
-    
+
     // Check that the UI reflects logged-out state
     cy.get('[data-testid=login-button]').should('be.visible');
   });
@@ -449,10 +449,10 @@ admin.initializeApp({
 
 async function seedEmulator() {
   const db = admin.firestore();
-  
+
   // Clear existing data
   await clearCollection(db, 'users');
-  
+
   // Seed users
   const usersRef = db.collection('users');
   await usersRef.doc('user1').set({
@@ -460,13 +460,13 @@ async function seedEmulator() {
     email: 'user1@example.com',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
-  
+
   await usersRef.doc('user2').set({
     displayName: 'Test User 2',
     email: 'user2@example.com',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
-  
+
   console.log('Emulator seeded with test data');
 }
 
@@ -489,25 +489,30 @@ npx ts-node scripts/seed-emulator.ts
 ## Best Practices
 
 1. **Run Emulators in CI/CD**:
+
    - Include emulator tests in your continuous integration pipeline
    - Ensure tests run before deploying changes
 
 2. **Maintain Parity with Production**:
+
    - Keep security rules in sync between emulator and production
    - Use the same schema for Firestore data
 
 3. **Test Edge Cases**:
+
    - Test with various authentication states
    - Test with malformed data
    - Test permission boundaries
 
 4. **Comprehensive Testing Strategy**:
+
    - Unit tests for individual components
    - Integration tests for services
    - End-to-end tests for user flows
    - Security rules tests for data access
 
 5. **Environment-Specific Configuration**:
+
    - Use environment variables to control emulator connection
    - Make it easy to switch between emulators and production
 
@@ -532,4 +537,4 @@ Add these scripts to your `package.json`:
     "cypress:run": "cypress run"
   }
 }
-``` 
+```

@@ -1,6 +1,6 @@
 import { jsx as _jsx } from 'react/jsx-runtime';
-import { render } from '@testing-library/react'
-import { ReactElement } from 'react'
+import { render } from '@testing-library/react';
+import { ReactElement } from 'react';
 import { AuthContext } from '../../app/providers/AuthProvider';
 import type { User } from '@firebase/auth';
 import { ROUTES } from './routes';
@@ -13,12 +13,12 @@ const createMockRouter = (config = {}) => {
     replace: jest.fn(),
     prefetch: jest.fn(),
     back: jest.fn(),
-    forward: jest.fn()
+    forward: jest.fn(),
   };
-  
+
   return {
     ...defaultConfig,
-    ...config
+    ...config,
   };
 };
 
@@ -26,14 +26,14 @@ const createMockRouter = (config = {}) => {
 jest.mock('next/navigation', () => {
   // Using hardcoded string for the mock
   const mockPathname = '/';
-  
+
   return {
     useRouter: jest.fn().mockImplementation(() => createMockRouter()),
     usePathname: jest.fn().mockImplementation(() => mockPathname),
     useSearchParams: jest.fn().mockImplementation(() => ({
-      get: jest.fn().mockImplementation((key) => key === 'callbackUrl' ? '/dashboard' : null)
+      get: jest.fn().mockImplementation(key => (key === 'callbackUrl' ? '/dashboard' : null)),
     })),
-  }
+  };
 });
 
 // Define the auth context type based on our updated context structure
@@ -50,39 +50,31 @@ interface RenderOptions {
 }
 
 // Create a custom render function that includes providers
-function customRender(
-  ui: ReactElement,
-  options: RenderOptions = {}
-) {
+function customRender(ui: ReactElement, options: RenderOptions = {}) {
   const defaultAuthState = { user: null, loading: false, isClientSide: true };
   const authState = options.authState || defaultAuthState;
-  
+
   // Configure router if provided in options
   if (options.routerConfig) {
     const mockRouter = createMockRouter(options.routerConfig);
     jest.requireMock('next/navigation').useRouter.mockImplementation(() => mockRouter);
-    
+
     // Handle pathname property safely
-    const pathname = options.routerConfig.pathname !== undefined 
-      ? options.routerConfig.pathname 
-      : ROUTES.HOME;
-      
+    const pathname =
+      options.routerConfig.pathname !== undefined ? options.routerConfig.pathname : ROUTES.HOME;
+
     jest.requireMock('next/navigation').usePathname.mockImplementation(() => pathname);
   }
 
   return {
-    ...render(
-      <AuthContext.Provider value={authState}>
-        {ui}
-      </AuthContext.Provider>
-    ),
+    ...render(<AuthContext.Provider value={authState}>{ui}</AuthContext.Provider>),
     // Return the mock router config for test assertions
     mockRouter: jest.requireMock('next/navigation').useRouter(),
-  }
+  };
 }
 
 // Re-export everything
-export * from '@testing-library/react'
+export * from '@testing-library/react';
 
 // Override render method
-export { customRender as render } 
+export { customRender as render };

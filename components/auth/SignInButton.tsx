@@ -41,57 +41,60 @@ export default function SignInButton() {
   }, [searchParams]);
 
   // Unified authentication handler for both sign-in and sign-out
-  const handleAuth = useCallback(async (mode: AuthMode) => {
-    // Clear any previous error
-    setErrorMessage(null);
-    
-    try {
-      setButtonLoading(true);
-      
-      // Get the callback URL if it exists
-      const callbackUrl = getCallbackUrl();
-      
-      if (mode === 'sign-in') {
-        if (!isFirebaseAuth(auth)) {
-          throw new Error('Firebase Auth not available');
+  const handleAuth = useCallback(
+    async (mode: AuthMode) => {
+      // Clear any previous error
+      setErrorMessage(null);
+
+      try {
+        setButtonLoading(true);
+
+        // Get the callback URL if it exists
+        const callbackUrl = getCallbackUrl();
+
+        if (mode === 'sign-in') {
+          if (!isFirebaseAuth(auth)) {
+            throw new Error('Firebase Auth not available');
+          }
+
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          const idToken = await result.user.getIdToken();
+
+          await createSession(idToken);
+
+          // Add a delay before redirecting to ensure cookie is set
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // Use window.location for a full page refresh to ensure cookie is used
+          if (typeof window !== 'undefined') {
+            window.location.href = callbackUrl;
+          }
+        } else {
+          if (!isFirebaseAuth(auth)) {
+            throw new Error('Firebase Auth not available');
+          }
+
+          await signOut(auth);
+          await deleteSession();
+
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
         }
-        
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        const idToken = await result.user.getIdToken();
-        
-        await createSession(idToken);
-        
-        // Add a delay before redirecting to ensure cookie is set
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Use window.location for a full page refresh to ensure cookie is used
-        if (typeof window !== 'undefined') {
-          window.location.href = callbackUrl;
-        }
-      } else {
-        if (!isFirebaseAuth(auth)) {
-          throw new Error('Firebase Auth not available');
-        }
-        
-        await signOut(auth);
-        await deleteSession();
-        
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        }
+      } catch (error) {
+        // Get user-friendly error message for display
+        const contextName = mode === 'sign-in' ? 'Sign In' : 'Sign Out';
+        const userMessage = handleFirebaseError(contextName, error);
+
+        // Set the error message for display
+        setErrorMessage(userMessage);
+      } finally {
+        setButtonLoading(false);
       }
-    } catch (error) {
-      // Get user-friendly error message for display
-      const contextName = mode === 'sign-in' ? 'Sign In' : 'Sign Out';
-      const userMessage = handleFirebaseError(contextName, error);
-      
-      // Set the error message for display
-      setErrorMessage(userMessage);
-    } finally {
-      setButtonLoading(false);
-    }
-  }, [getCallbackUrl]);
+    },
+    [getCallbackUrl]
+  );
 
   // Helper functions to handle session API calls
   const createSession = async (idToken: string) => {
@@ -107,7 +110,9 @@ export default function SignInButton() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(`Failed to create session: ${response.status} - ${data.error || 'Unknown error'}`);
+        throw new Error(
+          `Failed to create session: ${response.status} - ${data.error || 'Unknown error'}`
+        );
       }
     } catch (error) {
       // Use our error handling utility with proper context
@@ -153,22 +158,28 @@ export default function SignInButton() {
     'data-testid': 'auth-button',
     'data-auth-state': user ? 'sign-out' : 'sign-in',
     'data-loading': buttonLoading.toString(),
-    'aria-label': user 
-      ? buttonLoading ? 'Signing out...' : 'Sign Out' 
-      : buttonLoading ? 'Signing in...' : 'Sign In with Google',
+    'aria-label': user
+      ? buttonLoading
+        ? 'Signing out...'
+        : 'Sign Out'
+      : buttonLoading
+        ? 'Signing in...'
+        : 'Sign In with Google',
   };
 
   // Determine button text based on state
   const buttonText = user
-    ? buttonLoading ? 'Signing out...' : 'Sign Out'
-    : buttonLoading ? 'Signing in...' : 'Sign In with Google';
+    ? buttonLoading
+      ? 'Signing out...'
+      : 'Sign Out'
+    : buttonLoading
+      ? 'Signing in...'
+      : 'Sign In with Google';
 
   return (
     <div className="flex flex-col">
-      <Button {...buttonProps}>
-        {buttonText}
-      </Button>
-      
+      <Button {...buttonProps}>{buttonText}</Button>
+
       {/* Show error message if present */}
       {errorMessage && (
         <p className="text-red-500 text-sm mt-2" role="alert" data-testid="auth-error">
@@ -177,4 +188,4 @@ export default function SignInButton() {
       )}
     </div>
   );
-} 
+}

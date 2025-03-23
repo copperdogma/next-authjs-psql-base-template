@@ -27,10 +27,12 @@ export interface DecodedIdToken {
  * @param expiresIn Expiration time in seconds (defaults to 1 hour)
  * @returns Cookie options object
  */
-export const getSessionCookieOptions = (expiresIn = DEFAULT_SESSION_EXPIRATION): CookieSerializeOptions => {
+export const getSessionCookieOptions = (
+  expiresIn = DEFAULT_SESSION_EXPIRATION
+): CookieSerializeOptions => {
   // Cap at maximum allowed value (14 days)
   const validExpiresIn = Math.min(expiresIn, MAX_SESSION_EXPIRATION);
-  
+
   return {
     maxAge: validExpiresIn,
     httpOnly: true,
@@ -46,11 +48,14 @@ export const getSessionCookieOptions = (expiresIn = DEFAULT_SESSION_EXPIRATION):
  * @param expiresIn Expiration time in seconds (defaults to 1 hour)
  * @returns Session cookie
  */
-export const createSessionCookie = async (idToken: string, expiresIn = DEFAULT_SESSION_EXPIRATION): Promise<string> => {
+export const createSessionCookie = async (
+  idToken: string,
+  expiresIn = DEFAULT_SESSION_EXPIRATION
+): Promise<string> => {
   try {
     // Cap at maximum allowed value (14 days)
     const validExpiresIn = Math.min(expiresIn, MAX_SESSION_EXPIRATION);
-    
+
     // Create the session cookie
     return await auth.createSessionCookie(idToken, { expiresIn: validExpiresIn * 1000 });
   } catch (error) {
@@ -86,4 +91,4 @@ export const revokeAllSessions = async (uid: string): Promise<void> => {
     console.error('Failed to revoke refresh tokens:', error);
     throw new Error('Failed to revoke sessions');
   }
-}; 
+};

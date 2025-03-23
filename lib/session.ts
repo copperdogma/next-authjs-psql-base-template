@@ -12,7 +12,7 @@ export async function getSession() {
 
     // Verify the session cookie and get the user claims
     const decodedClaims = await adminAuth.verifySessionCookie(session, true);
-    
+
     // Get additional user data if needed
     const user = await adminAuth.getUser(decodedClaims.uid);
 
@@ -27,4 +27,4 @@ export async function getSession() {
     console.error('Failed to get session:', err);
     return null;
   }
-} 
+}

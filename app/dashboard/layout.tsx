@@ -5,7 +5,7 @@ import { Metadata } from 'next';
 export async function generateMetadata(): Promise<Metadata> {
   // You could fetch data here to make the metadata dynamic
   // For example, fetching the user's name for a personalized title
-  
+
   return {
     title: 'Dashboard | Next.js Template',
     description: 'View and manage your dashboard data',
@@ -17,11 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="py-4">
@@ -32,7 +28,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
-      
+
       <main>
         <Suspense fallback={<div className="p-6 text-center">Loading dashboard content...</div>}>
           {children}
@@ -40,4 +36,4 @@ export default function DashboardLayout({
       </main>
     </div>
   );
-} 
+}

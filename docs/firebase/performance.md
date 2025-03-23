@@ -32,16 +32,16 @@ import { useState, useEffect } from 'react';
 
 function FirebaseComponent() {
   const [firebaseAuth, setFirebaseAuth] = useState(null);
-  
+
   useEffect(() => {
     const loadFirebase = async () => {
       const { auth } = await import('../lib/firebase');
       setFirebaseAuth(auth);
     };
-    
+
     loadFirebase();
   }, []);
-  
+
   // Use firebaseAuth when it's available
   return (
     <div>
@@ -56,12 +56,10 @@ function FirebaseComponent() {
 ### Use Proper Indexing
 
 1. Create indexes for frequently used queries:
+
    ```javascript
    // Example of a compound query that would need an index
-   db.collection('posts')
-     .where('authorId', '==', userId)
-     .orderBy('createdAt', 'desc')
-     .limit(10)
+   db.collection('posts').where('authorId', '==', userId).orderBy('createdAt', 'desc').limit(10);
    ```
 
 2. Add composite indexes for fields queried together:
@@ -84,23 +82,23 @@ function FirebaseComponent() {
 ### Query Optimization Techniques
 
 1. **Use Limits**: Always limit query results
+
    ```typescript
    const query = db.collection('posts').limit(20);
    ```
 
 2. **Pagination**: Use cursor-based pagination instead of offset
+
    ```typescript
    // First query
-   const first = await db.collection('posts')
-     .orderBy('createdAt')
-     .limit(10)
-     .get();
-     
+   const first = await db.collection('posts').orderBy('createdAt').limit(10).get();
+
    // Get the last document
    const lastDoc = first.docs[first.docs.length - 1];
-   
+
    // Next page query
-   const next = await db.collection('posts')
+   const next = await db
+     .collection('posts')
      .orderBy('createdAt')
      .startAfter(lastDoc)
      .limit(10)
@@ -108,14 +106,16 @@ function FirebaseComponent() {
    ```
 
 3. **Select Specific Fields**: Use select() to retrieve only needed fields
+
    ```typescript
    db.collection('users').doc(userId).select(['name', 'email']).get();
    ```
 
 4. **Hierarchical Data**: Use sub-collections for hierarchical data
+
    ```typescript
    // Example structure
-   users/{userId}/posts/{postId}
+   users / { userId } / posts / { postId };
    ```
 
 5. **Denormalization**: For frequently accessed data, consider denormalization
@@ -135,21 +135,23 @@ function FirebaseComponent() {
 ### Cold Start Optimization
 
 1. **Use Initialization Outside Handler**: Move initialization code outside the function handler
+
    ```typescript
    // Import and initialize outside the function
    import { db } from './shared-db';
-   
+
    export const myFunction = functions.https.onCall((data, context) => {
      // Function logic using already initialized db
    });
    ```
 
 2. **Memory Allocation**: Adjust memory allocation based on function needs
+
    ```typescript
    export const myFunction = functions
      .runWith({
        memory: '256MB', // Adjust based on needs
-       timeoutSeconds: 60
+       timeoutSeconds: 60,
      })
      .https.onCall((data, context) => {
        // Function logic
@@ -157,6 +159,7 @@ function FirebaseComponent() {
    ```
 
 3. **Function Bundling**: Group related functions together to share initialization
+
    ```typescript
    // user-functions.js - all user-related functions bundled
    export const createUser = functions.https.onCall(/* ... */);
@@ -176,24 +179,26 @@ function FirebaseComponent() {
 ### Function Implementation Best Practices
 
 1. **Batched Operations**: Use batched writes for multiple operations
+
    ```typescript
    const batch = db.batch();
-   
+
    // Add operations to batch
    batch.set(doc1Ref, data1);
    batch.update(doc2Ref, data2);
    batch.delete(doc3Ref);
-   
+
    // Commit as a single transaction
    await batch.commit();
    ```
 
 2. **Transactions**: Use transactions for reads and writes that depend on each other
+
    ```typescript
-   await db.runTransaction(async (transaction) => {
+   await db.runTransaction(async transaction => {
      const docRef = db.collection('counters').doc('likes');
      const doc = await transaction.get(docRef);
-     
+
      if (!doc.exists) {
        transaction.set(docRef, { count: 1 });
      } else {
@@ -204,20 +209,21 @@ function FirebaseComponent() {
    ```
 
 3. **Function Composition**: Break functions into smaller, reusable pieces
+
    ```typescript
    // Helper function
-   const validateUser = (user) => {
+   const validateUser = user => {
      // Validation logic
    };
-   
+
    // Main function
    export const createUser = functions.https.onCall((data, context) => {
      const validationResult = validateUser(data);
-     
+
      if (!validationResult.valid) {
        throw new functions.https.HttpsError('invalid-argument', validationResult.error);
      }
-     
+
      // Create user logic
    });
    ```
@@ -227,27 +233,29 @@ function FirebaseComponent() {
 To ensure optimal performance:
 
 1. **Firebase Performance Monitoring**: Implement Firebase Performance Monitoring
+
    ```typescript
-   import { getPerformance } from "firebase/performance";
-   
+   import { getPerformance } from 'firebase/performance';
+
    // Initialize Performance Monitoring
    const perf = getPerformance(firebaseApp);
    ```
 
 2. **Custom Traces**: Add custom traces for critical operations
+
    ```typescript
-   import { trace } from "firebase/performance";
-   
+   import { trace } from 'firebase/performance';
+
    // Start a trace
-   const customTrace = trace(perf, "custom_trace_name");
+   const customTrace = trace(perf, 'custom_trace_name');
    customTrace.start();
-   
+
    // Add custom metrics
-   customTrace.putMetric("data_size", dataSize);
-   
+   customTrace.putMetric('data_size', dataSize);
+
    // Do the operation you want to trace
    await performOperation();
-   
+
    // Stop the trace
    customTrace.stop();
    ```
@@ -263,6 +271,7 @@ To ensure optimal performance:
 For faster development and testing:
 
 1. **Install Firebase Emulator Suite**:
+
    ```bash
    npm install -g firebase-tools
    firebase setup:emulators:firestore
@@ -270,6 +279,7 @@ For faster development and testing:
    ```
 
 2. **Configure Emulator Ports**:
+
    ```json
    // firebase.json
    {
@@ -288,13 +298,14 @@ For faster development and testing:
    ```
 
 3. **Connect Application to Emulators**:
+
    ```typescript
    // lib/firebase.ts - add in development mode
    if (process.env.NODE_ENV === 'development') {
      // Connect to emulators
      import { connectAuthEmulator } from 'firebase/auth';
      import { connectFirestoreEmulator } from 'firebase/firestore';
-     
+
      connectAuthEmulator(auth, 'http://localhost:9099');
      connectFirestoreEmulator(db, 'localhost', 8080);
    }
@@ -303,4 +314,4 @@ For faster development and testing:
 4. **Run Emulators**:
    ```bash
    firebase emulators:start
-   ``` 
+   ```
