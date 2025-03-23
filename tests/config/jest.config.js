@@ -11,7 +11,9 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/tests/config/setup/setup.js'],
   globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: [
+    '/node_modules/'
+  ],
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
@@ -62,10 +64,10 @@ const customJestConfig = {
 
     // SignInButton has specific threshold due to environment-specific code
     './components/auth/SignInButton.tsx': {
-      statements: 75,
+      statements: 90,
       branches: 75,
       functions: 90,
-      lines: 75,
+      lines: 90,
     },
 
     // Production code should maintain high coverage

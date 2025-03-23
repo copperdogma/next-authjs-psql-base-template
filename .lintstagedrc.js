@@ -3,12 +3,11 @@ module.exports = {
   '**/*.ts?(x)': filenames => [
     `npm run lint:fix -- ${filenames.join(' ')}`,
     `npm run format -- ${filenames.join(' ')}`,
-    'git add',
   ],
 
   // Format MarkDown files
-  '**/*.md': filenames => [`npm run format -- ${filenames.join(' ')}`, 'git add'],
+  '**/*.md': filenames => [`npm run format -- ${filenames.join(' ')}`],
 
   // Format JSON files
-  '**/*.json': filenames => [`npm run format -- ${filenames.join(' ')}`, 'git add'],
+  '**/*.json': filenames => [`npm run format -- ${filenames.join(' ')}`],
 };
