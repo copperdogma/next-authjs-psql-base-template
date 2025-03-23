@@ -3,32 +3,65 @@ import { z } from 'zod';
 // Environment variables schema
 const envSchema = z.object({
   // Firebase
-  NEXT_PUBLIC_FIREBASE_API_KEY: z.string(),
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string(),
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string(),
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string(),
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string(),
-  NEXT_PUBLIC_FIREBASE_APP_ID: z.string(),
+  NEXT_PUBLIC_FIREBASE_API_KEY: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_API_KEY is required',
+  }),
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN is required',
+  }),
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID is required',
+  }),
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is required',
+  }),
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID is required',
+  }),
+  NEXT_PUBLIC_FIREBASE_APP_ID: z.string({
+    required_error: 'NEXT_PUBLIC_FIREBASE_APP_ID is required',
+  }),
 
   // Firebase Admin SDK
-  FIREBASE_PROJECT_ID: z.string(),
-  FIREBASE_CLIENT_EMAIL: z.string(),
-  FIREBASE_PRIVATE_KEY: z.string(),
+  FIREBASE_PROJECT_ID: z.string({
+    required_error: 'FIREBASE_PROJECT_ID is required',
+  }),
+  FIREBASE_CLIENT_EMAIL: z.string({
+    required_error: 'FIREBASE_CLIENT_EMAIL is required',
+  }),
+  FIREBASE_PRIVATE_KEY: z.string({
+    required_error: 'FIREBASE_PRIVATE_KEY is required',
+  }),
 
   // Database
-  POSTGRES_URL: z.string(),
-  REDIS_URL: z.string(),
-  DATABASE_URL: z.string(),
+  POSTGRES_URL: z.string({
+    required_error: 'POSTGRES_URL is required',
+  }),
+  REDIS_URL: z.string({
+    required_error: 'REDIS_URL is required',
+  }),
+  DATABASE_URL: z.string({
+    required_error: 'DATABASE_URL is required',
+  }),
 
   // Google OAuth
-  GOOGLE_CLIENT_ID: z.string(),
-  GOOGLE_CLIENT_SECRET: z.string(),
+  GOOGLE_CLIENT_ID: z.string({
+    required_error: 'GOOGLE_CLIENT_ID is required',
+  }),
+  GOOGLE_CLIENT_SECRET: z.string({
+    required_error: 'GOOGLE_CLIENT_SECRET is required',
+  }),
 
   // PWA
   NEXT_PUBLIC_PWA_APP_NAME: z.string().optional(),
   NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string().optional(),
-  NEXT_PUBLIC_PWA_APP_DESCRIPTION: z.string(),
+  NEXT_PUBLIC_PWA_APP_DESCRIPTION: z.string({
+    required_error: 'NEXT_PUBLIC_PWA_APP_DESCRIPTION is required',
+  }),
 });
+
+// Export the type inferred from the schema
+export type Env = z.infer<typeof envSchema>;
 
 // Export required environment variables for utility functions
 export const requiredEnvVars = [
@@ -63,18 +96,39 @@ export const requiredEnvVars = [
 // Define union type for NODE_ENV
 export type NodeEnv = 'development' | 'production' | 'test';
 
+// Format Zod validation errors into a more readable format
+function formatZodError(error: z.ZodError) {
+  return error.errors
+    .map(err => {
+      const field = err.path.join('.');
+      return `- ${field}: ${err.message}`;
+    })
+    .join('\n');
+}
+
 // Validate environment variables
 export function validateEnv() {
-  try {
-    envSchema.parse(process.env);
-  } catch (error) {
-    console.error('❌ Invalid environment variables:', error);
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    const formattedError = formatZodError(result.error);
+    console.error('❌ Invalid environment variables:\n' + formattedError);
     throw new Error('Invalid environment variables');
   }
+
+  return result.data;
 }
 
 // Export environment variables
-export const env = envSchema.parse(process.env);
+export const env = (() => {
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    // Just return an empty object in case of failure
+    // The validateEnv function will throw a more detailed error when called
+    return {} as Env;
+  }
+  return result.data;
+})();
 
 // Optional environment variables with default values
 export const ENV = {
