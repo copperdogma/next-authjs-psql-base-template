@@ -1,5 +1,7 @@
 # {{YOUR_PROJECT_NAME}}
 
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+
 A modern web application template built with Next.js, Firebase, and PostgreSQL.
 
 ## Features
@@ -184,16 +186,19 @@ This project uses Firebase Authentication. The authentication flow is handled by
 This project uses Firebase Firestore for real-time database capabilities alongside the primary PostgreSQL database. The Firestore security rules are defined in `firestore.rules` and follow secure patterns:
 
 ### User Collection Rules
+
 - Authenticated users can read any user profile
 - Users can create and update their own profiles
 - Admin users can update or delete any user profile
 - Regular users cannot delete profiles
 
 ### Public Collection Rules
+
 - Anyone can read public documents
 - Only admin users can write to public documents
 
-### Tasks Collection Rules  
+### Tasks Collection Rules
+
 - Users can read, update, and delete only their own tasks
 - Admin users can read, update, and delete any task
 - Users can only create tasks for themselves
@@ -219,9 +224,11 @@ npm run test:task-rules:with-emulator # Only task collection rules
 ```
 
 ## Testing
+
 The project includes comprehensive testing with Jest for unit tests and Playwright for end-to-end tests.
 
 For detailed testing information, see [the testing guide](docs/testing/main.md) and the implementation documentation:
+
 - [Main testing documentation](tests/README-main.md)
 - [E2E testing documentation](tests/e2e/README-e2e.md)
 
@@ -229,7 +236,7 @@ For detailed testing information, see [the testing guide](docs/testing/main.md) 
 
 - **Framework**: Next.js 13+ with App Router
 - **Authentication**: Firebase Auth
-- **Database**: PostgreSQL 
+- **Database**: PostgreSQL
 - **Real-time Database**: Firebase Firestore
 - **Caching**: Redis (optional)
 - **UI**: React with Tailwind CSS
@@ -237,3 +244,23 @@ For detailed testing information, see [the testing guide](docs/testing/main.md) 
 - **Type Checking**: TypeScript
 - **Linting**: ESLint
 - **Formatting**: Prettier
+
+## Code Quality
+
+This project maintains high code quality standards through:
+
+### Prettier
+
+This project uses [Prettier](https://prettier.io/) for consistent code formatting:
+
+- **Usage**:
+  - Format all files: `npm run format`
+  - Check formatting: `npm run format:check`
+- **Editor Integration**:
+
+  - VS Code is configured for format-on-save
+  - Install the [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for your editor
+
+- **Configuration**:
+  - See `.prettierrc` for project-specific settings
+  - Runs automatically on git commit via lint-staged

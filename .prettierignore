@@ -5,4 +5,21 @@ dist
 coverage
 .vercel
 public
-*.md 
+
+# Dependencies
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build outputs
+.turbo
+out
+storybook-static
+
+# Generated files
+next-env.d.ts
+
+# Cache and logs
+.cache
+.output
+.eslintcache 
