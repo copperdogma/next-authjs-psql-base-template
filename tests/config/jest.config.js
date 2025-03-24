@@ -149,6 +149,11 @@ const customJestConfig = {
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/tests/config/setup/firebase-setup.js'],
     },
+    {
+      displayName: 'swc',
+      testMatch: ['<rootDir>/tests/unit/swc/**/*.test.ts?(x)'],
+      testEnvironment: 'node',
+    },
   ],
 };
 

@@ -106,6 +106,7 @@
     "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",
     "cross-env": "^7.0.3",
+    "cssnano": "^7.0.6",
     "dotenv": "^16.4.7",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
@@ -141,5 +142,18 @@
   "overrides": {
     "whatwg-url": "^14.0.0",
     "tr46": "^4.1.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "last 2 versions"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

@@ -158,6 +158,14 @@ const nextConfig = {
       };
     }
 
+    // Enable persistent cache for faster builds
+    config.cache = {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename], // Invalidate cache when this file changes
+      },
+    };
+
     // Optimize bundle size in production
     config.optimization.minimize = true;
 
