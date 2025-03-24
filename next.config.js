@@ -137,8 +137,8 @@ const nextConfig = {
     ],
   },
 
-  // Improved webpack configuration
-  webpack: (config, { isServer }) => {
+  // Simplified webpack configuration
+  webpack: (config, { dev, isServer }) => {
     if (!isServer) {
       // Don't bundle server-only modules on the client side
       config.resolve.fallback = {
@@ -158,9 +158,15 @@ const nextConfig = {
       };
     }
 
-    // Optimize bundle size
+    // Optimize bundle size in production
     config.optimization.minimize = true;
 
+    // Enable tree shaking (webpack does this automatically in production mode)
+    if (!dev) {
+      config.optimization.usedExports = true;
+    }
+
+    // Let Next.js handle the rest of the configuration
     return config;
   },
 };
