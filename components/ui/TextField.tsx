@@ -2,6 +2,7 @@
 
 import { TextField as MuiTextField, TextFieldProps as MuiTextFieldProps } from '@mui/material';
 import { forwardRef, memo } from 'react';
+import { cn } from '@/lib/utils';
 
 export type TextFieldProps = MuiTextFieldProps & {
   fullWidth?: boolean;
@@ -18,19 +19,22 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
         fullWidth={fullWidth}
         variant={variant}
         size={size}
-        className={`${className} transition-all duration-200`}
+        className={cn(className, 'transition-all duration-200')}
         InputLabelProps={{
           ...(props.InputLabelProps || {}),
-          className: `text-muted ${props.InputLabelProps?.className || ''}`,
+          className: cn('text-muted', props.InputLabelProps?.className),
           shrink: true,
         }}
         InputProps={{
           ...(props.InputProps || {}),
-          className: `bg-background border-foreground/20 rounded-md ${props.InputProps?.className || ''}`,
+          className: cn(
+            'bg-background border-foreground/20 rounded-md',
+            props.InputProps?.className
+          ),
         }}
         FormHelperTextProps={{
           ...(props.FormHelperTextProps || {}),
-          className: `text-xs mt-1 ${props.FormHelperTextProps?.className || ''}`,
+          className: cn('text-xs mt-1', props.FormHelperTextProps?.className),
         }}
       />
     );

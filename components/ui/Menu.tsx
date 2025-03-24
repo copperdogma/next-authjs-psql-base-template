@@ -10,6 +10,7 @@ import {
   Divider,
 } from '@mui/material';
 import { forwardRef, ReactNode, memo, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 
 export interface MenuItemProps extends MuiMenuItemProps {
   icon?: ReactNode;
@@ -30,20 +31,20 @@ export const MenuItem = memo(
           {...props}
           ref={ref}
           disabled={disabled}
-          className={`
-          flex items-center gap-2 transition-colors duration-150
-          ${danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20' : ''}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-          ${className}
-        `}
+          className={cn(
+            'flex items-center gap-2 transition-colors duration-150',
+            danger && 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20',
+            disabled && 'opacity-50 cursor-not-allowed',
+            className
+          )}
         >
-          {icon && <ListItemIcon className={danger ? 'text-red-600' : ''}>{icon}</ListItemIcon>}
+          {icon && <ListItemIcon className={cn(danger && 'text-red-600')}>{icon}</ListItemIcon>}
           {primary || secondary ? (
             <ListItemText
               primary={primary}
               secondary={secondary}
               primaryTypographyProps={{
-                className: danger ? 'text-red-600' : '',
+                className: cn(danger && 'text-red-600'),
               }}
             />
           ) : (
@@ -82,7 +83,7 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
       <MuiMenu
         {...props}
         ref={ref}
-        className={`${className}`}
+        className={cn(className)}
         TransitionProps={TransitionProps()}
         anchorOrigin={{
           vertical: 'bottom',
@@ -96,7 +97,10 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
         }}
         PaperProps={{
           ...props.PaperProps,
-          className: `rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 bg-background ${props.PaperProps?.className || ''}`,
+          className: cn(
+            'rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 bg-background',
+            props.PaperProps?.className
+          ),
           elevation: 8,
           sx: {
             width: width || 'auto',
