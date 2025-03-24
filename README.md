@@ -271,6 +271,25 @@ These ensure consistent code style without manual intervention, even when using 
 
 This project uses ESLint to enforce code quality rules:
 
+## Git Hooks
+
+This project uses Husky to manage Git hooks:
+
+- **Pre-commit**: Automatically runs lint-staged to format and lint your code before each commit
+- **Pre-push**: Runs unit tests before pushing to ensure code quality
+
+You can bypass these hooks in emergency situations:
+
+```bash
+# Skip pre-commit hooks
+git commit --no-verify
+
+# Skip pre-push hooks
+git push --no-verify
+```
+
+Note: Using these bypass flags is discouraged for normal development workflow.
+
 ## Development Scripts
 
 ### E2E Testing

@@ -1,4 +1,5 @@
 #!/bin/sh
 
-# Run lint-staged but don't block commit if linting fails
-npx lint-staged || true
+# This hook runs lint-staged to format and lint staged files
+# It will prevent commits with linting errors to ensure code quality
+npx lint-staged

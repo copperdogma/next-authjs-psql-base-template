@@ -1,0 +1,3 @@
+# This hook runs unit tests before pushing to ensure code quality
+# To skip tests in an emergency, use git push --no-verify
+npm run test:unit
