@@ -62,7 +62,16 @@ async function checkServerReadiness(url: string, maxAttempts: number = 30): Prom
         return true;
       }
     } catch (error) {
-      // Ignore errors, just try again
+      // More detailed error handling
+      if (i === maxAttempts - 1) {
+        console.error(
+          `Failed to connect to server: ${error instanceof Error ? error.message : String(error)}`
+        );
+      } else {
+        console.log(
+          `Connection attempt failed (${i + 1}/${maxAttempts}): ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     }
 
     // Wait 1 second before trying again
@@ -74,6 +83,27 @@ async function checkServerReadiness(url: string, maxAttempts: number = 30): Prom
   return false;
 }
 
+async function runCommand(command: string, args: string[], options: any = {}): Promise<number> {
+  try {
+    const result = spawnSync(command, args, {
+      stdio: 'inherit',
+      ...options,
+    });
+
+    if (result.error) {
+      console.error(`Failed to execute command: ${result.error.message}`);
+      return 1;
+    }
+
+    return result.status || 0;
+  } catch (error) {
+    console.error(
+      `Exception running command: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return 1;
+  }
+}
+
 async function main() {
   try {
     // Find an available port
@@ -81,10 +111,14 @@ async function main() {
     console.log(`Found available port: ${port}`);
 
     // Start the dev server with the available port
-    spawnSync('npm', ['run', 'dev', '--', '-p', port.toString()], {
-      stdio: 'inherit',
+    const devServerResult = await runCommand('npm', ['run', 'dev', '--', '-p', port.toString()], {
       shell: true,
     });
+
+    if (devServerResult !== 0) {
+      console.error(`Failed to start dev server. Exiting with code ${devServerResult}`);
+      process.exit(devServerResult);
+    }
 
     // Wait for the server to be ready
     const serverUrl = `http://localhost:${port}`;
@@ -100,19 +134,37 @@ async function main() {
 
     // Run the tests
     const testArgs = process.argv.slice(2);
-    const result = spawnSync('npx', ['playwright', 'test', ...testArgs], {
-      stdio: 'inherit',
+    const testResult = await runCommand('npx', ['playwright', 'test', ...testArgs], {
       env: {
         ...process.env,
         PLAYWRIGHT_TEST_BASE_URL: serverUrl,
       },
     });
 
-    process.exit(result.status || 0);
+    process.exit(testResult);
   } catch (error) {
-    console.error('Error running tests:', error);
+    console.error('Error running tests:', error instanceof Error ? error.stack : String(error));
     process.exit(1);
   }
 }
 
-main().catch(console.error);
+// Add proper signal handling for cleaner shutdowns
+process.on('SIGINT', () => {
+  console.log('Received SIGINT. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+main().catch(error => {
+  console.error('Fatal error:', error instanceof Error ? error.stack : String(error));
+  process.exit(1);
+});

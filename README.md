@@ -270,3 +270,24 @@ These ensure consistent code style without manual intervention, even when using 
 ### ESLint
 
 This project uses ESLint to enforce code quality rules:
+
+## Development Scripts
+
+### E2E Testing
+
+This project provides several scripts for running E2E tests:
+
+- `npm run test:e2e` - Run all E2E tests
+- `npm run test:e2e:ui` - Run tests with Playwright UI
+- `npm run test:e2e:dynamic` - Run tests with dynamic port allocation using ts-node
+
+#### ts-node Scripts
+
+The project uses ts-node for running TypeScript scripts directly without compilation. Several optimized variants are available:
+
+- `npm run test:e2e:dynamic` - Basic script using ts-node with transpile-only flag
+- `npm run test:e2e:dynamic:optimized` - Optimized with memory settings for larger projects
+- `npm run test:e2e:dynamic:paths` - Includes support for TypeScript path aliases
+- `npm run test:e2e:dynamic:tsx` - Alternative using tsx for better performance
+
+For most users, the default `test:e2e:dynamic` script should be sufficient. The other variants are available for specific use cases or performance optimization.
