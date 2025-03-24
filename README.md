@@ -24,6 +24,35 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 - **Data**: PostgreSQL, Redis (caching)
 - **Deployment**: fly.io
 
+## Utility Functions
+
+### `cn()`: Class Name Utility
+
+The template includes a powerful utility function for managing Tailwind CSS classes:
+
+```typescript
+import { cn } from '@/lib/utils';
+
+// Basic usage
+<div className={cn('text-red-500', 'bg-blue-500')} />
+
+// With conditional classes
+<div className={cn(
+  'px-4 py-2',
+  { 'bg-blue-500': isPrimary, 'bg-gray-500': !isPrimary }
+)} />
+
+// With component variants
+<Button className={cn(buttonVariants({ variant, size }), className)} />
+```
+
+This utility combines:
+
+- **clsx**: For conditional class handling (objects, arrays, etc.)
+- **tailwind-merge**: For resolving Tailwind CSS conflicts (later classes override earlier ones)
+
+Use `cn()` whenever applying Tailwind CSS classes in your components to ensure proper class merging and conflict resolution.
+
 ## Installation
 
 ```bash

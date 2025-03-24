@@ -5,6 +5,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker as MuiDateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { TextField } from '@mui/material';
 import { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 
 interface DateTimePickerProps {
   label?: string;
@@ -33,10 +34,15 @@ const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
           minDate={minDate}
           maxDate={maxDate}
           disabled={disabled}
-          className={className}
+          className={cn('transition-all duration-200', className)}
           slots={{
             textField: params => (
-              <TextField {...params} error={error} helperText={helperText} className="w-full" />
+              <TextField
+                {...params}
+                error={error}
+                helperText={helperText}
+                className={cn('w-full')}
+              />
             ),
           }}
           ref={ref}
