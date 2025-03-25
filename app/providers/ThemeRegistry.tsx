@@ -2,7 +2,7 @@
 'use client';
 
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme as baseTheme } from '@/lib/theme';
 import { ReactNode, useMemo, useEffect, useState } from 'react';
@@ -10,7 +10,7 @@ import { useTheme } from './ThemeProvider';
 import './mui-overrides.css';
 
 // This helper resolves color channels for MUI
-const applyColorChannels = (theme: any) => {
+const applyColorChannels = (theme: Theme) => {
   // Only apply if cssVariables is enabled
   return {
     ...theme,
