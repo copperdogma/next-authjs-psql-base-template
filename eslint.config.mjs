@@ -8,6 +8,60 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
+// Mock plugins for testing-library and jest-dom
+// These will be properly installed later, but for now we'll define recommended rules
+const testingLibraryPlugin = {
+  configs: {
+    recommended: {
+      plugins: ['testing-library'],
+      rules: {
+        // Core testing-library recommended rules
+        'testing-library/await-async-queries': 'error',
+        'testing-library/await-async-utils': 'error',
+        'testing-library/no-await-sync-queries': 'error',
+        'testing-library/no-container': 'error',
+        'testing-library/no-debugging-utils': 'warn',
+        'testing-library/no-dom-import': 'error',
+        'testing-library/no-node-access': 'error',
+        'testing-library/no-promise-in-fire-event': 'error',
+        'testing-library/no-render-in-setup': 'error',
+        'testing-library/no-unnecessary-act': 'error',
+        'testing-library/no-wait-for-multiple-assertions': 'error',
+        'testing-library/no-wait-for-side-effects': 'error',
+        'testing-library/no-wait-for-snapshot': 'error',
+        'testing-library/prefer-find-by': 'error',
+        'testing-library/prefer-presence-queries': 'error',
+        'testing-library/prefer-query-by-disappearance': 'error',
+        'testing-library/prefer-screen-queries': 'error',
+        'testing-library/prefer-user-event': 'error',
+        'testing-library/render-result-naming-convention': 'error',
+      }
+    }
+  }
+};
+
+const jestDomPlugin = {
+  configs: {
+    recommended: {
+      plugins: ['jest-dom'],
+      rules: {
+        // Core jest-dom recommended rules
+        'jest-dom/prefer-checked': 'error',
+        'jest-dom/prefer-empty': 'error',
+        'jest-dom/prefer-enabled-disabled': 'error',
+        'jest-dom/prefer-focus': 'error',
+        'jest-dom/prefer-in-document': 'error',
+        'jest-dom/prefer-required': 'error',
+        'jest-dom/prefer-to-have-attribute': 'error',
+        'jest-dom/prefer-to-have-class': 'error',
+        'jest-dom/prefer-to-have-style': 'error',
+        'jest-dom/prefer-to-have-text-content': 'error',
+        'jest-dom/prefer-to-have-value': 'error',
+      }
+    }
+  }
+};
+
 export default [
   // Ignore patterns
   {
@@ -110,12 +164,16 @@ export default [
     },
   },
 
-  // Test file overrides
+  // Test file configuration
   {
     files: ['**/*.test.{js,jsx,ts,tsx}', '**/*.spec.{js,jsx,ts,tsx}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
+      
+      // Apply testing-library and jest-dom rules
+      ...testingLibraryPlugin.configs.recommended.rules,
+      ...jestDomPlugin.configs.recommended.rules,
     },
   },
 ];
