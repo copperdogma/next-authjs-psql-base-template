@@ -1,12 +1,17 @@
 import { test as base, Page, BrowserContext, expect } from '@playwright/test';
 import { FirebaseAuthUtils, TEST_USER } from './auth-fixtures';
 import { TEST_CONFIG } from '../../utils/routes';
+import { 
+  TestSelectors, 
+  PerformanceMetrics, 
+  ViewportInfo 
+} from '../../utils/test-types';
 
 /**
  * Common UI selectors for E2E tests
  * More maintainable than having them scattered across different test files
  */
-export const UI_SELECTORS = {
+export const UI_SELECTORS: TestSelectors = {
   // Layout elements
   LAYOUT: {
     NAVBAR: '[data-testid="navbar"], header, [role="banner"], nav, [role="navigation"]',
@@ -104,7 +109,7 @@ export class TestUtils {
    * @param page Playwright page
    * @returns Object with viewport information
    */
-  static async getViewportInfo(page: Page): Promise<{ width: number; height: number; isMobile: boolean }> {
+  static async getViewportInfo(page: Page): Promise<ViewportInfo> {
     const viewportSize = page.viewportSize();
     if (!viewportSize) {
       throw new Error('Viewport size not available');
@@ -122,9 +127,9 @@ export class TestUtils {
    * @param page Playwright page
    * @returns The accessibility snapshot
    */
-  static async takeAccessibilitySnapshot(page: Page): Promise<any> {
+  static async takeAccessibilitySnapshot(page: Page): Promise<Record<string, unknown>> {
     return await page.evaluate(() => {
-      // @ts-ignore - window.getComputedAccessibilityTree is available in Playwright
+      // @ts-expect-error - window.getComputedAccessibilityTree is available in Playwright
       return window.getComputedAccessibilityTree?.() || 
         { error: 'Accessibility tree not available in this browser' };
     });
@@ -136,7 +141,7 @@ export class TestUtils {
    * @param url URL to navigate to
    * @returns Basic performance metrics
    */
-  static async getPerformanceMetrics(page: Page, url: string): Promise<any> {
+  static async getPerformanceMetrics(page: Page, url: string): Promise<PerformanceMetrics> {
     // Navigate to the page
     await page.goto(url, { waitUntil: 'load' });
     
@@ -151,7 +156,12 @@ export class TestUtils {
           firstPaintTime: performance.getEntriesByName('first-paint')[0]?.startTime || 0,
         };
       }
-      return { error: 'Performance metrics not available' };
+      return { 
+        loadTime: 0,
+        domContentLoadedTime: 0,
+        firstPaintTime: 0,
+        error: 'Performance metrics not available' 
+      };
     });
   }
 }
@@ -171,7 +181,7 @@ type TestFixtures = {
   adminPage: Page;
   
   // UI fixtures
-  selectors: typeof UI_SELECTORS;
+  selectors: TestSelectors;
   testUtils: typeof TestUtils;
   
   // Device fixtures

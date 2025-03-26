@@ -4,18 +4,12 @@ import { RenderResult, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthContext } from '../../app/providers/AuthProvider';
 import { TEST_USER } from './test-constants';
-
-/**
- * AuthContext type definition to ensure type safety in tests
- */
-type AuthContextType = {
-  user: User | null;
-  loading: boolean;
-  isClientSide: boolean;
-  signIn: jest.Mock;
-  signOut: jest.Mock;
-  error?: Error;
-};
+import { 
+  AuthContextType, 
+  TestRenderResult, 
+  MockUser, 
+  MockIdTokenResult 
+} from './test-types';
 
 /**
  * Mock User Factory - Creates consistent mock user objects for tests
@@ -52,13 +46,14 @@ export function createMockUser(overrides: Partial<User> = {}): User {
       token: 'mock-id-token',
       claims: {},
       signInProvider: 'google.com',
+      signInSecondFactor: null,
       expirationTime: new Date(Date.now() + 3600 * 1000).toISOString(),
       issuedAtTime: new Date().toISOString(),
       authTime: new Date().toISOString()
-    }),
+    } as MockIdTokenResult),
     reload: jest.fn().mockResolvedValue(undefined),
     toJSON: jest.fn().mockReturnValue({})
-  } as unknown as User;
+  } as MockUser;
 
   // Merge default values with overrides
   return {
@@ -132,7 +127,7 @@ export const AuthTestUtils = {
    * @param authState - Authentication state to use
    * @returns Test utilities and userEvent
    */
-  renderWithAuth: (ui: ReactElement, authState = AuthStateFixtures.notAuthenticated) => {
+  renderWithAuth: (ui: ReactElement, authState = AuthStateFixtures.notAuthenticated): TestRenderResult => {
     return {
       user: userEvent.setup(),
       ...withAuthProvider(ui, authState),
@@ -148,7 +143,7 @@ export const AuthTestUtils = {
    * @param userOverrides - Optional user property overrides
    * @returns Test utilities and userEvent
    */
-  renderAuthenticated: (ui: ReactElement, userOverrides: Partial<User> = {}) => {
+  renderAuthenticated: (ui: ReactElement, userOverrides: Partial<User> = {}): TestRenderResult => {
     return AuthTestUtils.renderWithAuth(ui, AuthStateFixtures.authenticated(userOverrides));
   },
 
@@ -157,7 +152,7 @@ export const AuthTestUtils = {
    * @param ui - Component to render
    * @returns Test utilities and userEvent
    */
-  renderLoading: (ui: ReactElement) => {
+  renderLoading: (ui: ReactElement): TestRenderResult => {
     return AuthTestUtils.renderWithAuth(ui, AuthStateFixtures.loading);
   },
 
@@ -167,7 +162,7 @@ export const AuthTestUtils = {
    * @param errorMessage - Optional error message
    * @returns Test utilities and userEvent
    */
-  renderWithError: (ui: ReactElement, errorMessage?: string) => {
+  renderWithError: (ui: ReactElement, errorMessage?: string): TestRenderResult => {
     return AuthTestUtils.renderWithAuth(ui, AuthStateFixtures.error(errorMessage));
   }
 }; 

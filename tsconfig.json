@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "es5",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -18,13 +18,8 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["components/*"],
-      "@lib/*": ["lib/*"],
-      "@types/*": ["types/*"],
-      "@utils/*": ["utils/*"]
+      "@/*": ["./*"]
     },
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
@@ -38,11 +33,8 @@
     "strictBindCallApply": true
   },
   "ts-node": {
-    "transpileOnly": true,
-    "files": true,
     "compilerOptions": {
-      "module": "CommonJS",
-      "moduleResolution": "node"
+      "module": "CommonJS"
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
