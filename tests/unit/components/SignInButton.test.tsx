@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import SignInButton from '../../../components/auth/SignInButton';
 import { AuthContext } from '../../../app/providers/AuthProvider';
@@ -12,7 +13,7 @@ jest.mock('@firebase/auth', () => ({
   GoogleAuthProvider: jest.fn(() => ({})),
 }));
 
-describe('SignInButton', () => {
+describe('SignInButton Component', () => {
   const mockSignIn = jest.fn().mockResolvedValue(undefined);
   const mockSignOut = jest.fn().mockResolvedValue(undefined);
 
@@ -20,7 +21,7 @@ describe('SignInButton', () => {
     jest.clearAllMocks();
   });
 
-  it('renders sign in button when user is not authenticated', () => {
+  it('displays sign in button when user is not authenticated', () => {
     render(
       <AuthContext.Provider
         value={{
@@ -36,11 +37,11 @@ describe('SignInButton', () => {
     );
 
     const button = screen.getByRole('button', { name: /sign in with google/i });
-    expect(button).toBeInTheDocument();
+    expect(button).toBeVisible();
     expect(button).not.toBeDisabled();
   });
 
-  it('renders sign out button when user is authenticated', () => {
+  it('displays sign out button when user is authenticated', () => {
     const mockUser = { uid: '123', displayName: 'Test User' };
 
     render(
@@ -58,11 +59,11 @@ describe('SignInButton', () => {
     );
 
     const button = screen.getByRole('button', { name: /sign out/i });
-    expect(button).toBeInTheDocument();
+    expect(button).toBeVisible();
     expect(button).not.toBeDisabled();
   });
 
-  it('renders loading state when auth is loading', () => {
+  it('shows loading state when authentication is in progress', () => {
     render(
       <AuthContext.Provider
         value={{
@@ -77,13 +78,19 @@ describe('SignInButton', () => {
       </AuthContext.Provider>
     );
 
+    // Look for button with loading text instead of testId
+    const loadingElement = screen.getByText(/loading/i);
+    expect(loadingElement).toBeVisible();
+    
+    // If we need to test specific attributes of the loading state
     const button = screen.getByTestId('auth-button-placeholder');
-    expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
-    expect(button).toHaveTextContent(/loading/i);
   });
 
-  it('calls signIn when clicked in signed out state', async () => {
+  it('calls sign in function when clicked in signed out state', async () => {
+    // Setup userEvent
+    const user = userEvent.setup();
+    
     render(
       <AuthContext.Provider
         value={{
@@ -98,16 +105,19 @@ describe('SignInButton', () => {
       </AuthContext.Provider>
     );
 
+    // Use userEvent instead of fireEvent
     const button = screen.getByRole('button', { name: /sign in with google/i });
-    fireEvent.click(button);
+    await user.click(button);
 
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledTimes(1);
-      expect(mockSignOut).not.toHaveBeenCalled();
-    });
+    // Verify the correct function was called
+    expect(mockSignIn).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).not.toHaveBeenCalled();
   });
 
-  it('calls signOut when clicked in signed in state', async () => {
+  it('calls sign out function when clicked in signed in state', async () => {
+    // Setup userEvent
+    const user = userEvent.setup();
+    
     const mockUser = { uid: '123', displayName: 'Test User' };
 
     render(
@@ -124,12 +134,12 @@ describe('SignInButton', () => {
       </AuthContext.Provider>
     );
 
+    // Use userEvent instead of fireEvent
     const button = screen.getByRole('button', { name: /sign out/i });
-    fireEvent.click(button);
+    await user.click(button);
 
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalledTimes(1);
-      expect(mockSignIn).not.toHaveBeenCalled();
-    });
+    // Verify the correct function was called
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignIn).not.toHaveBeenCalled();
   });
 });

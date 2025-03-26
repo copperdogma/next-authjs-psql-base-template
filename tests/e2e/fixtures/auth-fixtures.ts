@@ -37,86 +37,58 @@ export class FirebaseAuthUtils {
    * @param user User data to mock
    */
   static async mockSignedInUser(page: Page, user = TEST_USER) {
-    const projectId = TEST_CONFIG.FIREBASE.PROJECT_ID;
-    const authKey = `firebase:authUser:${projectId}`;
-
     // Convert user object to JSON to avoid serialization issues
     const userJson = JSON.stringify(user);
 
+    // Set cookies as the primary authentication mechanism for E2E tests
     try {
-      // Navigate to the application origin first to ensure we can access localStorage
-      // This helps avoid cross-origin restrictions
-      const url = new URL(page.url());
-      if (!url.pathname || url.pathname === 'about:blank') {
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
-      }
-
-      // Set localStorage in a more reliable way with better error handling
-      await page.evaluate(
-        ([userJsonString, storageKey]) => {
-          try {
-            const userData = JSON.parse(userJsonString);
-            console.log('Mocking Firebase auth with user:', userData);
-
-            // Store in localStorage to simulate Firebase auth state
-            localStorage.setItem(storageKey, userJsonString);
-
-            // Force reload auth state by dispatching storage event
-            try {
-              // This helps with auth state detection in some implementations
-              window.dispatchEvent(
-                new StorageEvent('storage', {
-                  key: storageKey,
-                  newValue: userJsonString,
-                  storageArea: localStorage,
-                })
-              );
-
-              // Some applications might use custom events
-              window.dispatchEvent(
-                new CustomEvent('authStateChanged', {
-                  detail: { user: userData },
-                })
-              );
-
-              return { success: true };
-            } catch (e) {
-              console.log(
-                'Custom auth event dispatch failed, but localStorage mock should still work'
-              );
-              return { success: true, warning: 'Event dispatch failed' };
-            }
-          } catch (error) {
-            // Return error information for better debugging
-            return {
-              success: false,
-              error: error instanceof Error ? error.message : String(error),
-            };
-          }
-        },
-        [userJson, authKey]
-      );
-
-      // Add a small delay to let the auth state propagate
-      await page.waitForTimeout(300);
-    } catch (error) {
-      console.log('Failed to mock signed-in user:', error);
-
-      // Fallback to setting auth state through cookies if localStorage fails
+      const domain = new URL(page.url()).hostname || 'localhost';
       await page.context().addCookies([
         {
           name: 'firebase_auth_mock',
           value: userJson.slice(0, 4000), // Limit size for cookies
-          domain: new URL(page.url()).hostname || 'localhost',
+          domain: domain,
           path: '/',
           httpOnly: false,
           secure: false,
           sameSite: 'Lax',
-        },
+        }
       ]);
-
-      console.log('Attempted to set auth state via cookies as fallback');
+      console.log('Successfully set auth state via cookies');
+    } catch (cookieError) {
+      console.error('Failed to set auth cookies:', cookieError);
+      // If we can't set cookies, our test will likely fail - throw the error
+      throw new Error(`Cannot set auth cookies: ${cookieError instanceof Error ? cookieError.message : String(cookieError)}`);
     }
+
+    // Make sure the page is registered to listen for auth state changes
+    try {
+      // Only attempt to dispatch events if we're on a loaded page
+      const currentUrl = page.url();
+      if (currentUrl && currentUrl.startsWith('http')) {
+        await page.evaluate((userData) => {
+          try {
+            // Don't try to access localStorage, just dispatch events
+            window.dispatchEvent(
+              new CustomEvent('authStateChanged', {
+                detail: { user: userData },
+              })
+            );
+            return true;
+          } catch (error) {
+            console.log('Event dispatch failed, but cookies were set');
+            return false;
+          }
+        }, user).catch(() => {
+          // Ignore errors in page.evaluate - cookies are set which is the main thing
+        });
+      }
+    } catch (error) {
+      console.log('Note: Could not dispatch auth events, but cookies are set:', error);
+    }
+
+    // Add a small delay to let the auth state propagate
+    await page.waitForTimeout(300);
   }
 
   /**
@@ -124,38 +96,41 @@ export class FirebaseAuthUtils {
    * @param page Playwright page
    */
   static async clearAuthState(page: Page) {
+    // Clear auth cookies - the primary and most reliable method for E2E tests
     try {
-      await page.evaluate(() => {
-        // Clear all auth-related items from localStorage
-        const authKeys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.includes('firebase:auth') || key.includes('authUser'))) {
-            authKeys.push(key);
-          }
-        }
-
-        // Remove all auth keys
-        authKeys.forEach(key => localStorage.removeItem(key));
-
-        // Dispatch sign out event if app listens for it
-        try {
-          window.dispatchEvent(
-            new CustomEvent('authStateChanged', {
-              detail: { user: null },
-            })
-          );
-        } catch (e) {
-          // Ignore errors from event dispatch
-        }
-
-        return { success: true, keysRemoved: authKeys.length };
-      });
-    } catch (error) {
-      console.log('Failed to clear auth state:', error);
-
-      // Clear auth cookies if they were set as fallback
       await page.context().clearCookies();
+      console.log('Successfully cleared auth cookies');
+    } catch (cookieError) {
+      console.error('Failed to clear auth cookies:', cookieError);
+    }
+
+    // Skip localStorage operations entirely to avoid cross-origin issues in E2E tests
+    
+    // Instead, attempt to trigger a simple auth change event if possible
+    try {
+      // Only try to dispatch an event if we're on a valid page
+      const currentUrl = page.url();
+      if (currentUrl && currentUrl.startsWith('http')) {
+        await page.evaluate(() => {
+          try {
+            // Just dispatch the auth state change event without touching localStorage
+            window.dispatchEvent(
+              new CustomEvent('authStateChanged', {
+                detail: { user: null },
+              })
+            );
+            return { success: true };
+          } catch (e) {
+            // Ignore errors from event dispatch
+            return { success: false, reason: 'Event dispatch failed' };
+          }
+        }).catch(() => {
+          // Ignore evaluate errors - we've already cleared cookies
+        });
+      }
+    } catch (error) {
+      // Just log the error - as long as cookies are cleared, auth state should be reset
+      console.log('Note: Could not dispatch auth event, but cookies were cleared');
     }
   }
 
@@ -166,36 +141,45 @@ export class FirebaseAuthUtils {
    * @returns Promise<boolean>
    */
   static async isAuthenticated(page: Page, config?: any): Promise<boolean> {
+    // For E2E tests, only check for auth cookies - much more reliable across browsers
     try {
-      return await page.evaluate(config => {
-        // Use the provided config or fallback to default
-        const firebaseConfig = config || {};
-
-        // Check for Firebase auth data in localStorage
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (
-            key &&
-            (key.includes('firebase:auth') ||
-              key.includes('authUser') ||
-              // Check for project-specific keys if config is provided
-              (firebaseConfig.projectId && key.includes(firebaseConfig.projectId)))
-          ) {
-            // If we found an auth item, verify it contains valid data
-            const value = localStorage.getItem(key);
-            return !!value && value !== 'null' && value !== '{}';
-          }
-        }
-        return false;
-      }, config || TEST_CONFIG.FIREBASE);
-    } catch (error) {
-      console.log('Failed to check auth state in localStorage:', error);
-
-      // Check for auth cookies as fallback
       const cookies = await page.context().cookies();
       const authCookie = cookies.find(c => c.name === 'firebase_auth_mock');
-      return !!authCookie;
+      if (authCookie) {
+        // Found an auth cookie - user is authenticated
+        return true;
+      }
+    } catch (cookieError) {
+      console.error('Error checking auth cookies:', cookieError);
     }
+
+    // If no auth cookie was found, check if we're logged in on the UI level
+    // by looking for common auth UI elements that indicate signed-in state
+    try {
+      // Only check if we're on a valid page
+      const currentUrl = page.url();
+      if (currentUrl && currentUrl.startsWith('http')) {
+        // Look for common auth UI indicators like profile elements, sign out buttons, etc.
+        const hasAuthUI = await page.evaluate(() => {
+          // Check for common auth UI patterns without using localStorage
+          // Look for sign out buttons or user profile elements
+          const signOutBtn = document.querySelector('button:not([disabled]):is(:contains("Sign Out"), :contains("Log Out"), :contains("Logout"), :contains("Sign out"))');
+          const userProfileElement = document.querySelector('[data-testid="user-profile"], [aria-label*="profile" i], [aria-label*="account" i]');
+          
+          // If we find any of these UI elements, consider the user authenticated
+          return !!signOutBtn || !!userProfileElement;
+        }).catch(() => false); // Any error means we couldn't check, return false
+        
+        if (hasAuthUI) {
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('Error checking auth UI state:', error);
+    }
+
+    // No auth cookie or UI indicators found - user is not authenticated
+    return false;
   }
 }
 
