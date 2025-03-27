@@ -9,13 +9,19 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
+/**
+ * ESLint configuration using the modern flat config format.
+ * This setup provides comprehensive linting for TypeScript, React, and Next.js
+ * while maintaining good performance through targeted configurations.
+ */
 export default [
-  // Ignore patterns
+  // Ignore build artifacts and dependencies to improve performance
   {
     ignores: ['node_modules/**', '.next/**', 'out/**', 'public/**', '**/*.js.map', 'coverage/**'],
   },
 
   // Base configuration for all JavaScript files
+  // Includes essential rules for React, Next.js, and code organization
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],
     languageOptions: {
@@ -42,23 +48,23 @@ export default [
       'jest-dom': jestDom,
     },
     rules: {
-      // Base rules
-      'no-console': 'warn',
-      'no-unused-vars': 'off',
-      semi: ['error', 'always'],
-      curly: ['error', 'multi-line'],
+      // Error Prevention
+      'no-console': 'warn', // Prevent accidental console.log in production
+      'no-unused-vars': 'off', // Disabled in favor of TypeScript's version
+      semi: ['error', 'always'], // Consistent semicolon usage
+      curly: ['error', 'multi-line'], // Clear block structure
 
-      // React rules
-      'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off',
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      // React Best Practices
+      'react/react-in-jsx-scope': 'off', // Not needed in Next.js
+      'react/prop-types': 'off', // Using TypeScript for prop validation
+      'react-hooks/rules-of-hooks': 'error', // Enforce React Hooks rules
+      'react-hooks/exhaustive-deps': 'warn', // Prevent stale closures
 
-      // Next.js rules
-      '@next/next/no-html-link-for-pages': 'error',
-      '@next/next/no-img-element': 'error',
+      // Next.js Best Practices
+      '@next/next/no-html-link-for-pages': 'error', // Use Next.js Link component
+      '@next/next/no-img-element': 'error', // Use Next.js Image component
 
-      // Import organization
+      // Code Organization
       'import/order': [
         'error',
         {
@@ -67,7 +73,7 @@ export default [
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
-      'newline-before-return': 'error',
+      'newline-before-return': 'error', // Improve code readability
       'lines-around-comment': [
         'error',
         {
@@ -80,10 +86,10 @@ export default [
         },
       ],
 
-      // Prettier integration
+      // Code Formatting (via Prettier)
       'prettier/prettier': ['error', {}, { usePrettierrc: true }],
 
-      // Jest DOM rules
+      // Testing Best Practices
       'jest-dom/prefer-checked': 'error',
       'jest-dom/prefer-empty': 'error',
       'jest-dom/prefer-enabled-disabled': 'error',
@@ -99,6 +105,7 @@ export default [
   },
 
   // TypeScript-specific configuration
+  // Adds type-aware linting and TypeScript-specific rules
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -114,25 +121,26 @@ export default [
       '@typescript-eslint': tsPlugin,
     },
     rules: {
-      // Turn off JS rules that TypeScript handles better
+      // Disable JS rules in favor of TS equivalents
       'no-unused-vars': 'off',
 
-      // TypeScript-specific rules
-      '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/ban-ts-comment': 'warn',
+      // TypeScript-specific rules for better type safety
+      '@typescript-eslint/no-unused-vars': 'error', // Catch unused variables
+      '@typescript-eslint/no-explicit-any': 'warn', // Encourage proper typing
+      '@typescript-eslint/explicit-function-return-type': 'off', // TypeScript can infer return types
+      '@typescript-eslint/explicit-module-boundary-types': 'off', // TypeScript can infer exported types
+      '@typescript-eslint/ban-ts-comment': 'warn', // Discourage @ts-ignore
     },
   },
 
   // Test file configuration
+  // Relaxes certain rules that are commonly needed in tests
   {
     files: ['**/*.test.{js,jsx,ts,tsx}', '**/*.spec.{js,jsx,ts,tsx}'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      'no-console': 'off',
-      '@next/next/no-img-element': 'off',
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
+      'no-console': 'off', // Allow console in tests for debugging
+      '@next/next/no-img-element': 'off', // Allow img in tests
     },
   },
 ];

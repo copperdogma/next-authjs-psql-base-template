@@ -202,6 +202,65 @@ npm run test:all-rules             # Run all Firebase rules tests
 npm run test:all-rules:with-emulator # Run all Firebase rules tests with emulator
 ```
 
+## ESLint Configuration
+
+This project uses a modern ESLint setup with the new flat config format (`eslint.config.mjs`). The configuration is designed to provide comprehensive linting for TypeScript, React, and Next.js while maintaining good performance.
+
+### Key Features
+
+- Modern flat config format for better performance and maintainability
+- TypeScript-aware linting with strict type checking
+- React and Next.js specific rules for best practices
+- Integration with Prettier for consistent code formatting
+- Specialized configurations for test files
+- Import organization and code style consistency rules
+
+### Customizing ESLint Rules
+
+To modify the ESLint configuration for your project:
+
+1. Open `eslint.config.mjs`
+2. The config is organized into sections:
+   - Base configuration for all JavaScript files
+   - TypeScript-specific rules
+   - Test file overrides
+
+Example of adding custom rules:
+
+```javascript
+// In eslint.config.mjs
+export default [
+  // ... existing configs ...
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      // Add your custom rules here
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'import/order': ['error', {
+        groups: ['builtin', 'external', 'internal'],
+        'newlines-between': 'always',
+        alphabetize: { order: 'asc' }
+      }]
+    }
+  }
+];
+```
+
+### Available Scripts
+
+```bash
+# Lint your code
+npm run lint
+
+# Fix auto-fixable issues
+npm run lint:fix
+
+# Lint specific files
+npm run lint:files path/to/your/file.ts
+```
+
+The linting configuration works seamlessly with popular IDEs like VS Code when using the ESLint extension.
+
 ## Authentication
 
 This project uses Firebase Authentication. The authentication flow is handled by the `SignInButton` component, which:
