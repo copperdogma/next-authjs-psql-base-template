@@ -1,6 +1,6 @@
 import { createMockUser, AuthStateFixtures, AuthTestUtils } from '../../utils/test-fixtures';
 import { TEST_USER } from '../../utils/test-constants';
-import { screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { User } from '@firebase/auth';
 
 describe('Test Fixtures', () => {
@@ -18,7 +18,7 @@ describe('Test Fixtures', () => {
         uid: 'custom-id',
         email: 'custom@example.com',
         displayName: 'Custom Name',
-        photoURL: 'custom-photo.jpg'
+        photoURL: 'custom-photo.jpg',
       };
       const user = createMockUser(overrides);
       expect(user.uid).toBe(overrides.uid);
@@ -126,4 +126,4 @@ describe('Test Fixtures', () => {
       expect(result.container).toHaveTextContent('Test Component');
     });
   });
-}); 
+});

@@ -3,6 +3,7 @@
 This document provides a guide to the test fixtures and utilities available in the project. These fixtures help make tests more consistent, maintainable, and easier to write.
 
 ## Table of Contents
+
 - [Unit Testing Fixtures](#unit-testing-fixtures)
 - [End-to-End Testing Fixtures](#end-to-end-testing-fixtures)
 - [Common Testing Patterns](#common-testing-patterns)
@@ -57,7 +58,7 @@ const user = createMockUser();
 // Create a user with custom properties
 const customUser = createMockUser({
   displayName: 'Custom Name',
-  email: 'custom@example.com'
+  email: 'custom@example.com',
 });
 ```
 
@@ -92,7 +93,7 @@ Use consistent selectors across all E2E tests:
 ```typescript
 test('Navigation elements are visible', async ({ page, selectors }) => {
   await page.goto('/');
-  
+
   // Use shared selectors for consistency
   await expect(page.locator(selectors.LAYOUT.NAVBAR)).toBeVisible();
   await expect(page.locator(selectors.LAYOUT.MAIN_CONTENT)).toBeVisible();
@@ -146,24 +147,24 @@ Convenient helper methods for common test patterns:
 ```typescript
 test('Navigation completion', async ({ page, testUtils }) => {
   await page.goto('/');
-  
+
   // Use testUtils for common operations
   await testUtils.waitForNavigation(page, '/dashboard');
-  
+
   // Check for element existence without waiting/failing
   const exists = await testUtils.elementExists(page, '.optional-element');
-  
+
   // Try multiple selectors until one works
   const element = await testUtils.waitForAnySelector(page, [
     '[data-testid="profile-button"]',
     'button:has-text("Profile")',
-    '.profile-link'
+    '.profile-link',
   ]);
-  
+
   // Get viewport information for responsive testing
   const viewport = await testUtils.getViewportInfo(page);
   console.log(`Testing on ${viewport.isMobile ? 'mobile' : 'desktop'}`);
-  
+
   // Check basic performance metrics
   const metrics = await testUtils.getPerformanceMetrics(page, '/dashboard');
   expect(metrics.loadTime).toBeLessThan(3000); // 3 seconds max load time
@@ -189,14 +190,14 @@ Test form interactions with userEvent:
 ```typescript
 test('Form submission', async () => {
   const { user } = AuthTestUtils.renderAuthenticated(<MyForm />);
-  
+
   // Fill out form
   await user.type(screen.getByLabelText(/email/i), 'test@example.com');
   await user.type(screen.getByLabelText(/password/i), 'password123');
-  
+
   // Submit form
   await user.click(screen.getByRole('button', { name: /submit/i }));
-  
+
   // Assert on the results
   expect(screen.getByText(/success/i)).toBeVisible();
 });
@@ -215,10 +216,10 @@ jest.mock('../../api/users', () => ({
 // In your test
 test('Fetches and displays user data', async () => {
   const { user } = AuthTestUtils.renderAuthenticated(<UserProfile userId="123" />);
-  
+
   // Wait for data to load
   await screen.findByText('Test User');
-  
+
   // Assert API was called correctly
   expect(fetchUser).toHaveBeenCalledWith('123');
 });
@@ -236,10 +237,10 @@ jest.mock('../../api/users', () => ({
 
 test('Displays error message when API fails', async () => {
   const { user } = AuthTestUtils.renderAuthenticated(<UserProfile userId="123" />);
-  
+
   // Wait for error message
   await screen.findByText(/user not found/i);
-  
+
   // Test error recovery
   await user.click(screen.getByRole('button', { name: /retry/i }));
 });
@@ -255,4 +256,4 @@ test('Displays error message when API fails', async () => {
 6. **Clear mocks between tests** - Reset mocks in `beforeEach` to prevent test contamination.
 7. **Small, focused tests** - Each test should verify a specific behavior or feature.
 
-By following these patterns and using the provided fixtures, you'll create more maintainable, consistent, and robust tests. 
+By following these patterns and using the provided fixtures, you'll create more maintainable, consistent, and robust tests.

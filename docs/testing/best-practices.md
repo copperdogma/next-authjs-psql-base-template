@@ -3,6 +3,7 @@
 This document outlines the best practices for testing in our Next.js application using React Testing Library, Jest-DOM, and Playwright.
 
 ## Table of Contents
+
 - [Testing Library Best Practices](#testing-library-best-practices)
 - [Jest-DOM Best Practices](#jest-dom-best-practices)
 - [ESLint Rules for Testing](#eslint-rules-for-testing)
@@ -16,30 +17,33 @@ This document outlines the best practices for testing in our Next.js application
 Always follow this query priority order for the best accessibility:
 
 1. **getByRole** - Most accessible and recommended approach
+
    ```tsx
    // ✅ Good - uses role and accessible name
-   screen.getByRole('button', { name: /submit/i })
-   
+   screen.getByRole('button', { name: /submit/i });
+
    // ❌ Bad - uses less accessible method
-   screen.getByTestId('submit-button')
+   screen.getByTestId('submit-button');
    ```
 
 2. **getByLabelText** - Use for form fields
+
    ```tsx
    // ✅ Good - connects with label semantically
-   screen.getByLabelText(/email address/i)
+   screen.getByLabelText(/email address/i);
    ```
 
 3. **getByText** - For non-interactive elements
+
    ```tsx
    // ✅ Good - finds text content in non-interactive elements
-   screen.getByText(/welcome to our app/i)
+   screen.getByText(/welcome to our app/i);
    ```
 
 4. **getByTestId** - Last resort when semantic queries aren't possible
    ```tsx
    // Only use when other queries won't work
-   screen.getByTestId('unique-element')
+   screen.getByTestId('unique-element');
    ```
 
 ### User Interactions
@@ -48,11 +52,11 @@ Use `userEvent` for realistic browser behavior:
 
 ```tsx
 // ✅ Good - uses userEvent with setup pattern
-const user = userEvent.setup()
-await user.click(screen.getByRole('button'))
+const user = userEvent.setup();
+await user.click(screen.getByRole('button'));
 
 // ❌ Bad - uses fireEvent which bypasses event handlers
-fireEvent.click(screen.getByRole('button'))
+fireEvent.click(screen.getByRole('button'));
 ```
 
 ### Async Testing
@@ -61,17 +65,18 @@ Test asynchronous operations properly:
 
 ```tsx
 // ✅ Good - uses findBy for async appearance
-const submitButton = await screen.findByRole('button', { name: /submit/i })
+const submitButton = await screen.findByRole('button', { name: /submit/i });
 
 // ✅ Good - clear error messages in waitFor
-await waitFor(() => {
-  expect(screen.getByText(/success/i)).toBeVisible()
-}, { timeout: 3000, onTimeout: (error) => 
-  `Timed out waiting for success message: ${error}` 
-})
+await waitFor(
+  () => {
+    expect(screen.getByText(/success/i)).toBeVisible();
+  },
+  { timeout: 3000, onTimeout: error => `Timed out waiting for success message: ${error}` }
+);
 
 // ❌ Bad - no timeout or error handling
-await waitFor(() => expect(element).toBeVisible())
+await waitFor(() => expect(element).toBeVisible());
 ```
 
 ## Jest-DOM Best Practices
@@ -80,14 +85,14 @@ Use precise Jest-DOM matchers for better error messages:
 
 ```tsx
 // ✅ Good - specific matcher with better error message
-expect(button).toBeDisabled()
-expect(element).toBeVisible()
-expect(element).toHaveTextContent('Expected text')
+expect(button).toBeDisabled();
+expect(element).toBeVisible();
+expect(element).toHaveTextContent('Expected text');
 
 // ❌ Bad - generic matchers with unclear errors
-expect(button.disabled).toBe(true)
-expect(window.getComputedStyle(element).display).not.toBe('none')
-expect(element.textContent).toBe('Expected text')
+expect(button.disabled).toBe(true);
+expect(window.getComputedStyle(element).display).not.toBe('none');
+expect(element.textContent).toBe('Expected text');
 ```
 
 ### Recommended Matchers
@@ -133,13 +138,13 @@ Follow these guidelines for writing clean, maintainable tests:
 
 ```tsx
 // Arrange
-const { user } = AuthTestUtils.renderWithAuth(<Component />)
+const { user } = AuthTestUtils.renderWithAuth(<Component />);
 
 // Act
-await user.click(screen.getByRole('button'))
+await user.click(screen.getByRole('button'));
 
 // Assert
-expect(screen.getByText(/success/i)).toBeVisible()
+expect(screen.getByText(/success/i)).toBeVisible();
 ```
 
 ### Using Test Fixtures
@@ -148,13 +153,13 @@ Use our shared test fixtures to maintain consistency:
 
 ```tsx
 // Authentication test fixtures
-const { user, mockSignIn } = AuthTestUtils.renderWithAuth(<Component />)
-const { user } = AuthTestUtils.renderAuthenticated(<Component />)
-const { user } = AuthTestUtils.renderLoading(<Component />)
-const { user } = AuthTestUtils.renderWithError(<Component />)
+const { user, mockSignIn } = AuthTestUtils.renderWithAuth(<Component />);
+const { user } = AuthTestUtils.renderAuthenticated(<Component />);
+const { user } = AuthTestUtils.renderLoading(<Component />);
+const { user } = AuthTestUtils.renderWithError(<Component />);
 
 // Mock user creation
-const customUser = createMockUser({ displayName: 'Custom Name' })
+const customUser = createMockUser({ displayName: 'Custom Name' });
 ```
 
 ### Naming Conventions
@@ -163,10 +168,10 @@ Use clear, behavior-focused test descriptions:
 
 ```tsx
 // ✅ Good - describes behavior
-it('displays error message when form submitted without email', async () => {})
+it('displays error message when form submitted without email', async () => {});
 
 // ❌ Bad - focuses on implementation
-it('calls handleSubmit and sets error state', async () => {})
+it('calls handleSubmit and sets error state', async () => {});
 ```
 
 ## E2E Testing Practices
@@ -178,15 +183,15 @@ For Playwright E2E tests, follow these practices:
 ```ts
 // Use auth fixtures
 test('authenticated user can access dashboard', async ({ authenticatedPage }) => {
-  await authenticatedPage.goto('/dashboard')
-  await expect(authenticatedPage).toHaveURL('/dashboard')
-})
+  await authenticatedPage.goto('/dashboard');
+  await expect(authenticatedPage).toHaveURL('/dashboard');
+});
 
 // Use device fixtures
 test('responsive design on mobile', async ({ mobilePage }) => {
-  await mobilePage.goto('/')
+  await mobilePage.goto('/');
   // Test mobile layout
-})
+});
 ```
 
 ### Use Consistent Selectors
@@ -194,9 +199,9 @@ test('responsive design on mobile', async ({ mobilePage }) => {
 ```ts
 // Use shared selectors from fixtures
 test('navigation elements are visible', async ({ page, selectors }) => {
-  await page.goto('/')
-  await expect(page.locator(selectors.LAYOUT.NAVBAR)).toBeVisible()
-})
+  await page.goto('/');
+  await expect(page.locator(selectors.LAYOUT.NAVBAR)).toBeVisible();
+});
 ```
 
 ### Test for Accessibility
@@ -204,12 +209,12 @@ test('navigation elements are visible', async ({ page, selectors }) => {
 ```ts
 // Basic a11y test
 test('page should be accessible', async ({ page }) => {
-  await page.goto('/')
-  
+  await page.goto('/');
+
   // Check for accessibility violations
-  const violations = await checkA11y(page)
-  expect(violations.length).toBe(0)
-})
+  const violations = await checkA11y(page);
+  expect(violations.length).toBe(0);
+});
 ```
 
 ## Additional Resources
@@ -218,4 +223,4 @@ test('page should be accessible', async ({ page }) => {
 - [Jest-DOM Documentation](https://github.com/testing-library/jest-dom)
 - [UserEvent Documentation](https://testing-library.com/docs/user-event/intro)
 - [Testing Library Queries](https://testing-library.com/docs/queries/about)
-- [Playwright Documentation](https://playwright.dev/docs/intro) 
+- [Playwright Documentation](https://playwright.dev/docs/intro)

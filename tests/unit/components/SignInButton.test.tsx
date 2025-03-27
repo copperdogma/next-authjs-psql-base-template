@@ -22,7 +22,7 @@ describe('SignInButton Component', () => {
     // Render with authenticated state using our new utility
     AuthTestUtils.renderAuthenticated(<SignInButton />, {
       displayName: 'Test User',
-      uid: '123'
+      uid: '123',
     });
 
     const button = screen.getByRole('button', { name: /sign out/i });
@@ -37,7 +37,7 @@ describe('SignInButton Component', () => {
     // Look for button with loading text instead of testId
     const loadingElement = screen.getByText(/loading/i);
     expect(loadingElement).toBeVisible();
-    
+
     // If we need to test specific attributes of the loading state
     const button = screen.getByTestId('auth-button-placeholder');
     expect(button).toBeDisabled();
@@ -46,7 +46,7 @@ describe('SignInButton Component', () => {
   it('calls sign in function when clicked in signed out state', async () => {
     // Render with non-authenticated state using our new utility
     const { user, mockSignIn } = AuthTestUtils.renderWithAuth(<SignInButton />);
-    
+
     // Use userEvent to click the button
     const button = screen.getByRole('button', { name: /sign in with google/i });
     await user.click(button);
@@ -59,9 +59,9 @@ describe('SignInButton Component', () => {
     // Render with authenticated state using our new utility
     const { user, mockSignOut } = AuthTestUtils.renderAuthenticated(<SignInButton />, {
       displayName: 'Test User',
-      uid: '123'
+      uid: '123',
     });
-    
+
     // Use userEvent to click the button
     const button = screen.getByRole('button', { name: /sign out/i });
     await user.click(button);

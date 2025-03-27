@@ -43,7 +43,9 @@ describe('Token Refresh Mechanism', () => {
   });
 
   describe('calculateBackoffTime', () => {
-    const { calculateBackoffTime, DEFAULT_OPTIONS } = jest.requireMock('../../../lib/auth/token-refresh');
+    const { calculateBackoffTime, DEFAULT_OPTIONS } = jest.requireMock(
+      '../../../lib/auth/token-refresh'
+    );
 
     it('should calculate initial delay for first attempt', () => {
       const result = calculateBackoffTime(1, {

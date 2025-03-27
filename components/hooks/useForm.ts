@@ -142,10 +142,9 @@ export function useForm<T extends Record<string, FormFieldValue>>(
         }
       } else {
         // Mark all fields with errors as touched
-        const touchedFields = Object.keys(validationErrors).reduce<Partial<Record<keyof T, boolean>>>(
-          (acc, key) => ({ ...acc, [key]: true }),
-          {}
-        );
+        const touchedFields = Object.keys(validationErrors).reduce<
+          Partial<Record<keyof T, boolean>>
+        >((acc, key) => ({ ...acc, [key]: true }), {});
         setTouched(prev => ({ ...prev, ...touchedFields }));
       }
     },

@@ -4,12 +4,7 @@ import { RenderResult, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthContext } from '../../app/providers/AuthProvider';
 import { TEST_USER } from './test-constants';
-import { 
-  AuthContextType, 
-  TestRenderResult, 
-  MockUser, 
-  MockIdTokenResult 
-} from './test-types';
+import { AuthContextType, TestRenderResult, MockUser, MockIdTokenResult } from './test-types';
 
 /**
  * Mock User Factory - Creates consistent mock user objects for tests
@@ -32,12 +27,12 @@ export function createMockUser(overrides: Partial<User> = {}): User {
         displayName: TEST_USER.NAME,
         email: TEST_USER.EMAIL,
         phoneNumber: null,
-        photoURL: TEST_USER.PHOTO_URL
-      }
+        photoURL: TEST_USER.PHOTO_URL,
+      },
     ],
     metadata: {
       creationTime: new Date().toISOString(),
-      lastSignInTime: new Date().toISOString()
+      lastSignInTime: new Date().toISOString(),
     },
     tenantId: null,
     delete: jest.fn().mockResolvedValue(undefined),
@@ -49,16 +44,16 @@ export function createMockUser(overrides: Partial<User> = {}): User {
       signInSecondFactor: null,
       expirationTime: new Date(Date.now() + 3600 * 1000).toISOString(),
       issuedAtTime: new Date().toISOString(),
-      authTime: new Date().toISOString()
+      authTime: new Date().toISOString(),
     } as MockIdTokenResult),
     reload: jest.fn().mockResolvedValue(undefined),
-    toJSON: jest.fn().mockReturnValue({})
+    toJSON: jest.fn().mockReturnValue({}),
   } as MockUser;
 
   // Merge default values with overrides
   return {
     ...defaultUser,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -72,7 +67,7 @@ export const AuthStateFixtures = {
     loading: false,
     isClientSide: true,
     signIn: jest.fn().mockResolvedValue(undefined),
-    signOut: jest.fn().mockResolvedValue(undefined)
+    signOut: jest.fn().mockResolvedValue(undefined),
   } as AuthContextType,
 
   // Authenticated state with default test user
@@ -81,7 +76,7 @@ export const AuthStateFixtures = {
     loading: false,
     isClientSide: true,
     signIn: jest.fn().mockResolvedValue(undefined),
-    signOut: jest.fn().mockResolvedValue(undefined)
+    signOut: jest.fn().mockResolvedValue(undefined),
   }),
 
   // Loading state
@@ -90,7 +85,7 @@ export const AuthStateFixtures = {
     loading: true,
     isClientSide: true,
     signIn: jest.fn().mockResolvedValue(undefined),
-    signOut: jest.fn().mockResolvedValue(undefined)
+    signOut: jest.fn().mockResolvedValue(undefined),
   } as AuthContextType,
 
   // Error state with custom error handling
@@ -100,8 +95,8 @@ export const AuthStateFixtures = {
     isClientSide: true,
     error: new Error(errorMessage),
     signIn: jest.fn().mockRejectedValue(new Error(errorMessage)),
-    signOut: jest.fn().mockResolvedValue(undefined)
-  })
+    signOut: jest.fn().mockResolvedValue(undefined),
+  }),
 };
 
 /**
@@ -112,9 +107,7 @@ export function withAuthProvider(
   ui: ReactElement,
   authState = AuthStateFixtures.notAuthenticated
 ): RenderResult {
-  return render(
-    <AuthContext.Provider value={authState}>{ui}</AuthContext.Provider>
-  );
+  return render(<AuthContext.Provider value={authState}>{ui}</AuthContext.Provider>);
 }
 
 /**
@@ -127,13 +120,16 @@ export const AuthTestUtils = {
    * @param authState - Authentication state to use
    * @returns Test utilities and userEvent
    */
-  renderWithAuth: (ui: ReactElement, authState = AuthStateFixtures.notAuthenticated): TestRenderResult => {
+  renderWithAuth: (
+    ui: ReactElement,
+    authState = AuthStateFixtures.notAuthenticated
+  ): TestRenderResult => {
     return {
       user: userEvent.setup(),
       ...withAuthProvider(ui, authState),
       // Return mock functions for easier assertions
       mockSignIn: authState.signIn,
-      mockSignOut: authState.signOut
+      mockSignOut: authState.signOut,
     };
   },
 
@@ -164,5 +160,5 @@ export const AuthTestUtils = {
    */
   renderWithError: (ui: ReactElement, errorMessage?: string): TestRenderResult => {
     return AuthTestUtils.renderWithAuth(ui, AuthStateFixtures.error(errorMessage));
-  }
-}; 
+  },
+};

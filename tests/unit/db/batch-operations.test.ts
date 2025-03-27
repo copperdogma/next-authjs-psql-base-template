@@ -175,7 +175,8 @@ describe('Batch Session Cleanup', () => {
     // Verify we're using the batch operation
     const operations = (prisma as any)._getOperations();
     const hasBatchDelete = operations.some(
-      (op: { type: string; args: any }) => op.type === 'session.deleteMany' && op.args?.where?.userId === userId
+      (op: { type: string; args: any }) =>
+        op.type === 'session.deleteMany' && op.args?.where?.userId === userId
     );
 
     expect(hasBatchDelete).toBe(true);

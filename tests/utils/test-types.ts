@@ -179,4 +179,4 @@ export interface LoginCredentials {
 export interface AuthFixtures {
   authUtils: any; // Will be FirebaseAuthUtils
   authenticatedPage: Page;
-} 
+}

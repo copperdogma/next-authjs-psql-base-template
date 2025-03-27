@@ -53,7 +53,7 @@ describe('Test Utils', () => {
     it('renders with custom auth state', () => {
       const customAuthState = {
         loading: true,
-        user: { uid: 'test-uid' } as any
+        user: { uid: 'test-uid' } as any,
       };
       const { container } = render(<TestComponent />, { authState: customAuthState });
       expect(container).toHaveTextContent('Test Component');
@@ -89,7 +89,7 @@ describe('Test Utils', () => {
     it('works with custom auth state', () => {
       const customAuthState = {
         loading: true,
-        user: { uid: 'test-uid' } as any
+        user: { uid: 'test-uid' } as any,
       };
       const { user, container } = setup(<TestComponent />, { authState: customAuthState });
       expect(user).toBeDefined();

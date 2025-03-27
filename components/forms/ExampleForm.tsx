@@ -42,15 +42,8 @@ interface ExampleFormProps {
 }
 
 const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps) => {
-  const {
-    values,
-    errors,
-    touched,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit,
-  } = useForm<FormValues>(initialValues, onSubmit, validate);
+  const { values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit } =
+    useForm<FormValues>(initialValues, onSubmit, validate);
 
   // Form-level error state for general errors not tied to a specific field
   const formError = errors.form || '';

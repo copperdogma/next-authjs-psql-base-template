@@ -57,14 +57,14 @@ function customRender(ui: ReactElement, options: RenderOptions = {}) {
   const mockSignIn = jest.fn().mockResolvedValue(undefined);
   const mockSignOut = jest.fn().mockResolvedValue(undefined);
 
-  const defaultAuthState: AuthContextType = { 
-    user: null, 
-    loading: false, 
+  const defaultAuthState: AuthContextType = {
+    user: null,
+    loading: false,
     isClientSide: true,
     signIn: mockSignIn,
-    signOut: mockSignOut
+    signOut: mockSignOut,
   };
-  
+
   const authState = { ...defaultAuthState, ...options.authState };
 
   // Configure router if provided in options
@@ -85,7 +85,7 @@ function customRender(ui: ReactElement, options: RenderOptions = {}) {
     mockRouter: jest.requireMock('next/navigation').useRouter(),
     // Also return the auth mocks for easy assertions
     mockSignIn,
-    mockSignOut
+    mockSignOut,
   };
 }
 

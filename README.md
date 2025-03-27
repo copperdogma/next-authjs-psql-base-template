@@ -236,13 +236,16 @@ export default [
     rules: {
       // Add your custom rules here
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'import/order': ['error', {
-        groups: ['builtin', 'external', 'internal'],
-        'newlines-between': 'always',
-        alphabetize: { order: 'asc' }
-      }]
-    }
-  }
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal'],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc' },
+        },
+      ],
+    },
+  },
 ];
 ```
 
