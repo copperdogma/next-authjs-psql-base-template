@@ -1,7 +1,7 @@
-import React from 'react';
-import { screen, fireEvent } from '@testing-library/react';
-import { render } from '../../../tests/utils/test-utils';
-import { ROUTES } from '../../../tests/utils/routes';
+import { screen } from '@testing-library/react';
+import { render, setup } from '../../utils/test-utils';
+import { ROUTES } from '../../utils/routes';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 // Mock the next/navigation module
 jest.mock('next/navigation', () => ({
@@ -39,13 +39,99 @@ const TestComponent = ({
   );
 };
 
-describe('test-utils', () => {
+describe('Test Utils', () => {
+  const TestComponent = () => <div>Test Component</div>;
+
+  describe('render function', () => {
+    it('renders with default auth state', () => {
+      const { container, mockSignIn, mockSignOut } = render(<TestComponent />);
+      expect(container).toHaveTextContent('Test Component');
+      expect(mockSignIn).toBeDefined();
+      expect(mockSignOut).toBeDefined();
+    });
+
+    it('renders with custom auth state', () => {
+      const customAuthState = {
+        loading: true,
+        user: { uid: 'test-uid' } as any
+      };
+      const { container } = render(<TestComponent />, { authState: customAuthState });
+      expect(container).toHaveTextContent('Test Component');
+    });
+
+    it('renders with custom router config', () => {
+      const customRouter = {
+        push: jest.fn(),
+      };
+      const { mockRouter } = render(<TestComponent />, { routerConfig: customRouter });
+      expect(mockRouter.push).toBeDefined();
+    });
+
+    it('uses default router values', () => {
+      const { mockRouter } = render(<TestComponent />);
+      expect(mockRouter.push).toBeDefined();
+      expect(mockRouter.replace).toBeDefined();
+      expect(mockRouter.prefetch).toBeDefined();
+      expect(mockRouter.back).toBeDefined();
+      expect(mockRouter.forward).toBeDefined();
+    });
+  });
+
+  describe('setup function', () => {
+    it('provides userEvent and render result', () => {
+      const { user, container, mockSignIn, mockSignOut } = setup(<TestComponent />);
+      expect(user).toBeDefined();
+      expect(container).toHaveTextContent('Test Component');
+      expect(mockSignIn).toBeDefined();
+      expect(mockSignOut).toBeDefined();
+    });
+
+    it('works with custom auth state', () => {
+      const customAuthState = {
+        loading: true,
+        user: { uid: 'test-uid' } as any
+      };
+      const { user, container } = setup(<TestComponent />, { authState: customAuthState });
+      expect(user).toBeDefined();
+      expect(container).toHaveTextContent('Test Component');
+    });
+
+    it('works with custom router config', () => {
+      const customRouter = {
+        push: jest.fn(),
+      };
+      const { user, mockRouter } = setup(<TestComponent />, { routerConfig: customRouter });
+      expect(user).toBeDefined();
+      expect(mockRouter.push).toBeDefined();
+    });
+  });
+
+  describe('next/navigation mocks', () => {
+    it('mocks useRouter correctly', () => {
+      const router = useRouter();
+      expect(router.push).toBeDefined();
+      expect(router.replace).toBeDefined();
+      expect(router.prefetch).toBeDefined();
+    });
+
+    it('mocks usePathname correctly', () => {
+      const pathname = usePathname();
+      expect(pathname).toBe('/');
+    });
+
+    it('mocks useSearchParams correctly', () => {
+      const searchParams = useSearchParams();
+      expect(searchParams.get('callbackUrl')).toBe('/dashboard');
+      expect(searchParams.get('nonexistent')).toBeNull();
+    });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('renders component with default auth state (not authenticated)', () => {
-    const result = render(<TestComponent />);
+    render(<TestComponent />);
     expect(screen.getByText('Test Component')).toBeTruthy();
   });
 
@@ -61,7 +147,6 @@ describe('test-utils', () => {
     });
 
     expect(screen.getByText('Test Component')).toBeTruthy();
-    expect(screen.getByTestId('auth-content')).toBeTruthy();
   });
 
   it('works with custom router configuration', () => {

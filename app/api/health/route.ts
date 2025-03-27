@@ -17,9 +17,6 @@ const HealthCheckRequestSchema = z.object({
   timeout: z.number().int().positive().optional(),
 });
 
-// Type inference for the request schema
-type HealthCheckRequest = z.infer<typeof HealthCheckRequestSchema>;
-
 export async function GET() {
   // Create a response object that matches the schema
   const healthData: HealthResponse = {
@@ -77,6 +74,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    console.error('Error processing health check request:', error);
     return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
   }
 }

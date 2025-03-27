@@ -9,6 +9,9 @@ export type FieldChange = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | H
 // Extended error type that includes form-level errors
 export type FormErrors<T> = Partial<Record<keyof T, string>> & { form?: string };
 
+// Type for form field values
+export type FormFieldValue = string | number | boolean | null | undefined;
+
 export interface UseFormResult<T> {
   values: T;
   errors: FormErrors<T>;
@@ -17,7 +20,7 @@ export interface UseFormResult<T> {
   handleChange: (e: FieldChange) => void;
   handleBlur: (field: keyof T) => void;
   handleSubmit: (e: FormEvent<HTMLFormElement>) => Promise<void>;
-  setFieldValue: (field: keyof T, value: any) => void;
+  setFieldValue: (field: keyof T, value: FormFieldValue) => void;
   setFieldError: (field: keyof T | 'form', error: string) => void;
   reset: () => void;
   setValues: (values: Partial<T>) => void;
@@ -45,7 +48,7 @@ export interface UseFormResult<T> {
  *   }
  * );
  */
-export function useForm<T extends Record<string, any>>(
+export function useForm<T extends Record<string, FormFieldValue>>(
   initialValues: T,
   onSubmit: (values: T) => Promise<void>,
   validate?: ValidationFn<T>
@@ -63,7 +66,7 @@ export function useForm<T extends Record<string, any>>(
   const handleChange = useCallback(
     (e: FieldChange) => {
       const { name, value } = e.target;
-      let fieldValue: any = value;
+      let fieldValue: FormFieldValue = value;
 
       // Handle checkbox inputs specifically
       if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
@@ -101,7 +104,7 @@ export function useForm<T extends Record<string, any>>(
     [values, validate]
   );
 
-  const setFieldValue = useCallback((field: keyof T, value: any) => {
+  const setFieldValue = useCallback((field: keyof T, value: FormFieldValue) => {
     setValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -139,7 +142,7 @@ export function useForm<T extends Record<string, any>>(
         }
       } else {
         // Mark all fields with errors as touched
-        const touchedFields = Object.keys(validationErrors).reduce(
+        const touchedFields = Object.keys(validationErrors).reduce<Partial<Record<keyof T, boolean>>>(
           (acc, key) => ({ ...acc, [key]: true }),
           {}
         );

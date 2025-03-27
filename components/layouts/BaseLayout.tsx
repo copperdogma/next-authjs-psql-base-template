@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import UserProfile from '@/components/auth/UserProfile';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -19,9 +19,6 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Current year as a derived value
-  const currentYear = mounted ? new Date().getFullYear() : 2024;
 
   // Memoized toggle handler
   const toggleMenu = useCallback(() => {

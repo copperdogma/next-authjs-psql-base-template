@@ -1,14 +1,4 @@
-import { User } from '@firebase/auth';
-
-// First import the real module to refer to the types
-import {
-  refreshTokenWithBackoff,
-  calculateBackoffTime,
-  TokenRefreshOptions,
-  DEFAULT_OPTIONS,
-} from '../../../lib/auth/token-refresh';
-
-// Now mock the module (after imports)
+// Mock the module
 jest.mock('../../../lib/auth/token-refresh', () => {
   return {
     calculateBackoffTime: jest.fn((attempt, options) => {
@@ -52,10 +42,9 @@ describe('Token Refresh Mechanism', () => {
     jest.clearAllMocks();
   });
 
-  // Use the mocked functions from the imported module
-  const { calculateBackoffTime, DEFAULT_OPTIONS } = require('../../../lib/auth/token-refresh');
-
   describe('calculateBackoffTime', () => {
+    const { calculateBackoffTime, DEFAULT_OPTIONS } = jest.requireMock('../../../lib/auth/token-refresh');
+
     it('should calculate initial delay for first attempt', () => {
       const result = calculateBackoffTime(1, {
         ...DEFAULT_OPTIONS,

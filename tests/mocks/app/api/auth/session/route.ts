@@ -40,7 +40,8 @@ const mockCreateSessionCookie = async (token: string, options: { expiresIn: numb
   if (!token || token === 'invalid-token') {
     throw new Error('Invalid token');
   }
-  return `mock-session-cookie-${uuidv4().slice(0, 8)}`;
+  const expiresAt = Date.now() + options.expiresIn;
+  return `mock-session-cookie-${uuidv4().slice(0, 8)}-exp-${expiresAt}`;
 };
 
 export async function POST(request: NextRequest) {

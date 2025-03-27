@@ -3,7 +3,7 @@ import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
 import { ROUTES, TEST_CONFIG } from '../../utils/routes';
 
 // UI element selectors in a centralized object
-const UI_ELEMENTS = {
+export const UI_ELEMENTS = {
   AUTH: {
     BUTTON: '[data-testid="auth-button"]',
     PLACEHOLDER: '[data-testid="auth-button-placeholder"]',

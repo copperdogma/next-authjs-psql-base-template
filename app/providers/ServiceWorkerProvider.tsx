@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 // Add TypeScript declaration for workbox
 declare global {
   interface Window {
-    workbox?: any;
+    workbox: ServiceWorkerGlobalScope['workbox'];
   }
 }
 

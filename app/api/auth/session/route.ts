@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { auth } from '../../../../lib/firebase-admin';
 import {
   createSessionCookie,
   getSessionCookieOptions,
-  verifySessionCookie as verifySession,
   SESSION_COOKIE_NAME,
 } from '../../../../lib/auth/session';
 

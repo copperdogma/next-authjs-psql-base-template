@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { POST, DELETE } from '../../../../app/api/auth/session/route';
-import { SESSION_COOKIE_NAME, getSessionCookieOptions } from '../../../../lib/auth/session';
+import { SESSION_COOKIE_NAME } from '../../../../lib/auth/session';
 
 // Mock dependencies
 jest.mock('next/headers', () => ({

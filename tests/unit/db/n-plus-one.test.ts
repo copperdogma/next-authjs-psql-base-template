@@ -1,5 +1,4 @@
 import { prisma } from '../../../lib/prisma';
-import { PrismaClient } from '@prisma/client';
 import { UserService } from '../../../lib/db/user-service';
 
 // Mock PrismaClient to track query execution

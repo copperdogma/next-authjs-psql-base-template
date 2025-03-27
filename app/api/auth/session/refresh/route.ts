@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '../../../../../lib/firebase-admin';
+import { auth } from '../../../../../lib/firebase-admin';
 import { SESSION_DURATION_MS } from '../../../../../lib/auth/token';
 import { HttpStatusCode } from '../../../../../types/index';
 
@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the Firebase ID token
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    await auth.verifyIdToken(token);
 
     // Create a new session cookie
-    const sessionCookie = await adminAuth.createSessionCookie(token, {
+    const sessionCookie = await auth.createSessionCookie(token, {
       expiresIn: SESSION_DURATION_MS,
     });
 

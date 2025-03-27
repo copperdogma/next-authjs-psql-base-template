@@ -1,8 +1,11 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 const withPWA = require('next-pwa')({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
@@ -179,4 +182,5 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+// Apply both PWA and Bundle Analyzer configurations
+module.exports = withBundleAnalyzer(withPWA(nextConfig));

@@ -3,7 +3,6 @@
  */
 import { User, UserInfo, IdTokenResult } from '@firebase/auth';
 import { RenderResult } from '@testing-library/react';
-import { UserEvent } from '@testing-library/user-event';
 import { Page } from '@playwright/test';
 
 /**

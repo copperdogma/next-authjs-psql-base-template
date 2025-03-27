@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
-import { DATABASE, TEST_USER } from '../utils/test-constants';
+import { TEST_USER } from '../utils/test-constants';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma, disconnectPrisma } from '../../lib/prisma'; // Use the singleton client
+import { prisma } from '../../lib/prisma'; // Use the singleton client
 
 describe('Database Integration Tests', () => {
   // Generate unique test IDs for better isolation

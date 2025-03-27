@@ -41,7 +41,8 @@ test.describe('Performance Checks', () => {
             await client.send('Performance.clearMetrics' as any);
           } catch (clearError) {
             console.log(
-              `Note: Performance.clearMetrics not available - this is expected in some browser versions`
+              `Note: Performance.clearMetrics not available - this is expected in some browser versions:`,
+              clearError
             );
             // Continue without clearing metrics - this is non-blocking
           }

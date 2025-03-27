@@ -1,9 +1,30 @@
-import { Prisma } from '@prisma/client';
-
 /**
  * QueryOptimizer provides utility functions for optimizing Prisma queries
  * based on common access patterns and performance best practices.
  */
+
+// Type for pagination configuration
+interface PaginationConfig<T> {
+  take: number;
+  skip: number;
+  orderBy: Partial<Record<keyof T, 'asc' | 'desc'>>;
+  cursor?: Partial<Record<keyof T, string | number | Date>>;
+}
+
+// Type for search condition
+interface SearchCondition {
+  contains: string;
+  mode: 'insensitive';
+}
+
+// Type for date filter
+interface DateFilter {
+  gt?: Date;
+  lt?: Date;
+  gte?: Date;
+  lte?: Date;
+}
+
 export class QueryOptimizer {
   /**
    * Generates an optimized select statement that only retrieves the fields
@@ -12,7 +33,7 @@ export class QueryOptimizer {
    * @param fields Fields to include in the select statement
    * @returns A Prisma select object that can be used in queries
    */
-  static selectOnly<T extends Record<string, any>>(
+  static selectOnly<T extends Record<string, unknown>>(
     fields: (keyof T)[]
   ): Partial<Record<keyof T, true>> {
     return fields.reduce(
@@ -31,7 +52,7 @@ export class QueryOptimizer {
    * @param options Pagination options including cursor, field to use as cursor, and take count
    * @returns Prisma pagination args that can be used in a findMany query
    */
-  static cursorPagination<T extends Record<string, any>>(
+  static cursorPagination<T extends Record<string, unknown>>(
     options: {
       cursor?: string | number | Date;
       cursorField?: keyof T;
@@ -40,7 +61,7 @@ export class QueryOptimizer {
       orderBy?: keyof T;
       orderDirection?: 'asc' | 'desc';
     } = {}
-  ): any {
+  ): PaginationConfig<T> {
     const {
       cursor,
       cursorField = 'id' as keyof T,
@@ -50,17 +71,17 @@ export class QueryOptimizer {
       orderDirection = 'desc',
     } = options;
 
-    const paginationConfig: any = {
+    const paginationConfig: PaginationConfig<T> = {
       take,
       skip,
-      orderBy: { [orderBy as string]: orderDirection },
+      orderBy: { [orderBy]: orderDirection } as Partial<Record<keyof T, 'asc' | 'desc'>>,
     };
 
     // Add cursor for efficient pagination if provided
     if (cursor) {
       paginationConfig.cursor = {
-        [cursorField as string]: cursor,
-      };
+        [cursorField]: cursor,
+      } as Partial<Record<keyof T, string | number | Date>>;
       // Skip 1 to exclude the cursor item itself
       paginationConfig.skip = 1;
     }
@@ -76,21 +97,21 @@ export class QueryOptimizer {
    * @param fields Fields to search in
    * @returns A Prisma where condition for OR-based text search
    */
-  static multiFieldSearch<T extends Record<string, any>>(
+  static multiFieldSearch<T extends Record<string, unknown>>(
     searchTerm: string,
     fields: (keyof T)[]
-  ): any {
+  ): { OR: Partial<Record<keyof T, SearchCondition>>[] } | Record<string, never> {
     if (!searchTerm?.trim()) {
       return {};
     }
 
     // Create an array of conditions, one for each field
     const searchConditions = fields.map(field => ({
-      [field as string]: {
+      [field]: {
         contains: searchTerm,
         mode: 'insensitive' as const,
       },
-    }));
+    })) as Partial<Record<keyof T, SearchCondition>>[];
 
     // Combine with OR
     return {
@@ -106,10 +127,16 @@ export class QueryOptimizer {
    * @param countFields Related models to count
    * @returns A Prisma select object with _count nested selects
    */
-  static selectWithCounts<T extends Record<string, any>, R extends Record<string, any>>(
+  static selectWithCounts<T extends Record<string, unknown>, R extends Record<string, unknown>>(
     modelFields: (keyof T)[],
     countFields: (keyof R)[]
-  ): any {
+  ): {
+    [K in keyof T]?: true;
+  } & {
+    _count: {
+      select: Record<keyof R, true>;
+    };
+  } {
     const select = this.selectOnly<T>(modelFields);
 
     return {
@@ -117,10 +144,10 @@ export class QueryOptimizer {
       _count: {
         select: countFields.reduce(
           (countSelect, field) => {
-            countSelect[field as string] = true;
+            countSelect[field] = true;
             return countSelect;
           },
-          {} as Record<string, boolean>
+          {} as Record<keyof R, true>
         ),
       },
     };
@@ -133,16 +160,16 @@ export class QueryOptimizer {
    * @param options Date range options (before, after, between)
    * @returns A Prisma where condition for date filtering
    */
-  static dateFilter<T extends Record<string, any>>(
+  static dateFilter<T extends Record<string, unknown>>(
     field: keyof T,
     options: {
       before?: Date;
       after?: Date;
       exactDay?: Date;
     }
-  ): any {
+  ): Record<keyof T, DateFilter> {
     const { before, after, exactDay } = options;
-    const filter: any = {};
+    const filter = {} as Record<keyof T, DateFilter>;
 
     if (exactDay) {
       // Filter for exact day by setting start and end of day
@@ -152,7 +179,7 @@ export class QueryOptimizer {
       const endOfDay = new Date(exactDay);
       endOfDay.setHours(23, 59, 59, 999);
 
-      filter[field as string] = {
+      filter[field] = {
         gte: startOfDay,
         lte: endOfDay,
       };
@@ -160,15 +187,15 @@ export class QueryOptimizer {
     }
 
     if (before) {
-      filter[field as string] = {
-        ...(filter[field as string] || {}),
+      filter[field] = {
+        ...(filter[field] || {}),
         lt: before,
       };
     }
 
     if (after) {
-      filter[field as string] = {
-        ...(filter[field as string] || {}),
+      filter[field] = {
+        ...(filter[field] || {}),
         gt: after,
       };
     }

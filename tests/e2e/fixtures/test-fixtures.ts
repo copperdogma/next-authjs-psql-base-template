@@ -1,6 +1,5 @@
-import { test as base, Page, BrowserContext, expect } from '@playwright/test';
+import { test as base, Page, expect } from '@playwright/test';
 import { FirebaseAuthUtils, TEST_USER } from './auth-fixtures';
-import { TEST_CONFIG } from '../../utils/routes';
 import { 
   TestSelectors, 
   PerformanceMetrics, 

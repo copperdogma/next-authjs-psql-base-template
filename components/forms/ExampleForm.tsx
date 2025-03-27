@@ -50,7 +50,6 @@ const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps
     handleChange,
     handleBlur,
     handleSubmit,
-    setFieldError,
   } = useForm<FormValues>(initialValues, onSubmit, validate);
 
   // Form-level error state for general errors not tied to a specific field

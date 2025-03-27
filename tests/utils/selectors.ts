@@ -208,14 +208,14 @@ export const UI_ELEMENTS = {
  * 2. Text (What the user sees - most intuitive)
  * 3. Test ID (Most stable for testing)
  * 4. CSS (Most brittle, use as last resort)
+ * 5. Tag (HTML tag name)
+ * 6. Body (ultimate fallback)
  */
-export function getElementLocator(
+export async function getElementLocator(
   page: Page,
   element: ElementSelector,
   options: SelectorOptions = {}
-): Locator {
-  const { timeout = 5000 } = options;
-
+): Promise<Locator> {
   // Try by role (preferred method - accessibility focused)
   if (element.role) {
     if (typeof element.role === 'object') {
@@ -255,7 +255,7 @@ export function getElementLocator(
     return page.locator(element.tag);
   }
 
-  // Fallback to a very general selector if nothing else worked
+  // Ultimate fallback - use body
   return page.locator('body');
 }
 
@@ -290,7 +290,7 @@ export async function waitForElementToBeVisible(
     throw new Error(`Unknown element key: ${elementKey}`);
   }
 
-  const locator = getElementLocator(page, element, options);
+  const locator = await getElementLocator(page, element, options);
 
   try {
     await locator.waitFor({ state: 'visible', timeout });
@@ -341,5 +341,23 @@ export async function waitForElementToBeVisible(
 
     // If we get here, all strategies failed
     throw new Error(`Failed to find element ${elementKey} using all strategies`);
+  }
+}
+
+export async function waitForElement(
+  page: Page,
+  selector: string,
+  options: { state?: 'visible' | 'hidden' | 'attached' | 'detached' } = {}
+): Promise<Locator> {
+  const element = page.locator(selector);
+  await element.waitFor(options);
+  return element;
+}
+
+export async function waitForElementToBeHidden(page: Page, selector: string): Promise<void> {
+  try {
+    await page.locator(selector).waitFor({ state: 'hidden' });
+  } catch {
+    throw new Error(`Element ${selector} did not become hidden`);
   }
 }

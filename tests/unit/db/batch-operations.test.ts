@@ -1,5 +1,4 @@
 import { prisma } from '../../../lib/prisma';
-import { PrismaClient } from '@prisma/client';
 
 // Mock PrismaClient to track batch operations
 jest.mock('@prisma/client', () => {
@@ -9,7 +8,24 @@ jest.mock('@prisma/client', () => {
   const mockPrismaClient = jest.fn().mockImplementation(() => {
     const operationLog: { type: string; count: number; args: any }[] = [];
 
-    const client = {
+    interface MockPrismaClient {
+      $connect: jest.Mock;
+      $disconnect: jest.Mock;
+      $transaction: jest.Mock;
+      session: {
+        delete: jest.Mock;
+        deleteMany: jest.Mock;
+        findMany: jest.Mock;
+        findFirst: jest.Mock;
+      };
+      _operationLog: typeof operationLog;
+      _clearLog: () => void;
+      _getOperationCount: (type: string) => number;
+      _getTotalDeleted: () => number;
+      _getOperations: () => typeof operationLog;
+    }
+
+    const client: MockPrismaClient = {
       $connect: jest.fn(),
       $disconnect: jest.fn(),
       $transaction: jest.fn(async callback => callback(client)),
@@ -63,7 +79,7 @@ jest.mock('@prisma/client', () => {
       },
       _getTotalDeleted: () => {
         return operationLog
-          .filter(op => op.type === 'session.deleteMany')
+          .filter((op: { type: string; count: number }) => op.type === 'session.deleteMany')
           .reduce((sum, op) => sum + op.count, 0);
       },
       _getOperations: () => [...operationLog],
@@ -132,7 +148,9 @@ describe('Batch Session Cleanup', () => {
 
     // Verify we're using deleteMany (batch operation)
     const operations = (prisma as any)._getOperations();
-    const batchOperations = operations.filter(op => op.type === 'session.deleteMany');
+    const batchOperations = operations.filter(
+      (op: { type: string; count: number; args: any }) => op.type === 'session.deleteMany'
+    );
 
     // Check that we're actually using the batch operation
     expect(batchOperations.length).toBeGreaterThan(0);
@@ -157,7 +175,7 @@ describe('Batch Session Cleanup', () => {
     // Verify we're using the batch operation
     const operations = (prisma as any)._getOperations();
     const hasBatchDelete = operations.some(
-      op => op.type === 'session.deleteMany' && op.args?.where?.userId === userId
+      (op: { type: string; args: any }) => op.type === 'session.deleteMany' && op.args?.where?.userId === userId
     );
 
     expect(hasBatchDelete).toBe(true);

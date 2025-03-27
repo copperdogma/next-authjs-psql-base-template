@@ -51,12 +51,6 @@ const ROUTES_TO_TEST = [
   { path: ROUTES.LOGIN, name: 'Login Page' },
 ];
 
-// Add additional user flows and paths as needed
-const USER_FLOWS = [
-  { name: 'Login Flow', paths: [ROUTES.LOGIN] },
-  { name: 'Navigation Flow', paths: [ROUTES.HOME, ROUTES.LOGIN] },
-];
-
 test.describe('Accessibility Tests', () => {
   // Common setup for all accessibility tests
   test.beforeEach(async ({ page }) => {

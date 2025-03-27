@@ -43,7 +43,7 @@ describe('Auth Middleware', () => {
 
       // Setup the mock
       (NextResponse.redirect as jest.Mock).mockReturnValueOnce({ type: 'redirect' });
-      (authMiddleware as jest.Mock).mockImplementationOnce(request => {
+      (authMiddleware as jest.Mock).mockImplementationOnce(() => {
         return NextResponse.redirect(loginUrl);
       });
 

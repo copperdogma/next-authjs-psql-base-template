@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { TEST_USER } from '../../utils/test-constants';
 import { prisma } from '../../../lib/prisma'; // Import the singleton PrismaClient

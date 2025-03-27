@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import Link from 'next/link';
 
 // Use dynamic import for components that might not be needed immediately
 const SignInButton = React.lazy(() => import('@/components/auth/SignInButton'));

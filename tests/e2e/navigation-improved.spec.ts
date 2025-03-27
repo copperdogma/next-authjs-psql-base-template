@@ -1,6 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { ROUTES } from '../utils/routes';
-import { UI_ELEMENTS, waitForElementToBeVisible } from '../utils/selectors';
+import { waitForElementToBeVisible } from '../utils/selectors';
 
 /**
  * Navigation and Layout Tests

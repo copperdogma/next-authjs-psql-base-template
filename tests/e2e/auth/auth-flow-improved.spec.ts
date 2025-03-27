@@ -112,7 +112,7 @@ test.describe('Authentication Flows', () => {
         expect(page.url()).not.toContain(ROUTES.LOGIN);
       }
     } catch (error) {
-      console.log('User profile element not found with current selectors - may need updating');
+      console.error('User profile element not found with current selectors:', error);
       // Verify localStorage auth state as a fallback
       expect(isAuthenticated).toBe(true);
     }

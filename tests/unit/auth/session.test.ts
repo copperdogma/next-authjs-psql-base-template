@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { POST, DELETE } from '../../../app/api/auth/session/route';
 
 // Mock Firebase Admin Auth

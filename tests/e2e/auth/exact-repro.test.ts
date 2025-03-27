@@ -35,7 +35,7 @@ test.describe('Login Page Rendering Tests', () => {
     // Wait for a button to be available in the DOM
     await page
       .waitForSelector('button', { timeout: 5000 })
-      .catch(e => console.log('No button found on basic login page'));
+      .catch(error => console.log('No button found on basic login page:', error));
 
     const basicButtons = await page.locator('button').count();
     console.log(`Number of buttons on basic login page: ${basicButtons}`);
@@ -48,7 +48,7 @@ test.describe('Login Page Rendering Tests', () => {
     // Check for Welcome text
     await page
       .waitForSelector('h1:has-text("Welcome")', { timeout: 5000 })
-      .catch(e => console.log('No Welcome text found on basic login page'));
+      .catch(error => console.log('No Welcome text found on basic login page:', error));
   });
 
   test('should render login page with callback URL from screenshot', async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('Login Page Rendering Tests', () => {
     // Wait for any button to appear (more generous timeout)
     await page
       .waitForSelector('button', { timeout: 8000 })
-      .catch(e => console.log('No button found after waiting'));
+      .catch(error => console.log('No button found after waiting:', error));
 
     // Log the HTML structure for debugging
     const html = await page.content();

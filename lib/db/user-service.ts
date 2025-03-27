@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 /**
  * User service with optimized database query patterns

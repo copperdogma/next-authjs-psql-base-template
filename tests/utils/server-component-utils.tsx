@@ -40,7 +40,7 @@ export async function renderServerComponent<P extends object>(
 
       try {
         return renderResult.getByText(text);
-      } catch (e) {
+      } catch {
         return null;
       }
     },
@@ -51,10 +51,4 @@ export async function renderServerComponent<P extends object>(
       return selector ? Array.from(renderResult.container.querySelectorAll(selector)) : [];
     },
   };
-}
-
-// We're not using this mock function in the tests, so we can simplify it
-// to avoid TypeScript errors while maintaining test coverage
-function mockRenderToHTML(element: React.ReactElement): string {
-  return element ? 'mock-html-content' : '';
 }

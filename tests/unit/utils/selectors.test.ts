@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page } from '@playwright/test';
 import {
   UI_ELEMENTS,
   getElementLocator,
