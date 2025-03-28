@@ -83,7 +83,7 @@ test.describe('Authentication Flows', () => {
     });
 
     // Verify authentication state in localStorage
-    const isAuthenticated = await FirebaseAuthUtils.isAuthenticated(page, TEST_CONFIG.FIREBASE);
+    const isAuthenticated = await FirebaseAuthUtils.isAuthenticated(page);
     expect(isAuthenticated, 'User should be authenticated in localStorage').toBe(true);
 
     // Look for user profile element that should be visible when authenticated
@@ -158,10 +158,12 @@ test.describe('Authentication Flows', () => {
     }
   });
 
-  // This test will be skipped for now as we need to further investigate the auth handling
-  // The test is failing because even with mock auth, the app is redirecting to login
-  test.skip('authenticated user should have access to protected routes', async ({ page }) => {
-    // First, mock authentication
+  // This test was previously skipped due to issues with auth mocking
+  test('authenticated user should have access to protected routes', async ({ page }) => {
+    // First navigate to a page before setting auth cookies
+    await page.goto(ROUTES.HOME, { waitUntil: 'domcontentloaded' });
+    
+    // Then mock authentication
     await FirebaseAuthUtils.mockSignedInUser(page, TEST_USER);
 
     // Try to access a protected route

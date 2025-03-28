@@ -25,17 +25,46 @@ export class FirebaseAuthUtils {
    */
   static async mockSignedInUser(page: Page, userData: LoginCredentials = TEST_USER): Promise<void> {
     try {
-      // Set auth via cookies
-      await page.evaluate(async user => {
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 14); // 14 days expiration
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 14); // 14 days expiration
 
-        // Set the auth cookies
-        document.cookie = `auth.uid=${user.uid}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax`;
-        document.cookie = `auth.email=${user.email}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax`;
-        document.cookie = `auth.name=${user.displayName}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax`;
+      // Get current URL to use for the cookies
+      const currentUrl = page.url();
+      
+      // Set cookies using Playwright's API instead of page.evaluate
+      await page.context().addCookies([
+        {
+          name: 'auth.uid',
+          value: userData.uid,
+          url: currentUrl,
+          expires: Math.floor(expirationDate.getTime() / 1000),
+          sameSite: 'Lax' as const
+        },
+        {
+          name: 'auth.email',
+          value: userData.email,
+          url: currentUrl,
+          expires: Math.floor(expirationDate.getTime() / 1000),
+          sameSite: 'Lax' as const
+        },
+        {
+          name: 'auth.name',
+          value: userData.displayName,
+          url: currentUrl,
+          expires: Math.floor(expirationDate.getTime() / 1000),
+          sameSite: 'Lax' as const
+        },
+        {
+          name: 'session',
+          value: 'mock-firebase-session-token',
+          url: currentUrl,
+          expires: Math.floor(expirationDate.getTime() / 1000),
+          sameSite: 'Lax' as const
+        }
+      ]);
 
-        // Dispatch auth state change event
+      // Dispatch auth state change event via page.evaluate
+      await page.evaluate(user => {
         try {
           const event = new CustomEvent('auth-state-changed', {
             detail: { user: { uid: user.uid, email: user.email, displayName: user.displayName } },
@@ -64,17 +93,11 @@ export class FirebaseAuthUtils {
    */
   static async clearAuthState(page: Page): Promise<void> {
     try {
-      // Clear auth cookies
-      await page.evaluate(async () => {
-        // Delete all auth cookies
-        document.cookie.split(';').forEach(cookie => {
-          const [name] = cookie.trim().split('=');
-          if (name.startsWith('auth.')) {
-            document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-          }
-        });
+      // Clear all cookies using Playwright's API
+      await page.context().clearCookies();
 
-        // Try to dispatch auth state change event to notify app
+      // Dispatch sign-out event via page.evaluate
+      await page.evaluate(() => {
         try {
           const event = new CustomEvent('auth-state-changed', { detail: { user: null } });
           window.dispatchEvent(event);
@@ -101,12 +124,12 @@ export class FirebaseAuthUtils {
    * @returns Whether the user is authenticated
    */
   static async isAuthenticated(page: Page): Promise<boolean> {
-    // First check cookies - this is the most reliable method
-    const hasAuthCookies = await page.evaluate(() => {
-      return document.cookie.includes('auth.uid=');
-    });
-
-    if (hasAuthCookies) {
+    // First check cookies using Playwright's API - this is the most reliable method
+    const cookies = await page.context().cookies();
+    const hasAuthUidCookie = cookies.some(cookie => cookie.name === 'auth.uid' && cookie.value);
+    const hasSessionCookie = cookies.some(cookie => cookie.name === 'session' && cookie.value);
+    
+    if (hasAuthUidCookie && hasSessionCookie) {
       return true;
     }
 
@@ -143,7 +166,7 @@ export class FirebaseAuthUtils {
 export const test = base.extend<AuthFixtures>({
   // Provide access to auth utilities
   authUtils: [
-    async ({}, use) => {
+    async ({}, use: (utils: typeof FirebaseAuthUtils) => Promise<void>) => {
       await use(FirebaseAuthUtils);
     },
     { scope: 'test' },
