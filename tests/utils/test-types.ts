@@ -1,5 +1,13 @@
+/* istanbul ignore file */
 /**
  * Test Typing - Contains improved TypeScript types for test utilities and mocks
+ *
+ * This file is intentionally excluded from test coverage metrics because:
+ * 1. It contains only TypeScript type definitions with no runtime code
+ * 2. Type definitions are validated by the TypeScript compiler, not by unit tests
+ * 3. There is no executable code to measure coverage for
+ *
+ * The `istanbul ignore file` comment above instructs the coverage tool to skip this file.
  */
 import { User, UserInfo, IdTokenResult } from '@firebase/auth';
 import { RenderResult } from '@testing-library/react';

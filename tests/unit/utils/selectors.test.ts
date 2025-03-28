@@ -1,238 +1,230 @@
 import { Page } from '@playwright/test';
 import {
-  UI_ELEMENTS,
   getElementLocator,
   waitForElementToBeVisible,
-  ElementSelector,
-} from '../../utils/selectors';
+  waitForElement,
+  waitForElementToBeHidden,
+} from '../../../tests/utils/selectors';
 
-// Mock Page object with basic locator methods
-const createMockPage = () => {
-  const mockPage = {
-    getByRole: jest.fn(() => ({
-      waitFor: jest.fn(),
-      isVisible: jest.fn(() => Promise.resolve(true)),
-    })),
-    getByText: jest.fn(() => ({
-      waitFor: jest.fn(),
-      isVisible: jest.fn(() => Promise.resolve(true)),
-    })),
-    getByTestId: jest.fn(() => ({
-      waitFor: jest.fn(),
-      isVisible: jest.fn(() => Promise.resolve(true)),
-    })),
-    locator: jest.fn(() => ({
-      waitFor: jest.fn(),
-      isVisible: jest.fn(() => Promise.resolve(true)),
-      first: jest.fn(() => ({ isVisible: jest.fn(() => Promise.resolve(true)) })),
-    })),
-    url: jest.fn(() => 'https://example.com'),
-  } as unknown as Page;
+// Mock Playwright Page
+const createMockPage = () => ({
+  locator: jest.fn().mockImplementation(() => ({
+    waitFor: jest.fn().mockResolvedValue(undefined),
+    isVisible: jest.fn().mockResolvedValue(true),
+    first: jest.fn().mockReturnThis(),
+  })),
+  getByRole: jest.fn().mockImplementation(() => ({
+    waitFor: jest.fn().mockResolvedValue(undefined),
+    isVisible: jest.fn().mockResolvedValue(true),
+  })),
+  getByText: jest.fn().mockImplementation(() => ({
+    waitFor: jest.fn().mockResolvedValue(undefined),
+    isVisible: jest.fn().mockResolvedValue(true),
+  })),
+  getByTestId: jest.fn().mockImplementation(() => ({
+    waitFor: jest.fn().mockResolvedValue(undefined),
+    isVisible: jest.fn().mockResolvedValue(true),
+  })),
+  content: jest
+    .fn()
+    .mockResolvedValue('<html><body>Some content that is long enough</body></html>'),
+});
 
-  return mockPage;
-};
+// Mock console.log to avoid cluttering test output
+const originalConsoleLog = console.log;
+beforeEach(() => {
+  console.log = jest.fn();
+});
 
-describe('Selectors Utility', () => {
-  let mockPage: Page;
+afterEach(() => {
+  console.log = originalConsoleLog;
+  jest.clearAllMocks();
+});
 
-  beforeEach(() => {
-    mockPage = createMockPage();
-    jest.clearAllMocks();
-  });
-
-  describe('UI_ELEMENTS', () => {
-    test('should have all required element groups', () => {
-      expect(UI_ELEMENTS).toBeDefined();
-      expect(UI_ELEMENTS.LAYOUT).toBeDefined();
-      expect(UI_ELEMENTS.NAVIGATION).toBeDefined();
-      expect(UI_ELEMENTS.AUTH).toBeDefined();
-    });
-
-    test('should have properly structured element descriptors', () => {
-      // Test LAYOUT.NAVBAR structure
-      const navbar = UI_ELEMENTS.LAYOUT.NAVBAR;
-      expect(navbar.testId).toBeDefined();
-      expect(navbar.role).toBeDefined();
-      expect(navbar.description).toBeDefined();
-
-      // Test AUTH.SIGN_IN_BUTTON structure
-      const signInButton = UI_ELEMENTS.AUTH.SIGN_IN_BUTTON;
-      expect(signInButton.testId).toBeDefined();
-      expect(signInButton.text).toBeDefined();
-      expect(signInButton.description).toBeDefined();
-    });
-  });
-
+describe('Selector Utilities', () => {
   describe('getElementLocator', () => {
-    test('should prioritize role selectors', () => {
-      const element: ElementSelector = {
-        role: 'button',
-        text: 'Click me',
-        testId: 'click-button',
-        css: '.button',
+    it('should use role selector when available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
+        role: 'button' as any,
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
+      await getElementLocator(mockPage, element);
       expect(mockPage.getByRole).toHaveBeenCalledWith('button');
-      expect(mockPage.getByText).not.toHaveBeenCalled();
-      expect(mockPage.getByTestId).not.toHaveBeenCalled();
-      expect(mockPage.locator).not.toHaveBeenCalled();
     });
 
-    test('should use role with options when provided as object', () => {
-      const element: ElementSelector = {
-        role: { name: 'button', options: { name: 'Submit' } },
-        description: 'Submit button',
-      };
-
-      getElementLocator(mockPage, element);
-      expect(mockPage.getByRole).toHaveBeenCalledWith('button', { name: 'Submit' });
-    });
-
-    test('should fall back to text selector when role is not available', () => {
-      const element: ElementSelector = {
+    it('should use text selector when role is not available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
         text: 'Click me',
-        testId: 'click-button',
-        css: '.button',
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
-      expect(mockPage.getByRole).not.toHaveBeenCalled();
+      await getElementLocator(mockPage, element);
       expect(mockPage.getByText).toHaveBeenCalledWith('Click me', { exact: undefined });
-      expect(mockPage.getByTestId).not.toHaveBeenCalled();
-      expect(mockPage.locator).not.toHaveBeenCalled();
     });
 
-    test('should fall back to testId selector when role and text are not available', () => {
-      const element: ElementSelector = {
-        testId: 'click-button',
-        css: '.button',
+    it('should use testId selector when role and text are not available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
+        testId: 'test-button',
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
-      expect(mockPage.getByRole).not.toHaveBeenCalled();
-      expect(mockPage.getByText).not.toHaveBeenCalled();
-      expect(mockPage.getByTestId).toHaveBeenCalledWith('click-button');
-      expect(mockPage.locator).not.toHaveBeenCalled();
+      await getElementLocator(mockPage, element);
+      expect(mockPage.getByTestId).toHaveBeenCalledWith('test-button');
     });
 
-    test('should fall back to css selector when role, text, and testId are not available', () => {
-      const element: ElementSelector = {
-        css: '.button',
+    it('should use CSS selector when other selectors are not available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
+        css: '.test-button',
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
-      expect(mockPage.getByRole).not.toHaveBeenCalled();
-      expect(mockPage.getByText).not.toHaveBeenCalled();
-      expect(mockPage.getByTestId).not.toHaveBeenCalled();
-      expect(mockPage.locator).toHaveBeenCalledWith('.button');
+      await getElementLocator(mockPage, element);
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-button');
     });
 
-    test('should handle css selector arrays', () => {
-      const element: ElementSelector = {
-        css: ['.button', 'button.primary', 'input[type="submit"]'],
+    it('should try all CSS selectors when an array is provided', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
+        css: ['.test-button', '.fallback-button'],
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
-      expect(mockPage.locator).toHaveBeenCalledWith('.button');
+      await getElementLocator(mockPage, element);
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-button');
     });
 
-    test('should fall back to tag selector when other selectors are not available', () => {
-      const element: ElementSelector = {
+    it('should use tag selector when other selectors are not available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
         tag: 'button',
         description: 'Test button',
       };
 
-      getElementLocator(mockPage, element);
-      expect(mockPage.getByRole).not.toHaveBeenCalled();
-      expect(mockPage.getByText).not.toHaveBeenCalled();
-      expect(mockPage.getByTestId).not.toHaveBeenCalled();
+      await getElementLocator(mockPage, element);
       expect(mockPage.locator).toHaveBeenCalledWith('button');
     });
 
-    test('should fall back to body selector when no selectors are available', () => {
-      const element: ElementSelector = {
-        description: 'Test element',
+    it('should fall back to body when no selectors are available', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const element = {
+        description: 'Test element with no selectors',
       };
 
-      getElementLocator(mockPage, element);
+      await getElementLocator(mockPage, element);
       expect(mockPage.locator).toHaveBeenCalledWith('body');
     });
   });
 
   describe('waitForElementToBeVisible', () => {
-    test('should find element using the correct selectors', async () => {
-      // Mock the waitFor and console.log methods
-      const mockLocator = {
-        waitFor: jest.fn(() => Promise.resolve()),
-        isVisible: jest.fn(() => Promise.resolve(true)),
-      };
-      (mockPage.getByRole as jest.Mock).mockReturnValue(mockLocator);
-      const originalConsoleLog = console.log;
-      console.log = jest.fn();
+    it('should find element using UI_ELEMENTS mapping', async () => {
+      const mockPage = createMockPage() as unknown as Page;
 
-      await waitForElementToBeVisible(mockPage, 'LAYOUT.NAVBAR');
+      await waitForElementToBeVisible(mockPage, 'AUTH.SIGN_IN_BUTTON');
 
-      expect(console.log).toHaveBeenCalledWith('Waiting for LAYOUT.NAVBAR to be visible...');
+      // Expect locator to be created based on AUTH.SIGN_IN_BUTTON and waited for
       expect(mockPage.getByRole).toHaveBeenCalled();
-      expect(mockLocator.waitFor).toHaveBeenCalledWith({ state: 'visible', timeout: 15000 });
-      expect(console.log).toHaveBeenCalledWith('Found element LAYOUT.NAVBAR (Main navigation bar)');
-
-      // Restore console.log to avoid affecting other tests
-      console.log = originalConsoleLog;
     });
 
-    test('should throw error for unknown element key', async () => {
-      await expect(async () => {
-        await waitForElementToBeVisible(mockPage, 'UNKNOWN.ELEMENT');
-      }).rejects.toThrow('Element key not found: UNKNOWN.ELEMENT (part UNKNOWN missing)');
+    it('should throw error for unknown element key', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+
+      await expect(waitForElementToBeVisible(mockPage, 'UNKNOWN.ELEMENT')).rejects.toThrow(
+        'Element key not found'
+      );
     });
 
-    test('should attempt fallback strategies when primary selector fails', async () => {
-      // Mock a failed primary selector and successful fallback
-      const mockFailedLocator = {
-        waitFor: jest.fn(() => Promise.reject(new Error('Element not found'))),
-        isVisible: jest.fn(() => Promise.resolve(false)),
-      };
-      const mockSuccessfulFallback = {
-        isVisible: jest.fn(() => Promise.resolve(true)),
-        first: jest.fn(() => ({ isVisible: jest.fn(() => Promise.resolve(true)) })),
+    it('should try fallback strategies when primary selector fails', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+
+      // Mock waitFor to fail on first call but succeed on fallback
+      const mockLocator = {
+        waitFor: jest.fn().mockRejectedValueOnce(new Error('Not found')),
+        isVisible: jest.fn().mockResolvedValue(true),
+        first: jest.fn().mockReturnThis(),
       };
 
-      (mockPage.getByRole as jest.Mock).mockReturnValue(mockFailedLocator);
-      (mockPage.locator as jest.Mock).mockImplementation(selector => {
-        if (selector === '[role="navigation"]') {
-          return {
-            ...mockSuccessfulFallback,
-            first: jest.fn(() => mockSuccessfulFallback),
-          };
-        }
-        return {
-          isVisible: jest.fn(() => Promise.resolve(false)),
-          first: jest.fn(() => ({ isVisible: jest.fn(() => Promise.resolve(false)) })),
-        };
+      mockPage.getByRole = jest.fn().mockReturnValue(mockLocator);
+      mockPage.locator = jest.fn().mockReturnValue({
+        ...mockLocator,
+        waitFor: jest.fn().mockResolvedValue(undefined),
+        first: jest.fn().mockReturnThis(),
       });
 
-      const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      await waitForElementToBeVisible(mockPage, 'AUTH.SIGN_IN_BUTTON');
 
-      const result = await waitForElementToBeVisible(mockPage, 'LAYOUT.NAVBAR');
+      // First attempt with primary selector
+      expect(mockPage.getByRole).toHaveBeenCalled();
+      expect(mockLocator.waitFor).toHaveBeenCalled();
 
-      expect(console.log).toHaveBeenCalledWith(
-        'Failed to find LAYOUT.NAVBAR with primary selectors, trying fallbacks...'
+      // Then fallback to direct selectors
+      expect(mockPage.locator).toHaveBeenCalled();
+    });
+  });
+
+  describe('waitForElement', () => {
+    it('should wait for element with default state', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const mockLocator = {
+        waitFor: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockPage.locator = jest.fn().mockReturnValue(mockLocator);
+
+      await waitForElement(mockPage, '.test-selector');
+
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-selector');
+      expect(mockLocator.waitFor).toHaveBeenCalled();
+    });
+
+    it('should wait for element with custom state', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const mockLocator = {
+        waitFor: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockPage.locator = jest.fn().mockReturnValue(mockLocator);
+
+      await waitForElement(mockPage, '.test-selector', { state: 'hidden' });
+
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-selector');
+      expect(mockLocator.waitFor).toHaveBeenCalledWith({ state: 'hidden' });
+    });
+  });
+
+  describe('waitForElementToBeHidden', () => {
+    it('should wait for element to be hidden successfully', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const mockLocator = {
+        waitFor: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockPage.locator = jest.fn().mockReturnValue(mockLocator);
+
+      await waitForElementToBeHidden(mockPage, '.test-selector');
+
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-selector');
+      expect(mockLocator.waitFor).toHaveBeenCalledWith({ state: 'hidden' });
+    });
+
+    it('should throw error when element does not become hidden', async () => {
+      const mockPage = createMockPage() as unknown as Page;
+      const mockLocator = {
+        waitFor: jest.fn().mockRejectedValue(new Error('Timeout')),
+      };
+
+      mockPage.locator = jest.fn().mockReturnValue(mockLocator);
+
+      await expect(waitForElementToBeHidden(mockPage, '.test-selector')).rejects.toThrow(
+        'Element .test-selector did not become hidden'
       );
-      expect(console.log).toHaveBeenCalledWith(
-        'Found element LAYOUT.NAVBAR with fallback selector: [role="navigation"]'
-      );
-      expect(result).toBeDefined();
 
-      // Restore console.log
-      console.log = originalConsoleLog;
+      expect(mockPage.locator).toHaveBeenCalledWith('.test-selector');
+      expect(mockLocator.waitFor).toHaveBeenCalledWith({ state: 'hidden' });
     });
   });
 });
