@@ -14,7 +14,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (isClientSide && user) {
       // If user is authenticated, redirect to the callback URL or dashboard
-      const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+      const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
       router.push(callbackUrl);
     }
   }, [user, isClientSide, router, searchParams]);
