@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 // Add TypeScript declaration for workbox
 declare global {
   interface Window {
-    workbox: ServiceWorkerGlobalScope['workbox'];
+    workbox: unknown; // Using unknown instead of any for better type safety
   }
 }
 

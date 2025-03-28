@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { adminAuth } from './firebase-admin';
+import { auth as adminAuth } from './firebase-admin';
 
 export async function getSession() {
   try {

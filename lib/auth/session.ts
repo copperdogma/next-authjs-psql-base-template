@@ -1,5 +1,5 @@
 import { auth } from '../firebase-admin';
-import { CookieSerializeOptions } from 'cookie';
+import { SerializeOptions as CookieSerializeOptions } from 'cookie';
 
 // Constants for session management
 export const DEFAULT_SESSION_EXPIRATION = 3600; // 1 hour in seconds

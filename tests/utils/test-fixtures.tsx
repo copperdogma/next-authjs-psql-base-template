@@ -12,7 +12,8 @@ import { AuthContextType, TestRenderResult, MockUser, MockIdTokenResult } from '
  * @returns A mock user object compatible with Firebase Auth User type
  */
 export function createMockUser(overrides: Partial<User> = {}): User {
-  const defaultUser = {
+  // Create a properly typed user object with all necessary fields
+  const defaultUser: Omit<MockUser, keyof typeof overrides> = {
     uid: TEST_USER.ID,
     email: TEST_USER.EMAIL,
     displayName: TEST_USER.NAME,
@@ -48,13 +49,16 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     } as MockIdTokenResult),
     reload: jest.fn().mockResolvedValue(undefined),
     toJSON: jest.fn().mockReturnValue({}),
-  } as MockUser;
+    // Add missing properties that were causing type errors
+    refreshToken: 'mock-refresh-token',
+    providerId: 'google.com',
+  };
 
-  // Merge default values with overrides
+  // Combine default values with overrides
   return {
     ...defaultUser,
     ...overrides,
-  };
+  } as User;
 }
 
 /**
@@ -77,6 +81,7 @@ export const AuthStateFixtures = {
     isClientSide: true,
     signIn: jest.fn().mockResolvedValue(undefined),
     signOut: jest.fn().mockResolvedValue(undefined),
+    error: null,
   }),
 
   // Loading state
@@ -130,7 +135,7 @@ export const AuthTestUtils = {
       // Return mock functions for easier assertions
       mockSignIn: authState.signIn,
       mockSignOut: authState.signOut,
-    };
+    } as TestRenderResult;
   },
 
   /**

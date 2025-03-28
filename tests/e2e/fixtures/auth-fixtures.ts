@@ -30,7 +30,7 @@ export class FirebaseAuthUtils {
 
       // Get current URL to use for the cookies
       const currentUrl = page.url();
-      
+
       // Set cookies using Playwright's API instead of page.evaluate
       await page.context().addCookies([
         {
@@ -38,29 +38,29 @@ export class FirebaseAuthUtils {
           value: userData.uid,
           url: currentUrl,
           expires: Math.floor(expirationDate.getTime() / 1000),
-          sameSite: 'Lax' as const
+          sameSite: 'Lax' as const,
         },
         {
           name: 'auth.email',
           value: userData.email,
           url: currentUrl,
           expires: Math.floor(expirationDate.getTime() / 1000),
-          sameSite: 'Lax' as const
+          sameSite: 'Lax' as const,
         },
         {
           name: 'auth.name',
           value: userData.displayName,
           url: currentUrl,
           expires: Math.floor(expirationDate.getTime() / 1000),
-          sameSite: 'Lax' as const
+          sameSite: 'Lax' as const,
         },
         {
           name: 'session',
           value: 'mock-firebase-session-token',
           url: currentUrl,
           expires: Math.floor(expirationDate.getTime() / 1000),
-          sameSite: 'Lax' as const
-        }
+          sameSite: 'Lax' as const,
+        },
       ]);
 
       // Dispatch auth state change event via page.evaluate
@@ -128,7 +128,7 @@ export class FirebaseAuthUtils {
     const cookies = await page.context().cookies();
     const hasAuthUidCookie = cookies.some(cookie => cookie.name === 'auth.uid' && cookie.value);
     const hasSessionCookie = cookies.some(cookie => cookie.name === 'session' && cookie.value);
-    
+
     if (hasAuthUidCookie && hasSessionCookie) {
       return true;
     }

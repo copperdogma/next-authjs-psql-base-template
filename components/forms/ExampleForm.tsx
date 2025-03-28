@@ -1,11 +1,12 @@
 'use client';
 
 import { memo } from 'react';
-import { useForm, ValidationFn } from '../hooks/useForm';
+import { useForm, ValidationFn, FormFieldValue } from '../hooks/useForm';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
-interface FormValues {
+// Make FormValues compatible with Record<string, FormFieldValue>
+interface FormValues extends Record<string, FormFieldValue> {
   email: string;
   password: string;
   rememberMe: boolean;

@@ -1,5 +1,5 @@
 // Using CommonJS require() instead of import to avoid ESM issues
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient: PrismaTeardownClient } = require('@prisma/client');
 
 /**
  * Global teardown function for test environment
@@ -14,7 +14,7 @@ async function globalTeardown() {
     throw new Error('globalTeardown should only run in test environment');
   }
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaTeardownClient();
   let cleanupSuccessful = false;
 
   try {
@@ -40,11 +40,15 @@ async function globalTeardown() {
       }
 
       // Truncate all tables in a single transaction
-      await prisma.$transaction(async tx => {
-        for (const { tablename } of tables) {
-          await tx.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE`);
+      await prisma.$transaction(
+        async (
+          tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>
+        ) => {
+          for (const { tablename } of tables) {
+            await tx.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE`);
+          }
         }
-      });
+      );
 
       cleanupSuccessful = true;
     } catch (error) {

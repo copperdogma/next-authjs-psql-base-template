@@ -1,8 +1,9 @@
 // Using CommonJS require() instead of import to avoid ESM issues
 const { execSync } = require('child_process');
-const { PrismaClient } = require('@prisma/client');
+// Use a different name to avoid duplicate declaration
+const { PrismaClient: TestPrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+const prisma = new TestPrismaClient();
 
 async function globalSetup() {
   if (process.env.NODE_ENV !== 'test') {

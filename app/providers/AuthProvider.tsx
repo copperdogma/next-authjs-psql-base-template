@@ -133,6 +133,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
             return () => clearInterval(refreshInterval);
           }
+
+          // Return a no-op cleanup function when there's no user
+          return () => {};
         });
 
         // Clean up subscription

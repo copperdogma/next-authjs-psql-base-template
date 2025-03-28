@@ -121,15 +121,31 @@ export class TestUtils {
   }
 
   /**
-   * Take an accessibility snapshot of the current page
+   * Take an accessibility snapshot of the page
    * @param page Playwright page
    * @returns The accessibility snapshot
    */
   static async takeAccessibilitySnapshot(page: Page): Promise<Record<string, unknown>> {
     return await page.evaluate(() => {
-      // @ts-expect-error - window.getComputedAccessibilityTree is available in Playwright
+      // Define a proper structure for accessibility tree nodes
+      interface AccessibilityTreeNode {
+        role?: string;
+        name?: string;
+        children?: AccessibilityTreeNode[];
+        [key: string]: unknown;
+      }
+
+      // Extend Window interface with properly typed accessibility tree function
+      interface PlaywrightWindow extends Window {
+        getComputedAccessibilityTree?: () => {
+          tree?: AccessibilityTreeNode;
+          error?: string;
+          [key: string]: unknown;
+        };
+      }
+
       return (
-        window.getComputedAccessibilityTree?.() || {
+        (window as PlaywrightWindow).getComputedAccessibilityTree?.() || {
           error: 'Accessibility tree not available in this browser',
         }
       );

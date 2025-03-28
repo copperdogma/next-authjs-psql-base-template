@@ -180,7 +180,7 @@ test.describe('Accessibility Tests', () => {
 
     // Track focused elements across tab presses
     const focusedElements = [];
-    
+
     // Press Tab key several times to navigate through the page
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press('Tab');
@@ -196,16 +196,16 @@ test.describe('Accessibility Tests', () => {
         if (!activeElement || activeElement === document.body) {
           return { tagName: 'body', focused: false };
         }
-        
-        return { 
+
+        return {
           tagName: activeElement.tagName,
           className: activeElement.className,
           id: activeElement.id,
           textContent: activeElement.textContent?.substring(0, 20),
-          focused: true
+          focused: true,
         };
       });
-      
+
       console.log(`Tab press #${i + 1} focused element:`, elementInfo);
       focusedElements.push(elementInfo);
     }
@@ -213,10 +213,10 @@ test.describe('Accessibility Tests', () => {
     // Verify that tabbing focuses different elements over time
     // Count how many different elements we focused on
     const uniqueTags = new Set(focusedElements.map(el => el.tagName + '-' + el.id)).size;
-    
+
     // We expect at least 2 different elements to receive focus when tabbing
     expect(uniqueTags, 'Tab navigation should focus on different elements').toBeGreaterThan(1);
-    
+
     // Make sure at least one element received focus
     const hasFocusedElements = focusedElements.some(el => el.focused);
     expect(hasFocusedElements, 'At least one element should receive focus').toBe(true);

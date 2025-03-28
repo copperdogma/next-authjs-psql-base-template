@@ -4,6 +4,7 @@
 import { User, UserInfo, IdTokenResult } from '@firebase/auth';
 import { RenderResult } from '@testing-library/react';
 import { Page } from '@playwright/test';
+import { UserEvent } from '@testing-library/user-event';
 
 /**
  * Authentication context type for testing
@@ -21,7 +22,8 @@ export interface AuthContextType {
  * Render result with user event and mock functions
  */
 export interface TestRenderResult extends RenderResult {
-  user?: MockUser | null;
+  // Properly typed to accommodate both UserEvent from testing-library and MockUser
+  user: UserEvent | MockUser | null;
   mockSignIn: jest.Mock;
   mockSignOut: jest.Mock;
 }
