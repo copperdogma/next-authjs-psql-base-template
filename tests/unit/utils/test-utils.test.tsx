@@ -40,8 +40,6 @@ const TestComponent = ({
 };
 
 describe('Test Utils', () => {
-  const TestComponent = () => <div>Test Component</div>;
-
   describe('render function', () => {
     it('renders with default auth state', () => {
       const { container, mockSignIn, mockSignOut } = render(<TestComponent />);

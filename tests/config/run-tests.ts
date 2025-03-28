@@ -48,16 +48,13 @@ async function checkServerReadiness(url: string, maxAttempts: number = 30): Prom
 
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const response = await new Promise<Response>((resolve, reject) => {
-        const req = http.get(url, res => {
-          resolve(res as unknown as Response);
-        });
-
+      const response = await new Promise((resolve, reject) => {
+        const req = http.get(url, resolve);
         req.on('error', reject);
         req.end();
       });
 
-      if ((response as any).statusCode === 200) {
+      if ((response as http.IncomingMessage).statusCode === 200) {
         console.log(`Server is ready at ${url}`);
         return true;
       }
@@ -83,7 +80,11 @@ async function checkServerReadiness(url: string, maxAttempts: number = 30): Prom
   return false;
 }
 
-async function runCommand(command: string, args: string[], options: any = {}): Promise<number> {
+async function runCommand(
+  command: string,
+  args: string[],
+  options: Record<string, unknown> = {}
+): Promise<number> {
   try {
     const result = spawnSync(command, args, {
       stdio: 'inherit',

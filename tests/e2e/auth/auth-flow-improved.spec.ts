@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
-import { ROUTES, TEST_CONFIG } from '../../utils/routes';
+import { ROUTES } from '../../utils/routes';
 import { waitForElementToBeVisible } from '../../utils/selectors';
 
 /**
@@ -162,7 +162,7 @@ test.describe('Authentication Flows', () => {
   test('authenticated user should have access to protected routes', async ({ page }) => {
     // First navigate to a page before setting auth cookies
     await page.goto(ROUTES.HOME, { waitUntil: 'domcontentloaded' });
-    
+
     // Then mock authentication
     await FirebaseAuthUtils.mockSignedInUser(page, TEST_USER);
 

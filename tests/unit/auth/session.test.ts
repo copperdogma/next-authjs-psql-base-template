@@ -60,7 +60,7 @@ jest.mock('../../../lib/auth/session', () => ({
     path: '/',
     sameSite: 'lax',
   }),
-  createSessionCookie: jest.fn().mockImplementation(async token => {
+  createSessionCookie: jest.fn().mockImplementation(async () => {
     return 'mock-session-cookie';
   }),
   verifySessionCookie: jest.fn(),

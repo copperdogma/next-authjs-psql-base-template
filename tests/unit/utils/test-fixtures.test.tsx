@@ -1,6 +1,5 @@
 import { createMockUser, AuthStateFixtures, AuthTestUtils } from '../../utils/test-fixtures';
 import { TEST_USER } from '../../utils/test-constants';
-import { render } from '@testing-library/react';
 import { User } from '@firebase/auth';
 
 describe('Test Fixtures', () => {

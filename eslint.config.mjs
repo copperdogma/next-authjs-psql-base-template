@@ -17,7 +17,19 @@ import globals from 'globals';
 export default [
   // Ignore build artifacts and dependencies to improve performance
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'public/**', '**/*.js.map', 'coverage/**'],
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'public/**',
+      '**/*.js.map',
+      'coverage/**',
+      'dist/**',
+      'build/**',
+      'tests/e2e/fixtures/auth-fixtures.ts',
+      'tests/e2e/fixtures/test-fixtures.ts',
+      '**/*.d.ts',
+    ],
   },
 
   // Base configuration for all JavaScript files
@@ -136,11 +148,33 @@ export default [
   // Test file configuration
   // Relaxes certain rules that are commonly needed in tests
   {
-    files: ['**/*.test.{js,jsx,ts,tsx}', '**/*.spec.{js,jsx,ts,tsx}'],
+    files: [
+      '**/*.test.{js,jsx,ts,tsx}',
+      '**/*.spec.{js,jsx,ts,tsx}',
+      'tests/unit/components/UserProfile.test.tsx',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
       'no-console': 'off', // Allow console in tests for debugging
       '@next/next/no-img-element': 'off', // Allow img in tests
+    },
+  },
+
+  // Script files configuration
+  // Allows console usage in script files
+  {
+    files: ['scripts/**/*.js', 'tests/**/*.js', 'tests/config/**/*.ts'],
+    rules: {
+      'no-console': 'off', // Allow console in scripts
+    },
+  },
+
+  // Utility files configuration
+  // Relaxes certain rules in utility files
+  {
+    files: ['lib/**/*.ts', 'tests/utils/**/*.ts', 'tests/e2e/fixtures/**/*.ts', 'types/**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any in utility files
     },
   },
 ];

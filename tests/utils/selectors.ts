@@ -296,7 +296,7 @@ export async function waitForElementToBeVisible(
     await locator.waitFor({ state: 'visible', timeout });
     console.log(`Found element ${elementKey} (${element.description})`);
     return locator;
-  } catch (error) {
+  } catch {
     console.log(`Failed to find ${elementKey} with primary selectors, trying fallbacks...`);
 
     // Attempt fallback strategies
@@ -327,7 +327,7 @@ export async function waitForElementToBeVisible(
           console.log(`Found element ${elementKey} with fallback selector: ${fallback}`);
           return fallbackLocator;
         }
-      } catch (e) {
+      } catch {
         // Continue trying other fallbacks
       }
     }
