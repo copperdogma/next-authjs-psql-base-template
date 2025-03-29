@@ -1,19 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// Core models
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
@@ -22,24 +15,19 @@ model User {
   updatedAt DateTime  @updatedAt
   sessions  Session[]
 
-  // Add index on createdAt for queries that sort or filter by creation date
   @@index([createdAt])
-  // Add index on updatedAt for queries that need recent users
   @@index([updatedAt])
 }
 
 model Session {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Existing index on userId
   @@index([userId])
-  // Add index on expiresAt for session cleanup queries
   @@index([expiresAt])
-  // Add composite index for queries that filter by both userId and expiration
   @@index([userId, expiresAt])
 }
