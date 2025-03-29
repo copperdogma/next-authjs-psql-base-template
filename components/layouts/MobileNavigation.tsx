@@ -9,11 +9,8 @@ interface MobileNavigationProps {
   /**
    * Array of navigation items to display
    */
-  navigationItems: NavItem[];
-  /**
-   * Whether the current user is authenticated
-   */
-  isAuthenticated?: boolean;
+  navItems: NavItem[];
+  pathname: string | null;
 }
 
 /**
@@ -21,9 +18,12 @@ interface MobileNavigationProps {
  *
  * Provides hamburger menu button and slide-out drawer with navigation items
  */
-export function MobileNavigation({ navigationItems, isAuthenticated }: MobileNavigationProps) {
+export default function MobileNavigation(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { navItems, pathname }: MobileNavigationProps
+) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { visibleItems, isActive } = useNavigation(navigationItems);
+  const { visibleItems, isActive } = useNavigation(navItems);
 
   const toggleDrawer = () => {
     setDrawerOpen(!drawerOpen);

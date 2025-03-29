@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/app/providers/AuthProvider';
 import { Box, Paper, Typography, Stack } from '@mui/material';
-import { Grid } from '@mui/material';
+import React from 'react';
 
 export default function DashboardContent() {
   const { user } = useAuth();

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Box } from '@mui/material';
 import { NavItem, DesktopNavItem, useNavigation } from './NavItems';
 
@@ -7,11 +8,8 @@ interface DesktopNavigationProps {
   /**
    * Array of navigation items to display
    */
-  navigationItems: NavItem[];
-  /**
-   * Whether the current user is authenticated
-   */
-  isAuthenticated?: boolean;
+  navItems: NavItem[];
+  pathname: string | null;
 }
 
 /**
@@ -19,8 +17,11 @@ interface DesktopNavigationProps {
  *
  * Displays horizontal navigation links in the app bar for desktop view
  */
-export function DesktopNavigation({ navigationItems, isAuthenticated }: DesktopNavigationProps) {
-  const { visibleItems, isActive } = useNavigation(navigationItems);
+export default function DesktopNavigation(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { navItems, pathname }: DesktopNavigationProps
+) {
+  const { visibleItems, isActive } = useNavigation(navItems);
 
   return (
     <Box

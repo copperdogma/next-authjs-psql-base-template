@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { Home, Dashboard, Person, Info } from '@mui/icons-material';
 import { AppBar, Toolbar, Typography, Button, Box, Container, useTheme } from '@mui/material';
 import { NavItem } from './NavItems';
-import { MobileNavigation } from './MobileNavigation';
-import { DesktopNavigation } from './DesktopNavigation';
 import { SkipToContent } from './SkipToContent';
+import MobileNavigation from './MobileNavigation';
+import DesktopNavigation from './DesktopNavigation';
 
 /**
  * Base layout component that provides the main application structure
@@ -25,13 +25,8 @@ import { SkipToContent } from './SkipToContent';
  */
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
-  const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
-
-  // Set mounted state on client side
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const pathname = usePathname();
 
   // Define the navigation links with icons and visibility rules
   const NAVIGATION_ITEMS: NavItem[] = [
@@ -83,7 +78,9 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
           </Typography>
 
           {/* Desktop Navigation */}
-          <DesktopNavigation navigationItems={NAVIGATION_ITEMS} isAuthenticated={Boolean(user)} />
+          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+            <DesktopNavigation navItems={NAVIGATION_ITEMS} pathname={pathname} />
+          </Box>
 
           {/* Right-side controls: Theme toggle and User profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
@@ -92,7 +89,9 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
           </Box>
 
           {/* Mobile Navigation */}
-          <MobileNavigation navigationItems={NAVIGATION_ITEMS} isAuthenticated={Boolean(user)} />
+          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+            <MobileNavigation navItems={NAVIGATION_ITEMS} pathname={pathname} />
+          </Box>
         </Toolbar>
       </AppBar>
 

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
-import { Box, Typography, Button, Paper } from '@mui/material';
+import { Typography, Button, Paper } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
+import React from 'react';
 
 export default function NotFound() {
   return (
