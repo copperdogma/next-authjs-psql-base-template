@@ -53,6 +53,7 @@
 .env.local.example
 .cursor/rules/scratchpad.mdc
 scratchpad.md
+combined_codebase.txt
 
 # debug
 npm-debug.log*
@@ -60,6 +61,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 debug.log
+firestore-debug.log*
+firebase-debug.log*
+ui-debug.log*
+*.log
 
 # env files
 .env*
