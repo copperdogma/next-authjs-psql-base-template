@@ -26,10 +26,10 @@ export default function ProfileContent() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div className="rounded-lg border border-accent bg-background p-8 shadow-sm">
         <div className="flex flex-col items-center space-y-6 md:flex-row md:items-start md:space-x-8 md:space-y-0">
           {/* Profile Image */}
-          <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-gray-200">
+          <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-accent">
             {user.photoURL ? (
               <Image
                 src={user.photoURL}
@@ -39,7 +39,7 @@ export default function ProfileContent() {
                 sizes="(max-width: 768px) 160px, 160px"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-blue-500 text-4xl font-bold text-white">
+              <div className="flex h-full w-full items-center justify-center bg-primary-500 text-4xl font-bold text-white">
                 {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
               </div>
             )}
@@ -48,24 +48,24 @@ export default function ProfileContent() {
           {/* Profile Information */}
           <div className="flex-1 space-y-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Display Name</p>
+              <p className="text-sm font-medium text-muted-foreground">Display Name</p>
               <p className="text-lg font-semibold">{user.displayName || 'Not provided'}</p>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-muted-foreground">Email</p>
               <p className="text-lg font-semibold">{user.email}</p>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-500">Email Verified</p>
+              <p className="text-sm font-medium text-muted-foreground">Email Verified</p>
               <p className="text-lg font-semibold">{user.emailVerified ? 'Yes' : 'No'}</p>
             </div>
 
             <div className="pt-4">
               <button
                 onClick={handleSignOut}
-                className="rounded-md bg-red-500 px-4 py-2 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
                 Sign Out
               </button>

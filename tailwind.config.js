@@ -19,12 +19,12 @@ module.exports = {
     },
     extend: {
       colors: {
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        muted: 'var(--muted)',
-        'muted-foreground': 'var(--muted-foreground)',
-        accent: 'var(--accent)',
-        'accent-foreground': 'var(--accent-foreground)',
+        background: 'var(--color-background)',
+        foreground: 'var(--color-foreground)',
+        muted: 'var(--color-muted)',
+        'muted-foreground': 'var(--color-muted-foreground)',
+        accent: 'var(--color-accent)',
+        'accent-foreground': 'var(--color-accent-foreground)',
         primary: {
           DEFAULT: '#0fa9e6',
           50: '#f0f9ff',
@@ -41,7 +41,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-roboto)', 'Arial', 'sans-serif'],
+        sans: ['var(--font-sans)'],
       },
       borderRadius: {
         sm: '0.125rem',
@@ -54,40 +54,40 @@ module.exports = {
       typography: theme => ({
         DEFAULT: {
           css: {
-            color: 'var(--foreground)',
+            color: 'var(--color-foreground)',
             a: {
-              color: 'var(--primary-500)',
+              color: 'var(--color-primary-500)',
               '&:hover': {
-                color: 'var(--primary-600)',
+                color: 'var(--color-primary-600)',
               },
             },
             h1: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
             h2: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
             h3: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
             h4: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
             h5: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
             h6: {
-              color: 'var(--foreground)',
+              color: 'var(--color-foreground)',
             },
           },
         },
         dark: {
           css: {
-            color: 'var(--foreground)',
+            color: 'var(--color-foreground)',
             a: {
-              color: 'var(--primary-400)',
+              color: 'var(--color-primary-400)',
               '&:hover': {
-                color: 'var(--primary-300)',
+                color: 'var(--color-primary-300)',
               },
             },
           },
@@ -95,6 +95,6 @@ module.exports = {
       }),
     },
   },
-  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/container-queries')],
+  plugins: [require('@tailwindcss/typography')],
   darkMode: 'class',
 };

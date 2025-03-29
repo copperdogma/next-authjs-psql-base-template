@@ -23,9 +23,9 @@ export default function HomePage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Next.js Project Template</h1>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div className="bg-background rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-semibold mb-4">Welcome to Your Next.js App</h2>
-        <p className="mb-4">
+        <p className="mb-4 text-foreground">
           This is a starter template with Next.js, Firebase Authentication, and PostgreSQL.
         </p>
 

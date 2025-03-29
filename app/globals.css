@@ -1,39 +1,54 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* 
+ * Tailwind CSS v4 Theme Configuration
+ * 
+ * Key features and best practices:
+ * 1. Use @theme for declaring CSS variables (no nesting beyond properties)
+ * 2. Use .dark class for dark mode variables (outside @theme)
+ * 3. Use @utility for custom utilities instead of @layer utilities
+ * 4. Use @container and @md/@lg/@xl breakpoints for container queries
+ * 5. Define theme colors with --color- prefix
+ * 6. Use opacity modifiers (bg-black/50) instead of bg-opacity-*
+ * 7. Use shrink-* instead of flex-shrink-* 
+ * 8. Use text-ellipsis instead of overflow-ellipsis
+ * 9. Size class naming updated (shadow-sm → shadow-xs, etc.)
+ */
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-muted: #4b5563;
+  --color-muted-foreground: #374151;
+  --color-accent: #f3f4f6;
+  --color-accent-foreground: #111827;
+  --color-focus-ring: #2563eb;
+  --color-focus-ring-offset: #ffffff;
+  --font-sans: var(--font-roboto), Arial, sans-serif;
+}
+
+/* Dark mode variables need to be outside the @theme block */
+.dark {
+  --color-background: #0a0a0a;
+  --color-foreground: #f9fafb;
+  --color-muted: #d1d5db;
+  --color-muted-foreground: #e5e7eb;
+  --color-accent: #1f2937;
+  --color-accent-foreground: #f9fafb;
+  --color-focus-ring: #3b82f6;
+  --color-focus-ring-offset: #0a0a0a;
+}
 
 @layer base {
-  :root {
-    --background: #ffffff;
-    --foreground: #111827;
-    --muted: #4b5563;
-    --muted-foreground: #374151;
-    --accent: #f3f4f6;
-    --accent-foreground: #111827;
-    --focus-ring: #2563eb;
-    --focus-ring-offset: #ffffff;
-  }
-
-  .dark {
-    --background: #0a0a0a;
-    --foreground: #f9fafb;
-    --muted: #d1d5db;
-    --muted-foreground: #e5e7eb;
-    --accent: #1f2937;
-    --accent-foreground: #f9fafb;
-    --focus-ring: #3b82f6;
-    --focus-ring-offset: #0a0a0a;
-  }
-
   body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-roboto), Arial, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
   }
 
   /* Enhanced focus styles for better keyboard navigation */
   :focus {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
   }
 
@@ -44,46 +59,74 @@
 
   /* Ensure focus-visible has strong styling */
   :focus-visible {
-    outline: 2px solid var(--focus-ring);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
     box-shadow:
-      0 0 0 4px var(--focus-ring-offset),
-      0 0 0 6px var(--focus-ring);
+      0 0 0 4px var(--color-focus-ring-offset),
+      0 0 0 6px var(--color-focus-ring);
   }
 }
 
 /* Additional contrast-safe utility classes */
-@layer utilities {
-  .text-muted {
-    color: var(--muted);
+@utility text-muted {
+  color: var(--color-muted);
+}
+
+@utility text-high-contrast {
+  color: var(--color-foreground);
+}
+
+@utility text-medium-contrast {
+  color: var(--color-muted-foreground);
+}
+
+@utility bg-accent {
+  background-color: var(--color-accent);
+}
+
+@utility text-accent-foreground {
+  color: var(--color-accent-foreground);
+}
+
+/* Focus state utility classes */
+@utility focus-ring {
+  &:focus {
+    outline: none;
   }
 
-  .text-high-contrast {
-    color: var(--foreground);
+  &:focus-visible {
+    outline: none;
+    ring-width: 2px;
+    ring-offset-width: 2px;
+    ring-color: var(--color-focus-ring);
+    ring-offset-color: var(--color-focus-ring-offset);
+  }
+}
+
+@utility focus-within-ring {
+  &:focus-within {
+    outline: none;
+    ring-width: 2px;
+    ring-offset-width: 2px;
+    ring-color: var(--color-focus-ring);
+    ring-offset-color: var(--color-focus-ring-offset);
+  }
+}
+
+/* Container query demonstration for Tailwind CSS v4 */
+@utility container-demo {
+  container-type: inline-size;
+}
+
+@utility container-card {
+  @apply rounded-lg bg-accent p-4;
+
+  /* Container queries using new syntax */
+  @md {
+    @apply p-6;
   }
 
-  .text-medium-contrast {
-    color: var(--muted-foreground);
-  }
-
-  .bg-accent {
-    background-color: var(--accent);
-  }
-
-  .text-accent-foreground {
-    color: var(--accent-foreground);
-  }
-
-  /* Focus state utility classes */
-  .focus-ring {
-    @apply focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
-    --tw-ring-color: var(--focus-ring);
-    --tw-ring-offset-color: var(--focus-ring-offset);
-  }
-
-  .focus-within-ring {
-    @apply focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2;
-    --tw-ring-color: var(--focus-ring);
-    --tw-ring-offset-color: var(--focus-ring-offset);
+  @xl {
+    @apply p-8;
   }
 }

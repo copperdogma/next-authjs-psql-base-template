@@ -2,9 +2,11 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import UserProfile from '@/components/auth/UserProfile';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { cn } from '@/lib/utils';
 
 interface BaseLayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
+  const pathname = usePathname();
 
   // Handle client-side mounting
   useEffect(() => {
@@ -55,16 +58,25 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
               aria-label="Desktop navigation"
             >
               <ul className="flex space-x-4">
-                {links.map(link => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="px-3 py-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {links.map(link => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          'px-4 py-2 rounded-md font-medium transition-colors relative',
+                          isActive
+                            ? 'bg-slate-700 text-slate-100 hover:bg-slate-600'
+                            : 'text-foreground hover:bg-accent/50'
+                        )}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </nav>
 
@@ -112,16 +124,25 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
               data-testid="mobile-menu"
             >
               <ul className="space-y-1">
-                {links.map(link => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {links.map(link => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          'block px-4 py-2 rounded-md text-base font-medium transition-colors relative',
+                          isActive
+                            ? 'bg-slate-700 text-slate-100 hover:bg-slate-600'
+                            : 'text-foreground hover:bg-accent/50'
+                        )}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -133,10 +154,10 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
       </main>
 
       {/* Footer with copyright information */}
-      <footer role="contentinfo" className="mt-auto py-8 bg-gray-50 dark:bg-gray-900">
+      <footer role="contentinfo" className="mt-auto py-8 bg-accent">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-700 dark:text-gray-300">
+            <div className="text-foreground">
               © {new Date().getFullYear()}{' '}
               {process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_PROJECT_NAME}}'}. All rights reserved.
             </div>
@@ -144,26 +165,17 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
               <nav aria-label="Footer Navigation">
                 <ul className="flex space-x-6">
                   <li>
-                    <Link
-                      href="/privacy"
-                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-                    >
+                    <Link href="/privacy" className="text-foreground hover:text-primary-600">
                       Privacy
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/terms"
-                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-                    >
+                    <Link href="/terms" className="text-foreground hover:text-primary-600">
                       Terms
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/contact"
-                      className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
-                    >
+                    <Link href="/contact" className="text-foreground hover:text-primary-600">
                       Contact
                     </Link>
                   </li>

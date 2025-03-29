@@ -53,7 +53,7 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
           onClose={showCloseButton ? handleClose : undefined}
           severity={severity}
           variant={variant}
-          className={cn('w-full shadow-lg rounded-lg')}
+          className={cn('w-full shadow-md rounded-lg')}
           elevation={elevation}
           action={
             showCloseButton && (

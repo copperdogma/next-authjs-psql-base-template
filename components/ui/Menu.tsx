@@ -98,7 +98,7 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
         PaperProps={{
           ...props.PaperProps,
           className: cn(
-            'rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 bg-background',
+            'rounded-lg shadow-md border border-gray-200 dark:border-gray-800 bg-background',
             props.PaperProps?.className
           ),
           elevation: 8,

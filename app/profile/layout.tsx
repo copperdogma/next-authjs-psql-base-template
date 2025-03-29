@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="py-4">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Your Profile</h1>
+            <h1 className="text-xl font-semibold text-foreground">Your Profile</h1>
           </div>
         </div>
       </div>
