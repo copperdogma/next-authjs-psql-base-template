@@ -11,6 +11,7 @@ import type { User } from '@firebase/auth';
 import { auth, isFirebaseAuth } from '../../lib/firebase';
 import { shouldRefreshToken, refreshUserTokenAndSession } from '../../lib/auth/token';
 import { handleFirebaseError } from '../../lib/utils/firebase-errors';
+import { useRouter } from 'next/navigation';
 
 // Create the auth context
 type AuthContextType = {
@@ -38,6 +39,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   // Only track if we've mounted to prevent flicker during hydration
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
 
   // Sign in function
   const signIn = async () => {
@@ -62,6 +64,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       // Add a delay before redirecting to ensure cookie is set
       await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Redirect to dashboard after successful login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/dashboard';
+      }
     } catch (error) {
       handleFirebaseError('Sign In', error);
       throw error;

@@ -22,6 +22,13 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+// Helper function to determine theme based on time of day
+const getTimeBasedTheme = (): 'dark' | 'light' => {
+  const hours = new Date().getHours();
+  // Dark theme between 8 PM and 6 AM
+  return hours >= 20 || hours < 6 ? 'dark' : 'light';
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
@@ -35,32 +42,66 @@ export function ThemeProvider({
   useEffect(() => {
     setMounted(true);
 
+    // Order of preference:
+    // 1. User saved preference
+    // 2. System preference
+    // 3. Time of day
     const savedTheme = localStorage.getItem(storageKey) as Theme | null;
 
     if (savedTheme) {
       setTheme(savedTheme);
     } else {
-      setTheme(defaultTheme);
+      // Check if system preference is available
+      if (window.matchMedia) {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          setTheme('system'); // Use system which is dark
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          setTheme('system'); // Use system which is light
+        } else {
+          // If no system preference, use time-based theme
+          setTheme(getTimeBasedTheme());
+        }
+      } else {
+        // If no matchMedia support, fall back to time-based theme
+        setTheme(getTimeBasedTheme());
+      }
     }
-  }, [defaultTheme, storageKey]);
 
-  // Set the theme class only on the client side to avoid hydration issues
+    // Watch for system preference changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        // Force a re-render when system preference changes
+        document.documentElement.setAttribute('data-mode', mediaQuery.matches ? 'dark' : 'light');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [defaultTheme, storageKey, theme]);
+
+  // Set the theme attribute only on the client side to avoid hydration issues
   useEffect(() => {
     if (!mounted) return;
 
     const root = window.document.documentElement;
 
-    // Remove the class if it exists
-    root.classList.remove('light', 'dark');
+    // Remove the data-mode attribute if it exists
+    root.removeAttribute('data-mode');
 
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-
-      root.classList.add(systemTheme);
+      // System preference - check if available
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        root.setAttribute('data-mode', 'dark');
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        root.setAttribute('data-mode', 'light');
+      } else {
+        // Fall back to time-based if no system preference
+        root.setAttribute('data-mode', getTimeBasedTheme());
+      }
     } else {
-      root.classList.add(theme);
+      // User explicitly set theme
+      root.setAttribute('data-mode', theme);
     }
   }, [theme, mounted]);
 

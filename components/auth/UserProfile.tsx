@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, memo } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '../../app/providers/AuthProvider';
+import { Avatar, Box, Skeleton, Tooltip, IconButton } from '@mui/material';
+import { AccountCircle } from '@mui/icons-material';
 
 const UserProfile = () => {
   const { user, loading } = useAuth();
@@ -14,39 +15,67 @@ const UserProfile = () => {
     setMounted(true);
   }, []);
 
-  // Show nothing during server rendering or if not authenticated
+  // Show loading skeleton during server rendering or loading
   if (!mounted || loading) {
-    return <div data-testid="profile-loading">Loading...</div>;
+    return (
+      <Box data-testid="profile-loading" sx={{ display: 'inline-flex', mx: 1 }}>
+        <Skeleton variant="circular" width={32} height={32} />
+      </Box>
+    );
   }
 
+  // Return nothing if not authenticated
   if (!user) {
     return null;
   }
 
   return (
-    <Link
-      href="/profile"
-      className="flex items-center gap-2 user-profile"
-      data-testid="user-profile"
-      aria-label="User profile"
-      role="button"
-    >
-      {user.photoURL ? (
-        <Image
-          src={user.photoURL}
-          alt="Profile picture"
-          width={32}
-          height={32}
-          className="rounded-full"
-          data-testid="profile-image"
-        />
-      ) : null}
-      <div className="flex flex-col">
-        <span className="sr-only" data-testid="profile-name">
+    <Tooltip title="Profile">
+      <IconButton
+        component={Link}
+        href="/profile"
+        aria-label="User profile"
+        data-testid="user-profile"
+        sx={{ p: 0, ml: 1 }}
+      >
+        {user.photoURL ? (
+          <Avatar
+            alt={user.displayName || 'User profile'}
+            src={user.photoURL}
+            sx={{ width: 36, height: 36 }}
+            imgProps={{
+              referrerPolicy: 'no-referrer',
+              crossOrigin: 'anonymous',
+            }}
+            data-testid="profile-image"
+          />
+        ) : (
+          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+            {user.displayName ? (
+              user.displayName.charAt(0).toUpperCase()
+            ) : user.email ? (
+              user.email.charAt(0).toUpperCase()
+            ) : (
+              <AccountCircle />
+            )}
+          </Avatar>
+        )}
+        <Box
+          component="span"
+          sx={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            overflow: 'hidden',
+            top: -9999,
+            left: -9999,
+          }}
+          data-testid="profile-name"
+        >
           {user.displayName || 'Anonymous'}
-        </span>
-      </div>
-    </Link>
+        </Box>
+      </IconButton>
+    </Tooltip>
   );
 };
 

@@ -1,54 +1,105 @@
 'use client';
 
-import { ButtonHTMLAttributes, forwardRef } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '../../lib/utils';
+import { forwardRef } from 'react';
+import {
+  Button as MuiButton,
+  ButtonProps as MuiButtonProps,
+  CircularProgress,
+} from '@mui/material';
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
-  {
-    variants: {
-      variant: {
-        default:
-          'bg-primary-500 hover:bg-primary-600 text-white shadow-sm dark:bg-primary-600 dark:hover:bg-primary-700 dark:border-primary-500',
-        outline:
-          'border border-primary-500 text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-primary-950',
-        ghost: 'text-foreground hover:bg-accent hover:text-foreground',
-        link: 'text-primary-600 underline-offset-4 hover:underline',
-        destructive:
-          'bg-red-600 text-white hover:bg-red-700 shadow-sm dark:bg-red-700 dark:hover:bg-red-800',
-      },
-      size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 px-3 text-xs',
-        lg: 'h-12 px-8 text-base',
-        icon: 'h-9 w-9 p-0',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  }
-);
+/**
+ * Extended button props with additional options specific to this template
+ */
+export type ButtonProps = MuiButtonProps & {
+  /**
+   * Whether to show a loading spinner
+   */
+  isLoading?: boolean;
+  /**
+   * Text to show when button is in loading state
+   */
+  loadingText?: string;
+  /**
+   * Position of the loading spinner
+   * @default "start"
+   */
+  loadingPosition?: 'start' | 'end' | 'center';
+  /**
+   * Fixed width to prevent layout shift when loading
+   */
+  fixedWidth?: boolean;
+};
 
-export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+/**
+ * Enhanced button component that wraps Material UI Button
+ *
+ * Features:
+ * - Loading states with spinner
+ * - Fixed width option to prevent layout shift
+ * - All standard Material UI Button props
+ *
+ * Usage example:
+ * ```tsx
+ * <Button
+ *   variant="contained"
+ *   isLoading={isSubmitting}
+ *   loadingText="Saving..."
+ *   onClick={handleSubmit}
+ * >
+ *   Save
+ * </Button>
+ * ```
+ */
+const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
+  const {
+    children,
+    isLoading,
+    loadingText,
+    loadingPosition = 'start',
+    fixedWidth,
+    disabled,
+    startIcon,
+    endIcon,
+    sx,
+    ...rest
+  } = props;
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = 'button', ...props }, ref) => {
-    return (
-      <button
-        type={type}
-        className={cn(buttonVariants({ variant, size }), className)}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
+  // Handle loading state display
+  const content = isLoading && loadingText ? loadingText : children;
+
+  // Determine loading spinner position
+  const showLoadingSpinner = isLoading && (
+    <CircularProgress size={20} color="inherit" sx={{ mx: 1 }} />
+  );
+
+  const startContent = loadingPosition === 'start' && isLoading ? showLoadingSpinner : startIcon;
+
+  const endContent = loadingPosition === 'end' && isLoading ? showLoadingSpinner : endIcon;
+
+  return (
+    <MuiButton
+      ref={ref}
+      startIcon={loadingPosition !== 'center' ? startContent : undefined}
+      endIcon={loadingPosition !== 'center' ? endContent : undefined}
+      disabled={disabled || isLoading}
+      sx={{
+        ...(fixedWidth && { minWidth: '120px' }),
+        ...sx,
+      }}
+      {...rest}
+    >
+      {loadingPosition === 'center' && isLoading ? (
+        <>
+          {showLoadingSpinner}
+          {content}
+        </>
+      ) : (
+        content
+      )}
+    </MuiButton>
+  );
+});
 
 Button.displayName = 'Button';
 
-export { Button, buttonVariants };
+export { Button };

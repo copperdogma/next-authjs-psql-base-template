@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuth } from '@/app/providers/AuthProvider';
+import { Box, Paper, Typography, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 
 export default function DashboardContent() {
   const { user } = useAuth();
@@ -10,54 +12,147 @@ export default function DashboardContent() {
   }
 
   return (
-    <>
-      {/* Example of container query usage - new in Tailwind CSS v4 */}
-      <div className="@container mb-6">
-        <div className="rounded-lg border border-accent bg-background p-6 shadow-xs">
-          <h2 className="mb-4 text-xl font-semibold">Overview</h2>
+    <Stack spacing={4}>
+      {/* Overview Section */}
+      <Paper
+        elevation={1}
+        sx={{
+          p: { xs: 3, sm: 4 },
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 3 }}>
+          Overview
+        </Typography>
 
-          <div className="grid grid-cols-1 gap-4 @md:grid-cols-2 @xl:grid-cols-4">
-            <div className="rounded-lg bg-accent p-4">
-              <h3 className="text-lg font-medium">Metric 1</h3>
-              <p className="text-2xl font-bold">3,721</p>
-            </div>
-            <div className="rounded-lg bg-accent p-4">
-              <h3 className="text-lg font-medium">Metric 2</h3>
-              <p className="text-2xl font-bold">2,519</p>
-            </div>
-            <div className="rounded-lg bg-accent p-4 @md:col-span-2 @xl:col-span-1">
-              <h3 className="text-lg font-medium">Metric 3</h3>
-              <p className="text-2xl font-bold">1,489</p>
-            </div>
-            <div className="rounded-lg bg-accent p-4 @xl:col-span-1">
-              <h3 className="text-lg font-medium">Metric 4</h3>
-              <p className="text-2xl font-bold">968</p>
-            </div>
-          </div>
-          <p className="mt-4 text-muted-foreground">Using @container, @md, and @xl breakpoints.</p>
-        </div>
-      </div>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                bgcolor: 'action.hover',
+                borderRadius: 2,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" component="h3" fontWeight="medium">
+                Metric 1
+              </Typography>
+              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
+                3,721
+              </Typography>
+            </Paper>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                bgcolor: 'action.hover',
+                borderRadius: 2,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" component="h3" fontWeight="medium">
+                Metric 2
+              </Typography>
+              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
+                2,519
+              </Typography>
+            </Paper>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                bgcolor: 'action.hover',
+                borderRadius: 2,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" component="h3" fontWeight="medium">
+                Metric 3
+              </Typography>
+              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
+                1,489
+              </Typography>
+            </Paper>
+          </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                bgcolor: 'action.hover',
+                borderRadius: 2,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" component="h3" fontWeight="medium">
+                Metric 4
+              </Typography>
+              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
+                968
+              </Typography>
+            </Paper>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="rounded-lg border border-accent bg-background p-6 shadow-xs">
-          <h2 className="mb-2 text-xl font-semibold">Welcome</h2>
-          <p className="text-muted-foreground">
-            Hello, {user.displayName || user.email || 'User'}! This is your dashboard placeholder.
-          </p>
-        </div>
-        <div className="rounded-lg border border-accent bg-background p-6 shadow-xs">
-          <h2 className="mb-2 text-xl font-semibold">Statistics</h2>
-          <p className="text-muted-foreground">Your important metrics and data will appear here.</p>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)' } }}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              height: '100%',
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
+              Welcome
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Hello, {user.displayName || user.email || 'User'}! This is your dashboard placeholder.
+            </Typography>
+          </Paper>
+        </Box>
+        <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)' } }}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              height: '100%',
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
+              Statistics
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Your important metrics and data will appear here.
+            </Typography>
+          </Paper>
+        </Box>
+      </Box>
 
-      <div className="mt-6 rounded-lg border border-accent bg-background p-6 shadow-xs">
-        <h2 className="mb-2 text-xl font-semibold">Recent Activity</h2>
-        <p className="text-muted-foreground">
+      <Paper
+        elevation={1}
+        sx={{
+          p: { xs: 3, sm: 4 },
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
+          Recent Activity
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
           Your recent actions and activity will be displayed in this section.
-        </p>
-      </div>
-    </>
+        </Typography>
+      </Paper>
+    </Stack>
   );
 }

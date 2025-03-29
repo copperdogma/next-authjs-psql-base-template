@@ -2,8 +2,10 @@
 
 import { memo } from 'react';
 import { useForm, ValidationFn, FormFieldValue } from '../hooks/useForm';
-import { Input } from '../ui/Input';
+import { Checkbox, FormControlLabel, Alert, Stack } from '@mui/material';
+import { EmailOutlined, LockOutlined } from '@mui/icons-material';
 import { Button } from '../ui/Button';
+import { FormField } from './FormField';
 
 // Make FormValues compatible with Record<string, FormFieldValue>
 interface FormValues extends Record<string, FormFieldValue> {
@@ -38,10 +40,28 @@ const validate: ValidationFn<FormValues> = values => {
 };
 
 interface ExampleFormProps {
+  /**
+   * Function to handle form submission
+   * @param values The form values
+   */
   onSubmit: (values: FormValues) => Promise<void>;
+  /**
+   * Text for the submit button
+   * @default "Submit"
+   */
   submitButtonText?: string;
 }
 
+/**
+ * Example form component demonstrating form implementation with validation
+ *
+ * This component showcases:
+ * - Form state management with custom hooks
+ * - Field validation
+ * - Accessibility features
+ * - Material UI components
+ * - The reusable FormField component
+ */
 const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps) => {
   const { values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit } =
     useForm<FormValues>(initialValues, onSubmit, validate);
@@ -50,71 +70,64 @@ const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps
   const formError = errors.form || '';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
-        </label>
-        <Input
-          id="email"
+    <form onSubmit={handleSubmit} noValidate>
+      <Stack spacing={3}>
+        <FormField
           name="email"
+          label="Email"
           type="email"
           value={values.email}
           onChange={handleChange}
           onBlur={() => handleBlur('email')}
-          className={errors.email && touched.email ? 'border-red-500' : ''}
+          error={errors.email}
+          touched={touched.email}
           placeholder="your@email.com"
-          aria-invalid={Boolean(errors.email && touched.email)}
-          aria-describedby={errors.email && touched.email ? 'email-error' : undefined}
+          startAdornment={<EmailOutlined />}
+          helpText="Enter your email address"
         />
-        {errors.email && touched.email && (
-          <p id="email-error" className="mt-1 text-sm text-red-500">
-            {errors.email}
-          </p>
-        )}
-      </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
-          Password
-        </label>
-        <Input
-          id="password"
+        <FormField
           name="password"
+          label="Password"
           type="password"
           value={values.password}
           onChange={handleChange}
           onBlur={() => handleBlur('password')}
-          className={errors.password && touched.password ? 'border-red-500' : ''}
-          aria-invalid={Boolean(errors.password && touched.password)}
-          aria-describedby={errors.password && touched.password ? 'password-error' : undefined}
+          error={errors.password}
+          touched={touched.password}
+          startAdornment={<LockOutlined />}
+          helpText="Password must be at least 8 characters"
         />
-        {errors.password && touched.password && (
-          <p id="password-error" className="mt-1 text-sm text-red-500">
-            {errors.password}
-          </p>
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              id="rememberMe"
+              name="rememberMe"
+              checked={values.rememberMe}
+              onChange={handleChange}
+              color="primary"
+            />
+          }
+          label="Remember me"
+        />
+
+        {formError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {formError}
+          </Alert>
         )}
-      </div>
 
-      <div className="flex items-center">
-        <input
-          id="rememberMe"
-          name="rememberMe"
-          type="checkbox"
-          checked={values.rememberMe}
-          onChange={handleChange}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-        />
-        <label htmlFor="rememberMe" className="ml-2 block text-sm">
-          Remember me
-        </label>
-      </div>
-
-      {formError && <div className="p-3 bg-red-50 text-red-700 rounded-md">{formError}</div>}
-
-      <Button type="submit" disabled={isSubmitting} className="w-full" data-testid="form-submit">
-        {isSubmitting ? 'Submitting...' : submitButtonText}
-      </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          variant="contained"
+          fullWidth
+          data-testid="form-submit"
+        >
+          {isSubmitting ? 'Submitting...' : submitButtonText}
+        </Button>
+      </Stack>
     </form>
   );
 };

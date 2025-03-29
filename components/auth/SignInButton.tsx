@@ -2,8 +2,8 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '../../app/providers/AuthProvider';
-import { Button } from '../ui/Button';
-import { cn } from '../../lib/utils';
+import { Button, CircularProgress } from '@mui/material';
+import { Google as GoogleIcon } from '@mui/icons-material';
 
 export default function SignInButton() {
   const { signIn, signOut, user, loading } = useAuth();
@@ -39,28 +39,43 @@ export default function SignInButton() {
   // Show loading state when not mounted or while auth is loading
   if (!isMounted || loading) {
     return (
-      <Button disabled data-testid="auth-button-placeholder" size="default">
+      <Button
+        disabled
+        data-testid="auth-button-placeholder"
+        variant="contained"
+        sx={{ minWidth: '160px' }}
+      >
+        <CircularProgress size={20} sx={{ mr: 1, color: 'action.disabled' }} />
         Loading...
       </Button>
     );
   }
 
-  // Generate Google button style based on user state
-  const googleButtonStyles = !user
-    ? 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-700'
-    : '';
-
   // Show the auth button for normal states
   return (
     <Button
       onClick={handleAuth}
-      variant={user ? 'destructive' : 'default'}
-      size="default"
+      color={user ? 'error' : 'primary'}
+      variant="contained"
       data-testid="auth-button"
       data-loading={isLoading ? 'true' : 'false'}
       disabled={isLoading}
-      className={cn('font-medium shadow-sm', googleButtonStyles)}
+      startIcon={!user && !isLoading ? <GoogleIcon /> : undefined}
+      sx={{
+        minWidth: '160px',
+        position: 'relative',
+      }}
     >
+      {isLoading && (
+        <CircularProgress
+          size={20}
+          sx={{
+            position: 'absolute',
+            left: 15,
+            color: 'inherit',
+          }}
+        />
+      )}
       {isLoading
         ? isSigningIn
           ? 'Signing In...'

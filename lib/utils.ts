@@ -1,28 +1,34 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
 /**
- * Combines multiple class values into a single string and resolves Tailwind CSS conflicts.
- *
- * This utility uses clsx to handle conditional classes (objects, arrays, etc.) and
- * tailwind-merge to intelligently resolve conflicting Tailwind classes where later
- * classes take precedence over earlier ones.
+ * Combines multiple class values into a single string.
  *
  * @example
  * // Basic usage
- * cn('text-red-500', 'bg-blue-500')
+ * classNames('foo', 'bar') // => 'foo bar'
  *
  * @example
  * // With conditional classes
- * cn('px-4 py-2', { 'bg-blue-500': isPrimary, 'bg-gray-500': !isPrimary })
+ * classNames('foo', { bar: true, baz: false }) // => 'foo bar'
  *
- * @example
- * // With component variants and props
- * cn(buttonVariants({ variant, size }), className)
- *
- * @param {...ClassValue[]} inputs - Class values to be merged (strings, objects, arrays)
- * @returns {string} A string of merged classes with conflicts resolved
+ * @param {...(string|Record<string, boolean>|null|undefined)[]} classes - Class values to be merged
+ * @returns {string} A string of merged classes
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function classNames(
+  ...classes: (string | Record<string, boolean> | null | undefined)[]
+): string {
+  return classes
+    .filter((cls): cls is string | Record<string, boolean> => cls !== null && cls !== undefined)
+    .map(cls => {
+      if (typeof cls === 'string') {
+        return cls.trim();
+      }
+      return Object.entries(cls)
+        .filter(([_, value]) => value)
+        .map(([key]) => key)
+        .join(' ');
+    })
+    .filter(Boolean)
+    .join(' ');
 }
+
+// Export the classNames function as cn for backward compatibility
+export const cn = classNames;

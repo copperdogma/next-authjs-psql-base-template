@@ -1,254 +1,335 @@
-import { ThemeOptions } from '@mui/material/styles';
+'use client';
 
-// Base theme options that are common across light and dark modes
-const baseThemeOptions: ThemeOptions = {
-  // cssVariables was removed as it's not a valid option in ThemeOptions
+import { createTheme, responsiveFontSizes, ThemeOptions } from '@mui/material/styles';
+import { red, blue, grey, lightBlue } from '@mui/material/colors';
+import { PaletteMode, Theme } from '@mui/material';
+
+/**
+ * Define spacing constants for consistent use throughout the app
+ * These will be referenced in the theme
+ */
+const SPACING_UNIT = 8;
+
+/**
+ * Enhanced color palette with better contrast for accessibility
+ */
+const PALETTE = {
+  light: {
+    primary: {
+      main: blue[700], // Good contrast with white
+      dark: blue[800],
+      light: blue[500],
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#1e88e5',
+      dark: '#0d47a1',
+      light: '#4791db',
+      contrastText: '#ffffff',
+    },
+    error: {
+      main: red[700],
+      dark: red[900],
+      light: red[500],
+      contrastText: '#ffffff',
+    },
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#212121', // Darker for better readability
+      secondary: '#424242', // Darker for better contrast
+    },
+    divider: grey[300],
+    action: {
+      active: 'rgba(0, 0, 0, 0.7)', // Darker for better visibility
+      hover: 'rgba(0, 0, 0, 0.1)',
+      selected: 'rgba(0, 0, 0, 0.15)',
+    },
+  },
+  dark: {
+    primary: {
+      main: lightBlue[300], // Lighter blue for dark mode - better contrast
+      dark: lightBlue[400],
+      light: lightBlue[200],
+      contrastText: '#000000', // Black text on light blue
+    },
+    secondary: {
+      main: '#64b5f6', // Lighter blue for dark mode
+      dark: '#42a5f5',
+      light: '#90caf9',
+      contrastText: '#000000',
+    },
+    error: {
+      main: red[400], // Lighter red for dark mode
+      dark: red[500],
+      light: red[300],
+      contrastText: '#000000',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: '#b0bec5', // Lighter for better visibility on dark backgrounds
+    },
+    divider: grey[700],
+    action: {
+      active: 'rgba(255, 255, 255, 0.7)', // Brighter for better visibility in dark mode
+      hover: 'rgba(255, 255, 255, 0.1)',
+      selected: 'rgba(255, 255, 255, 0.15)',
+    },
+  },
+};
+
+// Create a theme instance for each mode
+const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
+  // Set consistent spacing
+  spacing: SPACING_UNIT,
+
+  palette: {
+    mode,
+    ...(mode === 'light' ? PALETTE.light : PALETTE.dark),
+  },
+
   typography: {
     fontFamily: [
-      'var(--font-roboto)',
-      'system-ui',
       '-apple-system',
       'BlinkMacSystemFont',
-      'Segoe UI',
+      '"Segoe UI"',
       'Roboto',
+      '"Helvetica Neue"',
       'Arial',
       'sans-serif',
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
     ].join(','),
     h1: {
-      fontSize: '2.25rem',
+      fontSize: '2.5rem',
       fontWeight: 700,
       lineHeight: 1.2,
     },
     h2: {
-      fontSize: '1.875rem',
+      fontSize: '2rem',
       fontWeight: 600,
       lineHeight: 1.3,
     },
     h3: {
+      fontSize: '1.75rem',
+      fontWeight: 600,
+      lineHeight: 1.3,
+    },
+    h4: {
       fontSize: '1.5rem',
       fontWeight: 600,
       lineHeight: 1.4,
     },
-    h4: {
+    h5: {
       fontSize: '1.25rem',
       fontWeight: 600,
       lineHeight: 1.4,
-    },
-    h5: {
-      fontSize: '1.125rem',
-      fontWeight: 600,
-      lineHeight: 1.5,
     },
     h6: {
       fontSize: '1rem',
       fontWeight: 600,
       lineHeight: 1.5,
     },
+    subtitle1: {
+      fontSize: '1rem',
+      fontWeight: 400,
+      lineHeight: 1.5,
+    },
+    subtitle2: {
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      lineHeight: 1.57,
+    },
     body1: {
       fontSize: '1rem',
       lineHeight: 1.5,
+      letterSpacing: '0.00938em',
     },
     body2: {
       fontSize: '0.875rem',
-      lineHeight: 1.5,
+      lineHeight: 1.43,
+      letterSpacing: '0.01071em',
     },
     button: {
       textTransform: 'none',
       fontWeight: 500,
+      letterSpacing: '0.02857em',
     },
   },
+
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        ':root': {
-          // Define CSS variables for colors
-          '--primary-50': '#f0f9ff',
-          '--primary-100': '#e0f2fe',
-          '--primary-200': '#bae6fd',
-          '--primary-300': '#7dd3fc',
-          '--primary-400': '#38bdf8',
-          '--primary-500': '#0ea5e9',
-          '--primary-600': '#0284c7',
-          '--primary-700': '#0369a1',
-          '--primary-800': '#075985',
-          '--primary-900': '#0c4a6e',
-          '--primary-950': '#082f49',
-
-          '--gray-50': '#f9fafb',
-          '--gray-100': '#f3f4f6',
-          '--gray-200': '#e5e7eb',
-          '--gray-300': '#d1d5db',
-          '--gray-400': '#9ca3af',
-          '--gray-500': '#6b7280',
-          '--gray-600': '#4b5563',
-          '--gray-700': '#374151',
-          '--gray-800': '#1f2937',
-          '--gray-900': '#111827',
-          '--gray-950': '#030712',
-
-          // Semantic colors
-          '--background': '#ffffff',
-          '--foreground': '#111827',
-          '--muted': '#6b7280',
-          '--muted-foreground': '#9ca3af',
-          '--accent': '#f3f4f6',
-          '--accent-foreground': '#1f2937',
-
-          // Color channels for MUI
-          '--primary-channel': '14 165 233',
-          '--secondary-channel': '156 39 176',
-          '--error-channel': '239 68 68',
-          '--warning-channel': '245 158 11',
-          '--info-channel': '59 130 246',
-          '--success-channel': '16 185 129',
-          '--background-channel': '255 255 255',
-          '--text-channel': '17 24 39',
-        },
-        '.dark': {
-          '--background': '#030712',
-          '--foreground': '#f9fafb',
-          '--muted': '#9ca3af',
-          '--muted-foreground': '#d1d5db',
-          '--accent': '#1f2937',
-          '--accent-foreground': '#f3f4f6',
-          '--background-channel': '3 7 18',
-          '--text-channel': '249 250 251',
+        body: {
+          scrollbarColor: mode === 'dark' ? '#6b6b6b #2b2b2b' : '#959595 #f5f5f5',
+          '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+            width: 8,
+            height: 8,
+            backgroundColor: mode === 'dark' ? '#2b2b2b' : '#f5f5f5',
+          },
+          '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+            borderRadius: 8,
+            backgroundColor: mode === 'dark' ? '#6b6b6b' : '#959595',
+            minHeight: 24,
+          },
+          '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
+            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+          },
+          '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
+            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+          },
+          '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+          },
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none', // Prevents automatic uppercase transformation
-          borderRadius: '0.375rem', // Tailwind's rounded-md
+          borderRadius: 8,
+          padding: '8px 16px',
+          transition: 'all 0.2s',
           fontWeight: 500,
-          boxShadow: 'none',
         },
-        containedPrimary: {
+        contained: ({ theme }: { theme: Theme }) => ({
+          boxShadow: theme.shadows[1],
           '&:hover': {
-            boxShadow: 'none',
+            boxShadow: theme.shadows[2],
+          },
+        }),
+        outlined: {
+          borderWidth: 1.5,
+          '&:hover': {
+            borderWidth: 1.5,
           },
         },
-        outlinedPrimary: {
-          borderWidth: '1px',
-          '&:hover': {
-            borderWidth: '1px',
+        // Improve focus visibility for accessibility
+        sizeMedium: {
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+            outlineOffset: 2,
           },
         },
-      },
-      defaultProps: {
-        disableElevation: true, // Consistent with flat design principles
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: '0.5rem', // Tailwind's rounded-lg
-          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)', // Tailwind's shadow-sm
+          borderRadius: 8,
+        },
+        elevation1: {
+          boxShadow:
+            mode === 'dark' ? '0px 2px 8px rgba(0, 0, 0, 0.5)' : '0px 2px 8px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          boxShadow: theme.shadows[1],
+        }),
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          overflow: 'hidden',
+          boxShadow:
+            mode === 'dark' ? '0px 3px 15px rgba(0, 0, 0, 0.4)' : '0px 3px 15px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          padding: 8,
+          // Improve focus visibility for accessibility
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+            outlineOffset: 2,
+          },
+        },
+      },
+    },
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingBottom: 24,
+          paddingTop: 24,
         },
       },
     },
     MuiTextField: {
       styleOverrides: {
         root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '0.375rem', // Tailwind's rounded-md
+          // Ensure proper text contrast in filled and outlined variants
+          '& .MuiInputBase-input': {
+            color: mode === 'dark' ? PALETTE.dark.text.primary : PALETTE.light.text.primary,
+          },
+          // Improve focus states for accessibility
+          '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderWidth: 2,
           },
         },
       },
-      defaultProps: {
-        variant: 'outlined',
-        fullWidth: true,
-      },
     },
-    MuiOutlinedInput: {
+    MuiFormLabel: {
       styleOverrides: {
         root: {
-          borderRadius: '0.375rem', // Tailwind's rounded-md
-        },
-        input: {
-          padding: '0.75rem 1rem',
+          // Ensure proper label contrast
+          color: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+          '&.Mui-focused': {
+            color: mode === 'dark' ? PALETTE.dark.primary.main : PALETTE.light.primary.main,
+          },
         },
       },
     },
-    MuiFormHelperText: {
+    MuiLink: {
       styleOverrides: {
         root: {
-          marginLeft: '0.25rem',
-          fontSize: '0.75rem',
+          // Improve link visibility
+          color: mode === 'dark' ? PALETTE.dark.primary.main : PALETTE.light.primary.main,
+          textDecoration: 'none',
+          '&:hover': {
+            textDecoration: 'underline',
+          },
+          // Improve focus visibility for accessibility
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+            outlineOffset: 2,
+          },
         },
       },
     },
-    MuiTypography: {
+    MuiDivider: {
       styleOverrides: {
         root: {
-          color: 'var(--foreground)',
-        },
-      },
-    },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          borderRadius: '0.75rem', // Larger rounded corners for dialogs
-          overflow: 'hidden',
-        },
-      },
-    },
-    MuiMenuItem: {
-      styleOverrides: {
-        root: {
-          minHeight: '2.5rem',
-          padding: '0.5rem 1rem',
+          // Improve divider visibility
+          backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
         },
       },
     },
   },
-};
+});
 
-// Create a theme instance that integrates with our Tailwind configuration
-export const theme: ThemeOptions = {
-  ...baseThemeOptions,
-  palette: {
-    // Use direct color values instead of CSS variables to fix channel calculation issues
-    primary: {
-      main: '#0ea5e9', // Tailwind's primary-500 (sky-500)
-      light: '#38bdf8', // Tailwind's primary-400 (sky-400)
-      dark: '#0284c7', // Tailwind's primary-600 (sky-600)
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: '#9c27b0',
-      light: '#ba68c8',
-      dark: '#7b1fa2',
-      contrastText: '#ffffff',
-    },
-    error: {
-      main: '#ef4444', // Tailwind's red-500
-      light: '#f87171', // Tailwind's red-400
-      dark: '#dc2626', // Tailwind's red-600
-    },
-    warning: {
-      main: '#f59e0b', // Tailwind's amber-500
-      light: '#fbbf24', // Tailwind's amber-400
-      dark: '#d97706', // Tailwind's amber-600
-    },
-    info: {
-      main: '#3b82f6', // Tailwind's blue-500
-      light: '#60a5fa', // Tailwind's blue-400
-      dark: '#2563eb', // Tailwind's blue-600
-    },
-    success: {
-      main: '#10b981', // Tailwind's emerald-500
-      light: '#34d399', // Tailwind's emerald-400
-      dark: '#059669', // Tailwind's emerald-600
-    },
-    background: {
-      default: '#ffffff', // Light mode background
-      paper: '#ffffff', // Light mode paper background
-    },
-    text: {
-      primary: '#111827', // Tailwind's gray-900 (foreground)
-      secondary: '#4b5563', // Tailwind's gray-600 (muted)
-    },
-  },
-};
+// Create responsive themes for light and dark modes
+export const lightTheme = responsiveFontSizes(createTheme(getDesignTokens('light')));
+
+export const darkTheme = responsiveFontSizes(createTheme(getDesignTokens('dark')));
+
+// Export the spacing unit for consistent use in custom styles
+export const SPACING = SPACING_UNIT;
+
+// Use a theme provider to switch between light and dark modes

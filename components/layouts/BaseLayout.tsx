@@ -1,190 +1,147 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { cn } from '@/lib/utils';
+import { Home, Dashboard, Person, Info } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Button, Box, Container, useTheme } from '@mui/material';
+import { NavItem } from './NavItems';
+import { MobileNavigation } from './MobileNavigation';
+import { DesktopNavigation } from './DesktopNavigation';
+import { SkipToContent } from './SkipToContent';
 
-interface BaseLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function BaseLayout({ children }: BaseLayoutProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+/**
+ * Base layout component that provides the main application structure
+ *
+ * Features:
+ * - Responsive navigation header with mobile/desktop views
+ * - Main content area
+ * - Footer with links
+ * - Theme toggle
+ * - User profile
+ * - Skip to content link for accessibility
+ */
+export default function BaseLayout({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
-  const pathname = usePathname();
 
-  // Handle client-side mounting
+  // Set mounted state on client side
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Memoized toggle handler
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen(prevState => !prevState);
-  }, []);
-
-  const links = [{ href: '/', label: 'Home' }];
-
-  // Only add authenticated routes if user is logged in
-  if (mounted && user) {
-    links.push({ href: '/dashboard', label: 'Dashboard' }, { href: '/profile', label: 'Profile' });
-  }
+  // Define the navigation links with icons and visibility rules
+  const NAVIGATION_ITEMS: NavItem[] = [
+    {
+      name: 'Home',
+      href: '/',
+      icon: <Home fontSize="small" />,
+    },
+    {
+      name: 'Dashboard',
+      href: '/dashboard',
+      icon: <Dashboard fontSize="small" />,
+      isVisible: () => Boolean(user),
+    },
+    {
+      name: 'Profile',
+      href: '/profile',
+      icon: <Person fontSize="small" />,
+      isVisible: () => Boolean(user),
+    },
+    {
+      name: 'About',
+      href: '/about',
+      icon: <Info fontSize="small" />,
+    },
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <header className="bg-background border-b border-accent sticky top-0 z-10" role="banner">
-        <nav
-          className="container mx-auto px-4 py-4"
-          role="navigation"
-          aria-label="Main navigation"
-          data-testid="navbar"
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold" aria-label="Home page">
-                My App
-              </Link>
-            </div>
+    <Box component="div" sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Skip to content link for accessibility */}
+      <SkipToContent />
 
-            {/* Desktop menu */}
-            <nav
-              className="hidden md:flex space-x-4"
-              data-testid="desktop-menu"
-              aria-label="Desktop navigation"
-            >
-              <ul className="flex space-x-4">
-                {links.map(link => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className={cn(
-                          'px-4 py-2 rounded-md font-medium transition-colors relative',
-                          isActive
-                            ? 'bg-slate-700 text-slate-100 hover:bg-slate-600'
-                            : 'text-foreground hover:bg-accent/50'
-                        )}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+      <AppBar position="sticky" color="default" elevation={1} component="header">
+        <Toolbar>
+          <Typography
+            variant="h1"
+            component={Link}
+            href="/"
+            sx={{
+              fontSize: '1.25rem', // Same size as h6 but semantically correct h1
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              color: 'inherit',
+              flexGrow: 0,
+              mr: 2,
+            }}
+          >
+            {'{{YOUR_APP_NAME}}'}
+          </Typography>
 
-            <div className="flex items-center space-x-2">
-              <ThemeToggle />
-              <UserProfile />
+          {/* Desktop Navigation */}
+          <DesktopNavigation navigationItems={NAVIGATION_ITEMS} isAuthenticated={Boolean(user)} />
 
-              {/* Mobile menu button */}
-              <button
-                type="button"
-                onClick={toggleMenu}
-                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-muted hover:text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary-500 ml-2"
-                aria-expanded={isMenuOpen}
-                aria-controls="mobile-menu"
-                aria-label="Main menu"
-                data-testid="mobile-menu-button"
-              >
-                <span className="sr-only">{isMenuOpen ? 'Close main menu' : 'Open main menu'}</span>
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+          {/* Right-side controls: Theme toggle and User profile */}
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
+            <ThemeToggle />
+            <UserProfile />
+          </Box>
 
-          {/* Mobile menu */}
-          {isMenuOpen && (
-            <div
-              id="mobile-menu"
-              className="md:hidden pt-2 pb-3"
-              role="navigation"
-              aria-label="Mobile navigation"
-              data-testid="mobile-menu"
-            >
-              <ul className="space-y-1">
-                {links.map(link => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className={cn(
-                          'block px-4 py-2 rounded-md text-base font-medium transition-colors relative',
-                          isActive
-                            ? 'bg-slate-700 text-slate-100 hover:bg-slate-600'
-                            : 'text-foreground hover:bg-accent/50'
-                        )}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-        </nav>
-      </header>
+          {/* Mobile Navigation */}
+          <MobileNavigation navigationItems={NAVIGATION_ITEMS} isAuthenticated={Boolean(user)} />
+        </Toolbar>
+      </AppBar>
 
-      <main className="flex-grow container mx-auto px-4 py-6" data-testid="main-content">
+      {/* Main Content */}
+      <Box
+        component="main"
+        id="main-content"
+        aria-label="Main content"
+        tabIndex={-1}
+        sx={{
+          flex: 1,
+          outline: 'none', // Remove focus outline when skipped to
+          p: { xs: 2, sm: 3 }, // Add responsive padding for better spacing
+        }}
+      >
         {children}
-      </main>
+      </Box>
 
-      {/* Footer with copyright information */}
-      <footer role="contentinfo" className="mt-auto py-8 bg-accent">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-foreground">
-              © {new Date().getFullYear()}{' '}
-              {process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_PROJECT_NAME}}'}. All rights reserved.
-            </div>
-            <div className="mt-4 md:mt-0">
-              <nav aria-label="Footer Navigation">
-                <ul className="flex space-x-6">
-                  <li>
-                    <Link href="/privacy" className="text-foreground hover:text-primary-600">
-                      Privacy
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/terms" className="text-foreground hover:text-primary-600">
-                      Terms
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/contact" className="text-foreground hover:text-primary-600">
-                      Contact
-                    </Link>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      {/* Footer */}
+      <Box
+        component="footer"
+        sx={{
+          py: 3,
+          backgroundColor:
+            theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[900],
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center">
+            © {new Date().getFullYear()} {'{{YOUR_COMPANY_NAME}}'} All rights reserved.
+          </Typography>
+          <Box
+            component="nav"
+            aria-label="Footer Navigation"
+            data-testid="footer-navigation"
+            sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}
+          >
+            <Button component={Link} href="/privacy" color="inherit" size="small">
+              Privacy
+            </Button>
+            <Button component={Link} href="/terms" color="inherit" size="small">
+              Terms
+            </Button>
+            <Button component={Link} href="/contact" color="inherit" size="small">
+              Contact
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    </Box>
   );
 }

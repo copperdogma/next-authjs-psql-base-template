@@ -3,8 +3,10 @@
 import { useAuth } from '@/app/providers/AuthProvider';
 import { signOut } from '@firebase/auth';
 import { auth } from '@/lib/firebase';
-import Image from 'next/image';
 import type { Auth } from '@firebase/auth';
+import { Box, Paper, Typography, Button, Avatar, Divider, Stack } from '@mui/material';
+import { LogoutOutlined } from '@mui/icons-material';
+import Image from 'next/image';
 
 export default function ProfileContent() {
   const { user } = useAuth();
@@ -24,55 +26,135 @@ export default function ProfileContent() {
     }
   };
 
+  // Generate initials for the avatar if no photo URL
+  const getInitials = () => {
+    if (user.displayName) {
+      return user.displayName.charAt(0).toUpperCase();
+    } else if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
-    <div className="container mx-auto p-6">
-      <div className="rounded-lg border border-accent bg-background p-8 shadow-sm">
-        <div className="flex flex-col items-center space-y-6 md:flex-row md:items-start md:space-x-8 md:space-y-0">
-          {/* Profile Image */}
-          <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-accent">
+    <Paper
+      elevation={1}
+      sx={{
+        p: { xs: 3, sm: 4 },
+        borderRadius: 2,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: { xs: 4, md: 6 },
+        }}
+      >
+        {/* Profile Image */}
+        <Box
+          sx={{
+            flex: { xs: '1 1 auto', md: '0 0 250px' },
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
             {user.photoURL ? (
-              <Image
-                src={user.photoURL}
-                alt={user.displayName || 'User profile'}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 160px, 160px"
-              />
+              <Box
+                sx={{
+                  width: 180,
+                  height: 180,
+                  mx: 'auto',
+                  mb: 2.5,
+                  position: 'relative',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  boxShadow: 2,
+                }}
+              >
+                <Image
+                  src={user.photoURL}
+                  alt={user.displayName || 'User profile'}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
+              </Box>
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary-500 text-4xl font-bold text-white">
-                {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
-              </div>
+              <Avatar
+                sx={{
+                  width: 180,
+                  height: 180,
+                  mx: 'auto',
+                  mb: 2.5,
+                  fontSize: '4.5rem',
+                  bgcolor: 'primary.main',
+                  boxShadow: 2,
+                }}
+              >
+                {getInitials()}
+              </Avatar>
             )}
-          </div>
+            <Typography variant="h6" gutterBottom>
+              {user.displayName || 'User'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user.emailVerified ? 'Verified Account' : 'Unverified Account'}
+            </Typography>
+          </Box>
+        </Box>
 
-          {/* Profile Information */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Display Name</p>
-              <p className="text-lg font-semibold">{user.displayName || 'Not provided'}</p>
-            </div>
+        {/* Profile Information */}
+        <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 calc(100% - 250px - 48px)' } }}>
+          <Stack spacing={4}>
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Display Name
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 1 }}>
+                {user.displayName || 'Not provided'}
+              </Typography>
+            </Box>
 
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Email</p>
-              <p className="text-lg font-semibold">{user.email}</p>
-            </div>
+            <Divider />
 
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Email Verified</p>
-              <p className="text-lg font-semibold">{user.emailVerified ? 'Yes' : 'No'}</p>
-            </div>
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Email
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 1 }}>
+                {user.email}
+              </Typography>
+            </Box>
 
-            <div className="pt-4">
-              <button
+            <Divider />
+
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Email Verified
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 1 }}>
+                {user.emailVerified ? 'Yes' : 'No'}
+              </Typography>
+            </Box>
+
+            <Divider />
+
+            <Box sx={{ pt: 2 }}>
+              <Button
+                variant="contained"
+                color="error"
                 onClick={handleSignOut}
-                className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                startIcon={<LogoutOutlined />}
+                size="large"
               >
                 Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              </Button>
+            </Box>
+          </Stack>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

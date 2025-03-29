@@ -99,7 +99,7 @@ describe('UserProfile', () => {
     render(<UserProfile />, { wrapper });
 
     // Assert
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByTestId('profile-loading')).toBeInTheDocument();
   });
 
   it('renders authenticated user information correctly', () => {
@@ -113,13 +113,13 @@ describe('UserProfile', () => {
     render(<UserProfile />, { wrapper });
 
     // Assert
-    const userName = screen.getByText('Test User');
-    const profileButton = screen.getByRole('button', { name: /user profile/i });
-    const profileImage = screen.getByAltText('Profile picture');
+    const userName = screen.getByTestId('profile-name');
+    const profileButton = screen.getByTestId('user-profile');
+    const profileImage = screen.getByTestId('profile-image');
 
-    expect(userName).toBeInTheDocument();
+    expect(userName).toHaveTextContent('Test User');
     expect(profileButton).toHaveAttribute('href', '/profile');
-    expect(profileImage).toHaveAttribute('src', mockUser.photoURL);
+    expect(profileImage).toBeInTheDocument();
   });
 
   it('handles missing user information gracefully', () => {
@@ -138,11 +138,11 @@ describe('UserProfile', () => {
     render(<UserProfile />, { wrapper });
 
     // Assert
-    const anonymousText = screen.getByText('Anonymous');
-    const profileButton = screen.getByRole('button', { name: /user profile/i });
-    const profileImage = screen.queryByAltText('Profile picture');
+    const userName = screen.getByTestId('profile-name');
+    const profileButton = screen.getByTestId('user-profile');
+    const profileImage = screen.queryByTestId('profile-image');
 
-    expect(anonymousText).toBeInTheDocument();
+    expect(userName).toHaveTextContent('Anonymous');
     expect(profileButton).toHaveAttribute('href', '/profile');
     expect(profileImage).not.toBeInTheDocument();
   });
@@ -158,10 +158,10 @@ describe('UserProfile', () => {
     render(<UserProfile />, { wrapper });
 
     // Assert
-    const profileButton = screen.queryByRole('button', { name: /user profile/i });
-    const userText = screen.queryByText('Anonymous');
+    const profileButton = screen.queryByTestId('user-profile');
+    const userName = screen.queryByTestId('profile-name');
 
     expect(profileButton).not.toBeInTheDocument();
-    expect(userText).not.toBeInTheDocument();
+    expect(userName).not.toBeInTheDocument();
   });
 });

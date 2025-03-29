@@ -1,132 +1,88 @@
-@import 'tailwindcss';
-
 /* 
- * Tailwind CSS v4 Theme Configuration
- * 
- * Key features and best practices:
- * 1. Use @theme for declaring CSS variables (no nesting beyond properties)
- * 2. Use .dark class for dark mode variables (outside @theme)
- * 3. Use @utility for custom utilities instead of @layer utilities
- * 4. Use @container and @md/@lg/@xl breakpoints for container queries
- * 5. Define theme colors with --color- prefix
- * 6. Use opacity modifiers (bg-black/50) instead of bg-opacity-*
- * 7. Use shrink-* instead of flex-shrink-* 
- * 8. Use text-ellipsis instead of overflow-ellipsis
- * 9. Size class naming updated (shadow-sm → shadow-xs, etc.)
+ * Material UI Global CSS
+ * This file contains minimal global styles, as CssBaseline handles most defaults
  */
 
-@theme {
-  --color-background: #ffffff;
-  --color-foreground: #111827;
-  --color-muted: #4b5563;
-  --color-muted-foreground: #374151;
-  --color-accent: #f3f4f6;
-  --color-accent-foreground: #111827;
-  --color-focus-ring: #2563eb;
-  --color-focus-ring-offset: #ffffff;
-  --font-sans: var(--font-roboto), Arial, sans-serif;
+/* Define global CSS variables and base styles */
+:root {
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
 }
 
-/* Dark mode variables need to be outside the @theme block */
-.dark {
-  --color-background: #0a0a0a;
-  --color-foreground: #f9fafb;
-  --color-muted: #d1d5db;
-  --color-muted-foreground: #e5e7eb;
-  --color-accent: #1f2937;
-  --color-accent-foreground: #f9fafb;
-  --color-focus-ring: #3b82f6;
-  --color-focus-ring-offset: #0a0a0a;
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-@layer base {
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-  }
-
-  /* Enhanced focus styles for better keyboard navigation */
-  :focus {
-    outline: 2px solid var(--color-focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* Remove focus styles for mouse users, but keep them for keyboard navigation */
-  :focus:not(:focus-visible) {
-    outline: none;
-  }
-
-  /* Ensure focus-visible has strong styling */
-  :focus-visible {
-    outline: 2px solid var(--color-focus-ring);
-    outline-offset: 2px;
-    box-shadow:
-      0 0 0 4px var(--color-focus-ring-offset),
-      0 0 0 6px var(--color-focus-ring);
-  }
+/* Support light and dark mode at the document level */
+html[data-mode='light'] {
+  color-scheme: light;
 }
 
-/* Additional contrast-safe utility classes */
-@utility text-muted {
-  color: var(--color-muted);
+html[data-mode='dark'] {
+  color-scheme: dark;
 }
 
-@utility text-high-contrast {
-  color: var(--color-foreground);
+#root,
+.root,
+#__next {
+  isolation: isolate;
+  height: 100%;
 }
 
-@utility text-medium-contrast {
-  color: var(--color-muted-foreground);
+/* Focus outline styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--mui-palette-primary-main);
+  outline-offset: 2px;
 }
 
-@utility bg-accent {
-  background-color: var(--color-accent);
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
 }
 
-@utility text-accent-foreground {
-  color: var(--color-accent-foreground);
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-/* Focus state utility classes */
-@utility focus-ring {
-  &:focus {
-    outline: none;
-  }
-
-  &:focus-visible {
-    outline: none;
-    ring-width: 2px;
-    ring-offset-width: 2px;
-    ring-color: var(--color-focus-ring);
-    ring-offset-color: var(--color-focus-ring-offset);
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-@utility focus-within-ring {
-  &:focus-within {
-    outline: none;
-    ring-width: 2px;
-    ring-offset-width: 2px;
-    ring-color: var(--color-focus-ring);
-    ring-offset-color: var(--color-focus-ring-offset);
+/* Base styles to ensure smooth animations */
+* {
+  transition:
+    background-color var(--transition-normal) ease,
+    border-color var(--transition-normal) ease;
+}
+
+/* Container utility */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 600px) {
+  .container {
+    padding: 0 1.5rem;
   }
 }
 
-/* Container query demonstration for Tailwind CSS v4 */
-@utility container-demo {
-  container-type: inline-size;
-}
-
-@utility container-card {
-  @apply rounded-lg bg-accent p-4;
-
-  /* Container queries using new syntax */
-  @md {
-    @apply p-6;
-  }
-
-  @xl {
-    @apply p-8;
+@media (min-width: 1200px) {
+  .container {
+    padding: 0 2rem;
   }
 }
