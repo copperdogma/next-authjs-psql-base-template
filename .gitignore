@@ -51,6 +51,7 @@ page-content.html
 /docs/references/novel-gcal-events-extractor/
 /docs/references/text-to-cal.com/
 /temp
+/screenshots
 .env.local.example
 .cursor/rules/scratchpad.mdc
 scratchpad.md

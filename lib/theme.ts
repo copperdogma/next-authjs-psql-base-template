@@ -12,6 +12,7 @@ const SPACING_UNIT = 8;
 
 /**
  * Enhanced color palette with better contrast for accessibility
+ * Using separate light and dark mode palettes for optimal contrast ratios
  */
 const PALETTE = {
   light: {
@@ -84,7 +85,12 @@ const PALETTE = {
   },
 };
 
-// Create a theme instance for each mode
+/**
+ * Creates theme tokens based on the specified color mode
+ * 
+ * @param mode - The palette mode ('light' or 'dark')
+ * @returns ThemeOptions object with configured tokens
+ */
 const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
   // Set consistent spacing
   spacing: SPACING_UNIT,
@@ -249,62 +255,36 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
-    MuiIconButton: {
+    MuiCardHeader: {
       styleOverrides: {
         root: {
-          padding: 8,
-          // Improve focus visibility for accessibility
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
-            outlineOffset: 2,
+          padding: 16,
+        },
+      },
+    },
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          padding: 16,
+          '&:last-child': {
+            paddingBottom: 16,
           },
         },
       },
     },
-    MuiContainer: {
+    MuiCardActions: {
       styleOverrides: {
         root: {
-          paddingBottom: 24,
-          paddingTop: 24,
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          // Ensure proper text contrast in filled and outlined variants
-          '& .MuiInputBase-input': {
-            color: mode === 'dark' ? PALETTE.dark.text.primary : PALETTE.light.text.primary,
-          },
-          // Improve focus states for accessibility
-          '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderWidth: 2,
-          },
-        },
-      },
-    },
-    MuiFormLabel: {
-      styleOverrides: {
-        root: {
-          // Ensure proper label contrast
-          color: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-          '&.Mui-focused': {
-            color: mode === 'dark' ? PALETTE.dark.primary.main : PALETTE.light.primary.main,
-          },
+          padding: '8px 16px',
         },
       },
     },
     MuiLink: {
+      defaultProps: {
+        underline: 'hover',
+      },
       styleOverrides: {
         root: {
-          // Improve link visibility
-          color: mode === 'dark' ? PALETTE.dark.primary.main : PALETTE.light.primary.main,
-          textDecoration: 'none',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
-          // Improve focus visibility for accessibility
           '&:focus-visible': {
             outline: '2px solid',
             outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
@@ -313,21 +293,132 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
-    MuiDivider: {
+    MuiTable: {
       styleOverrides: {
         root: {
-          // Improve divider visibility
-          backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+          tableLayout: 'fixed',
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: `1px solid ${mode === 'dark' ? PALETTE.dark.divider : PALETTE.light.divider}`,
+        },
+        head: {
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&:last-child td': {
+            borderBottom: 0,
+          },
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+            outlineOffset: -2,
+          },
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+            outlineOffset: -2,
+          },
+        },
+      },
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          '&.Mui-focused': {
+            outlineOffset: 2,
+          },
         },
       },
     },
   },
 });
 
-// Create responsive themes for light and dark modes
-export const lightTheme = responsiveFontSizes(createTheme(getDesignTokens('light')));
+/**
+ * Create and export a base theme with shared configuration
+ * This theme is not intended to be used directly
+ */
+export const theme = {
+  spacing: SPACING_UNIT,
+  shape: {
+    borderRadius: 8,
+  },
+  shadows: [
+    'none',
+    '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    '0px 4px 8px rgba(0, 0, 0, 0.1)',
+    '0px 8px 16px rgba(0, 0, 0, 0.1)',
+    '0px 12px 24px rgba(0, 0, 0, 0.1)',
+    '0px 16px 32px rgba(0, 0, 0, 0.1)',
+    '0px 20px 40px rgba(0, 0, 0, 0.1)',
+    '0px 24px 48px rgba(0, 0, 0, 0.1)',
+    '0px 28px 56px rgba(0, 0, 0, 0.1)',
+    '0px 32px 64px rgba(0, 0, 0, 0.1)',
+    '0px 36px 72px rgba(0, 0, 0, 0.1)',
+    '0px 40px 80px rgba(0, 0, 0, 0.1)',
+    '0px 44px 88px rgba(0, 0, 0, 0.1)',
+    '0px 48px 96px rgba(0, 0, 0, 0.1)',
+    '0px 52px 104px rgba(0, 0, 0, 0.1)',
+    '0px 56px 112px rgba(0, 0, 0, 0.1)',
+    '0px 60px 120px rgba(0, 0, 0, 0.1)',
+    '0px 64px 128px rgba(0, 0, 0, 0.1)',
+    '0px 68px 136px rgba(0, 0, 0, 0.1)',
+    '0px 72px 144px rgba(0, 0, 0, 0.1)',
+    '0px 76px 152px rgba(0, 0, 0, 0.1)',
+    '0px 80px 160px rgba(0, 0, 0, 0.1)',
+    '0px 84px 168px rgba(0, 0, 0, 0.1)',
+    '0px 88px 176px rgba(0, 0, 0, 0.1)',
+    '0px 92px 184px rgba(0, 0, 0, 0.1)',
+  ],
+  zIndex: {
+    mobileStepper: 1000,
+    speedDial: 1050,
+    appBar: 1100,
+    drawer: 1200,
+    modal: 1300,
+    snackbar: 1400,
+    tooltip: 1500,
+  },
+};
 
+/**
+ * Create and export pre-generated themes for light and dark modes
+ * These themes can be used directly without recreating them on each render
+ */
+export const lightTheme = responsiveFontSizes(createTheme(getDesignTokens('light')));
 export const darkTheme = responsiveFontSizes(createTheme(getDesignTokens('dark')));
+
+/**
+ * Utility function to get a time-based theme
+ * Returns 'dark' during evening/night hours (7PM-7AM) and 'light' during the day
+ * 
+ * @returns 'light' or 'dark' based on the current time
+ */
+export function getTimeBasedTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light'; // Default to light on server
+  
+  const hour = new Date().getHours();
+  return hour >= 19 || hour < 7 ? 'dark' : 'light';
+}
 
 // Export the spacing unit for consistent use in custom styles
 export const SPACING = SPACING_UNIT;

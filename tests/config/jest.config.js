@@ -23,6 +23,9 @@ const customJestConfig = {
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
 
+    // Mock the ThemeProvider for tests
+    '^@/app/providers/ThemeProvider$': '<rootDir>/tests/mocks/app/providers/ThemeProvider.tsx',
+
     // Handle CSS imports (with CSS modules)
     '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
 

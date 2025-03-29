@@ -1,113 +1,147 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+export type Theme = 'dark' | 'light' | 'system';
 
+/**
+ * Properties for the ThemeProvider component
+ * 
+ * @property {ReactNode} children - Child components that will have access to the theme context
+ * @property {Theme} [defaultTheme='system'] - The initial theme to use, defaults to 'system'
+ * @property {string} [storageKey='theme'] - The key used to store theme preference in localStorage
+ */
 type ThemeProviderProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
 };
 
+/**
+ * The state maintained by the ThemeProvider context
+ * 
+ * @property {Theme} theme - The currently selected theme ('dark', 'light', or 'system')
+ * @property {Function} setTheme - Function to update the theme
+ * @property {string} resolvedTheme - The actual theme being applied ('dark' or 'light')
+ */
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  resolvedTheme: 'dark' | 'light';
 };
 
+// Initial context state
 const initialState: ThemeProviderState = {
   theme: 'system',
   setTheme: () => null,
+  resolvedTheme: 'light',
 };
 
+// Create the context
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
-// Helper function to determine theme based on time of day
-const getTimeBasedTheme = (): 'dark' | 'light' => {
-  const hours = new Date().getHours();
-  // Dark theme between 8 PM and 6 AM
-  return hours >= 20 || hours < 6 ? 'dark' : 'light';
-};
+/**
+ * Custom hook to access the theme context
+ * 
+ * @returns {ThemeProviderState} The current theme context state
+ * @throws {Error} If used outside of a ThemeProvider
+ */
+export function useTheme(): ThemeProviderState {
+  const context = useContext(ThemeProviderContext);
 
+  if (context === undefined)
+    throw new Error('useTheme must be used within a ThemeProvider');
+
+  return context;
+}
+
+/**
+ * ThemeProvider component that manages theme state and provides it via context
+ * 
+ * Features:
+ * - Persists theme preference in localStorage
+ * - Supports system preference via media queries
+ * - Handles server/client rendering gracefully
+ * - Provides resolved theme for direct usage
+ * 
+ * @param {ThemeProviderProps} props - Component properties
+ * @returns {JSX.Element} Provider component with theme context
+ */
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-  storageKey = 'ui-theme',
+  storageKey = 'theme',
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('light');
   const [mounted, setMounted] = useState(false);
 
   // Don't do anything on the server
   useEffect(() => {
     setMounted(true);
 
-    // Order of preference:
-    // 1. User saved preference
-    // 2. System preference
-    // 3. Time of day
+    // Get saved theme from localStorage on client side
     const savedTheme = localStorage.getItem(storageKey) as Theme | null;
+    const isFirstLoad = localStorage.getItem('first-theme-load') === null;
 
-    if (savedTheme) {
+    if (isFirstLoad) {
+      // On first load, we want to use system by default
+      localStorage.setItem('first-theme-load', 'false');
+      localStorage.removeItem(storageKey); // Clear any existing theme
+      setTheme('system');
+    } else if (savedTheme) {
       setTheme(savedTheme);
     } else {
-      // Check if system preference is available
-      if (window.matchMedia) {
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          setTheme('system'); // Use system which is dark
-        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-          setTheme('system'); // Use system which is light
-        } else {
-          // If no system preference, use time-based theme
-          setTheme(getTimeBasedTheme());
-        }
-      } else {
-        // If no matchMedia support, fall back to time-based theme
-        setTheme(getTimeBasedTheme());
-      }
+      // Use system theme
+      setTheme('system');
     }
+  }, [storageKey]);
 
-    // Watch for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') {
-        // Force a re-render when system preference changes
-        document.documentElement.setAttribute('data-mode', mediaQuery.matches ? 'dark' : 'light');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [defaultTheme, storageKey, theme]);
-
-  // Set the theme attribute only on the client side to avoid hydration issues
+  // Update the resolved theme and data-mode when theme changes
   useEffect(() => {
     if (!mounted) return;
 
-    const root = window.document.documentElement;
-
-    // Remove the data-mode attribute if it exists
-    root.removeAttribute('data-mode');
-
-    if (theme === 'system') {
-      // System preference - check if available
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.setAttribute('data-mode', 'dark');
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        root.setAttribute('data-mode', 'light');
-      } else {
-        // Fall back to time-based if no system preference
-        root.setAttribute('data-mode', getTimeBasedTheme());
+    // Helper function to determine the actual theme to use
+    const resolveTheme = (): 'dark' | 'light' => {
+      if (theme === 'system') {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        } else if (
+          window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: light)').matches
+        ) {
+          return 'light';
+        } else {
+          return getTimeBasedTheme();
+        }
       }
-    } else {
-      // User explicitly set theme
-      root.setAttribute('data-mode', theme);
+      return theme as 'dark' | 'light';
+    };
+
+    // Apply theme to data-mode attribute and update resolved theme state
+    const newResolvedTheme = resolveTheme();
+    setResolvedTheme(newResolvedTheme);
+    document.documentElement.setAttribute('data-mode', newResolvedTheme);
+
+    // Add listener for system theme changes if using system theme
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        const systemTheme = mediaQuery.matches ? 'dark' : 'light';
+        setResolvedTheme(systemTheme);
+        document.documentElement.setAttribute('data-mode', systemTheme);
+      };
+
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
     }
   }, [theme, mounted]);
 
-  // Only expose theme controls if mounted to avoid hydration issues
+  // Expose both the theme setting and the resolved theme
   const value = {
     theme,
+    resolvedTheme,
     setTheme: (theme: Theme) => {
       if (mounted) {
         localStorage.setItem(storageKey, theme);
@@ -116,6 +150,11 @@ export function ThemeProvider({
     },
   };
 
+  // Avoid hydration mismatch by not rendering anything on the server
+  if (!mounted) {
+    return <>{children}</>;
+  }
+
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
       {children}
@@ -123,12 +162,13 @@ export function ThemeProvider({
   );
 }
 
-export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
-
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-
-  return context;
-};
+/**
+ * Utility function to get a time-based theme
+ * Returns 'dark' during evening/night hours (7PM-7AM) and 'light' during day
+ * 
+ * @returns {'light' | 'dark'} The theme based on current time
+ */
+function getTimeBasedTheme(): 'light' | 'dark' {
+  const hour = new Date().getHours();
+  return hour >= 19 || hour < 7 ? 'dark' : 'light';
+}
