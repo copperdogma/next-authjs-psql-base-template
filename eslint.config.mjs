@@ -29,6 +29,7 @@ export default [
       'tests/e2e/fixtures/auth-fixtures.ts',
       'tests/e2e/fixtures/test-fixtures.ts',
       '**/*.d.ts',
+      'playwright-report/**',
     ],
   },
 
