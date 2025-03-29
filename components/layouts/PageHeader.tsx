@@ -49,12 +49,7 @@ export default function PageHeader({ title, subtitle, action, containerSx }: Pag
           </Typography>
 
           {subtitle && (
-            <Typography 
-              variant="subtitle1" 
-              component="h2" 
-              color="text.secondary" 
-              sx={{ mt: 0.5 }}
-            >
+            <Typography variant="subtitle1" component="h2" color="text.secondary" sx={{ mt: 0.5 }}>
               {subtitle}
             </Typography>
           )}
