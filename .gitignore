@@ -19,6 +19,7 @@
 /test-results
 /tests/reports
 /.swc
+page-content.html
 
 # Playwright test artifacts
 /tests/e2e/screenshots/
