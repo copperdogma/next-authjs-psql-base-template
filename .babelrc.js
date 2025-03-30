@@ -2,7 +2,13 @@ module.exports = api => {
   // This conditional check ensures Babel only runs in test environments
   const isTest = api.env('test');
 
+  // This cache statement ensures the configuration is generated only once per environment
+  api.cache.using(() => process.env.NODE_ENV);
+
   if (isTest) {
+    // Babel configuration for test environment only
+    // This is needed because jest-environment-jsdom requires Babel for JSX transformation
+    // SWC is used for all non-test environments
     return {
       presets: [
         [
@@ -50,8 +56,8 @@ module.exports = api => {
     };
   }
 
-  // Return minimal configuration for non-test environments
-  // This allows SWC to be used for normal development/production
+  // Empty configuration for non-test environments
+  // This ensures SWC is used for development and production
   return {
     presets: [],
   };

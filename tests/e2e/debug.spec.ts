@@ -9,10 +9,14 @@ if (!fs.existsSync(screenshotsDir)) {
   fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
-// Configuration for debug tests
+// Configuration for debug tests - uses same environment variables as main config
+const TEST_PORT = process.env.TEST_PORT || '3001';
+const TEST_BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || `http://127.0.0.1:${TEST_PORT}`;
+
+// Debug configuration
 const DEBUG_CONFIG = {
-  TEST_SERVER_PORT: 3000,
-  TEST_SERVER_URL: 'http://127.0.0.1:3000', // Changed to 127.0.0.1 instead of localhost for better DNS resolution
+  TEST_SERVER_PORT: parseInt(TEST_PORT, 10),
+  TEST_SERVER_URL: TEST_BASE_URL, // Using the same URL configuration as the main Playwright config
   TIMEOUT: 120000, // Increased timeout
   SCREENSHOT_PATH: 'tests/e2e/screenshots/debug-screenshot.png',
   MAX_RETRIES: 3, // Number of retries for resilience

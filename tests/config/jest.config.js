@@ -13,9 +13,6 @@ const customJestConfig = {
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'jsdom',
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
-  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',

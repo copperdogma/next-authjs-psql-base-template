@@ -26,6 +26,12 @@ if (!fs.existsSync(screenshotsDir)) {
   fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
+// Log important configuration values
+console.log('Playwright Test Configuration:');
+console.log(`- Base URL: ${TEST_BASE_URL}`);
+console.log(`- Port: ${TEST_PORT}`);
+console.log(`- Skip Web Server: ${skipWebServer}`);
+
 /**
  * Playwright configuration for {{YOUR_PROJECT_NAME}}
  * @see https://playwright.dev/docs/test-configuration
@@ -132,7 +138,7 @@ export default defineConfig({
   webServer: skipWebServer
     ? undefined
     : {
-        command: `npm run dev -- -p ${TEST_PORT}`,
+        command: `npm run dev -- --port ${TEST_PORT}`,
         url: TEST_BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: TIMEOUT_SERVER,
