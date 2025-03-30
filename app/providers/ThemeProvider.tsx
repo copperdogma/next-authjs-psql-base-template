@@ -6,7 +6,7 @@ export type Theme = 'dark' | 'light' | 'system';
 
 /**
  * Properties for the ThemeProvider component
- * 
+ *
  * @property {ReactNode} children - Child components that will have access to the theme context
  * @property {Theme} [defaultTheme='system'] - The initial theme to use, defaults to 'system'
  * @property {string} [storageKey='theme'] - The key used to store theme preference in localStorage
@@ -19,7 +19,7 @@ type ThemeProviderProps = {
 
 /**
  * The state maintained by the ThemeProvider context
- * 
+ *
  * @property {Theme} theme - The currently selected theme ('dark', 'light', or 'system')
  * @property {Function} setTheme - Function to update the theme
  * @property {string} resolvedTheme - The actual theme being applied ('dark' or 'light')
@@ -42,28 +42,27 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 /**
  * Custom hook to access the theme context
- * 
+ *
  * @returns {ThemeProviderState} The current theme context state
  * @throws {Error} If used outside of a ThemeProvider
  */
 export function useTheme(): ThemeProviderState {
   const context = useContext(ThemeProviderContext);
 
-  if (context === undefined)
-    throw new Error('useTheme must be used within a ThemeProvider');
+  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
 
   return context;
 }
 
 /**
  * ThemeProvider component that manages theme state and provides it via context
- * 
+ *
  * Features:
  * - Persists theme preference in localStorage
  * - Supports system preference via media queries
  * - Handles server/client rendering gracefully
  * - Provides resolved theme for direct usage
- * 
+ *
  * @param {ThemeProviderProps} props - Component properties
  * @returns {JSX.Element} Provider component with theme context
  */
@@ -136,6 +135,9 @@ export function ThemeProvider({
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
+
+    // Return a no-op cleanup function for non-system themes
+    return () => {};
   }, [theme, mounted]);
 
   // Expose both the theme setting and the resolved theme
@@ -165,7 +167,7 @@ export function ThemeProvider({
 /**
  * Utility function to get a time-based theme
  * Returns 'dark' during evening/night hours (7PM-7AM) and 'light' during day
- * 
+ *
  * @returns {'light' | 'dark'} The theme based on current time
  */
 function getTimeBasedTheme(): 'light' | 'dark' {

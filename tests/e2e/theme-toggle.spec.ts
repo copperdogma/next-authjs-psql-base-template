@@ -38,7 +38,7 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
     try {
       const tooltip = await page.waitForSelector('div[role="tooltip"]', { timeout: 1000 });
       return await tooltip.textContent();
-    } catch (e) {
+    } catch {
       return 'No tooltip found';
     }
   }
@@ -203,7 +203,7 @@ test('should show correct icon and tooltip for each theme state', async ({ page 
     try {
       const tooltip = await page.waitForSelector('div[role="tooltip"]', { timeout: 1000 });
       tooltipText = (await tooltip.textContent()) || 'Empty tooltip';
-    } catch (e) {
+    } catch {
       // Tooltip not found
     }
 

@@ -9,7 +9,6 @@ interface DesktopNavigationProps {
    * Array of navigation items to display
    */
   navItems: NavItem[];
-  pathname: string | null;
 }
 
 /**
@@ -17,10 +16,7 @@ interface DesktopNavigationProps {
  *
  * Displays horizontal navigation links in the app bar for desktop view
  */
-export default function DesktopNavigation(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { navItems, pathname }: DesktopNavigationProps
-) {
+export default function DesktopNavigation({ navItems }: DesktopNavigationProps) {
   const { visibleItems, isActive } = useNavigation(navItems);
 
   return (

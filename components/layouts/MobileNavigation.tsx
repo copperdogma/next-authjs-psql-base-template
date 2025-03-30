@@ -10,7 +10,6 @@ interface MobileNavigationProps {
    * Array of navigation items to display
    */
   navItems: NavItem[];
-  pathname: string | null;
 }
 
 /**
@@ -18,10 +17,7 @@ interface MobileNavigationProps {
  *
  * Provides hamburger menu button and slide-out drawer with navigation items
  */
-export default function MobileNavigation(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { navItems, pathname }: MobileNavigationProps
-) {
+export default function MobileNavigation({ navItems }: MobileNavigationProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { visibleItems, isActive } = useNavigation(navItems);
 

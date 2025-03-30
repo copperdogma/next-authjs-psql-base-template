@@ -27,6 +27,7 @@ module.exports = {
   useTheme,
   mockSetTheme,
   mockTheme,
+
   // For components that might need ThemeProvider
   ThemeProvider: ({ children }) => children,
 };

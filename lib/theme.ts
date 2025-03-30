@@ -87,7 +87,7 @@ const PALETTE = {
 
 /**
  * Creates theme tokens based on the specified color mode
- * 
+ *
  * @param mode - The palette mode ('light' or 'dark')
  * @returns ThemeOptions object with configured tokens
  */
@@ -410,12 +410,12 @@ export const darkTheme = responsiveFontSizes(createTheme(getDesignTokens('dark')
 /**
  * Utility function to get a time-based theme
  * Returns 'dark' during evening/night hours (7PM-7AM) and 'light' during the day
- * 
+ *
  * @returns 'light' or 'dark' based on the current time
  */
 export function getTimeBasedTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light'; // Default to light on server
-  
+
   const hour = new Date().getHours();
   return hour >= 19 || hour < 7 ? 'dark' : 'light';
 }

@@ -10,7 +10,7 @@ import { useTheme } from './ThemeProvider';
 
 /**
  * ThemeRegistry component that provides Material UI theming support
- * 
+ *
  * This component:
  * 1. Creates a cache for MUI styles using AppRouterCacheProvider
  * 2. Uses our custom theme provider to get the current theme
@@ -19,7 +19,7 @@ import { useTheme } from './ThemeProvider';
  *
  * Based on the Material UI with Next.js App Router setup:
  * https://github.com/mui/material-ui/tree/master/examples/material-ui-nextjs
- * 
+ *
  * @param {Object} props - Component properties
  * @param {ReactNode} props.children - Child components that will use the Material UI theme
  * @returns {JSX.Element} Themed application with Material UI support

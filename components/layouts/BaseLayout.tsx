@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -26,7 +25,6 @@ import DesktopNavigation from './DesktopNavigation';
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const { user } = useAuth();
-  const pathname = usePathname();
 
   // Define the navigation links with icons and visibility rules
   const NAVIGATION_ITEMS: NavItem[] = [
@@ -79,7 +77,7 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
 
           {/* Desktop Navigation */}
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <DesktopNavigation navItems={NAVIGATION_ITEMS} pathname={pathname} />
+            <DesktopNavigation navItems={NAVIGATION_ITEMS} />
           </Box>
 
           {/* Right-side controls: Theme toggle and User profile */}
@@ -90,7 +88,7 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
 
           {/* Mobile Navigation */}
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <MobileNavigation navItems={NAVIGATION_ITEMS} pathname={pathname} />
+            <MobileNavigation navItems={NAVIGATION_ITEMS} />
           </Box>
         </Toolbar>
       </AppBar>

@@ -33,18 +33,18 @@ export const MenuItem = memo(
           disabled={disabled}
           className={cn(
             'flex items-center gap-2 transition-colors duration-150',
-            danger && 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20',
-            disabled && 'opacity-50 cursor-not-allowed',
+            danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20' : '',
+            disabled ? 'opacity-50 cursor-not-allowed' : '',
             className
           )}
         >
-          {icon && <ListItemIcon className={cn(danger && 'text-red-600')}>{icon}</ListItemIcon>}
+          {icon && <ListItemIcon className={cn(danger ? 'text-red-600' : '')}>{icon}</ListItemIcon>}
           {primary || secondary ? (
             <ListItemText
               primary={primary}
               secondary={secondary}
               primaryTypographyProps={{
-                className: cn(danger && 'text-red-600'),
+                className: cn(danger ? 'text-red-600' : ''),
               }}
             />
           ) : (
