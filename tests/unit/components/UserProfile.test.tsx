@@ -38,7 +38,7 @@ jest.mock('../../../lib/firebase', () => {
   return {
     auth: {
       currentUser: null,
-      onAuthStateChanged: jest.fn((auth, callback) => {
+      onAuthStateChanged: jest.fn((_, callback) => {
         // Simulate initial auth state
         callback(null);
         // Return unsubscribe function

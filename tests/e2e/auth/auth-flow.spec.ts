@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
-import { ROUTES, TEST_CONFIG } from '../../utils/routes';
+import { ROUTES } from '../../utils/routes';
 
 // UI element selectors in a centralized object
 export const UI_ELEMENTS = {
@@ -110,7 +110,7 @@ test.describe('Authentication Flow', () => {
       await page.screenshot({ path: 'tests/e2e/screenshots/auth-home-page.png' });
 
       // Check for auth state in localStorage (our main verification method)
-      const isAuthenticated = await FirebaseAuthUtils.isAuthenticated(page, TEST_CONFIG.FIREBASE);
+      const isAuthenticated = await FirebaseAuthUtils.isAuthenticated(page);
       console.log('Authentication status from localStorage:', isAuthenticated);
 
       // For test success, we primarily rely on localStorage auth state

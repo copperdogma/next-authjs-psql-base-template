@@ -30,7 +30,7 @@ jest.mock('next/headers', () => ({
 // Mock NextResponse
 jest.mock('next/server', () => {
   const originalModule = jest.requireActual('next/server');
-  const jsonMock = jest.fn().mockImplementation((data, options) => {
+  const jsonMock = jest.fn().mockImplementation((_, options) => {
     const response = {
       ...originalModule.NextResponse.json({}, {}),
       cookies: {

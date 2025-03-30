@@ -114,15 +114,23 @@ describe('Query Optimizers', () => {
 
       // Start of day should have time set to 00:00:00
       const startDate = dayFilter.createdAt.gte;
-      expect(startDate.getHours()).toBe(0);
-      expect(startDate.getMinutes()).toBe(0);
-      expect(startDate.getSeconds()).toBe(0);
+      if (startDate) {
+        expect(startDate.getHours()).toBe(0);
+        expect(startDate.getMinutes()).toBe(0);
+        expect(startDate.getSeconds()).toBe(0);
+      } else {
+        fail('startDate should be defined');
+      }
 
       // End of day should have time set to 23:59:59
       const endDate = dayFilter.createdAt.lte;
-      expect(endDate.getHours()).toBe(23);
-      expect(endDate.getMinutes()).toBe(59);
-      expect(endDate.getSeconds()).toBe(59);
+      if (endDate) {
+        expect(endDate.getHours()).toBe(23);
+        expect(endDate.getMinutes()).toBe(59);
+        expect(endDate.getSeconds()).toBe(59);
+      } else {
+        fail('endDate should be defined');
+      }
     });
   });
 

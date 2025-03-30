@@ -119,8 +119,12 @@ describe('Test Utils', () => {
 
     it('mocks useSearchParams correctly', () => {
       const searchParams = useSearchParams();
-      expect(searchParams.get('callbackUrl')).toBe('/dashboard');
-      expect(searchParams.get('nonexistent')).toBeNull();
+      if (searchParams) {
+        expect(searchParams.get('callbackUrl')).toBe('/dashboard');
+        expect(searchParams.get('nonexistent')).toBeNull();
+      } else {
+        fail('searchParams should be defined');
+      }
     });
   });
 

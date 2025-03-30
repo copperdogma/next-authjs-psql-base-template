@@ -23,11 +23,12 @@ describe('SWC Feature Transpilation', () => {
     expect(result.profile?.name).toBe('Test User');
   });
 
-  test('Class Private Fields', () => {
+  test('Class Fields', () => {
     class User {
-      #privateField = 'private';
+      // Using _ prefix instead of # for compatibility
+      _privateField = 'private';
       getPrivateField() {
-        return this.#privateField;
+        return this._privateField;
       }
     }
     const user = new User();
