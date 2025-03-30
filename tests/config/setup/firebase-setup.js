@@ -1,5 +1,4 @@
 // Setup for Firebase testing environment
-process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
 
 // Set test timeout higher for Firebase emulator operations
@@ -28,8 +27,8 @@ jest.setTimeout(15000);
 // Function to check if Firebase emulator is running
 async function isEmulatorRunning() {
   try {
-    // Try to connect to the Firestore emulator UI
-    await axios.get('http://localhost:8080/', { timeout: 1000 });
+    // Try to connect to the Auth emulator UI
+    await axios.get('http://localhost:9099/', { timeout: 1000 });
 
     return true;
   } catch (error) {
@@ -43,19 +42,17 @@ beforeAll(async () => {
 
   if (!emulatorRunning) {
     console.warn('\n⚠️  Firebase emulator is not running!');
-    console.warn('The Firebase security rules tests will be skipped.');
+    console.warn('The Firebase authentication tests will be skipped.');
     console.warn('To run these tests, start the emulator with:');
     console.warn('npm run firebase:emulators\n');
 
     // Skip all tests in this file if emulator is not running
     jest.resetModules();
-    jest.doMock('@firebase/rules-unit-testing', () => {
+    jest.doMock('firebase/auth', () => {
       return {
-        initializeTestEnvironment: jest.fn().mockImplementation(() => {
+        getAuth: jest.fn().mockImplementation(() => {
           throw new Error('Firebase emulator not running');
         }),
-        assertFails: jest.fn(),
-        assertSucceeds: jest.fn(),
       };
     });
   }

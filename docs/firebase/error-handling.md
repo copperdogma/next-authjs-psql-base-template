@@ -36,38 +36,20 @@ This document outlines best practices for handling errors and implementing monit
    }
    ```
 
-2. **Firestore Errors**: Handle database operation errors
-
-   ```typescript
-   try {
-     await db.collection('users').doc(userId).update({ name: 'New Name' });
-   } catch (error) {
-     if (error.code === 'permission-denied') {
-       // Handle permission denied
-     } else if (error.code === 'not-found') {
-       // Handle document not found
-     } else {
-       // Handle other errors
-       console.error('Firestore error:', error);
-     }
-   }
-   ```
-
-3. **Network Error Handling**: Implement offline detection and retry logic
+2. **Network Error Handling**: Implement offline detection and retry logic
 
    ```typescript
    import { onAuthStateChanged } from 'firebase/auth';
-   import { getFirestore, enableNetwork, disableNetwork } from 'firebase/firestore';
 
    // Check if online/offline
    window.addEventListener('online', () => {
-     const db = getFirestore();
-     enableNetwork(db);
+     console.log('Application is online');
+     // Re-enable network operations
    });
 
    window.addEventListener('offline', () => {
-     const db = getFirestore();
-     disableNetwork(db);
+     console.log('Application is offline');
+     // Disable network operations or show offline indicator
    });
    ```
 
@@ -208,7 +190,6 @@ Implement Firebase Crashlytics to track errors in production:
    // lib/firebase.ts - add to client-side initialization
    import { initializeApp } from 'firebase/app';
    import { getAuth } from 'firebase/auth';
-   import { getFirestore } from 'firebase/firestore';
    import { getAnalytics } from 'firebase/analytics';
    import { getPerformance } from 'firebase/performance';
    import { initializeCrashlytics } from 'firebase/crashlytics';
@@ -218,7 +199,6 @@ Implement Firebase Crashlytics to track errors in production:
 
    // Initialize services
    const auth = getAuth(app);
-   const db = getFirestore(app);
    const analytics = getAnalytics(app);
    const performance = getPerformance(app);
    const crashlytics = initializeCrashlytics(app);
@@ -408,16 +388,8 @@ beforeAll(async () => {
   });
 });
 
-test('handles permission denied errors', async () => {
-  // Set up user without permissions
-  const unauthedDb = testEnv.unauthenticatedContext().firestore();
-
-  // Attempt operation that should fail
-  await expect(unauthedDb.collection('restricted').doc('secret').get()).rejects.toThrow(
-    'permission-denied'
-  );
-
-  // Verify error handling in your application
+test('handles authentication errors', async () => {
+  // Test authentication error handling
   // ...
 });
 ```

@@ -12,10 +12,6 @@ declare module 'firebase/auth' {
   // Types are provided by the Firebase npm package
 }
 
-declare module 'firebase/firestore' {
-  // Types are provided by the Firebase npm package
-}
-
 declare module 'firebase/storage' {
   // Types are provided by the Firebase npm package
 }
@@ -29,10 +25,6 @@ declare module 'firebase-admin/app' {
 }
 
 declare module 'firebase-admin/auth' {
-  // Types are provided by the Firebase Admin npm package
-}
-
-declare module 'firebase-admin/firestore' {
   // Types are provided by the Firebase Admin npm package
 }
 

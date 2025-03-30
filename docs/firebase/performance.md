@@ -51,85 +51,6 @@ function FirebaseComponent() {
 }
 ```
 
-## Efficient Firestore Queries
-
-### Use Proper Indexing
-
-1. Create indexes for frequently used queries:
-
-   ```javascript
-   // Example of a compound query that would need an index
-   db.collection('posts').where('authorId', '==', userId).orderBy('createdAt', 'desc').limit(10);
-   ```
-
-2. Add composite indexes for fields queried together:
-   ```javascript
-   // Example Firebase indexes.json
-   {
-     "indexes": [
-       {
-         "collectionGroup": "posts",
-         "queryScope": "COLLECTION",
-         "fields": [
-           { "fieldPath": "authorId", "order": "ASCENDING" },
-           { "fieldPath": "createdAt", "order": "DESCENDING" }
-         ]
-       }
-     ]
-   }
-   ```
-
-### Query Optimization Techniques
-
-1. **Use Limits**: Always limit query results
-
-   ```typescript
-   const query = db.collection('posts').limit(20);
-   ```
-
-2. **Pagination**: Use cursor-based pagination instead of offset
-
-   ```typescript
-   // First query
-   const first = await db.collection('posts').orderBy('createdAt').limit(10).get();
-
-   // Get the last document
-   const lastDoc = first.docs[first.docs.length - 1];
-
-   // Next page query
-   const next = await db
-     .collection('posts')
-     .orderBy('createdAt')
-     .startAfter(lastDoc)
-     .limit(10)
-     .get();
-   ```
-
-3. **Select Specific Fields**: Use select() to retrieve only needed fields
-
-   ```typescript
-   db.collection('users').doc(userId).select(['name', 'email']).get();
-   ```
-
-4. **Hierarchical Data**: Use sub-collections for hierarchical data
-
-   ```typescript
-   // Example structure
-   users / { userId } / posts / { postId };
-   ```
-
-5. **Denormalization**: For frequently accessed data, consider denormalization
-   ```typescript
-   // Example of denormalized data
-   users/{userId} = {
-     name: 'User Name',
-     recentPosts: [
-       { id: 'post1', title: 'Post 1', summary: '...' },
-       { id: 'post2', title: 'Post 2', summary: '...' }
-     ]
-   }
-   ```
-
 ## Cloud Functions Optimization
 
 ### Cold Start Optimization
@@ -174,58 +95,6 @@ function FirebaseComponent() {
        "node": "18"
      }
    }
-   ```
-
-### Function Implementation Best Practices
-
-1. **Batched Operations**: Use batched writes for multiple operations
-
-   ```typescript
-   const batch = db.batch();
-
-   // Add operations to batch
-   batch.set(doc1Ref, data1);
-   batch.update(doc2Ref, data2);
-   batch.delete(doc3Ref);
-
-   // Commit as a single transaction
-   await batch.commit();
-   ```
-
-2. **Transactions**: Use transactions for reads and writes that depend on each other
-
-   ```typescript
-   await db.runTransaction(async transaction => {
-     const docRef = db.collection('counters').doc('likes');
-     const doc = await transaction.get(docRef);
-
-     if (!doc.exists) {
-       transaction.set(docRef, { count: 1 });
-     } else {
-       const newCount = doc.data().count + 1;
-       transaction.update(docRef, { count: newCount });
-     }
-   });
-   ```
-
-3. **Function Composition**: Break functions into smaller, reusable pieces
-
-   ```typescript
-   // Helper function
-   const validateUser = user => {
-     // Validation logic
-   };
-
-   // Main function
-   export const createUser = functions.https.onCall((data, context) => {
-     const validationResult = validateUser(data);
-
-     if (!validationResult.valid) {
-       throw new functions.https.HttpsError('invalid-argument', validationResult.error);
-     }
-
-     // Create user logic
-   });
    ```
 
 ## Monitoring and Metrics
@@ -274,7 +143,6 @@ For faster development and testing:
 
    ```bash
    npm install -g firebase-tools
-   firebase setup:emulators:firestore
    firebase setup:emulators:functions
    ```
 
@@ -284,9 +152,6 @@ For faster development and testing:
    // firebase.json
    {
      "emulators": {
-       "firestore": {
-         "port": 8080
-       },
        "functions": {
          "port": 5001
        },
@@ -304,10 +169,8 @@ For faster development and testing:
    if (process.env.NODE_ENV === 'development') {
      // Connect to emulators
      import { connectAuthEmulator } from 'firebase/auth';
-     import { connectFirestoreEmulator } from 'firebase/firestore';
 
      connectAuthEmulator(auth, 'http://localhost:9099');
-     connectFirestoreEmulator(db, 'localhost', 8080);
    }
    ```
 
