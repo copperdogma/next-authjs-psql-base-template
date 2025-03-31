@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -14,9 +11,7 @@ import PageLayout from '@/components/layouts/PageLayout';
 import { Google as GoogleIcon } from '@mui/icons-material';
 
 export default function HomePage() {
-  const router = useRouter();
   const { data } = useSession();
-  const [loading, setLoading] = useState(false);
 
   // Handle sign in with Google
   const handleSignIn = () => {

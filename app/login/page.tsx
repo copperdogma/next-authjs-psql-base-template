@@ -9,7 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 export default function Login() {
   const router = useRouter();
-  const { data, status } = useSession();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 

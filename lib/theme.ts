@@ -240,14 +240,6 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
-    MuiBox: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'inherit',
-          color: 'inherit',
-        },
-      },
-    },
     MuiAppBar: {
       styleOverrides: {
         root: ({ theme }: { theme: Theme }) => ({

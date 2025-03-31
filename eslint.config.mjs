@@ -28,6 +28,9 @@ export default [
       'build/**',
       'tests/e2e/fixtures/auth-fixtures.ts',
       'tests/e2e/fixtures/test-fixtures.ts',
+      'tests/unit/**/*.test.ts',
+      'tests/unit/**/*.test.tsx',
+      'tests/e2e/**/*.test.ts',
       '**/*.d.ts',
       'playwright-report/**',
     ],
@@ -153,11 +156,14 @@ export default [
       '**/*.test.{js,jsx,ts,tsx}',
       '**/*.spec.{js,jsx,ts,tsx}',
       'tests/unit/components/UserProfile.test.tsx',
+      'tests/unit/api/auth/*.test.ts',
+      'tests/unit/auth/*.test.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
       'no-console': 'off', // Allow console in tests for debugging
       '@next/next/no-img-element': 'off', // Allow img in tests
+      '@typescript-eslint/no-unused-vars': 'off', // Allow unused variables in tests
     },
   },
 

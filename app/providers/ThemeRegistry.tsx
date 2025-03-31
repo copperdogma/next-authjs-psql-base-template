@@ -56,7 +56,6 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
 
   // Debugging in development only
   if (process.env.NODE_ENV === 'development' && mounted) {
-    // eslint-disable-next-line no-console
     console.log('ThemeRegistry:', {
       resolvedTheme,
       initialTheme,

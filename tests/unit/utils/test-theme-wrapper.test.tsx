@@ -25,9 +25,11 @@ describe('ThemeWrapper', () => {
   it('renders children with custom theme value', () => {
     // Arrange
     const customThemeValue = {
-      theme: 'dark',
+      theme: 'dark' as const,
       setTheme: jest.fn(),
-      resolvedTheme: 'dark',
+      resolvedTheme: 'dark' as const,
+      themes: ['light', 'dark', 'system'] as const,
+      systemTheme: 'dark' as const,
     };
 
     // Act

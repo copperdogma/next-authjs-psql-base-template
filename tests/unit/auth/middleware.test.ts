@@ -28,7 +28,7 @@ jest.mock('next/server', () => ({
 }));
 
 // Create a mock middleware function
-const mockAuthMiddlewareFunction = jest.fn(req => NextResponse.next());
+const mockAuthMiddlewareFunction = jest.fn(_req => NextResponse.next());
 
 // Mock the middleware module
 jest.mock('../../../middleware', () => ({

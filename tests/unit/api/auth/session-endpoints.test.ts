@@ -64,7 +64,7 @@ import {
 } from '../../../../tests/mocks/lib/auth/session';
 
 // Create mock route handlers since the original ones might not exist
-const GET = async (req: NextRequest) => {
+const GET = async (_req: NextRequest) => {
   try {
     const userData = await verifySessionCookie('test-session-cookie');
     return NextResponse.json({
@@ -73,7 +73,7 @@ const GET = async (req: NextRequest) => {
         email: userData.email,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ user: null }, { status: 401 });
   }
 };
@@ -91,7 +91,7 @@ const POST = async (req: NextRequest) => {
     });
 
     return response;
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Failed to create session' }, { status: 400 });
   }
 };
