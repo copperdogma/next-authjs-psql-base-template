@@ -14,7 +14,7 @@ describe('Session Management', () => {
 
     it('should configure cookie options correctly for development', () => {
       const originalNodeEnv = process.env.NODE_ENV;
-      // @ts-ignore - allow assignment for testing
+      // @ts-expect-error - allow assignment for testing
       process.env.NODE_ENV = 'development';
 
       const options = getSessionCookieOptions();
@@ -28,13 +28,13 @@ describe('Session Management', () => {
         })
       );
 
-      // @ts-ignore - allow assignment for testing
+      // @ts-expect-error - allow assignment for testing
       process.env.NODE_ENV = originalNodeEnv;
     });
 
     it('should configure cookie options correctly for production', () => {
       const originalNodeEnv = process.env.NODE_ENV;
-      // @ts-ignore - allow assignment for testing
+      // @ts-expect-error - allow assignment for testing
       process.env.NODE_ENV = 'production';
 
       const options = getSessionCookieOptions();
@@ -48,7 +48,7 @@ describe('Session Management', () => {
         })
       );
 
-      // @ts-ignore - allow assignment for testing
+      // @ts-expect-error - allow assignment for testing
       process.env.NODE_ENV = originalNodeEnv;
     });
 
@@ -57,6 +57,54 @@ describe('Session Management', () => {
       const options = getSessionCookieOptions(customMaxAge);
 
       expect(options.maxAge).toBe(customMaxAge);
+    });
+
+    it('should set secure cookie option based on environment', () => {
+      // Test production environment
+      process.env.NODE_ENV = 'production';
+      // @ts-expect-error Mock implementation
+      mockGetCookieOptions.mockReturnValueOnce({
+        httpOnly: true,
+        secure: true,
+        path: '/',
+      });
+
+      const prodOptions = getSessionCookieOptions();
+      expect(prodOptions.secure).toBe(true);
+
+      // Test development environment
+      process.env.NODE_ENV = 'development';
+      // @ts-expect-error Mock implementation
+      mockGetCookieOptions.mockReturnValueOnce({
+        httpOnly: true,
+        secure: false,
+        path: '/',
+      });
+
+      const devOptions = getSessionCookieOptions();
+      expect(devOptions.secure).toBe(false);
+    });
+
+    it('should set correct cookie path', () => {
+      // @ts-expect-error Mock implementation
+      mockGetCookieOptions.mockReturnValueOnce({
+        httpOnly: true,
+        secure: true,
+        path: '/custom-path',
+      });
+
+      const options = getSessionCookieOptions();
+      expect(options.path).toBe('/custom-path');
+    });
+
+    it('should set correct same site option', () => {
+      // @ts-expect-error Mock implementation
+      mockGetCookieOptions.mockReturnValueOnce({
+        httpOnly: true,
+        secure: true,
+        path: '/',
+        sameSite: 'strict',
+      });
     });
   });
 

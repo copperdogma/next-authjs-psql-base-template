@@ -20,13 +20,6 @@ type NextAuthSession = {
   expires: string;
 };
 
-// Helper function to ensure Session compatibility
-function ensureSessionCompatibility(session: NextAuthSession | null): any {
-  if (!session) return null;
-  // Return as-is - the TypeScript types will be satisfied in the actual usage
-  return session;
-}
-
 /**
  * Mock User Factory - Creates consistent mock user objects for tests
  * Still supports Firebase User type for backward compatibility

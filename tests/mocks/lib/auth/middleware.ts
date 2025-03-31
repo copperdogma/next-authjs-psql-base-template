@@ -62,9 +62,19 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
       route => pathname === route || pathname.startsWith(`${route}/`)
     );
 
+    // Check if the route is a public route that doesn't need authentication
+    const isPublicRoute = publicRoutes?.some(
+      route => pathname === route || pathname.startsWith(`${route}/`)
+    );
+
     // Check if accessing login page while authenticated
     if (isAuthenticated && pathname === loginUrl) {
       return NextResponse.redirect(new URL(defaultLoggedInRedirect || '/dashboard', req.url));
+    }
+
+    // Allow access to public routes without authentication
+    if (isPublicRoute) {
+      return NextResponse.next();
     }
 
     // Redirect to login if accessing protected route while not authenticated

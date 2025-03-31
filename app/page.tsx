@@ -1,15 +1,22 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import { useState } from 'react';
+import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { Typography, Box, Paper, Button, Stack } from '@mui/material';
+import { Paper, Stack } from '@mui/material';
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
-import { useSession, signIn } from 'next-auth/react';
 import { Google as GoogleIcon } from '@mui/icons-material';
 
-export default function Home() {
-  const { data: session, status } = useSession();
+export default function HomePage() {
+  const router = useRouter();
+  const { data } = useSession();
+  const [loading, setLoading] = useState(false);
 
   // Handle sign in with Google
   const handleSignIn = () => {
@@ -38,7 +45,7 @@ export default function Home() {
             authentication, database integration, and a clean UI built with Material UI.
           </Typography>
           <Box sx={{ mt: 3 }}>
-            {session ? (
+            {data ? (
               // Show dashboard and profile buttons for authenticated users
               <>
                 <Button

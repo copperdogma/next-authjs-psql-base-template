@@ -7,18 +7,18 @@ import { Button } from '@/components/ui/Button';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import CircularProgress from '@mui/material/CircularProgress';
 
-export default function LoginPage() {
-  const { data: session, status } = useSession();
+export default function Login() {
   const router = useRouter();
+  const { data, status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 
+  // If already authenticated, redirect to home
   useEffect(() => {
-    // Redirect if user is already authenticated
     if (status === 'authenticated') {
-      router.push(callbackUrl);
+      router.push('/');
     }
-  }, [status, router, callbackUrl]);
+  }, [status, router]);
 
   const handleSignIn = (provider: string) => {
     signIn(provider, { callbackUrl });

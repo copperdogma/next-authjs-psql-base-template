@@ -6,9 +6,8 @@ import { ReactElement, ReactNode } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { ROUTES } from './routes';
-import { SessionFixtures, createNextAuthUser, AuthStateFixtures } from './test-fixtures';
+import { SessionFixtures, createNextAuthUser } from './test-fixtures';
 import { TestRenderResult } from './test-types';
-import { act } from '@testing-library/react';
 
 // Manual mocks setup
 // Create empty module mocks first, to be filled in later
