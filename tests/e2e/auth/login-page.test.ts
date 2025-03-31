@@ -13,18 +13,14 @@ test.describe('Login Page Rendering', () => {
 
     // Look for any login-related button instead of specific text
     // This is more resilient to text changes
-    const signInButton = page.locator('button:has-text("Sign")');
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Alternative way to find the button using the Google icon
-    const googleButton = page.locator(
-      'button svg[data-testid="GoogleIcon"], button:has-text("Google")'
-    );
+    // Look for Google icon inside the button
+    const googleIcon = signInButton.locator('svg');
 
-    // Only check for the Google button if we didn't find the Sign button
-    if (!(await signInButton.isVisible())) {
-      await expect(googleButton).toBeVisible({ timeout: 5000 });
-    }
+    // Check if the icon is visible
+    await expect(googleIcon).toBeVisible({ timeout: 5000 });
 
     // Check for "Welcome" heading pattern instead of exact text
     const welcomeHeading = page.getByRole('heading', { name: /welcome/i });
@@ -57,14 +53,12 @@ test.describe('Login Page Rendering', () => {
     await expect(page).toHaveTitle(/.*/, { timeout: 5000 });
 
     // Use more flexible selectors
-    const signInButton = page.locator('button:has-text("Sign")');
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Alternative way to find the button - find any visible button
-    if (!(await signInButton.isVisible())) {
-      const anyButton = page.locator('button:visible');
-      await expect(anyButton).toBeVisible({ timeout: 5000 });
-    }
+    // Check that the button has the Google icon
+    const googleIcon = signInButton.locator('svg');
+    await expect(googleIcon).toBeVisible({ timeout: 5000 });
 
     // Also check for the welcome message with case-insensitive matching
     const welcomeText = page.getByRole('heading', { name: /welcome/i });

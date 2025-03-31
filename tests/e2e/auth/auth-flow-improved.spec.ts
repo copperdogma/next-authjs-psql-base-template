@@ -30,10 +30,7 @@ test.describe('Authentication Flows', () => {
 
     // Look for authentication UI elements - ensure we're on the login page
     // Check for any sign-in button which should definitely be present
-    const signInButton = page
-      .getByRole('button')
-      .filter({ hasText: /sign in|log in|google/i })
-      .first();
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton, 'Sign-in button should be visible on login page').toBeVisible();
 
     // Take a screenshot for documentation
@@ -42,24 +39,16 @@ test.describe('Authentication Flows', () => {
       fullPage: true,
     });
 
-    // Look for Google sign-in button using proper role-based selector
-    const googleButton = page.getByRole('button', { name: /google/i });
+    // Look for Google sign-in button text inside the button
+    const googleButtonText = signInButton.getByText(/google|sign in/i);
 
-    // Check if Google button exists - this is an optional test as implementation may vary
-    const hasGoogleButton = await googleButton.isVisible().catch(() => false);
-    if (hasGoogleButton) {
-      await expect(googleButton, 'Google sign-in button should be visible').toBeVisible();
+    // Check if Google button text exists
+    const hasGoogleText = await googleButtonText.isVisible().catch(() => false);
+    if (hasGoogleText) {
+      await expect(googleButtonText, 'Google sign-in text should be visible').toBeVisible();
     } else {
-      // If no Google button, look for any sign-in button
-      const anySignInButton = page.getByRole('button', { name: /sign in|log in/i });
-      const hasAnyButton = await anySignInButton.isVisible().catch(() => false);
-
-      if (hasAnyButton) {
-        await expect(anySignInButton, 'Sign-in button should be visible').toBeVisible();
-      } else {
-        // Log that no specific button was found - may need to update selectors
-        console.log('No sign-in button found with current selectors - may need updating');
-      }
+      // If no specific text found, at least verify the button itself is there
+      await expect(signInButton, 'Sign-in button should be visible').toBeVisible();
     }
   });
 

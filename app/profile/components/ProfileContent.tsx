@@ -53,6 +53,7 @@ export default function ProfileContent() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'flex-start',
+            pt: { xs: 2, md: 3 },
           }}
         >
           <Box sx={{ textAlign: 'center' }}>
@@ -62,11 +63,11 @@ export default function ProfileContent() {
                   width: 180,
                   height: 180,
                   mx: 'auto',
-                  mb: 2.5,
+                  mb: 3,
                   position: 'relative',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  boxShadow: 2,
+                  boxShadow: 3,
                 }}
               >
                 <Image
@@ -82,10 +83,10 @@ export default function ProfileContent() {
                   width: 180,
                   height: 180,
                   mx: 'auto',
-                  mb: 2.5,
+                  mb: 3,
                   fontSize: '4.5rem',
                   bgcolor: 'primary.main',
-                  boxShadow: 2,
+                  boxShadow: 3,
                 }}
               >
                 {getInitials()}
@@ -94,55 +95,67 @@ export default function ProfileContent() {
             <Typography variant="h6" gutterBottom>
               {user.name || 'User'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {user.email ? 'Verified Account' : 'Unverified Account'}
             </Typography>
           </Box>
         </Box>
 
         {/* Profile Information */}
-        <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 calc(100% - 250px - 48px)' } }}>
+        <Box
+          sx={{
+            flex: { xs: '1 1 auto', md: '0 0 calc(100% - 250px - 48px)' },
+            pt: { xs: 0, md: 3 },
+          }}
+        >
           <Stack spacing={4}>
-            <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Box sx={{ pb: 1 }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ fontWeight: 500, display: 'block', mb: 1 }}
+              >
                 Display Name
               </Typography>
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.name || 'Not provided'}
-              </Typography>
+              <Typography variant="h6">{user.name || 'Not provided'}</Typography>
             </Box>
 
             <Divider />
 
-            <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Box sx={{ py: 1 }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ fontWeight: 500, display: 'block', mb: 1 }}
+              >
                 Email
               </Typography>
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.email || 'Not provided'}
-              </Typography>
+              <Typography variant="h6">{user.email || 'Not provided'}</Typography>
             </Box>
 
             <Divider />
 
-            <Box>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Box sx={{ py: 1 }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ fontWeight: 500, display: 'block', mb: 1 }}
+              >
                 User ID
               </Typography>
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.id || 'Not available'}
-              </Typography>
+              <Typography variant="h6">{user.id || 'Not available'}</Typography>
             </Box>
 
             <Divider />
 
-            <Box sx={{ pt: 2 }}>
+            <Box sx={{ pt: 3, pb: 2 }}>
               <Button
                 variant="contained"
                 color="error"
                 onClick={handleSignOut}
                 startIcon={<LogoutOutlined />}
                 size="large"
+                sx={{ px: 3 }}
               >
                 Sign Out
               </Button>

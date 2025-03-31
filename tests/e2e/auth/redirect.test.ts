@@ -22,10 +22,8 @@ test.describe('Auth Redirection', () => {
     // Take a screenshot of the login page after redirection
     await page.screenshot({ path: 'tests/e2e/screenshots/login-after-redirect.png' });
 
-    // Look for any button that might be a sign-in button (avoid exact text matches)
-    const signInButton = page.locator(
-      'button:has-text("Sign"), button:has-text("Google"), button:has-text("Login")'
-    );
+    // Look for a sign-in button regardless of exact text using data-testid
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
     // Also check for welcome text using a broader match

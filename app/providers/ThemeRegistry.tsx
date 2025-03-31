@@ -41,6 +41,17 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
   // Monitor mounting state to prevent hydration issues
   useEffect(() => {
     setMounted(true);
+    const handleBeforeNavigate = () => {
+      document.documentElement.classList.add('disable-transitions');
+    };
+
+    // Add event listener for beforeunload
+    window.addEventListener('beforeunload', handleBeforeNavigate);
+
+    // Clean up function
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeNavigate);
+    };
   }, []);
 
   // Use the pre-created theme directly based on resolved theme
