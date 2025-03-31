@@ -21,6 +21,7 @@ export async function middleware(request: NextRequest) {
     '/register',
     '/api/health',
     '/', // Assuming home page is public
+    '/about', // Make About page public
   ];
 
   // Check if the current route is public

@@ -45,9 +45,9 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
 
   // Function to check the actual theme applied to the page
   async function getAppliedTheme() {
-    // Check data-mode attribute on HTML element
-    const dataMode = await page.evaluate(() => {
-      return document.documentElement.getAttribute('data-mode');
+    // Check theme class on HTML element (next-themes uses class attribute)
+    const themeClass = await page.evaluate(() => {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     });
 
     // Check background colors for main elements to determine if using dark theme
@@ -64,13 +64,13 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
     // Determine if visually dark theme
     const isVisuallyDark = isDarkColor(colors.bodyBg) || isDarkColor(colors.appBarBg);
 
-    // Log both the attribute and the background color
-    console.log(`Applied theme - data-mode: ${dataMode || 'not set'}`);
+    // Log both the class and the background color
+    console.log(`Applied theme class: ${themeClass}`);
     console.log(`Colors - body: ${colors.bodyBg}, header: ${colors.appBarBg}`);
     console.log(`Is visually dark: ${isVisuallyDark}`);
 
     return {
-      dataMode,
+      themeClass,
       colors,
       isVisuallyDark,
     };
@@ -99,8 +99,17 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
     `Initial icon: ${initialIcon}, Visual theme: ${initialTheme.isVisuallyDark ? 'Dark' : 'Light'}`
   );
 
+  // Close the menu if it's open
+  const menuCount = await page.locator('#theme-menu').count();
+  if (menuCount > 0) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+  }
+
   // Step 2: Click the toggle and take screenshot for first change
   await page.click('[data-testid="theme-toggle"]');
+  await page.waitForSelector('#theme-menu');
+  await page.click('[data-testid="theme-dark"]');
   await page.waitForTimeout(800); // Wait for transitions
   await page.screenshot({ path: 'screenshots/theme-toggle-after-first-click.png' });
   const tooltipAfterFirstClick = await getTooltipContent();
@@ -126,6 +135,8 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
 
   // Step 3: Click the toggle again and take screenshot for second change
   await page.click('[data-testid="theme-toggle"]');
+  await page.waitForSelector('#theme-menu');
+  await page.click('[data-testid="theme-light"]');
   await page.waitForTimeout(800); // Wait for transitions
   await page.screenshot({ path: 'screenshots/theme-toggle-after-second-click.png' });
   const tooltipAfterSecondClick = await getTooltipContent();
@@ -151,6 +162,8 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
 
   // Step 4: Click the toggle one more time and take screenshot for third change
   await page.click('[data-testid="theme-toggle"]');
+  await page.waitForSelector('#theme-menu');
+  await page.click('[data-testid="theme-system"]');
   await page.waitForTimeout(800); // Wait for transitions
   await page.screenshot({ path: 'screenshots/theme-toggle-after-third-click.png' });
   const tooltipAfterThirdClick = await getTooltipContent();
@@ -213,8 +226,8 @@ test('should show correct icon and tooltip for each theme state', async ({ page 
     const hasAutoIcon = (await page.locator('[data-testid="BrightnessAutoIcon"]').count()) > 0;
 
     // Get the actual theme
-    const dataMode = await page.evaluate(() => {
-      return document.documentElement.getAttribute('data-mode');
+    const themeClass = await page.evaluate(() => {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     });
 
     const bgColor = await page.evaluate(() => {
@@ -226,7 +239,7 @@ test('should show correct icon and tooltip for each theme state', async ({ page 
     console.log(`- Has dark icon: ${hasDarkIcon}`);
     console.log(`- Has light icon: ${hasLightIcon}`);
     console.log(`- Has auto icon: ${hasAutoIcon}`);
-    console.log(`- Applied theme (data-mode): ${dataMode || 'not set'}`);
+    console.log(`- Applied theme class: ${themeClass}`);
     console.log(`- Background color: ${bgColor}`);
 
     return {
@@ -234,7 +247,7 @@ test('should show correct icon and tooltip for each theme state', async ({ page 
       hasDarkIcon,
       hasLightIcon,
       hasAutoIcon,
-      dataMode,
+      themeClass,
       bgColor,
     };
   }
@@ -247,41 +260,41 @@ test('should show correct icon and tooltip for each theme state', async ({ page 
 
   // Verify icon matches theme
   if (state1.hasDarkIcon) {
-    expect(state1.dataMode).toBe('dark');
+    expect(state1.themeClass).toBe('dark');
   } else if (state1.hasLightIcon) {
-    expect(state1.dataMode).toBe('light');
+    expect(state1.themeClass).toBe('light');
   }
 
-  // Click once
+  // Close menu if open
+  const menuCount = await page.locator('#theme-menu').count();
+  if (menuCount > 0) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+  }
+
+  // Click once to open the menu
   await page.click('[data-testid="theme-toggle"]');
+  await page.waitForSelector('#theme-menu');
+
+  // Select dark theme
+  await page.click('[data-testid="theme-dark"]');
+  await page.waitForTimeout(1000);
   const state2 = await captureState('state2');
 
-  // Verify icon matches theme
-  if (state2.hasDarkIcon) {
-    expect(state2.dataMode).toBe('dark');
-  } else if (state2.hasLightIcon) {
-    expect(state2.dataMode).toBe('light');
-  }
+  // Verify dark theme is applied
+  expect(state2.themeClass).toBe('dark');
+  expect(state2.hasDarkIcon).toBe(true);
 
-  // Click twice
+  // Click again to open the menu
   await page.click('[data-testid="theme-toggle"]');
+  await page.waitForSelector('#theme-menu');
+
+  // Select light theme
+  await page.click('[data-testid="theme-light"]');
+  await page.waitForTimeout(1000);
   const state3 = await captureState('state3');
 
-  // Verify icon matches theme
-  if (state3.hasDarkIcon) {
-    expect(state3.dataMode).toBe('dark');
-  } else if (state3.hasLightIcon) {
-    expect(state3.dataMode).toBe('light');
-  }
-
-  // Click three times (back to initial state)
-  await page.click('[data-testid="theme-toggle"]');
-  const state4 = await captureState('state4');
-
-  // Verify we're back at the initial state
-  expect(state1.tooltipText).toEqual(state4.tooltipText);
-  expect(state1.hasDarkIcon).toEqual(state4.hasDarkIcon);
-  expect(state1.hasLightIcon).toEqual(state4.hasLightIcon);
-  expect(state1.hasAutoIcon).toEqual(state4.hasAutoIcon);
-  expect(state1.dataMode).toEqual(state4.dataMode);
+  // Verify light theme is applied
+  expect(state3.themeClass).toBe('light');
+  expect(state3.hasLightIcon).toBe(true);
 });

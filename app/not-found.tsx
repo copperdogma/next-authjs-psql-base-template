@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
-import { Typography, Button, Paper } from '@mui/material';
+import { Typography, Button, Paper, useTheme } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
 import React from 'react';
 
@@ -16,7 +16,10 @@ export default function NotFound() {
           my: 4,
           maxWidth: 600,
           mx: 'auto',
+          bgcolor: 'var(--mui-palette-background-paper, (theme) => theme.palette.background.paper)',
+          color: 'var(--mui-palette-text-primary, (theme) => theme.palette.text.primary)',
         }}
+        className="theme-aware-paper"
       >
         <ErrorOutline
           sx={{

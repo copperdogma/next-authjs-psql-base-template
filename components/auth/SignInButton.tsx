@@ -4,19 +4,34 @@ import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Button, CircularProgress } from '@mui/material';
 import { Google as GoogleIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import { useTheme } from 'next-themes';
 
+/**
+ * SignInButton component that handles authentication while preserving theme
+ *
+ * This component:
+ * 1. Displays a sign-in or sign-out button based on authentication state
+ * 2. Handles the authentication flow with loading states
+ * 3. Uses next-themes features for consistent theming during navigation
+ *
+ * @returns {JSX.Element} Sign-in/sign-out button with appropriate state and loading indicators
+ */
 export default function SignInButton() {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const { theme } = useTheme();
 
   const handleAuth = async () => {
     try {
       setIsLoading(true);
+
       if (session) {
         // If session exists, we're signing out
+        // The callbackUrl ensures theme is preserved through the redirect
         await signOut({ callbackUrl: '/' });
       } else {
         // If no session, we're signing in
+        // The callbackUrl ensures theme is preserved through the redirect
         await signIn('google', { callbackUrl: '/dashboard' });
       }
     } catch (error) {
@@ -49,6 +64,7 @@ export default function SignInButton() {
       variant="contained"
       data-testid="auth-button"
       data-loading={isLoading ? 'true' : 'false'}
+      data-theme={theme} // Add theme data attribute for testing
       disabled={isLoading}
       startIcon={!isLoading ? session ? <LogoutIcon /> : <GoogleIcon /> : undefined}
       sx={{

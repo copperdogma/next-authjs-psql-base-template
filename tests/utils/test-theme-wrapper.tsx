@@ -1,14 +1,28 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, createContext } from 'react';
 
-// Mock theme context values
-const defaultThemeContextValue = {
-  theme: 'system',
-  setTheme: jest.fn(),
-  resolvedTheme: 'light',
+// Define the theme context shape that mimics next-themes
+type Theme = 'light' | 'dark' | 'system';
+type ResolvedTheme = 'light' | 'dark';
+
+type ThemeContextValue = {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  resolvedTheme: ResolvedTheme;
+  themes: Theme[];
+  systemTheme: ResolvedTheme;
 };
 
-// Create a mock context
-export const MockThemeContext = React.createContext(defaultThemeContextValue);
+// Create a default theme context value for tests
+const defaultThemeContextValue: ThemeContextValue = {
+  theme: 'system',
+  setTheme: () => {},
+  resolvedTheme: 'light',
+  themes: ['light', 'dark', 'system'],
+  systemTheme: 'light',
+};
+
+// Create a mock theme context
+export const MockThemeContext = createContext<ThemeContextValue>(defaultThemeContextValue);
 
 // Mock useTheme hook
 export const useTheme = jest.fn(() => defaultThemeContextValue);
@@ -19,7 +33,7 @@ export function ThemeWrapper({
   themeValue = defaultThemeContextValue,
 }: {
   children: ReactNode;
-  themeValue?: typeof defaultThemeContextValue;
+  themeValue?: ThemeContextValue;
 }) {
   // Use the provided theme value or default
   const contextValue = themeValue || defaultThemeContextValue;
@@ -31,8 +45,8 @@ export function ThemeWrapper({
 export function renderWithTheme(
   ui: React.ReactElement,
   themeState?: {
-    theme: 'light' | 'dark' | 'system';
-    resolvedTheme?: 'light' | 'dark';
+    theme: Theme;
+    resolvedTheme?: ResolvedTheme;
   }
 ) {
   const setThemeMock = jest.fn();
@@ -41,10 +55,12 @@ export function renderWithTheme(
     (themeState?.theme === 'system' ? 'light' : themeState?.theme) ||
     'light';
 
-  const themeValue = {
+  const themeValue: ThemeContextValue = {
     theme: themeState?.theme || 'system',
     setTheme: setThemeMock,
     resolvedTheme,
+    themes: ['light', 'dark', 'system'],
+    systemTheme: 'light',
   };
 
   return {

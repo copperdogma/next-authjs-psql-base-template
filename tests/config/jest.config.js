@@ -20,8 +20,8 @@ const customJestConfig = {
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
 
-    // Mock the ThemeProvider for tests
-    '^@/app/providers/ThemeProvider$': '<rootDir>/tests/mocks/app/providers/ThemeProvider.tsx',
+    // Mock next-themes for tests
+    '^next-themes$': '<rootDir>/tests/mocks/next-themes.js',
 
     // Mock the removed auth modules
     '^../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',

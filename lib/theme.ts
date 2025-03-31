@@ -231,10 +231,20 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
       styleOverrides: {
         root: {
           borderRadius: 8,
+          backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+          color: mode === 'dark' ? '#ffffff' : '#212121',
         },
         elevation1: {
           boxShadow:
             mode === 'dark' ? '0px 2px 8px rgba(0, 0, 0, 0.5)' : '0px 2px 8px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    MuiBox: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'inherit',
+          color: 'inherit',
         },
       },
     },
@@ -250,6 +260,8 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
         root: {
           borderRadius: 8,
           overflow: 'hidden',
+          backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+          color: mode === 'dark' ? '#ffffff' : '#212121',
           boxShadow:
             mode === 'dark' ? '0px 3px 15px rgba(0, 0, 0, 0.4)' : '0px 3px 15px rgba(0, 0, 0, 0.1)',
         },
