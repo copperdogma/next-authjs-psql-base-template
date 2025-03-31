@@ -1,8 +1,16 @@
 import React from 'react';
-import { screen } from '@testing-library/react';
+import { screen, render } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
 import SignInButton from '../../../components/auth/SignInButton';
-import { AuthTestUtils } from '../../utils/test-fixtures';
+import { useSession, signIn, signOut } from 'next-auth/react';
+
+// Mock the next-auth/react module
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}));
 
 describe('SignInButton Component', () => {
   beforeEach(() => {
@@ -10,20 +18,30 @@ describe('SignInButton Component', () => {
   });
 
   it('displays sign in button when user is not authenticated', () => {
-    // Render with non-authenticated state using our new utility
-    AuthTestUtils.renderWithAuth(<SignInButton />);
+    // Mock the useSession hook to return unauthenticated state
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'unauthenticated',
+    });
+
+    render(<SignInButton />);
 
     const button = screen.getByRole('button', { name: /sign in with google/i });
     expect(button).toBeVisible();
     expect(button).not.toBeDisabled();
   });
 
-  it('displays sign out button when user is authenticated', async () => {
-    // Render with authenticated state using our new utility
-    AuthTestUtils.renderAuthenticated(<SignInButton />, {
-      displayName: 'Test User',
-      uid: '123',
+  it('displays sign out button when user is authenticated', () => {
+    // Mock the useSession hook to return authenticated state
+    (useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: { name: 'Test User', email: 'test@example.com' },
+        expires: '2023-01-01T00:00:00.000Z',
+      },
+      status: 'authenticated',
     });
+
+    render(<SignInButton />);
 
     const button = screen.getByRole('button', { name: /sign out/i });
     expect(button).toBeVisible();
@@ -31,52 +49,63 @@ describe('SignInButton Component', () => {
   });
 
   it('shows loading state when authentication is in progress', () => {
-    // Render with loading state using our new utility
-    AuthTestUtils.renderLoading(<SignInButton />);
+    // Mock the useSession hook to return loading state
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'loading',
+    });
 
-    // Look for button with loading text instead of testId
+    render(<SignInButton />);
+
     const loadingElement = screen.getByText(/loading/i);
     expect(loadingElement).toBeVisible();
 
-    // If we need to test specific attributes of the loading state
     const button = screen.getByTestId('auth-button-placeholder');
     expect(button).toBeDisabled();
   });
 
   it('calls sign in function when clicked in signed out state', async () => {
-    // Render with non-authenticated state using our new utility
-    const { user, mockSignIn } = AuthTestUtils.renderWithAuth(<SignInButton />);
+    // Mock the useSession hook to return unauthenticated state
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'unauthenticated',
+    });
 
-    // Use userEvent to click the button
+    // Set up user event
+    const user = userEvent.setup();
+
+    render(<SignInButton />);
+
+    // Find and click the button
     const button = screen.getByRole('button', { name: /sign in with google/i });
-    // Skip the test if user is null
-    if (!user) return;
-
-    // Assert the user is a UserEvent type that has click method
-    const userEvent = user as { click: (element: HTMLElement) => Promise<void> };
-    await userEvent.click(button);
+    await user.click(button);
 
     // Verify the correct function was called
-    expect(mockSignIn).toHaveBeenCalledTimes(1);
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(signIn).toHaveBeenCalledWith('google', { callbackUrl: '/dashboard' });
   });
 
   it('calls sign out function when clicked in signed in state', async () => {
-    // Render with authenticated state using our new utility
-    const { user, mockSignOut } = AuthTestUtils.renderAuthenticated(<SignInButton />, {
-      displayName: 'Test User',
-      uid: '123',
+    // Mock the useSession hook to return authenticated state
+    (useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: { name: 'Test User', email: 'test@example.com' },
+        expires: '2023-01-01T00:00:00.000Z',
+      },
+      status: 'authenticated',
     });
 
-    // Use userEvent to click the button
-    const button = screen.getByRole('button', { name: /sign out/i });
-    // Skip the test if user is null
-    if (!user) return;
+    // Set up user event
+    const user = userEvent.setup();
 
-    // Assert the user is a UserEvent type that has click method
-    const userEvent = user as { click: (element: HTMLElement) => Promise<void> };
-    await userEvent.click(button);
+    render(<SignInButton />);
+
+    // Find and click the button
+    const button = screen.getByRole('button', { name: /sign out/i });
+    await user.click(button);
 
     // Verify the correct function was called
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith({ callbackUrl: '/' });
   });
 });

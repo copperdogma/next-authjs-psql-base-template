@@ -2,8 +2,7 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ReactNode } from 'react';
 import UserProfile from '../../../components/auth/UserProfile';
-import type { User } from '@firebase/auth';
-import { AuthContext } from '../../../app/providers/AuthProvider';
+import { useSession } from 'next-auth/react';
 import React from 'react';
 
 // Mock Next.js components
@@ -33,86 +32,48 @@ jest.mock('next/link', () => ({
   },
 }));
 
-// Mock Firebase auth
-jest.mock('../../../lib/firebase', () => {
-  return {
-    auth: {
-      currentUser: null,
-      onAuthStateChanged: jest.fn((_, callback) => {
-        // Simulate initial auth state
-        callback(null);
-        // Return unsubscribe function
-        return jest.fn();
-      }),
-    },
-  };
-});
-
-// Mock user data
-const mockUser = {
-  displayName: 'Test User',
-  email: 'test@example.com',
-  uid: 'test-user-id',
-  emailVerified: false,
-  isAnonymous: false,
-  metadata: {},
-  providerData: [],
-  refreshToken: '',
-  tenantId: null,
-  phoneNumber: null,
-  photoURL: 'https://example.com/photo.jpg',
-  providerId: 'google.com',
-  delete: () => Promise.resolve(),
-  getIdToken: jest.fn().mockResolvedValue('mock-id-token'),
-  getIdTokenResult: () =>
-    Promise.resolve({
-      token: '',
-      signInProvider: null,
-      signInSecondFactor: null,
-      expirationTime: '',
-      issuedAtTime: '',
-      authTime: '',
-      claims: {},
-    }),
-  reload: () => Promise.resolve(),
-  toJSON: () => ({}),
-} as unknown as User;
-
-// Define a wrapper component for testing
-const Wrapper = ({ children, value }: { children: ReactNode; value: any }) => (
-  <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-);
+// Mock NextAuth
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(),
+}));
 
 describe('UserProfile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders loading state when component is loading', () => {
-    // Arrange
-    const authState = { user: null, loading: true };
-    const wrapper = (props: { children: ReactNode }) => (
-      <Wrapper value={authState}>{props.children}</Wrapper>
-    );
+  it('renders loading state when authentication is loading', () => {
+    // Mock the useSession hook to return loading state
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'loading',
+    });
 
-    // Act
-    render(<UserProfile />, { wrapper });
+    // Render the component
+    render(<UserProfile />);
 
-    // Assert
+    // Assert loading state is shown
     expect(screen.getByTestId('profile-loading')).toBeInTheDocument();
   });
 
-  it('renders authenticated user information correctly', () => {
-    // Arrange
-    const authState = { user: mockUser, loading: false };
-    const wrapper = (props: { children: ReactNode }) => (
-      <Wrapper value={authState}>{props.children}</Wrapper>
-    );
+  it('renders authenticated user information correctly with image', () => {
+    // Mock the useSession hook to return authenticated state with image
+    (useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: {
+          name: 'Test User',
+          email: 'test@example.com',
+          image: 'https://example.com/photo.jpg',
+        },
+        expires: '2023-01-01T00:00:00.000Z',
+      },
+      status: 'authenticated',
+    });
 
-    // Act
-    render(<UserProfile />, { wrapper });
+    // Render the component
+    render(<UserProfile />);
 
-    // Assert
+    // Assert user information is shown correctly
     const userName = screen.getByTestId('profile-name');
     const profileButton = screen.getByTestId('user-profile');
     const profileImage = screen.getByTestId('profile-image');
@@ -122,42 +83,71 @@ describe('UserProfile', () => {
     expect(profileImage).toBeInTheDocument();
   });
 
-  it('handles missing user information gracefully', () => {
-    // Arrange
-    const userWithoutInfo = {
-      ...mockUser,
-      displayName: null,
-      photoURL: null,
-    } as unknown as User;
-    const authState = { user: userWithoutInfo, loading: false };
-    const wrapper = (props: { children: ReactNode }) => (
-      <Wrapper value={authState}>{props.children}</Wrapper>
-    );
+  it('renders avatar with initials when user has no image', () => {
+    // Mock the useSession hook to return authenticated state without image
+    (useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: {
+          name: 'Test User',
+          email: 'test@example.com',
+          image: null,
+        },
+        expires: '2023-01-01T00:00:00.000Z',
+      },
+      status: 'authenticated',
+    });
 
-    // Act
-    render(<UserProfile />, { wrapper });
+    // Render the component
+    render(<UserProfile />);
 
-    // Assert
+    // Assert avatar with initials is shown
     const userName = screen.getByTestId('profile-name');
     const profileButton = screen.getByTestId('user-profile');
     const profileImage = screen.queryByTestId('profile-image');
+    const avatar = screen.getByText('T'); // Gets the avatar with the initial 'T'
 
-    expect(userName).toHaveTextContent('Anonymous');
+    expect(userName).toHaveTextContent('Test User');
     expect(profileButton).toHaveAttribute('href', '/profile');
     expect(profileImage).not.toBeInTheDocument();
+    expect(avatar).toBeInTheDocument();
+  });
+
+  it('uses email initial when name is not available', () => {
+    // Mock the useSession hook to return authenticated state with only email
+    (useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: {
+          name: null,
+          email: 'test@example.com',
+          image: null,
+        },
+        expires: '2023-01-01T00:00:00.000Z',
+      },
+      status: 'authenticated',
+    });
+
+    // Render the component
+    render(<UserProfile />);
+
+    // Assert avatar with email initial is shown
+    const userName = screen.getByTestId('profile-name');
+    const avatar = screen.getByText('T'); // Gets the avatar with the initial 'T'
+
+    expect(userName).toHaveTextContent('User Profile');
+    expect(avatar).toBeInTheDocument();
   });
 
   it('renders nothing when user is not authenticated', () => {
-    // Arrange
-    const authState = { user: null, loading: false };
-    const wrapper = (props: { children: ReactNode }) => (
-      <Wrapper value={authState}>{props.children}</Wrapper>
-    );
+    // Mock the useSession hook to return unauthenticated state
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'unauthenticated',
+    });
 
-    // Act
-    render(<UserProfile />, { wrapper });
+    // Render the component
+    render(<UserProfile />);
 
-    // Assert
+    // Assert nothing is rendered
     const profileButton = screen.queryByTestId('user-profile');
     const userName = screen.queryByTestId('profile-name');
 

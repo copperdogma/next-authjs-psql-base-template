@@ -3,19 +3,6 @@ import { render, setup } from '../../utils/test-utils';
 import { ROUTES } from '../../utils/routes';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-// Mock the next/navigation module
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn().mockImplementation(() => ({
-    pathname: '/',
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-  })),
-  usePathname: jest.fn().mockImplementation(() => '/'),
-}));
-
 // Simple test component
 const TestComponent = ({
   requiresAuth = false,
@@ -62,16 +49,16 @@ describe('Test Utils', () => {
         push: jest.fn(),
       };
       const { mockRouter } = render(<TestComponent />, { routerConfig: customRouter });
-      expect(mockRouter.push).toBeDefined();
+      expect(mockRouter!.push).toBeDefined();
     });
 
     it('uses default router values', () => {
       const { mockRouter } = render(<TestComponent />);
-      expect(mockRouter.push).toBeDefined();
-      expect(mockRouter.replace).toBeDefined();
-      expect(mockRouter.prefetch).toBeDefined();
-      expect(mockRouter.back).toBeDefined();
-      expect(mockRouter.forward).toBeDefined();
+      expect(mockRouter!.push).toBeDefined();
+      expect(mockRouter!.replace).toBeDefined();
+      expect(mockRouter!.prefetch).toBeDefined();
+      expect(mockRouter!.back).toBeDefined();
+      expect(mockRouter!.forward).toBeDefined();
     });
   });
 
@@ -100,7 +87,7 @@ describe('Test Utils', () => {
       };
       const { user, mockRouter } = setup(<TestComponent />, { routerConfig: customRouter });
       expect(user).toBeDefined();
-      expect(mockRouter.push).toBeDefined();
+      expect(mockRouter!.push).toBeDefined();
     });
   });
 
@@ -161,10 +148,10 @@ describe('Test Utils', () => {
     });
 
     // Test that the router is properly configured
-    expect(mockRouter.pathname).toBe(ROUTES.DASHBOARD);
+    expect(mockRouter!.pathname).toBe(ROUTES.DASHBOARD);
 
     // Verify mock function was properly set up
-    mockRouter.push('/test');
+    mockRouter!.push('/test');
     expect(mockPush).toHaveBeenCalledWith('/test');
   });
 
@@ -179,18 +166,18 @@ describe('Test Utils', () => {
   it('uses default router methods when not specified', () => {
     const { mockRouter } = render(<TestComponent />);
 
-    mockRouter.push('/some-route');
-    mockRouter.replace('/replace-route');
-    mockRouter.back();
-    mockRouter.forward();
-    mockRouter.prefetch('/prefetch-route');
+    mockRouter!.push('/some-route');
+    mockRouter!.replace('/replace-route');
+    mockRouter!.back();
+    mockRouter!.forward();
+    mockRouter!.prefetch('/prefetch-route');
 
     // Just ensuring the functions can be called without errors
-    expect(mockRouter.push).toHaveBeenCalledWith('/some-route');
-    expect(mockRouter.replace).toHaveBeenCalledWith('/replace-route');
-    expect(mockRouter.back).toHaveBeenCalled();
-    expect(mockRouter.forward).toHaveBeenCalled();
-    expect(mockRouter.prefetch).toHaveBeenCalledWith('/prefetch-route');
+    expect(mockRouter!.push).toHaveBeenCalledWith('/some-route');
+    expect(mockRouter!.replace).toHaveBeenCalledWith('/replace-route');
+    expect(mockRouter!.back).toHaveBeenCalled();
+    expect(mockRouter!.forward).toHaveBeenCalled();
+    expect(mockRouter!.prefetch).toHaveBeenCalledWith('/prefetch-route');
   });
 
   it('uses custom pathname when specified', () => {
@@ -204,7 +191,7 @@ describe('Test Utils', () => {
     });
 
     // Verify the pathname was set correctly
-    expect(mockRouter.pathname).toBe(customPathname);
+    expect(mockRouter!.pathname).toBe(customPathname);
   });
 
   it('correctly overrides all router methods', () => {
@@ -221,11 +208,11 @@ describe('Test Utils', () => {
       routerConfig: mockRouterConfig,
     });
 
-    mockRouter.push('/test-push');
-    mockRouter.replace('/test-replace');
-    mockRouter.back();
-    mockRouter.forward();
-    mockRouter.prefetch('/test-prefetch');
+    mockRouter!.push('/test-push');
+    mockRouter!.replace('/test-replace');
+    mockRouter!.back();
+    mockRouter!.forward();
+    mockRouter!.prefetch('/test-prefetch');
 
     expect(mockRouterConfig.push).toHaveBeenCalledWith('/test-push');
     expect(mockRouterConfig.replace).toHaveBeenCalledWith('/test-replace');
@@ -245,7 +232,7 @@ describe('Test Utils', () => {
     });
 
     // Test that the router has the custom push but default pathname
-    mockRouter.push('/partial-test');
+    mockRouter!.push('/partial-test');
     expect(mockPush).toHaveBeenCalledWith('/partial-test');
   });
 });

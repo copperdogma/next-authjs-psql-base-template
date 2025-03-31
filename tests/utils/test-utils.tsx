@@ -1,107 +1,190 @@
-import React from 'react';
-import { render } from '@testing-library/react';
+'use client';
+
+import { render as rtlRender } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ReactElement } from 'react';
-import { AuthContext } from '../../app/providers/AuthProvider';
-import type { User } from '@firebase/auth';
+import { ReactElement, ReactNode } from 'react';
+import { SessionProvider } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import { ROUTES } from './routes';
+import { SessionFixtures, createNextAuthUser, AuthStateFixtures } from './test-fixtures';
+import { TestRenderResult } from './test-types';
+import { act } from '@testing-library/react';
 
-// Define AuthContextType based on the actual context structure
-type AuthContextType = {
-  user: User | null;
-  loading: boolean;
-  isClientSide: boolean;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
-};
+// Manual mocks setup
+// Create empty module mocks first, to be filled in later
+jest.mock('next/navigation', () => ({}));
+jest.mock('next-auth/react', () => ({}));
 
-// Create configurable mock router
-const createMockRouter = (config = {}) => {
-  const defaultConfig = {
-    pathname: ROUTES.HOME,
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-  };
-
-  return {
-    ...defaultConfig,
-    ...config,
-  };
-};
-
-// Use a string literal in the mock to avoid reference issues
-jest.mock('next/navigation', () => {
-  // Using hardcoded string for the mock
-  const mockPathname = '/';
-
-  return {
-    useRouter: jest.fn().mockImplementation(() => createMockRouter()),
-    usePathname: jest.fn().mockImplementation(() => mockPathname),
-    useSearchParams: jest.fn().mockImplementation(() => ({
-      get: jest.fn().mockImplementation(key => (key === 'callbackUrl' ? '/dashboard' : null)),
-    })),
-  };
-});
-
-// Options for custom render function
-interface RenderOptions {
-  authState?: Partial<AuthContextType>;
-  routerConfig?: Partial<ReturnType<typeof createMockRouter>>;
+// Setup options interface
+interface TestOptions {
+  session?: Session | null;
+  routerConfig?: Partial<typeof defaultRouterMock>;
+  authState?: any; // For backward compatibility
 }
 
-// Create a custom render function that includes providers
-function customRender(ui: ReactElement, options: RenderOptions = {}) {
-  const mockSignIn = jest.fn().mockResolvedValue(undefined);
-  const mockSignOut = jest.fn().mockResolvedValue(undefined);
+// Create mock functions
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockBack = jest.fn();
+const mockForward = jest.fn();
+const mockPrefetch = jest.fn();
+const mockSignIn = jest.fn();
+const mockSignOut = jest.fn();
 
-  const defaultAuthState: AuthContextType = {
-    user: null,
-    loading: false,
-    isClientSide: true,
-    signIn: mockSignIn,
-    signOut: mockSignOut,
+// Default router mock for tests
+const defaultRouterMock = {
+  pathname: '/',
+  push: mockPush,
+  replace: mockReplace,
+  back: mockBack,
+  forward: mockForward,
+  prefetch: mockPrefetch,
+};
+
+// Setup the mocks with the functions we created
+const setupMocks = () => {
+  // Setup next/navigation mock
+  const navigationMock = jest.requireMock('next/navigation');
+  navigationMock.useRouter = jest.fn().mockImplementation(() => defaultRouterMock);
+  navigationMock.usePathname = jest.fn().mockImplementation(() => '/');
+
+  const mockParams = new URLSearchParams();
+  mockParams.set('callbackUrl', '/dashboard');
+  navigationMock.useSearchParams = jest.fn().mockImplementation(() => mockParams);
+
+  // Setup next-auth/react mock
+  const nextAuthMock = jest.requireMock('next-auth/react');
+  // Keep the original implementation for everything except what we mock
+  Object.assign(nextAuthMock, jest.requireActual('next-auth/react'));
+  nextAuthMock.signIn = mockSignIn;
+  nextAuthMock.signOut = mockSignOut;
+  // Replace SessionProvider with a simple pass-through to avoid state updates
+  nextAuthMock.SessionProvider = ({
+    children,
+  }: {
+    children: ReactNode;
+    session?: Session | null;
+  }) => children;
+};
+
+// Initialize mocks
+setupMocks();
+
+/**
+ * Default test wrapper for components
+ */
+export function renderWithProviders(ui: ReactElement) {
+  return {
+    user: userEvent.setup(),
+    ...rtlRender(ui),
+  };
+}
+
+/**
+ * Authenticated test wrapper that provides SessionProvider with authenticated user
+ */
+export function renderAuthenticatedComponent(ui: ReactElement) {
+  return {
+    user: userEvent.setup(),
+    ...rtlRender(<SessionProvider session={SessionFixtures.authenticated()}>{ui}</SessionProvider>),
+  };
+}
+
+/**
+ * Test wrapper with unauthenticated user
+ */
+export function renderUnauthenticatedComponent(ui: ReactElement) {
+  return {
+    user: userEvent.setup(),
+    ...rtlRender(<SessionProvider session={null}>{ui}</SessionProvider>),
+  };
+}
+
+/**
+ * Enhanced renderer for test components with NextAuth and router mocking
+ */
+export function render(ui: ReactElement, options: TestOptions = {}): TestRenderResult {
+  // Reset mocks
+  mockSignIn.mockReset();
+  mockSignOut.mockReset();
+  mockPush.mockReset();
+  mockReplace.mockReset();
+  mockBack.mockReset();
+  mockForward.mockReset();
+  mockPrefetch.mockReset();
+
+  // Set up router with custom config or defaults
+  const router = {
+    ...defaultRouterMock,
+    ...options.routerConfig,
   };
 
-  const authState = { ...defaultAuthState, ...options.authState };
+  // Update the router mock implementation
+  jest.requireMock('next/navigation').useRouter.mockImplementation(() => router);
 
-  // Configure router if provided in options
-  if (options.routerConfig) {
-    const mockRouter = createMockRouter(options.routerConfig);
-    jest.requireMock('next/navigation').useRouter.mockImplementation(() => mockRouter);
+  // Simple wrapper to prevent async state updates
+  const Wrapper = ({ children }: { children: ReactNode }) => {
+    return <>{children}</>;
+  };
 
-    // Handle pathname property safely
-    const pathname =
-      options.routerConfig.pathname !== undefined ? options.routerConfig.pathname : ROUTES.HOME;
+  // Prevent React scheduler errors in test environment
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      args[0] &&
+      typeof args[0] === 'string' &&
+      (args[0].includes('port.postMessage') || args[0].includes('act(...)'))
+    ) {
+      return; // Suppress specific test environment errors
+    }
+    originalError(...args);
+  };
 
-    jest.requireMock('next/navigation').usePathname.mockImplementation(() => pathname);
-  }
+  // Render with wrapper
+  const result = rtlRender(ui, { wrapper: Wrapper });
+
+  // Restore console
+  console.error = originalError;
 
   return {
-    ...render(<AuthContext.Provider value={authState}>{ui}</AuthContext.Provider>),
-    // Return the mock router config for test assertions
-    mockRouter: jest.requireMock('next/navigation').useRouter(),
-    // Also return the auth mocks for easy assertions
+    ...result,
+    user: userEvent.setup(),
+    mockRouter: router,
     mockSignIn,
     mockSignOut,
   };
 }
 
 /**
- * Setup function that combines render and userEvent.setup() for modern testing
- * This follows best practices for userEvent v14+
+ * Setup function that combines userEvent setup with render
  */
-function setup(ui: ReactElement, options: RenderOptions = {}) {
-  return {
-    user: userEvent.setup(),
-    ...customRender(ui, options),
-  };
+export function setup(ui: ReactElement, options: TestOptions = {}): TestRenderResult {
+  return render(ui, options);
 }
 
-// Re-export everything
-export * from '@testing-library/react';
+/**
+ * Test utilities for common tasks
+ */
+export const TestUtils = {
+  routes: ROUTES,
+  renderWithProviders,
+  renderAuthenticatedComponent,
+  renderUnauthenticatedComponent,
+  render,
+  setup,
 
-// Override render method
-export { customRender as render, setup };
+  // User data helpers
+  createUser: createNextAuthUser,
+
+  // DOM helpers
+  queryByTestId: (container: HTMLElement, id: string) =>
+    container.querySelector(`[data-testid="${id}"]`),
+  findByTestId: async (container: HTMLElement, id: string) => {
+    const element = container.querySelector(`[data-testid="${id}"]`);
+    if (!element) throw new Error(`Element with data-testid="${id}" not found`);
+    return element;
+  },
+
+  // Timing helpers
+  delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+};

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
-import { useAuth } from '@/app/providers/AuthProvider';
+import { useSession } from 'next-auth/react';
 import { Home, Dashboard, Person, Info } from '@mui/icons-material';
 import { AppBar, Toolbar, Typography, Button, Box, Container, useTheme } from '@mui/material';
 import { NavItem } from './NavItems';
@@ -24,7 +24,8 @@ import DesktopNavigation from './DesktopNavigation';
  */
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   // Define the navigation links with icons and visibility rules
   const NAVIGATION_ITEMS: NavItem[] = [

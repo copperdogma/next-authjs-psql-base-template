@@ -1,15 +1,13 @@
 'use client';
 
-import { useAuth } from '@/app/providers/AuthProvider';
-import { signOut } from '@firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { Auth } from '@firebase/auth';
+import { useSession, signOut } from 'next-auth/react';
 import { Box, Paper, Typography, Button, Avatar, Divider, Stack } from '@mui/material';
 import { LogoutOutlined } from '@mui/icons-material';
 import Image from 'next/image';
 
 export default function ProfileContent() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   if (!user) {
     return null;
@@ -17,10 +15,7 @@ export default function ProfileContent() {
 
   const handleSignOut = async () => {
     try {
-      if ('signOut' in auth) {
-        await signOut(auth as Auth);
-        window.location.href = '/';
-      }
+      await signOut({ callbackUrl: '/' });
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -28,8 +23,8 @@ export default function ProfileContent() {
 
   // Generate initials for the avatar if no photo URL
   const getInitials = () => {
-    if (user.displayName) {
-      return user.displayName.charAt(0).toUpperCase();
+    if (user.name) {
+      return user.name.charAt(0).toUpperCase();
     } else if (user.email) {
       return user.email.charAt(0).toUpperCase();
     }
@@ -61,7 +56,7 @@ export default function ProfileContent() {
           }}
         >
           <Box sx={{ textAlign: 'center' }}>
-            {user.photoURL ? (
+            {user.image ? (
               <Box
                 sx={{
                   width: 180,
@@ -75,8 +70,8 @@ export default function ProfileContent() {
                 }}
               >
                 <Image
-                  src={user.photoURL}
-                  alt={user.displayName || 'User profile'}
+                  src={user.image}
+                  alt={user.name || 'User profile'}
                   fill
                   style={{ objectFit: 'cover' }}
                 />
@@ -97,10 +92,10 @@ export default function ProfileContent() {
               </Avatar>
             )}
             <Typography variant="h6" gutterBottom>
-              {user.displayName || 'User'}
+              {user.name || 'User'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {user.emailVerified ? 'Verified Account' : 'Unverified Account'}
+              {user.email ? 'Verified Account' : 'Unverified Account'}
             </Typography>
           </Box>
         </Box>
@@ -113,7 +108,7 @@ export default function ProfileContent() {
                 Display Name
               </Typography>
               <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.displayName || 'Not provided'}
+                {user.name || 'Not provided'}
               </Typography>
             </Box>
 
@@ -124,7 +119,7 @@ export default function ProfileContent() {
                 Email
               </Typography>
               <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.email}
+                {user.email || 'Not provided'}
               </Typography>
             </Box>
 
@@ -132,10 +127,10 @@ export default function ProfileContent() {
 
             <Box>
               <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Email Verified
+                User ID
               </Typography>
               <Typography variant="h6" sx={{ mt: 1 }}>
-                {user.emailVerified ? 'Yes' : 'No'}
+                {user.id || 'Not available'}
               </Typography>
             </Box>
 

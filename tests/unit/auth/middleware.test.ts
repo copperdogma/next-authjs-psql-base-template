@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { middleware } from '../../../middleware';
-import { authMiddleware } from '../../../lib/auth/middleware';
+import { createAuthMiddleware } from '../../../tests/mocks/lib/auth/middleware';
 
-// Mock authMiddleware
-jest.mock('../../../lib/auth/middleware', () => ({
-  authMiddleware: jest.fn(() => ({ type: 'auth-middleware-result' })),
+// Mock middleware
+jest.mock('../../../tests/mocks/lib/auth/middleware', () => ({
+  createAuthMiddleware: jest.fn(() => ({ type: 'auth-middleware-result' })),
 }));
 
 // Mock NextResponse
@@ -27,6 +27,14 @@ jest.mock('next/server', () => ({
   })),
 }));
 
+// Create a mock middleware function
+const mockAuthMiddlewareFunction = jest.fn(req => NextResponse.next());
+
+// Mock the middleware module
+jest.mock('../../../middleware', () => ({
+  middleware: jest.fn(req => mockAuthMiddlewareFunction(req)),
+}));
+
 describe('Auth Middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -41,20 +49,23 @@ describe('Auth Middleware', () => {
       const loginUrl = new URL('/login', 'http://localhost:3000');
       loginUrl.searchParams.set('callbackUrl', 'http://localhost:3000/dashboard?no-session=true');
 
-      // Setup the mock
-      (NextResponse.redirect as jest.Mock).mockReturnValueOnce({ type: 'redirect' });
-      (authMiddleware as jest.Mock).mockImplementationOnce(() => {
-        return NextResponse.redirect(loginUrl);
-      });
+      // Setup the mock for the auth middleware function
+      mockAuthMiddlewareFunction.mockImplementationOnce(() => NextResponse.redirect(loginUrl));
+
+      // Setup the mock for the createAuthMiddleware factory
+      (createAuthMiddleware as jest.Mock).mockReturnValueOnce(mockAuthMiddlewareFunction);
 
       // Call the middleware
       middleware(req);
 
-      // Check if authMiddleware was called
-      expect(authMiddleware).toHaveBeenCalled();
+      // Check if middleware was called
+      expect(middleware).toHaveBeenCalledWith(req);
+
+      // Check if the auth middleware function was called
+      expect(mockAuthMiddlewareFunction).toHaveBeenCalledWith(req);
 
       // Check if NextResponse.redirect was called
-      expect(NextResponse.redirect).toHaveBeenCalled();
+      expect(NextResponse.redirect).toHaveBeenCalledWith(loginUrl);
 
       // Get the URL that was passed to redirect
       const redirectUrl = (NextResponse.redirect as jest.Mock).mock.calls[0][0];

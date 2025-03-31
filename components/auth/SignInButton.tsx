@@ -1,43 +1,33 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
-import { useAuth } from '../../app/providers/AuthProvider';
+import { useState } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { Button, CircularProgress } from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
+import { Google as GoogleIcon, Logout as LogoutIcon } from '@mui/icons-material';
 
 export default function SignInButton() {
-  const { signIn, signOut, user, loading } = useAuth();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Set mounted state on client side
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const handleAuth = useCallback(async () => {
+  const handleAuth = async () => {
     try {
       setIsLoading(true);
-      if (user) {
-        // If user exists, we're signing out
-        setIsSigningIn(false);
-        await signOut();
+      if (session) {
+        // If session exists, we're signing out
+        await signOut({ callbackUrl: '/' });
       } else {
-        // If no user, we're signing in
-        setIsSigningIn(true);
-        await signIn();
+        // If no session, we're signing in
+        await signIn('google', { callbackUrl: '/dashboard' });
       }
     } catch (error) {
-      // Error handling is done in AuthProvider
       console.error('Auth action failed:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [signIn, signOut, user]);
+  };
 
-  // Show loading state when not mounted or while auth is loading
-  if (!isMounted || loading) {
+  // Show loading state while NextAuth is determining session status
+  if (status === 'loading') {
     return (
       <Button
         disabled
@@ -55,12 +45,12 @@ export default function SignInButton() {
   return (
     <Button
       onClick={handleAuth}
-      color={user ? 'error' : 'primary'}
+      color={session ? 'error' : 'primary'}
       variant="contained"
       data-testid="auth-button"
       data-loading={isLoading ? 'true' : 'false'}
       disabled={isLoading}
-      startIcon={!user && !isLoading ? <GoogleIcon /> : undefined}
+      startIcon={!isLoading ? session ? <LogoutIcon /> : <GoogleIcon /> : undefined}
       sx={{
         minWidth: '160px',
         position: 'relative',
@@ -77,10 +67,10 @@ export default function SignInButton() {
         />
       )}
       {isLoading
-        ? isSigningIn
-          ? 'Signing In...'
-          : 'Signing Out...'
-        : user
+        ? session
+          ? 'Signing Out...'
+          : 'Signing In...'
+        : session
           ? 'Sign Out'
           : 'Sign In with Google'}
     </Button>

@@ -34,6 +34,15 @@ export interface TestRenderResult extends RenderResult {
   user: UserEvent | MockUser | null;
   mockSignIn: jest.Mock;
   mockSignOut: jest.Mock;
+  mockRouter?: {
+    pathname: string;
+    push: jest.Mock;
+    replace: jest.Mock;
+    back: jest.Mock;
+    forward: jest.Mock;
+    prefetch: jest.Mock;
+    [key: string]: any;
+  };
 }
 
 /**

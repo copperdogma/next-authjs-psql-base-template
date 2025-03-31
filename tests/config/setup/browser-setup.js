@@ -50,4 +50,20 @@ window.getComputedStyle = function (element) {
   return computedStyle;
 };
 
+// Add mock for fetch required by NextAuth
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+    headers: new Headers(),
+  })
+);
+
+// Set NextAuth environment variables
+process.env.NEXTAUTH_URL = 'http://localhost:3000';
+process.env.NEXTAUTH_SECRET = 'test-secret';
+process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
+process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
+
 // Add any additional global test setup here

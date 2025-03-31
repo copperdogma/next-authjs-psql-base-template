@@ -1,39 +1,42 @@
 'use client';
 
-import SignInButton from '@/components/auth/SignInButton';
-import { useAuth } from '@/app/providers/AuthProvider';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Google as GoogleIcon } from '@mui/icons-material';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function LoginPage() {
-  const { user, isClientSide } = useAuth();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 
   useEffect(() => {
-    if (isClientSide && user) {
-      // If user is authenticated, redirect to the callback URL or dashboard
-      const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+    // Redirect if user is already authenticated
+    if (status === 'authenticated') {
       router.push(callbackUrl);
     }
-  }, [user, isClientSide, router, searchParams]);
+  }, [status, router, callbackUrl]);
 
-  // Show loading state during server-side rendering
-  if (!isClientSide) {
+  const handleSignIn = (provider: string) => {
+    signIn(provider, { callbackUrl });
+  };
+
+  // Show loading state while session status is resolving
+  if (status === 'loading') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-24">
         <h1 className="mb-8 text-4xl font-bold text-foreground">Welcome</h1>
         <p className="mb-8 text-xl text-foreground">Sign in to access your account</p>
-        <Button data-testid="auth-button-placeholder" disabled>
-          Loading...
-        </Button>
+        <CircularProgress />
       </div>
     );
   }
 
-  // Don't show login page if user is already authenticated
-  if (user) {
+  // Don't render login form if already authenticated
+  if (status === 'authenticated') {
     return null;
   }
 
@@ -41,7 +44,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
       <h1 className="mb-8 text-4xl font-bold text-foreground">Welcome</h1>
       <p className="mb-8 text-xl text-foreground">Sign in to access your account</p>
-      <SignInButton />
+      <Button
+        onClick={() => handleSignIn('google')}
+        variant="contained"
+        startIcon={<GoogleIcon />}
+        data-testid="google-signin-button"
+      >
+        Sign in with Google
+      </Button>
     </div>
   );
 }

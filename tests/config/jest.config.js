@@ -23,6 +23,13 @@ const customJestConfig = {
     // Mock the ThemeProvider for tests
     '^@/app/providers/ThemeProvider$': '<rootDir>/tests/mocks/app/providers/ThemeProvider.tsx',
 
+    // Mock the removed auth modules
+    '^../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
+    '^../../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
+    '^../../../lib/auth/token$': '<rootDir>/tests/mocks/lib/auth/token.ts',
+    '^../../../lib/auth/token-refresh$': '<rootDir>/tests/mocks/lib/auth/token-refresh.ts',
+    '^../../../lib/auth/middleware$': '<rootDir>/tests/mocks/lib/auth/middleware.ts',
+
     // Handle CSS imports (with CSS modules)
     '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
 

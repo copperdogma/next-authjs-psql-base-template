@@ -1,11 +1,12 @@
 'use client';
 
-import { useAuth } from '@/app/providers/AuthProvider';
+import { useSession } from 'next-auth/react';
 import { Box, Paper, Typography, Stack } from '@mui/material';
 import React from 'react';
 
 export default function DashboardContent() {
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   if (!user) {
     return null;
@@ -116,7 +117,7 @@ export default function DashboardContent() {
               Welcome
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Hello, {user.displayName || user.email || 'User'}! This is your dashboard placeholder.
+              Hello, {user.name || user.email || 'User'}! This is your dashboard placeholder.
             </Typography>
           </Paper>
         </Box>

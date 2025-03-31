@@ -1,33 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { Typography, Box, Paper, Button, Stack } from '@mui/material';
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
-import { useAuth } from '@/app/providers/AuthProvider';
-
-// Use dynamic import for components that might not be needed immediately
-const SignInButton = React.lazy(() => import('@/components/auth/SignInButton'));
+import { useSession, signIn } from 'next-auth/react';
+import { Google as GoogleIcon } from '@mui/icons-material';
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
-  const { user } = useAuth();
+  const { data: session, status } = useSession();
 
-  // Set mounted state on client side
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Don't render anything until mounted to prevent hydration issues
-  if (!mounted) {
-    return null;
-  }
+  // Handle sign in with Google
+  const handleSignIn = () => {
+    signIn('google', { callbackUrl: '/dashboard' });
+  };
 
   return (
     <PageLayout
       title="Welcome to Next.js Template"
-      subtitle="A starter template with Next.js, Firebase Auth and PostgreSQL"
+      subtitle="A starter template with Next.js, NextAuth.js and PostgreSQL"
     >
       <Stack spacing={4}>
         <Paper
@@ -46,7 +38,7 @@ export default function Home() {
             authentication, database integration, and a clean UI built with Material UI.
           </Typography>
           <Box sx={{ mt: 3 }}>
-            {user ? (
+            {session ? (
               // Show dashboard and profile buttons for authenticated users
               <>
                 <Button
@@ -79,15 +71,14 @@ export default function Home() {
                   </Box>
                 }
               >
-                <Suspense
-                  fallback={
-                    <Button variant="contained" disabled>
-                      Loading...
-                    </Button>
-                  }
+                <Button
+                  onClick={handleSignIn}
+                  variant="contained"
+                  size="large"
+                  startIcon={<GoogleIcon />}
                 >
-                  <SignInButton />
-                </Suspense>
+                  Sign in with Google
+                </Button>
               </ErrorBoundary>
             )}
           </Box>
@@ -122,7 +113,7 @@ export default function Home() {
               }}
             >
               <Typography variant="h6" component="h3" gutterBottom sx={{ mb: 2 }}>
-                Firebase Authentication
+                NextAuth.js
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Secure user authentication with Google sign-in and session management built in.

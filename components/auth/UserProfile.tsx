@@ -1,25 +1,20 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../app/providers/AuthProvider';
+import { useSession } from 'next-auth/react';
 import { Avatar, Box, Skeleton, Tooltip, IconButton } from '@mui/material';
 import { AccountCircle } from '@mui/icons-material';
 
 const UserProfile = () => {
-  const { user, loading } = useAuth();
-  const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
+  const user = session?.user;
 
-  // Handle client-side mounting to prevent hydration errors
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Show loading skeleton during server rendering or loading
-  if (!mounted || loading) {
+  // Show loading skeleton during loading or initial mount
+  if (status === 'loading') {
     return (
       <Box data-testid="profile-loading" sx={{ display: 'inline-flex', mx: 1 }}>
-        <Skeleton variant="circular" width={32} height={32} />
+        <Skeleton variant="circular" width={36} height={36} />
       </Box>
     );
   }
@@ -29,8 +24,16 @@ const UserProfile = () => {
     return null;
   }
 
+  // Determine initials or use AccountCircle icon
+  const getInitials = () => {
+    if (user.name) return user.name.charAt(0).toUpperCase();
+    if (user.email) return user.email.charAt(0).toUpperCase();
+    return null; // Will fall back to icon
+  };
+  const userInitials = getInitials();
+
   return (
-    <Tooltip title="Profile">
+    <Tooltip title="Profile" placement="bottom">
       <IconButton
         component={Link}
         href="/profile"
@@ -38,10 +41,10 @@ const UserProfile = () => {
         data-testid="user-profile"
         sx={{ p: 0, ml: 1 }}
       >
-        {user.photoURL ? (
+        {user.image ? (
           <Avatar
-            alt={user.displayName || 'User profile'}
-            src={user.photoURL}
+            alt={user.name || 'User profile'}
+            src={user.image}
             sx={{ width: 36, height: 36 }}
             imgProps={{
               referrerPolicy: 'no-referrer',
@@ -51,13 +54,7 @@ const UserProfile = () => {
           />
         ) : (
           <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
-            {user.displayName ? (
-              user.displayName.charAt(0).toUpperCase()
-            ) : user.email ? (
-              user.email.charAt(0).toUpperCase()
-            ) : (
-              <AccountCircle />
-            )}
+            {userInitials || <AccountCircle />}
           </Avatar>
         )}
         <Box
@@ -72,7 +69,7 @@ const UserProfile = () => {
           }}
           data-testid="profile-name"
         >
-          {user.displayName || 'Anonymous'}
+          {user.name || 'User Profile'}
         </Box>
       </IconButton>
     </Tooltip>
