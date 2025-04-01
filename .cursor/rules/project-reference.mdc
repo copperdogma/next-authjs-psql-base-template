@@ -77,25 +77,41 @@ alwaysApply: true
   - POST: Create session from Firebase token
   - DELETE: Remove session (sign out)
 
-## CLI Commands
+## Project Command Reference
 
-### Development
-```bash
-npm run dev         # Start dev server
-npm run build      # Production build
-npm run start      # Start production server
-```
+This file summarizes key commands for development, testing, and code quality within this project.
 
-### Code Quality
-```bash
-npm run lint       # Check ESLint issues
-npm run lint:fix   # Fix ESLint issues
-npm run format     # Format with Prettier
-npm test          # Run all tests with Jest
-npm run test:watch # Run tests in watch mode
-npm run test:coverage # Run tests with coverage report
-npm run test:ci    # Run tests in CI environment
-```
+### Core Development
+- `npm run build`: Create a production build.
+
+### AI Agent Server Management (PM2)
+- `npm run ai:start`: Start the dev server managed by PM2 (background).
+- `npm run ai:stop`: Stop the PM2-managed server.
+- `npm run ai:restart`: Restart the PM2-managed server.
+- `npm run ai:status`: Check the status of the PM2-managed server.
+- `npm run ai:logs`: Show recent logs from the PM2-managed server.
+- `npm run ai:health`: Check the `/api/health` endpoint of the running server.
+- `npm run ai:port`: Display the port the PM2-managed server is using.
+
+### Testing
+- `npm test` or `npm run test:unit`: Run all Jest unit tests (components, API, utils).
+- `npm run test:watch`: Run unit tests in watch mode.
+- `npm run test:e2e`: Run all Playwright end-to-end tests.
+- `npm run test:e2e:ui`: Run E2E tests with the Playwright UI.
+- `npm run test:rules`: Run Firebase security rules tests.
+
+### Code Quality & Formatting
+- `npm run lint`: Check for ESLint issues.
+- `npm run lint:fix`: Automatically fix ESLint issues.
+- `npm run format`: Format code using Prettier.
+- `npm run format:check`: Check code formatting without making changes.
+- `npm run type-check`: Run TypeScript compiler for type checking.
+- `npm run validate`: Run lint, format check, and type check together.
+
+### Firebase Emulators
+- `npm run firebase:emulators`: Start Firebase emulators.
+- `npm run firebase:emulators:export`: Export data from emulators.
+- `npm run firebase:emulators:import`: Start emulators with imported data.
 
 ## Environment Variables
 Required in `.env.local`:

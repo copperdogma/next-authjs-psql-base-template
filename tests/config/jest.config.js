@@ -53,6 +53,7 @@ const customJestConfig = {
     'tests/mocks/app/api/**/*.ts',
     'tests/utils/**/*.{ts,tsx}',
     'lib/utils.ts',
+    'lib/logger.ts', // Add logger.ts for coverage collection
 
     // Exclude type definitions and node_modules
     '!**/*.d.ts',
@@ -132,6 +133,12 @@ const customJestConfig = {
       setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
       globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
       globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
+    },
+    {
+      displayName: 'lib',
+      testMatch: ['<rootDir>/tests/unit/lib/**/*.test.ts?(x)'],
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/tests/config/setup/node-setup.js'],
     },
     {
       displayName: 'integration',

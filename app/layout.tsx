@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes';
 import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
+import { logger } from '@/lib/logger';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,6 +45,13 @@ const themeScript = `
   }
 })()
 `;
+
+// Log application initialization at the server level
+logger.info({
+  msg: 'Application initializing',
+  timestamp: new Date().toISOString(),
+  nodeEnv: process.env.NODE_ENV,
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

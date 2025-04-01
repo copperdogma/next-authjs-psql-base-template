@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
 import { ROUTES } from '../../utils/routes';
 import { waitForElementToBeVisible } from '../../utils/selectors';
+import { setupTestAuth, navigateWithTestAuth, isRedirectedToLogin } from '../../utils/test-auth';
 
 /**
  * Authentication Flow Tests
@@ -149,36 +150,20 @@ test.describe('Authentication Flows', () => {
 
   // This test was previously skipped due to issues with auth mocking
   test('authenticated user should have access to protected routes', async ({ page, context }) => {
-    // First navigate to a page before setting auth cookies
-    await page.goto(ROUTES.HOME, { waitUntil: 'domcontentloaded' });
+    // Set up test authentication and get the testSessionId
+    const testSessionId = await setupTestAuth(context, page, TEST_USER);
 
-    // Set NextAuth session cookie directly
-    // This creates a more resilient way to mock authentication that works with both Firebase Auth and NextAuth
-    await context.addCookies([
-      {
-        name: 'next-auth.session-token',
-        value: 'mock-session-token-for-testing',
-        domain: new URL(page.url()).hostname,
-        path: '/',
-        httpOnly: true,
-        secure: false,
-      },
-    ]);
+    console.log('✅ Playwright auth bypass cookies set for testing');
 
-    console.log('✅ Auth cookies set for user: ' + TEST_USER.email);
-
-    // Try to access a protected route directly
-    await page.goto(ROUTES.DASHBOARD, {
-      waitUntil: 'networkidle',
-      timeout: 10000,
-    });
+    // Navigate to protected route with the test session ID
+    await navigateWithTestAuth(page, ROUTES.DASHBOARD, testSessionId);
 
     // Get current URL after navigation
     const currentUrl = page.url();
     console.log('Current URL:', currentUrl);
 
     // Check if we're on the dashboard or redirected to login
-    if (currentUrl.includes('/login')) {
+    if (isRedirectedToLogin(currentUrl)) {
       // If we've been redirected to login, we'll capture a screenshot and fail with a better message
       await page.screenshot({
         path: 'tests/e2e/screenshots/auth-redirect-issue.png',
@@ -190,8 +175,10 @@ test.describe('Authentication Flows', () => {
       console.log(`Page redirected to login. Current URL: ${currentUrl}`);
       console.log(`Page content length: ${pageContent.length}`);
 
-      // We'll skip instead of fail to make tests more resilient during transition
-      test.skip(true, 'Auth simulation needs updating for NextAuth');
+      // We'll fail the test with a helpful error message
+      throw new Error(
+        'Authentication simulation failed - redirected to login page. You need to modify the middleware to detect the __playwright_auth_bypass cookie'
+      );
     } else {
       // Verify we're on the dashboard page
       expect(currentUrl).toContain(ROUTES.DASHBOARD);

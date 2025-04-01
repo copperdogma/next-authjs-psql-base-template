@@ -97,6 +97,9 @@ const nextConfig = {
     forceSwcTransforms: true,
   },
 
+  // Mark pino and pino-pretty as external packages to prevent bundling issues
+  serverExternalPackages: ['pino', 'pino-pretty'],
+
   // Add CORS headers for API routes
   async headers() {
     return [
@@ -160,6 +163,11 @@ const nextConfig = {
         zlib: false,
       };
     }
+
+    // Resolve issues with pino's thread-stream module
+    config.externals.push({
+      'thread-stream': 'commonjs thread-stream',
+    });
 
     // Enable persistent cache for faster builds
     config.cache = {

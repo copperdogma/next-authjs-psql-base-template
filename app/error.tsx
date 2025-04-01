@@ -2,6 +2,9 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { loggers } from '@/lib/logger';
+
+const logger = loggers.ui;
 
 export default function GlobalError({
   error,
@@ -11,8 +14,16 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error('Global application error:', error);
+    // Log the error to Pino logger
+    logger.error({
+      msg: 'Global application error',
+      error: {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        digest: error.digest,
+      },
+    });
   }, [error]);
 
   return (
