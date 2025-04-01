@@ -15,36 +15,37 @@ const PORT_FILE = path.join(__dirname, '..', '.next-port');
 // Wait for the server to start (adjust timeout as needed)
 function extractPortFromLogs() {
   try {
-    // Clear the existing port file to avoid using stale data
-    if (fs.existsSync(PORT_FILE)) {
-      fs.unlinkSync(PORT_FILE);
-    }
-
     // Get the latest logs
     const logOutput = execSync('npm run ai:logs', { encoding: 'utf8' });
 
     // Look for the latest port announcement in the logs
     // Sort by most specific to less specific patterns
     const patterns = [
-      /- Local:\s+http:\/\/localhost:(\d+)/, // PM2 output format
-      /Local:\s+http:\/\/localhost:(\d+)/, // Standard next.js format
-      /localhost:(\d+)/, // Fallback pattern
+      /- Local:\s+http:\/\/localhost:(\d+)/g, // PM2 output format
+      /Local:\s+http:\/\/localhost:(\d+)/g, // Standard next.js format
+      /localhost:(\d+)/g, // Fallback pattern
     ];
 
+    // Find all port announcements
+    let extractedPorts = [];
     for (const regex of patterns) {
-      // Find all matches
-      const matches = [...logOutput.matchAll(new RegExp(regex, 'g'))];
-
-      // If we have matches, use the last one (most recent)
+      const matches = [...logOutput.matchAll(regex)];
       if (matches.length > 0) {
-        const port = matches[matches.length - 1][1];
-        console.log(`✓ Server running on port: ${port}`);
-
-        // Save the port to a file for other commands to use
-        fs.writeFileSync(PORT_FILE, port);
-
-        return port;
+        // Extract all port numbers
+        const ports = matches.map(match => match[1]);
+        extractedPorts = [...extractedPorts, ...ports];
       }
+    }
+
+    if (extractedPorts.length > 0) {
+      // Use the most recent port (last in the logs)
+      const port = extractedPorts[extractedPorts.length - 1];
+      console.log(`✓ Server running on port: ${port}`);
+
+      // Save the port to a file for other commands to use
+      fs.writeFileSync(PORT_FILE, port);
+
+      return port;
     }
 
     // If we couldn't find the port yet, it might still be starting up
@@ -84,9 +85,24 @@ function getPortWithRetry(maxRetries = 5, delay = 2000) {
 function getCurrentPort() {
   try {
     if (fs.existsSync(PORT_FILE)) {
-      return fs.readFileSync(PORT_FILE, 'utf8').trim();
+      const port = fs.readFileSync(PORT_FILE, 'utf8').trim();
+
+      // Verify if the port is still valid by checking if the server is running on this port
+      try {
+        // Simple check to see if anything is running on this port
+        execSync(`lsof -i :${port} -P -n -t`, { stdio: 'ignore' });
+
+        return port;
+      } catch (e) {
+        // Port is not active, try to get the current port
+        console.log('Port file exists but port is not active. Attempting to find current port...');
+
+        return extractPortFromLogs();
+      }
     }
   } catch (err) {
+    console.error('Error reading port file:', err.message);
+
     return null;
   }
 
@@ -106,4 +122,5 @@ if (require.main === module) {
 
 module.exports = {
   getCurrentPort,
+  extractPortFromLogs,
 };

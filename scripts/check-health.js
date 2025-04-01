@@ -2,19 +2,31 @@
 
 const http = require('http');
 
-const { getCurrentPort } = require('./get-port');
+const { getCurrentPort, extractPortFromLogs } = require('./get-port');
 
 /**
  * Script to check the health of the Next.js server
  * using the dynamic port stored in .next-port
  */
 
-async function checkHealth() {
+async function checkHealth(retryCount = 0, maxRetries = 3) {
   const port = getCurrentPort();
 
   if (!port) {
-    console.error('❌ No port information found. Is the server running?');
-    console.error('   Try running "npm run ai:port" to detect the port.');
+    if (retryCount < maxRetries) {
+      console.log(
+        `No port information found. Attempting to detect port (attempt ${retryCount + 1}/${maxRetries})...`
+      );
+      const detectedPort = extractPortFromLogs();
+      if (detectedPort) {
+        return checkHealth(0, maxRetries); // Reset retry counter if we found a port
+      } else {
+        return checkHealth(retryCount + 1, maxRetries);
+      }
+    }
+
+    console.error('❌ No port information found after multiple attempts. Is the server running?');
+    console.error('   Try running "npm run ai:start" to restart the server.');
     process.exit(1);
   }
 
@@ -50,12 +62,33 @@ async function checkHealth() {
     });
 
     req.on('error', error => {
-      reject(new Error(`Failed to connect to server: ${error.message}`));
+      // If connection refused and we haven't exceeded retries, try to get a new port
+      if (
+        (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') &&
+        retryCount < maxRetries
+      ) {
+        console.log(
+          `Connection failed. Attempting to detect new port (attempt ${retryCount + 1}/${maxRetries})...`
+        );
+        extractPortFromLogs();
+        setTimeout(() => {
+          resolve(checkHealth(retryCount + 1, maxRetries));
+        }, 2000);
+      } else {
+        reject(new Error(`Failed to connect to server: ${error.message}`));
+      }
     });
 
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Health check request timed out'));
+      if (retryCount < maxRetries) {
+        console.log(`Request timed out. Retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+        setTimeout(() => {
+          resolve(checkHealth(retryCount + 1, maxRetries));
+        }, 2000);
+      } else {
+        reject(new Error('Health check request timed out after multiple attempts'));
+      }
     });
 
     req.end();

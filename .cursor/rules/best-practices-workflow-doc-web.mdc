@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 name: best-practices-workflow
 description: Enforces a comprehensive workflow for ensuring the AI follows best practices, requests documentation, and conducts proper research
 version: 1.0
