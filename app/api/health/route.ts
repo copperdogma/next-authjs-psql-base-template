@@ -1,86 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// Define a schema for the health check response
-const HealthResponseSchema = z.object({
-  status: z.enum(['healthy', 'degraded', 'unhealthy']),
-  timestamp: z.string().datetime(),
-  version: z.string().optional(),
-});
-
-// Type inference from the schema
-type HealthResponse = z.infer<typeof HealthResponseSchema>;
-
 // Schema for validating POST request data
 const HealthCheckRequestSchema = z.object({
   checkDatabase: z.boolean().optional().default(false),
   timeout: z.number().int().positive().optional(),
 });
 
+/**
+ * Health check endpoint for AI agents to verify server status
+ * This endpoint returns basic server status information
+ * Used by AI agents to confirm the server is running properly
+ */
 export async function GET() {
-  // Create a response object that matches the schema
-  const healthData: HealthResponse = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
-  };
-
-  // Validate the response data against the schema
-  const result = HealthResponseSchema.safeParse(healthData);
-
-  if (!result.success) {
-    console.error('Invalid health response format:', result.error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-
-  // Return the validated data
-  return NextResponse.json(result.data);
+  return NextResponse.json(
+    {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+    },
+    { status: 200 }
+  );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body as JSON
     const body = await request.json();
 
-    // Validate request body against the schema
+    // Validate the request against our schema
     const result = HealthCheckRequestSchema.safeParse(body);
 
     if (!result.success) {
-      // Return validation errors
       return NextResponse.json(
-        {
-          error: 'Invalid request format',
-          details: result.error.errors,
-        },
+        { error: 'Invalid request format', details: result.error.format() },
         { status: 400 }
       );
     }
 
-    // Use the validated data (type-safe)
-    const validatedData = result.data;
+    const { checkDatabase } = result.data;
+
+    // Example of conditional health check based on request
+    if (checkDatabase) {
+      // In a real app, you might check database connectivity here
+      // For demo purposes, we're just adding a mock delay
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
     // Example of using the validated data
-    const response: HealthResponse = {
+    const response = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.NEXT_PUBLIC_APP_VERSION,
+      databaseChecked: checkDatabase,
+      environment: process.env.NODE_ENV || 'development',
     };
-
-    // Add logic based on the validated request
-    if (validatedData.checkDatabase) {
-      // Perform database check (simplified example)
-      response.status = (await checkDatabaseHealth()) ? 'healthy' : 'degraded';
-    }
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error processing health check request:', error);
-    return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
+    console.error('Health check error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
-
-// Mock function for database checking
-async function checkDatabaseHealth(): Promise<boolean> {
-  // In a real implementation, you would check your database connection
-  return true;
 }

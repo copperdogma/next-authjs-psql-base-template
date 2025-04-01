@@ -32,7 +32,15 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:reliable": "npm run dev -- --port 3001 & sleep 10 && PLAYWRIGHT_TEST_BASE_URL=http://127.0.0.1:3001 playwright test --config tests/config/playwright.config.ts --workers=1",
     "firebase:emulators": "firebase emulators:start",
-    "setup": "node scripts/setup.js"
+    "setup": "node scripts/setup.js",
+    "ai:start": "pm2 start ecosystem.config.js --env development && sleep 5 && npm run ai:port && npm run ai:verify-port",
+    "ai:stop": "pm2 stop next-dev",
+    "ai:restart": "pm2 restart next-dev --update-env && rm -f .next-port && sleep 5 && npm run ai:port && npm run ai:verify-port && npm run ai:health",
+    "ai:verify-port": "node -e \"const fs=require('fs');const path=require('path');const portFile=path.join(__dirname, '.next-port');if(fs.existsSync(portFile)){console.log('✓ Port file exists: ' + fs.readFileSync(portFile, 'utf8'));}else{console.error('❌ Port file missing');}\"",
+    "ai:status": "pm2 status next-dev",
+    "ai:logs": "pm2 logs next-dev --lines 100 --nostream",
+    "ai:port": "node scripts/get-port.js",
+    "ai:health": "node scripts/check-health.js"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -102,6 +110,7 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "node-mocks-http": "^1.16.2",
+    "pm2": "^6.0.5",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
     "supertest": "^7.1.0",
