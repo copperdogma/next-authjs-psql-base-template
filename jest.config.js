@@ -57,6 +57,7 @@ const customJestConfig = {
       testEnvironment: 'node',
       ...sharedConfig,
     },
+
     // Component tests in JSDOM environment
     {
       displayName: 'jsdom',
@@ -70,6 +71,7 @@ const customJestConfig = {
       ...sharedConfig,
     },
   ],
+
   // Set coverage thresholds to enforce code quality
   coverageThreshold: {
     global: {
@@ -79,6 +81,7 @@ const customJestConfig = {
       lines: 80,
     },
   },
+
   // Only collect coverage from source files, not tests or configuration
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',

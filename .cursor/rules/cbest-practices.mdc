@@ -1,0 +1,8 @@
+---
+description: For getting the AI to start working on the next highest priority task
+globs: src/tests/**/*
+alwaysApply: false
+---
+Remember we want all code to exemplify best practices. If you're not 100% sure what best practice is in this situation, search the web or check the docs.
+
+I want this project to be a perfect example of how to code this. The final code should be 100% best practices, minimal, and elegant.

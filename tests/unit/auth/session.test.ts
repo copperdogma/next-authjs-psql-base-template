@@ -98,3 +98,122 @@ describe('Session Management', () => {
   });
 });
 */
+
+// Mock the imported modules
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(),
+}));
+
+// Mock firebase-admin completely to avoid loading the actual module
+jest.mock('@/lib/firebase-admin', () => ({
+  auth: {
+    verifySessionCookie: jest.fn(),
+    getUser: jest.fn(),
+  },
+}));
+
+// Import after mocking
+import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
+import { auth as adminAuth } from '@/lib/firebase-admin';
+
+// Define test user data
+const mockUser = {
+  uid: 'test-user-123',
+  email: 'test@example.com',
+  displayName: 'Test User',
+  emailVerified: true,
+  photoURL: 'https://example.com/photo.jpg',
+};
+
+// Define mock session cookie
+const mockSessionCookie = 'mock-session-cookie-for-testing';
+
+describe('Session Management', () => {
+  // Reset all mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Setup default cookie mock implementation
+    (cookies as jest.Mock).mockReturnValue({
+      get: jest.fn().mockReturnValue({ value: mockSessionCookie }),
+    });
+
+    // Setup default Firebase Admin mock implementations
+    (adminAuth.verifySessionCookie as jest.Mock).mockResolvedValue({ uid: mockUser.uid });
+    (adminAuth.getUser as jest.Mock).mockResolvedValue(mockUser);
+  });
+
+  describe('getSession', () => {
+    it('should return user data for a valid session cookie', async () => {
+      // Act
+      const session = await getSession();
+
+      // Assert
+      expect(session).toEqual({
+        uid: mockUser.uid,
+        email: mockUser.email,
+        emailVerified: mockUser.emailVerified,
+        displayName: mockUser.displayName,
+        photoURL: mockUser.photoURL,
+      });
+
+      // Verify mocks were called correctly
+      expect(cookies).toHaveBeenCalled();
+      expect(adminAuth.verifySessionCookie).toHaveBeenCalledWith(mockSessionCookie, true);
+      expect(adminAuth.getUser).toHaveBeenCalledWith(mockUser.uid);
+    });
+
+    it('should return null when no session cookie exists', async () => {
+      // Arrange
+      (cookies as jest.Mock).mockReturnValue({
+        get: jest.fn().mockReturnValue(undefined),
+      });
+
+      // Act
+      const session = await getSession();
+
+      // Assert
+      expect(session).toBeNull();
+
+      // Verify cookie was checked but Firebase methods weren't called
+      expect(cookies).toHaveBeenCalled();
+      expect(adminAuth.verifySessionCookie).not.toHaveBeenCalled();
+      expect(adminAuth.getUser).not.toHaveBeenCalled();
+    });
+
+    it('should return null when session cookie verification fails', async () => {
+      // Arrange
+      (adminAuth.verifySessionCookie as jest.Mock).mockRejectedValue(
+        new Error('Invalid session cookie')
+      );
+
+      // Act
+      const session = await getSession();
+
+      // Assert
+      expect(session).toBeNull();
+
+      // Verify cookie was checked and verification was attempted
+      expect(cookies).toHaveBeenCalled();
+      expect(adminAuth.verifySessionCookie).toHaveBeenCalledWith(mockSessionCookie, true);
+      expect(adminAuth.getUser).not.toHaveBeenCalled();
+    });
+
+    it('should return null when getUser fails', async () => {
+      // Arrange
+      (adminAuth.getUser as jest.Mock).mockRejectedValue(new Error('User not found'));
+
+      // Act
+      const session = await getSession();
+
+      // Assert
+      expect(session).toBeNull();
+
+      // Verify cookie and verification were checked but user retrieval failed
+      expect(cookies).toHaveBeenCalled();
+      expect(adminAuth.verifySessionCookie).toHaveBeenCalledWith(mockSessionCookie, true);
+      expect(adminAuth.getUser).toHaveBeenCalledWith(mockUser.uid);
+    });
+  });
+});
