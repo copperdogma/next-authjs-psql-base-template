@@ -113,24 +113,21 @@ export function shouldSample(id: string, rate = 0.1): boolean {
  * @returns A logger with the same interface but that only logs some percentage of messages
  */
 export function createSampledLogger(baseChildLogger: pino.Logger, rate = 0.1) {
-  const wrappedLogger = Object.create(baseChildLogger);
-
-  // Wrap each logging method with sampling logic
-  ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].forEach(level => {
-    const originalMethod = baseChildLogger[level as keyof typeof baseChildLogger] as Function;
-    wrappedLogger[level] = function (this: any, ...args: any[]) {
-      // Extract request ID if available or generate one
-      const obj = args[0];
-      const requestId = (typeof obj === 'object' && obj?.requestId) || getRequestId();
-
-      // Only log if this request is in the sample
-      if (shouldSample(requestId, rate)) {
-        return originalMethod.apply(baseChildLogger, args);
+  const logMethods = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
+  const handler: ProxyHandler<pino.Logger> = {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === 'function' && logMethods.includes(prop as (typeof logMethods)[number])) {
+        return function (this: any, ...args: any[]) {
+          const obj = args[0];
+          const requestId = (typeof obj === 'object' && obj?.requestId) || getRequestId();
+          return shouldSample(requestId, rate) ? Reflect.apply(value, target, args) : undefined;
+        };
       }
-    };
-  });
-
-  return wrappedLogger;
+      return value;
+    },
+  };
+  return new Proxy(baseChildLogger, handler);
 }
 
 // Export default logger

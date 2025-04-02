@@ -3,7 +3,6 @@ const nextJest = require('next/jest');
 // Providing the path to your Next.js app which will enable loading next.config.js and .env files
 const createJestConfig = nextJest({
   dir: './',
-  transformIgnorePatterns: ['/node_modules/(?!(@swc|@babel)/)'],
 });
 
 // Any custom config you want to pass to Jest
@@ -13,6 +12,10 @@ const customJestConfig = {
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'jsdom',
+  transformIgnorePatterns: [
+    // Transform any non-transpiled node modules that use ESM or need transpiling
+    '/node_modules/(?!(@auth/prisma-adapter|next/dist|next-auth|jose)).+\\.js$',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',
@@ -54,6 +57,7 @@ const customJestConfig = {
     'tests/utils/**/*.{ts,tsx}',
     'lib/utils.ts',
     'lib/logger.ts', // Add logger.ts for coverage collection
+    'lib/auth.ts', // Add auth.ts for adapter configuration coverage
 
     // Exclude type definitions and node_modules
     '!**/*.d.ts',

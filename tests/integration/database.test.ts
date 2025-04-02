@@ -40,6 +40,8 @@ describe('Database Integration Tests', () => {
     const createUniqueTestUser = (suffix = '') => ({
       email: `test-${testRunId}-${suffix}-${Date.now()}@example.com`,
       name: `${TEST_USER.NAME} ${testRunId} ${suffix}`,
+      image: null,
+      emailVerified: null,
     });
 
     // Use transactions for test isolation instead of cleanup

@@ -26,7 +26,7 @@ export class SessionCleanupService {
 
     // Build where conditions for the batch operation
     const where: Prisma.SessionWhereInput = {
-      expiresAt: { lt: cutoffDate },
+      expires: { lt: cutoffDate },
     };
 
     // Add user filter if specified
@@ -62,7 +62,7 @@ export class SessionCleanupService {
     if (keepCurrent) {
       const currentSession = await prisma.session.findFirst({
         where: { userId },
-        orderBy: { expiresAt: 'desc' },
+        orderBy: { expires: 'desc' },
       });
 
       if (currentSession) {

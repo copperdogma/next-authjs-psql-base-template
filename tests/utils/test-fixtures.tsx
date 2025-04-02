@@ -1,110 +1,75 @@
-import { User } from '@firebase/auth';
-import React, { ReactElement } from 'react';
-import { RenderResult, render } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { ReactElement, ReactNode } from 'react';
+import { RenderResult, render, RenderOptions as RTLRenderOptions } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
-import { TEST_USER } from './test-constants';
+import { Session } from 'next-auth';
 import { TestRenderResult, MockUser, MockIdTokenResult } from './test-types';
 
-// Define NextAuth session types
-type NextAuthUser = {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  // Add any other properties that might be needed
+const defaultMockUser = {
+  uid: 'test-uid',
+  email: 'test@example.com',
+  displayName: 'Test User',
+  photoURL: 'https://example.com/photo.jpg',
+  emailVerified: true,
+  phoneNumber: null,
+  isAnonymous: false,
+  refreshToken: 'mock-refresh-token',
+  tenantId: null,
+  providerId: 'google.com',
+  metadata: {
+    creationTime: new Date().toISOString(),
+    lastSignInTime: new Date().toISOString(),
+  },
+  providerData: [
+    {
+      providerId: 'google.com',
+      uid: 'test@example.com',
+      displayName: 'Test User',
+      email: 'test@example.com',
+      phoneNumber: null,
+      photoURL: 'https://example.com/photo.jpg',
+    },
+  ],
+  getIdToken: () => Promise.resolve('mock-id-token'),
+  getIdTokenResult: () =>
+    Promise.resolve({
+      token: 'mock-id-token',
+      expirationTime: new Date(Date.now() + 3600 * 1000).toISOString(),
+      authTime: new Date().toISOString(),
+      issuedAtTime: new Date().toISOString(),
+      signInProvider: 'google.com',
+      signInSecondFactor: null,
+      claims: {},
+    } as MockIdTokenResult),
+  delete: () => Promise.resolve(),
+  reload: () => Promise.resolve(),
+  toJSON: () => ({}),
 };
 
-type NextAuthSession = {
-  user: NextAuthUser;
+const createBaseMockUser = (): MockUser => ({
+  ...defaultMockUser,
+});
+
+export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => {
+  const base = createBaseMockUser();
+  const merged = { ...base, ...overrides };
+  return merged as MockUser;
+};
+
+type SessionWithUser = Session & {
+  user: MockUser & { id: string };
   expires: string;
 };
 
-/**
- * Mock User Factory - Creates consistent mock user objects for tests
- * Still supports Firebase User type for backward compatibility
- */
-export function createMockUser(overrides: Partial<User> = {}): User {
-  // Create a properly typed user object with all necessary fields
-  const defaultUser: Omit<MockUser, keyof typeof overrides> = {
-    uid: TEST_USER.ID,
-    email: TEST_USER.EMAIL,
-    displayName: TEST_USER.NAME,
-    photoURL: TEST_USER.PHOTO_URL,
-    emailVerified: true,
-    isAnonymous: false,
-    phoneNumber: null,
-    providerData: [
-      {
-        providerId: 'google.com',
-        uid: TEST_USER.EMAIL,
-        displayName: TEST_USER.NAME,
-        email: TEST_USER.EMAIL,
-        phoneNumber: null,
-        photoURL: TEST_USER.PHOTO_URL,
-      },
-    ],
-    metadata: {
-      creationTime: new Date().toISOString(),
-      lastSignInTime: new Date().toISOString(),
-    },
-    tenantId: null,
-    delete: jest.fn().mockResolvedValue(undefined),
-    getIdToken: jest.fn().mockResolvedValue('mock-id-token'),
-    getIdTokenResult: jest.fn().mockResolvedValue({
-      token: 'mock-id-token',
-      claims: {},
-      signInProvider: 'google.com',
-      signInSecondFactor: null,
-      expirationTime: new Date(Date.now() + 3600 * 1000).toISOString(),
-      issuedAtTime: new Date().toISOString(),
-      authTime: new Date().toISOString(),
-    } as MockIdTokenResult),
-    reload: jest.fn().mockResolvedValue(undefined),
-    toJSON: jest.fn().mockReturnValue({}),
-    // Add missing properties that were causing type errors
-    refreshToken: 'mock-refresh-token',
-    providerId: 'google.com',
-  };
-
-  // Combine default values with overrides
-  return {
-    ...defaultUser,
-    ...overrides,
-  } as User;
-}
-
-/**
- * Creates a NextAuth compatible user from test constants
- */
-export function createNextAuthUser(overrides: Partial<NextAuthUser> = {}): NextAuthUser {
-  return {
-    id: TEST_USER.ID,
-    name: TEST_USER.NAME,
-    email: TEST_USER.EMAIL,
-    image: TEST_USER.PHOTO_URL,
-    ...overrides,
-  };
-}
-
-/**
- * Session Fixtures - Common auth states for testing with NextAuth
- */
 export const SessionFixtures = {
-  // Not authenticated state
-  notAuthenticated: null,
-
-  // Authenticated state with default test user
-  authenticated: (userOverrides: Partial<NextAuthUser> = {}): NextAuthSession => ({
-    user: createNextAuthUser(userOverrides),
-    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
+  notAuthenticated: null as null,
+  authenticated: (userOverrides: Partial<MockUser> = {}): SessionWithUser => ({
+    user: { ...createMockUser(userOverrides), id: 'test-id' },
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   }),
-
-  // Expired session
   expired: {
-    user: createNextAuthUser(),
-    expires: new Date(Date.now() - 1000).toISOString(), // Already expired
-  },
+    user: { ...createMockUser(), id: 'test-id' },
+    expires: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  } as SessionWithUser,
 };
 
 /**
@@ -112,10 +77,18 @@ export const SessionFixtures = {
  */
 export function withSessionProvider(
   ui: ReactElement,
-  session: any = SessionFixtures.notAuthenticated
+  session: SessionWithUser | null = SessionFixtures.notAuthenticated
 ): RenderResult {
   return render(<SessionProvider session={session}>{ui}</SessionProvider>);
 }
+
+type WrapperProps = {
+  children: ReactNode;
+};
+
+type CustomRenderOptions = RTLRenderOptions & {
+  wrapper?: (props: WrapperProps) => ReactElement;
+};
 
 /**
  * Authentication testing utilities for all test types
@@ -127,22 +100,17 @@ export const AuthTestUtils = {
    */
   renderWithSession: (
     ui: ReactElement,
-    session: NextAuthSession | null = SessionFixtures.notAuthenticated
+    session: SessionWithUser | null = null
   ): TestRenderResult => {
     const mockSignIn = jest.fn();
     const mockSignOut = jest.fn();
 
-    // Mock next-auth/react for this component
-    jest
-      .spyOn(require('next-auth/react'), 'signIn')
-      .mockImplementation((...args) => mockSignIn(...args));
-    jest
-      .spyOn(require('next-auth/react'), 'signOut')
-      .mockImplementation((...args) => mockSignOut(...args));
+    const wrapper = ({ children }: WrapperProps) => (
+      <SessionProvider session={session}>{children}</SessionProvider>
+    );
 
     return {
-      user: userEvent.setup(),
-      ...withSessionProvider(ui, session),
+      ...render(ui, { wrapper } as CustomRenderOptions),
       mockSignIn,
       mockSignOut,
     } as TestRenderResult;
@@ -153,9 +121,10 @@ export const AuthTestUtils = {
    */
   renderAuthenticated: (
     ui: ReactElement,
-    userOverrides: Partial<NextAuthUser> = {}
+    userOverrides: Partial<MockUser> = {}
   ): TestRenderResult => {
-    return AuthTestUtils.renderWithSession(ui, SessionFixtures.authenticated(userOverrides));
+    const session = SessionFixtures.authenticated(userOverrides);
+    return AuthTestUtils.renderWithSession(ui, session);
   },
 
   /**
@@ -209,7 +178,7 @@ export const AuthStateFixtures = {
     error: null,
   },
 
-  authenticated: (userOverrides: Partial<any> = {}) => ({
+  authenticated: (userOverrides: Partial<MockUser> = {}) => ({
     user: createMockUser(userOverrides),
     loading: false,
     isClientSide: true,
@@ -227,6 +196,6 @@ export const AuthStateFixtures = {
     user: null,
     loading: false,
     isClientSide: true,
-    error: new Error(message),
+    error: message,
   }),
 };

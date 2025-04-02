@@ -70,24 +70,6 @@ html.dark .MuiPaper-root .MuiBox-root {
   background-color: #1e1e1e !important;
 }
 
-/* Fix for Box components with navigation issues */
-html.dark .MuiPaper-root > .MuiBox-root[data-theme='dark'] {
-  background-color: #1e1e1e !important;
-  transition: background-color 0.1s ease-in-out;
-}
-
-/* Ensure action buttons container is always transparent */
-html.dark #action-buttons-container[data-theme='dark'],
-html.light #action-buttons-container[data-theme='light'] {
-  background-color: transparent !important;
-  transition: background-color 0.1s ease-in-out;
-}
-
-html.light .MuiPaper-root > .MuiBox-root[data-theme='light'] {
-  background-color: transparent !important;
-  transition: background-color 0.1s ease-in-out;
-}
-
 /* Special case for the 404 page and other paper components */
 html.dark .theme-aware-paper {
   background-color: #1e1e1e !important;

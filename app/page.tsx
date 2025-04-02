@@ -9,7 +9,6 @@ import { Paper, Stack } from '@mui/material';
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
 import { Google as GoogleIcon } from '@mui/icons-material';
-import ThemeAwareBox from '@/components/ui/ThemeAwareBox';
 
 export default function HomePage() {
   const { data } = useSession();
@@ -40,16 +39,7 @@ export default function HomePage() {
             This template provides a solid foundation for your next web application, including
             authentication, database integration, and a clean UI built with Material UI.
           </Typography>
-          <ThemeAwareBox
-            id="action-buttons-container"
-            sx={{
-              mt: 3,
-              backgroundColor: 'transparent !important',
-              '&.MuiBox-root': {
-                backgroundColor: 'transparent !important',
-              },
-            }}
-          >
+          <Box sx={{ mt: 3 }}>
             {data ? (
               // Show dashboard and profile buttons for authenticated users
               <>
@@ -93,7 +83,7 @@ export default function HomePage() {
                 </Button>
               </ErrorBoundary>
             )}
-          </ThemeAwareBox>
+          </Box>
         </Paper>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>

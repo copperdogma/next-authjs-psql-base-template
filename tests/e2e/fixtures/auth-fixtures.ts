@@ -28,6 +28,11 @@ export class FirebaseAuthUtils {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 14); // 14 days expiration
 
+      // Ensure we're on a page before setting cookies
+      if (!page.url() || page.url() === 'about:blank') {
+        await page.goto('/');
+      }
+
       // Get current URL to use for the cookies
       const currentUrl = page.url();
 

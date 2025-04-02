@@ -1,173 +1,188 @@
-import {
-  logger,
-  createLogger,
-  loggers,
-  getRequestId,
-  shouldSample,
-  createSampledLogger,
-} from '../../../lib/logger';
+/**
+ * @jest-environment node
+ */
 
-// Mock pino
+// Import mocks first
+import { mockPinoLogger, resetMocks } from '../../utils/mocks';
+import type pino from 'pino';
+
+// Mock pino before importing logger
 jest.mock('pino', () => {
-  // Mock logger methods
-  const loggerMethods = {
+  const mockLogger = {
     info: jest.fn(),
-    debug: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    debug: jest.fn(),
     trace: jest.fn(),
     fatal: jest.fn(),
-  };
-
-  // Create a mock implementation of the pino logger
-  const mockLogger = {
-    ...loggerMethods,
-    child: jest.fn().mockImplementation(() => mockLogger),
+    child: jest.fn().mockReturnThis(),
     level: 'info',
-  };
-
-  // Create the pino function that returns the mock logger
-  const pino = jest.fn().mockImplementation(() => mockLogger);
-
-  // Add the stdTimeFunctions property to the pino function
-  Object.defineProperty(pino, 'stdTimeFunctions', {
-    value: {
-      isoTime: jest.fn(() => '2023-01-01T00:00:00.000Z'),
+    silent: jest.fn(),
+    bindings: jest.fn(),
+    flush: jest.fn(),
+    isLevelEnabled: jest.fn(),
+    levelVal: 30,
+    levels: {
+      values: {
+        fatal: 60,
+        error: 50,
+        warn: 40,
+        info: 30,
+        debug: 20,
+        trace: 10,
+      },
+      labels: {
+        10: 'trace',
+        20: 'debug',
+        30: 'info',
+        40: 'warn',
+        50: 'error',
+        60: 'fatal',
+      },
     },
-  });
+    version: '1.0.0',
+    useLevelLabels: true,
+    onChild: jest.fn(),
+    on: jest.fn(),
+    addLevel: jest.fn(),
+    isLoggingLevel: jest.fn(),
+    LOG_VERSION: 1,
+    LOG_LEVEL: 'info',
+    setBindings: jest.fn(),
+    LOG_NAME: 'test-logger',
+    LOG_HOSTNAME: 'test-host',
+    LOG_PID: 123,
+    LOG_TIME: new Date().toISOString(),
+    LOG_REQID: 'test-req-id',
+    LOG_MSGID: 'test-msg-id',
+    LOG_CONTEXT: 'test-context',
+    LOG_LEVEL_NUM: 30,
+    LOG_LEVEL_LABEL: 'info',
+    LOG_LEVEL_VALUE: 30,
+    LOG_LEVEL_NAME: 'info',
+    LOG_LEVEL_COLOR: 'blue',
+  } as unknown as pino.Logger;
 
-  return pino;
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockLogger),
+  };
 });
 
-// Mock the shouldSample function in the logger module
-jest.mock(
-  '../../../lib/logger',
-  () => {
-    const originalModule = jest.requireActual('../../../lib/logger');
-    return {
-      ...originalModule,
-      shouldSample: jest.fn().mockImplementation(() => true),
-    };
-  },
-  { virtual: true }
-);
-
-// Override Math.random to return predictable values for sampling tests
-const originalRandom = Math.random;
-let mockRandomValue = 0.05; // Default value that will pass 10% sampling
+// Import the logger module
+import { createLogger, getRequestId, shouldSample, createSampledLogger } from '../../../lib/logger';
 
 describe('Logger', () => {
+  let mockLogger: pino.Logger;
+  let originalMathRandom: () => number;
+
   beforeEach(() => {
+    resetMocks();
     jest.clearAllMocks();
-    // Reset Math.random
-    Math.random = originalRandom;
+    mockLogger = require('pino').default();
+    originalMathRandom = Math.random;
+    Math.random = jest.fn();
   });
 
-  afterAll(() => {
-    // Restore Math.random
-    Math.random = originalRandom;
+  afterEach(() => {
+    Math.random = originalMathRandom;
   });
 
-  it('exports a base logger instance', () => {
-    expect(logger).toBeDefined();
-    expect(typeof logger.info).toBe('function');
-    expect(typeof logger.debug).toBe('function');
-    expect(typeof logger.warn).toBe('function');
-    expect(typeof logger.error).toBe('function');
-  });
-
-  it('creates a child logger with context', () => {
-    const childLogger = createLogger('test-context');
-    expect(childLogger).toBeDefined();
-    expect(logger.child).toHaveBeenCalledWith({ context: 'test-context' });
-  });
-
-  it('creates a child logger with additional data', () => {
-    const childLogger = createLogger('test-context', { userId: '123' });
-    expect(childLogger).toBeDefined();
-    expect(logger.child).toHaveBeenCalledWith({ context: 'test-context', userId: '123' });
-  });
-
-  it('exports preconfigured loggers for different components', () => {
-    expect(loggers.auth).toBeDefined();
-    expect(loggers.api).toBeDefined();
-    expect(loggers.db).toBeDefined();
-    expect(loggers.middleware).toBeDefined();
-    expect(loggers.ui).toBeDefined();
-  });
-
-  it('generates a request ID with correct format', () => {
-    const requestId = getRequestId();
-    expect(requestId).toMatch(/^req_[a-z0-9]{8}$/);
-  });
-
-  it('generates unique request IDs', () => {
-    const requestId1 = getRequestId();
-    const requestId2 = getRequestId();
-    expect(requestId1).not.toEqual(requestId2);
-  });
-
-  describe('Sampling functionality', () => {
-    it('shouldSample returns a boolean based on ID', () => {
-      // Create IDs ending with different characters to test sampling
-      const idInSample = 'test_0'; // Should be in 10% sample (0/16 < 0.1)
-      const idNotInSample = 'test_f'; // Should not be in 10% sample (15/16 > 0.1)
-
-      expect(typeof shouldSample(idInSample)).toBe('boolean');
-      // Force the mock to return specific values for each test case
-      (shouldSample as jest.Mock).mockImplementation((id: string, rate = 0.1) => {
-        if (id === 'test_0') return true;
-        if (id === 'test_f') return false;
-        return parseInt(id.charAt(id.length - 1), 16) / 16 < rate;
+  describe('createLogger', () => {
+    it('should create a child logger with context', () => {
+      const logger = createLogger('test-context', { additionalData: 'test' });
+      expect(mockLogger.child).toHaveBeenCalledWith({
+        context: 'test-context',
+        additionalData: 'test',
       });
+    });
+  });
 
-      expect(shouldSample(idInSample, 0.1)).toBe(true);
-      expect(shouldSample(idNotInSample, 0.1)).toBe(false);
+  describe('getRequestId', () => {
+    it('should generate a unique request ID', () => {
+      // Mock Math.random to return a specific value
+      (Math.random as jest.Mock).mockReturnValue(0.123456789);
+
+      // Call getRequestId and verify the result
+      const id = getRequestId();
+      expect(id).toMatch(/^req_[a-z0-9]{8}$/);
+      expect(Math.random).toHaveBeenCalled();
     });
 
-    it('allows customizing sampling rate', () => {
-      const id = 'test_8'; // 8/16 = 0.5
+    it('should generate different IDs for multiple calls', () => {
+      // Mock Math.random to return different values
+      (Math.random as jest.Mock).mockReturnValueOnce(0.1).mockReturnValueOnce(0.2);
 
-      // Set up mock for this test
-      (shouldSample as jest.Mock).mockImplementation((id: string, rate = 0.1) => {
-        const value = parseInt(id.charAt(id.length - 1), 16) / 16;
-        return value < rate;
-      });
+      const id1 = getRequestId();
+      const id2 = getRequestId();
+      expect(id1).not.toBe(id2);
+    });
+  });
 
-      expect(shouldSample(id, 0.6)).toBe(true); // 0.5 < 0.6
-      expect(shouldSample(id, 0.4)).toBe(false); // 0.5 > 0.4
+  describe('shouldSample', () => {
+    it('should return true for IDs that fall within the sampling rate', () => {
+      // Test with ID ending in '0' (0/16 = 0)
+      expect(shouldSample('test0', 0.1)).toBe(true);
+      // Test with ID ending in '1' (1/16 ≈ 0.0625)
+      expect(shouldSample('test1', 0.1)).toBe(true);
     });
 
-    it('createSampledLogger wraps a logger with sampling', () => {
-      // Mock shouldSample to always return true for this test
-      (shouldSample as jest.Mock).mockReturnValue(true);
+    it('should return false for IDs that fall outside the sampling rate', () => {
+      // Test with ID ending in 'a' (10/16 ≈ 0.625)
+      expect(shouldSample('testa', 0.1)).toBe(false);
+      // Test with ID ending in 'f' (15/16 ≈ 0.9375)
+      expect(shouldSample('testf', 0.1)).toBe(false);
+    });
 
-      // Create a mock logger with spies
-      const mockInfoFn = jest.fn();
-      const mockLogger = {
-        info: mockInfoFn,
-        debug: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-        trace: jest.fn(),
-        fatal: jest.fn(),
-        child: jest.fn().mockImplementation(props => mockLogger),
-      };
+    it('should use default rate of 0.1 if not specified', () => {
+      expect(shouldSample('test0')).toBe(true); // 0/16 = 0
+      expect(shouldSample('testa')).toBe(false); // 10/16 ≈ 0.625
+    });
+  });
 
-      // Create a sampled logger with our mock
-      const sampledLogger = createSampledLogger(mockLogger as any);
+  describe('createSampledLogger', () => {
+    beforeEach(() => {
+      resetMocks();
+      jest.clearAllMocks();
+      mockLogger = require('pino').default();
+      (Math.random as jest.Mock).mockReturnValue(0);
+    });
 
-      // Set a specific requestId so we can control the sampling
-      sampledLogger.info({ msg: 'test message', requestId: 'test_0' });
+    it('should create a sampled logger with wrapped methods', () => {
+      const sampledLogger = createSampledLogger(mockLogger);
+      expect(sampledLogger.info).toBeDefined();
+      expect(sampledLogger.warn).toBeDefined();
+      expect(sampledLogger.error).toBeDefined();
+      expect(sampledLogger.debug).toBeDefined();
+    });
 
-      // Verify the method was called
-      expect(mockInfoFn).toHaveBeenCalled();
-      expect(mockInfoFn.mock.calls[0][0]).toEqual(
-        expect.objectContaining({
-          msg: 'test message',
-          requestId: 'test_0',
-        })
-      );
+    it('should only log messages that fall within the sampling rate', () => {
+      const sampledLogger = createSampledLogger(mockLogger, 0.1);
+
+      // First message should be logged (request ID ends in '0')
+      sampledLogger.info({ msg: 'test1', requestId: 'test0' });
+      expect(mockLogger.info).toHaveBeenCalledWith({ msg: 'test1', requestId: 'test0' });
+
+      // Second message should not be logged (request ID ends in 'a')
+      sampledLogger.info({ msg: 'test2', requestId: 'testa' });
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use provided requestId if available', () => {
+      const sampledLogger = createSampledLogger(mockLogger);
+
+      // Message with requestId that will be sampled
+      sampledLogger.info({ msg: 'test', requestId: 'test0' });
+      expect(Math.random).not.toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith({ msg: 'test', requestId: 'test0' });
+    });
+
+    it('should preserve the original logger methods', () => {
+      const sampledLogger = createSampledLogger(mockLogger);
+
+      // Call a non-logging method
+      sampledLogger.isLevelEnabled('info');
+      expect(mockLogger.isLevelEnabled).toHaveBeenCalledWith('info');
     });
   });
 });

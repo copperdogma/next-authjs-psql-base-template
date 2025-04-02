@@ -98,7 +98,6 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm run test:watch`: Run unit tests in watch mode.
 - `npm run test:e2e`: Run all Playwright end-to-end tests.
 - `npm run test:e2e:ui`: Run E2E tests with the Playwright UI.
-- `npm run test:rules`: Run Firebase security rules tests.
 
 ### Code Quality & Formatting
 - `npm run lint`: Check for ESLint issues.

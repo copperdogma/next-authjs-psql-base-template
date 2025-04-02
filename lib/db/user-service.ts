@@ -59,7 +59,7 @@ export class UserService {
         sessions: {
           // Filter sessions within the include
           where: {
-            expiresAt: {
+            expires: {
               gt: expiresAfter,
             },
           },
@@ -69,7 +69,7 @@ export class UserService {
       where: {
         sessions: {
           some: {
-            expiresAt: {
+            expires: {
               gt: expiresAfter,
             },
           },
