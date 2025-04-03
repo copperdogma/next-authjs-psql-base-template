@@ -31,8 +31,18 @@ export default function SignInButton() {
         await signOut({ callbackUrl: '/' });
       } else {
         // If no session, we're signing in
-        // The callbackUrl ensures theme is preserved through the redirect
-        await signIn('google', { callbackUrl: '/dashboard' });
+        // Explicitly use the current origin for the callback URL to handle port changes
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
+        // Only log in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Auth debug: Signing in with origin:', currentOrigin);
+        }
+
+        await signIn('google', {
+          // Use explicit full URL for callbackUrl to handle port changes
+          callbackUrl: `${currentOrigin}/dashboard`,
+        });
       }
     } catch (error) {
       console.error('Auth action failed:', error);

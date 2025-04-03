@@ -12,6 +12,15 @@ jest.mock('next-auth/react', () => ({
   signOut: jest.fn(),
 }));
 
+// Mock the window.location object
+const mockOrigin = 'http://localhost';
+Object.defineProperty(window, 'location', {
+  value: {
+    origin: mockOrigin,
+  },
+  writable: true,
+});
+
 describe('SignInButton Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -82,7 +91,7 @@ describe('SignInButton Component', () => {
 
     // Verify the correct function was called
     expect(signIn).toHaveBeenCalledTimes(1);
-    expect(signIn).toHaveBeenCalledWith('google', { callbackUrl: '/dashboard' });
+    expect(signIn).toHaveBeenCalledWith('google', { callbackUrl: `${mockOrigin}/dashboard` });
   });
 
   test('calls sign out function when clicked in signed in state', async () => {

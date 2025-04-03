@@ -98,3 +98,6 @@ next-env.d.ts
 
 # Test screenshots
 tests/e2e/screenshots/
+
+# Add firestore-debug.log to ignored files
+firestore-debug.log

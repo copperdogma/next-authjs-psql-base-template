@@ -3,12 +3,23 @@
     "auth": {
       "port": 9099
     },
+    "firestore": {
+      "port": 8080
+    },
     "ui": {
       "enabled": true,
       "port": 4000
-    }
+    },
+    "singleProjectMode": true
   },
   "project": {
     "id": "next-firebase-base-template"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }

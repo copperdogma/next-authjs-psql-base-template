@@ -8,19 +8,22 @@ const HealthCheckRequestSchema = z.object({
 });
 
 /**
- * Health check endpoint for AI agents to verify server status
- * This endpoint returns basic server status information
- * Used by AI agents to confirm the server is running properly
+ * Health Check API Endpoint
+ *
+ * Used by E2E tests and monitoring tools to verify server availability
+ * Returns: Basic server info including status, uptime, and environment
  */
 export async function GET() {
-  return NextResponse.json(
-    {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
+  return NextResponse.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    serverInfo: {
       environment: process.env.NODE_ENV || 'development',
+      port: process.env.PORT || process.env.TEST_PORT || '3000',
+      nextVersion: process.env.NEXT_VERSION || 'unknown',
     },
-    { status: 200 }
-  );
+  });
 }
 
 export async function POST(request: NextRequest) {
