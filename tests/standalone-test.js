@@ -5,6 +5,11 @@ const { chromium } = require('@playwright/test');
   console.log('Starting standalone test');
 
   try {
+    // Get port from environment variable or default to 3000
+    const port = process.env.TEST_PORT || process.env.PORT || '3000';
+    const appUrl = `http://localhost:${port}`;
+    console.log(`Using application URL: ${appUrl}`);
+
     // Launch a browser manually
     console.log('Launching browser...');
     const browser = await chromium.launch({
@@ -22,7 +27,7 @@ const { chromium } = require('@playwright/test');
 
     // Navigate to the page
     console.log('Navigating to the app...');
-    await page.goto('http://localhost:3000', { timeout: 30000 });
+    await page.goto(appUrl, { timeout: 30000 });
 
     // Log the current URL
     console.log('Current URL:', page.url());

@@ -318,6 +318,8 @@ When tests fail, you have several debugging options:
 | "Server health check failed" | Ensure your server is running and accessible at the expected URL. Check console for detailed diagnostics. |
 | "Connection refused"         | The server process may have failed to start. Check server logs for errors.                                |
 | "Timeout waiting for server" | Try increasing TIMEOUT_SERVER in .env.test or check for server startup issues.                            |
+| "Port 3000 already in use"   | Use the reliable runner which automatically manages ports or manually kill processes using port 3000.     |
+| Redirects not working        | Check for hardcoded URLs in NEXTAUTH_URL or other environment variables.                                  |
 
 ## Best Practices
 
@@ -327,6 +329,9 @@ When tests fail, you have several debugging options:
 4. **Minimize Flakiness**: Use proper waiting mechanisms and avoid timing-dependent assertions
 5. **Mock External Services**: Always use Firebase emulators instead of production services
 6. **Use the Reliable Runner**: The e2e-runner.js script handles many common issues automatically
+7. **Avoid Hardcoded URLs**: Never use hardcoded URLs like `http://localhost:3000` - always use relative paths or environment variables
+8. **Consistent State Management**: Use Playwright's `storageState` for authentication rather than custom cookie management
+9. **Choose the Right Selectors**: Prefer user-facing attributes (text, role, label) over CSS selectors
 
 ## Authentication Testing
 
@@ -368,6 +373,7 @@ Planned improvements for authentication testing:
 2. Reliable cookie-based authentication mocking
 3. Complete end-to-end test of user login flow via UI
 4. Test for various authentication scenarios (new users, returning users, etc.)
+5. Implementation of `storageState` for more efficient authenticated tests
 
 ## Advanced Usage
 
@@ -394,3 +400,24 @@ This is useful for:
 - Debugging server issues independently from test execution
 
 The e2e-runner will still perform health checks against the existing server before running tests to ensure it's responsive.
+
+### Port Management and Dynamic URLs
+
+Our testing framework now handles port conflicts automatically:
+
+1. **Automatic Port Selection**: The reliable runner automatically selects available ports
+2. **Dynamic URL Management**: Environment variables are set correctly to match the selected ports
+3. **Port Conflict Resolution**: Processes using required test ports are automatically detected and can be terminated
+
+This allows tests to run smoothly even when other servers or processes are running on your development machine.
+
+### Test Results Management
+
+Test results and artifacts are stored in organized directories:
+
+- **Screenshots**: `tests/e2e/screenshots/`
+- **Traces**: `tests/e2e/traces/`
+- **Test Reports**: `playwright-report/`
+- **Test Results**: `tests/config/test-results/`
+
+These files are automatically generated during test runs and can be useful for debugging failures.

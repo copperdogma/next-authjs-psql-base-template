@@ -62,10 +62,14 @@ global.fetch = jest.fn();
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
+// Get app URL from environment or default to port 3000
+const TEST_PORT = process.env.TEST_PORT || '3000';
+const APP_URL = `http://localhost:${TEST_PORT}`;
+
 // Mock window.location
 delete window.location;
 window.location = {
-  href: 'http://localhost:3000',
+  href: APP_URL,
   pathname: '/',
   search: '',
   hash: '',
@@ -101,7 +105,7 @@ global.Response = class Response {
   }
 
   get url() {
-    return 'http://localhost:3000';
+    return APP_URL;
   }
 };
 

@@ -19,7 +19,14 @@ process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'test-admin-private-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_CLIENT_EMAIL = 'test@example.com';
 process.env.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----';
-process.env.NEXTAUTH_URL = 'http://localhost:3000';
+
+// Set app URL from environment or default to a consistent test port
+const TEST_PORT = process.env.TEST_PORT || '3000';
+const APP_URL = `http://localhost:${TEST_PORT}`;
+
+// Use APP_URL for all URL-dependent environment variables
+process.env.NEXT_PUBLIC_APP_URL = APP_URL;
+process.env.NEXTAUTH_URL = APP_URL;
 process.env.NEXTAUTH_SECRET = 'test-secret';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
 process.env.NODE_ENV = 'test';

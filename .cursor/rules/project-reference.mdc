@@ -35,6 +35,17 @@ alwaysApply: true
 │   ├── firebase-admin.ts # Firebase Admin SDK configuration
 │   └── session.ts        # Session management utilities
 ├── middleware.ts         # Authentication middleware
+├── tests/                # Test files
+│   ├── e2e/             # End-to-end tests with Playwright
+│   │   ├── auth/        # Authentication tests
+│   │   └── ui/          # UI component tests
+│   ├── unit/            # Unit tests with Jest
+│   │   ├── components/  # Component tests
+│   │   ├── api/         # API route tests
+│   │   └── utils/       # Utility function tests
+│   └── config/          # Test configuration
+├── scripts/              # Helper scripts
+│   └── e2e-runner.js    # E2E test orchestration script
 ```
 
 ## Component Architecture
@@ -73,9 +84,11 @@ alwaysApply: true
 ## Routes
 - `/` - Dashboard (protected)
 - `/login` - Authentication page
+- `/about` - Public about page
 - `/api/auth/session` - Session management
   - POST: Create session from Firebase token
   - DELETE: Remove session (sign out)
+- `/api/health` - Health check endpoint
 
 ## Project Command Reference
 
@@ -83,6 +96,7 @@ This file summarizes key commands for development, testing, and code quality wit
 
 ### Core Development
 - `npm run build`: Create a production build.
+- NEVER run 'npm run dev'. Use the AI scripts:
 
 ### AI Agent Server Management (PM2)
 - `npm run ai:start`: Start the dev server managed by PM2 (background).
@@ -96,8 +110,19 @@ This file summarizes key commands for development, testing, and code quality wit
 ### Testing
 - `npm test` or `npm run test:unit`: Run all Jest unit tests (components, API, utils).
 - `npm run test:watch`: Run unit tests in watch mode.
-- `npm run test:e2e`: Run all Playwright end-to-end tests.
-- `npm run test:e2e:ui`: Run E2E tests with the Playwright UI.
+- `npm run test:coverage`: Run unit tests with coverage report.
+
+#### E2E Testing
+- `npm run test:e2e`: Run all Playwright E2E tests with the reliable runner.
+- `npm run test:e2e:debug`: Run E2E tests with debugging enabled.
+- `npm run test:e2e:headed`: Run E2E tests in headed mode (visible browser).
+- `npm run test:e2e:auth`: Run E2E tests with Firebase Auth emulator.
+- `npm run test:e2e:ui`: Run E2E tests for UI components only.
+- `npm run test:e2e:report`: View the HTML test report.
+- `npm run test:e2e:with-emulator`: Start Firebase emulators and run all tests.
+- `npm run test:e2e:against-existing`: Run tests against an already running server.
+- `npm run test:e2e:custom-url`: Run tests against a specific URL.
+- `npm run test:e2e:dynamic-url`: Run tests using dynamically determined URL.
 
 ### Code Quality & Formatting
 - `npm run lint`: Check for ESLint issues.
@@ -106,6 +131,7 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm run format:check`: Check code formatting without making changes.
 - `npm run type-check`: Run TypeScript compiler for type checking.
 - `npm run validate`: Run lint, format check, and type check together.
+- `npm run firebase:setup-test-user`: Create a test user in the Auth emulator.
 
 ### Firebase Emulators
 - `npm run firebase:emulators`: Start Firebase emulators.
@@ -128,6 +154,14 @@ FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
 
+# Next Auth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
+
+# Test Configuration
+TEST_USER_EMAIL=test@example.com
+TEST_USER_PASSWORD=Test123!
+
 # Database
 POSTGRES_URL=
 REDIS_URL=
@@ -139,10 +173,13 @@ REDIS_URL=
 - TypeScript 5
 - Tailwind CSS v4
 - Firebase Auth
-  - Sign-in provider
+  - Sign-in provider (Google, Email/Password)
   - Custom session management
   - Protected routes
-- PostgreSQL (pending)
+- Firebase Firestore
+- Playwright for E2E testing
+- Jest for unit testing
+- PostgreSQL
 - Redis (pending)
 - Material Design components
 
@@ -157,6 +194,9 @@ REDIS_URL=
   - Components testing (jsdom environment)
   - API testing (node environment)
   - Integration testing (node environment)
+- `playwright.config.ts` - Playwright E2E testing configuration
+- `firebase.json` - Firebase emulator configuration
+- `ecosystem.config.js` - PM2 configuration for AI agent server management
 
 ## CSS Architecture
 ```css
@@ -182,6 +222,32 @@ REDIS_URL=
   }
 }
 ```
+
+## Testing Architecture
+
+### End-to-End (E2E) Testing
+- **Framework**: Playwright
+- **Projects**:
+  - `setup`: Authentication setup
+  - `ui-tests`: Tests without authentication
+  - `chromium`: Authenticated tests
+- **Features**:
+  - Automatic server management
+  - Dynamic port handling
+  - Firebase emulator integration
+  - Authentication state reuse
+  - Comprehensive debugging tools
+
+### Unit Testing
+- **Framework**: Jest
+- **Projects**:
+  - `jsdom`: Browser environment tests
+  - `node`: Server-side tests
+- **Features**:
+  - Component testing with React Testing Library
+  - API route testing with supertest
+  - Mock implementations for external services
+  - Coverage reporting
 
 ## Error Handling
 - Form validation errors
