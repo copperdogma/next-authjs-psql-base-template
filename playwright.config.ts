@@ -13,11 +13,17 @@ import fs from 'fs';
 dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 // Configuration constants with environment variable fallbacks
-const PORT = process.env.TEST_PORT || '3335';
+const PORT = process.env.TEST_PORT || '3777';
 const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${PORT}`;
 const TIMEOUT_TEST = parseInt(process.env.TIMEOUT_TEST || '60000', 10);
 const TIMEOUT_SERVER = parseInt(process.env.TIMEOUT_SERVER || '180000', 10);
 const TEST_RETRIES = process.env.CI ? 2 : 1;
+
+console.log('🔍 Playwright Configuration:');
+console.log(`PORT: ${PORT}`);
+console.log(`BASE_URL: ${BASE_URL}`);
+console.log(`TIMEOUT_TEST: ${TIMEOUT_TEST}`);
+console.log(`TIMEOUT_SERVER: ${TIMEOUT_SERVER}`);
 
 // Authentication state file path
 export const STORAGE_STATE = path.join(__dirname, 'tests/.auth/user.json');
@@ -46,6 +52,7 @@ const config: PlaywrightTestConfig = defineConfig({
   retries: TEST_RETRIES,
   workers: process.env.CI ? 1 : 1, // Increase when tests are stable
   reporter: [['list'], ['html', { open: 'never' }]],
+  globalSetup: './tests/e2e/global-setup.ts',
 
   use: {
     baseURL: BASE_URL,
@@ -97,10 +104,10 @@ const config: PlaywrightTestConfig = defineConfig({
 
   // Built-in webServer configuration - manages Next.js server for tests
   webServer: {
-    command: `cross-env NODE_ENV=test FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p ${PORT}`,
+    command: `echo "🚀 Starting Next.js server for E2E tests on port ${PORT}..." && cross-env NODE_ENV=test FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: TIMEOUT_SERVER,
+    timeout: 20000, // 20 seconds
     stdout: 'pipe',
     stderr: 'pipe',
   },
