@@ -28,13 +28,13 @@ jest.mock('@prisma/client', () => {
                 id: 'user1',
                 email: 'user1@example.com',
                 name: 'User 1',
-                sessions: [{ id: 'session1', userId: 'user1', expiresAt: new Date() }],
+                sessions: [{ id: 'session1', userId: 'user1', expires: new Date() }],
               },
               {
                 id: 'user2',
                 email: 'user2@example.com',
                 name: 'User 2',
-                sessions: [{ id: 'session2', userId: 'user2', expiresAt: new Date() }],
+                sessions: [{ id: 'session2', userId: 'user2', expires: new Date() }],
               },
             ];
           } else {
@@ -53,7 +53,7 @@ jest.mock('@prisma/client', () => {
               id: 'user1',
               email: 'user1@example.com',
               name: 'User 1',
-              sessions: [{ id: 'session1', userId: 'user1', expiresAt: new Date() }],
+              sessions: [{ id: 'session1', userId: 'user1', expires: new Date() }],
             };
           } else {
             queryLog.push('user.findUnique');
@@ -68,9 +68,9 @@ jest.mock('@prisma/client', () => {
           queryLog.push(`session.findMany: ${whereClause}`);
 
           if (args.where?.userId === 'user1') {
-            return [{ id: 'session1', userId: 'user1', expiresAt: new Date() }];
+            return [{ id: 'session1', userId: 'user1', expires: new Date() }];
           } else if (args.where?.userId === 'user2') {
-            return [{ id: 'session2', userId: 'user2', expiresAt: new Date() }];
+            return [{ id: 'session2', userId: 'user2', expires: new Date() }];
           }
 
           // Return empty for no filters

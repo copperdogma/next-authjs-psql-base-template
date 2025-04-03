@@ -136,3 +136,84 @@ npm run test:integration
 # Run e2e tests with Playwright
 npm run test:e2e
 ```
+
+## E2E Testing with Playwright
+
+This project uses Playwright for end-to-end (E2E) testing. E2E tests simulate real user interactions with your application in a browser environment.
+
+### Running E2E Tests
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI mode for debugging
+npm run test:e2e:ui
+
+# Run E2E tests in debug mode
+npm run test:e2e:debug
+
+# Generate and view test report
+npm run test:e2e:report
+```
+
+### Authentication Testing with Firebase Emulators
+
+For testing authentication flows, this project uses Firebase Auth Emulators to avoid hitting production Firebase services during tests. The setup is configured to:
+
+1. Run Firebase Auth Emulator locally
+2. Create a test user in the emulator
+3. Perform login via the UI in a setup script
+4. Save the authentication state for authenticated tests
+5. Use the saved state for tests that require an authenticated user
+
+To run E2E tests with Firebase Emulators:
+
+```bash
+# Run E2E tests with Firebase Emulators (auth + firestore)
+npm run test:e2e:emulators
+
+# Start just the Firebase Emulators (in a separate terminal)
+npm run firebase:emulators
+
+# Create a test user in the running emulator
+npm run firebase:setup-test-user
+```
+
+### E2E Test Structure
+
+The E2E tests are organized as follows:
+
+- `tests/e2e/` - Main directory for E2E tests
+  - `tests/e2e/auth/` - Authentication-related tests
+    - `ui-login-logout.spec.ts` - Tests for the login/logout UI flow
+  - `tests/setup/` - Setup files for Playwright tests
+    - `auth.setup.ts` - Authentication setup that runs before tests
+
+### Authentication Testing Strategy
+
+The project uses two approaches for authentication testing:
+
+1. **Testing Auth UI Flow**: Direct UI testing of the login and logout functionality.
+
+   - These tests don't use pre-authenticated state
+   - Located in `tests/e2e/auth/ui-login-logout.spec.ts`
+   - Configured as a separate Playwright project (`auth-ui-tests`)
+
+2. **Testing Authenticated Features**: Tests for features that require a logged-in user.
+   - Uses Playwright's `storageState` to share authenticated sessions
+   - Setup script (`tests/setup/auth.setup.ts`) logs in once and saves the state
+   - All other tests use the saved state to avoid repetitive login
+   - Great for testing protected routes and features
+
+### Environment Configuration
+
+Authentication testing with emulators requires specific environment variables:
+
+- `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true` - Enables emulator mode for client SDK
+- `NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` - Client-side emulator host
+- `FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` - Server-side emulator host
+- `TEST_USER_EMAIL` - Email for the test user
+- `TEST_USER_PASSWORD` - Password for the test user
+
+These variables are pre-configured in `.env.test` for convenience.

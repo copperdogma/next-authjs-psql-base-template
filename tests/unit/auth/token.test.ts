@@ -28,17 +28,17 @@ describe('Token Refresh Logic', () => {
     jest.clearAllMocks();
   });
 
-  it('should not refresh token for null user', () => {
+  test('should not refresh token for null user', () => {
     const shouldRefresh = shouldRefreshToken(null);
     expect(shouldRefresh).toBe(false);
   });
 
-  it('should refresh user token and return value', async () => {
+  test('should refresh user token and return value', async () => {
     const token = await refreshUserTokenAndSession(mockUser);
     expect(token).toBe('mock-refreshed-id-token');
   });
 
-  it('should return null when refreshing token for null user', async () => {
+  test('should return null when refreshing token for null user', async () => {
     const token = await refreshUserTokenAndSession(null);
     expect(token).toBeNull();
   });
@@ -71,23 +71,23 @@ describe('Token Refresh Logic', () => {
     jest.clearAllMocks();
   });
 
-  it('should not refresh token for null user', () => {
+  test('should not refresh token for null user', () => {
     const shouldRefresh = shouldRefreshToken(null);
     expect(shouldRefresh).toBe(false);
   });
 
-  it('should always return false for shouldRefreshToken in tests', () => {
+  test('should always return false for shouldRefreshToken in tests', () => {
     // The mock implementation always returns false for testing
     const shouldRefresh = shouldRefreshToken(mockUser as any);
     expect(shouldRefresh).toBe(false);
   });
 
-  it('should refresh user token and return value', async () => {
+  test('should refresh user token and return value', async () => {
     const token = await refreshUserTokenAndSession(mockUser as any);
     expect(token).toBe('mock-refreshed-id-token');
   });
 
-  it('should return null when refreshing token for null user', async () => {
+  test('should return null when refreshing token for null user', async () => {
     const token = await refreshUserTokenAndSession(null);
     expect(token).toBeNull();
   });

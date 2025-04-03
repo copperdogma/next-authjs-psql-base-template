@@ -41,12 +41,12 @@ describe('Auth Middleware', () => {
   });
 
   describe('Configuration', () => {
-    it('should use default options when none provided', () => {
+    test('should use default options when none provided', () => {
       const middleware = createAuthMiddleware();
       expect(middleware).toBeDefined();
     });
 
-    it('should accept custom options', () => {
+    test('should accept custom options', () => {
       const customOptions: AuthMiddlewareOptions = {
         protectedRoutes: ['/custom-protected'],
         publicRoutes: ['/custom-public'],
@@ -60,7 +60,7 @@ describe('Auth Middleware', () => {
   });
 
   describe('Authentication Flow', () => {
-    it('should allow access to public routes without auth', async () => {
+    test('should allow access to public routes without auth', async () => {
       const req = new NextRequest('http://localhost:3000/api/health');
       const middleware = createAuthMiddleware({
         publicRoutes: ['/api/health'],
@@ -72,7 +72,7 @@ describe('Auth Middleware', () => {
       expect(NextResponse.next).toHaveBeenCalled();
     });
 
-    it('should redirect unauthenticated users to login when accessing protected routes', async () => {
+    test('should redirect unauthenticated users to login when accessing protected routes', async () => {
       const req = new NextRequest('http://localhost:3000/dashboard?unauthenticated=true');
       const middleware = createAuthMiddleware();
 
@@ -89,7 +89,7 @@ describe('Auth Middleware', () => {
       expect(redirectUrl.searchParams.get('callbackUrl')).toBe('/dashboard');
     });
 
-    it('should redirect authenticated users away from login page', async () => {
+    test('should redirect authenticated users away from login page', async () => {
       const req = new NextRequest('http://localhost:3000/login');
       // Mock the cookies.has to return true for this test
       req.cookies.has = jest.fn().mockReturnValue(true);
@@ -108,7 +108,7 @@ describe('Auth Middleware', () => {
       expect(redirectUrl.pathname).toBe('/dashboard');
     });
 
-    it('should allow authenticated users to access protected routes', async () => {
+    test('should allow authenticated users to access protected routes', async () => {
       const req = new NextRequest('http://localhost:3000/dashboard');
       // Test as if user is authenticated
       req.cookies.has = jest.fn().mockReturnValue(true);
@@ -123,7 +123,7 @@ describe('Auth Middleware', () => {
   });
 
   describe('Custom Routes', () => {
-    it('should respect custom protected routes', async () => {
+    test('should respect custom protected routes', async () => {
       const req = new NextRequest('http://localhost:3000/custom-area?unauthenticated=true');
 
       const middleware = createAuthMiddleware({
@@ -136,7 +136,7 @@ describe('Auth Middleware', () => {
       expect(NextResponse.redirect).toHaveBeenCalled();
     });
 
-    it('should respect custom public routes', async () => {
+    test('should respect custom public routes', async () => {
       const req = new NextRequest('http://localhost:3000/public-content');
 
       const middleware = createAuthMiddleware({

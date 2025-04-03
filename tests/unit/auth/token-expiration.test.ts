@@ -24,23 +24,23 @@ import {
 } from '../../../tests/mocks/lib/auth/session';
 
 describe('Token and Session Expiration', () => {
-  it('should use the correct default expiration time', () => {
+  test('should use the correct default expiration time', () => {
     expect(DEFAULT_SESSION_EXPIRATION_SECONDS).toBe(3600); // 1 hour
     const options = getSessionCookieOptions();
     expect(options.maxAge).toBe(3600);
   });
 
-  it('should enforce maximum expiration time', () => {
+  test('should enforce maximum expiration time', () => {
     expect(MAX_SESSION_EXPIRATION_SECONDS).toBe(14 * 24 * 60 * 60); // 14 days
   });
 
-  it('should allow custom expiration within bounds', () => {
+  test('should allow custom expiration within bounds', () => {
     const customExpiration = 7200; // 2 hours
     const options = getSessionCookieOptions(customExpiration);
     expect(options.maxAge).toBe(customExpiration);
   });
 
-  it('should handle very large expiration values', () => {
+  test('should handle very large expiration values', () => {
     const veryLargeExpiration = MAX_SESSION_EXPIRATION_SECONDS * 2;
     const options = getSessionCookieOptions(veryLargeExpiration);
     expect(options.maxAge).toBe(veryLargeExpiration);

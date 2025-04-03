@@ -17,6 +17,27 @@ function initializeFirebaseAdmin() {
         credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
       });
 
+      // Connect to emulators when in test mode or when explicitly configured
+      if (process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true') {
+        // Configure Auth emulator if host is specified
+        if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+          process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST;
+          console.log(
+            `🔸 [Admin SDK] Using Firebase Auth emulator at ${process.env.FIREBASE_AUTH_EMULATOR_HOST}`
+          );
+        }
+
+        // Configure Firestore emulator if host is specified
+        if (process.env.FIRESTORE_EMULATOR_HOST) {
+          process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST;
+          console.log(
+            `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
+          );
+        }
+
+        console.log('🔸 [Admin SDK] Firebase emulator mode active');
+      }
+
       console.log('Firebase Admin SDK initialized successfully');
     }
 

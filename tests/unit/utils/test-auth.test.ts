@@ -26,7 +26,7 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('setupTestAuth', () => {
-    it('should setup test auth cookies and return a session ID', async () => {
+    test('should setup test auth cookies and return a session ID', async () => {
       const result = await setupTestAuth(mockContext as any, mockPage as any, TEST_USER);
 
       // Check that page.goto was called with correct args
@@ -63,7 +63,7 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('navigateWithTestAuth', () => {
-    it('should navigate to a URL with test session ID', async () => {
+    test('should navigate to a URL with test session ID', async () => {
       const testSessionId = 'test-session-123';
       const url = '/dashboard';
 
@@ -76,7 +76,7 @@ describe('test-auth.ts utilities', () => {
       });
     });
 
-    it('should append testSessionId to URLs that already have query params', async () => {
+    test('should append testSessionId to URLs that already have query params', async () => {
       const testSessionId = 'test-session-123';
       const url = '/dashboard?param=value';
 
@@ -94,19 +94,19 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('isRedirectedToLogin', () => {
-    it('should return true if URL contains /login', () => {
+    test('should return true if URL contains /login', () => {
       expect(isRedirectedToLogin('http://localhost:3000/login')).toBe(true);
       expect(isRedirectedToLogin('/login?callbackUrl=%2Fdashboard')).toBe(true);
     });
 
-    it('should return false if URL does not contain /login', () => {
+    test('should return false if URL does not contain /login', () => {
       expect(isRedirectedToLogin('http://localhost:3000/dashboard')).toBe(false);
       expect(isRedirectedToLogin('/profile')).toBe(false);
     });
   });
 
   describe('getTestUserFromCookies', () => {
-    it('should return user data from cookies', async () => {
+    test('should return user data from cookies', async () => {
       const userData = { id: 'test-id', name: 'Test User', email: 'test@example.com' };
       mockPage.evaluate.mockImplementation(() => {
         return `__playwright_test_user=${encodeURIComponent(JSON.stringify(userData))}`;
@@ -118,7 +118,7 @@ describe('test-auth.ts utilities', () => {
       expect(result).toEqual(userData);
     });
 
-    it('should return null if no user cookie is found', async () => {
+    test('should return null if no user cookie is found', async () => {
       mockPage.evaluate.mockImplementation(() => null);
 
       const result = await getTestUserFromCookies(mockPage as any);
@@ -127,7 +127,7 @@ describe('test-auth.ts utilities', () => {
       expect(result).toBeNull();
     });
 
-    it('should handle JSON parsing errors', async () => {
+    test('should handle JSON parsing errors', async () => {
       mockPage.evaluate.mockImplementation(() => '__playwright_test_user=invalid-json');
 
       const result = await getTestUserFromCookies(mockPage as any);

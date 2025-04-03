@@ -17,7 +17,7 @@ describe('SignInButton Component', () => {
     jest.clearAllMocks();
   });
 
-  it('displays sign in button when user is not authenticated', () => {
+  test('displays sign in button when user is not authenticated', () => {
     // Mock the useSession hook to return unauthenticated state
     (useSession as jest.Mock).mockReturnValue({
       data: null,
@@ -31,7 +31,7 @@ describe('SignInButton Component', () => {
     expect(button).not.toBeDisabled();
   });
 
-  it('displays sign out button when user is authenticated', () => {
+  test('displays sign out button when user is authenticated', () => {
     // Mock the useSession hook to return authenticated state
     (useSession as jest.Mock).mockReturnValue({
       data: {
@@ -48,7 +48,7 @@ describe('SignInButton Component', () => {
     expect(button).not.toBeDisabled();
   });
 
-  it('shows loading state when authentication is in progress', () => {
+  test('shows loading state when authentication is in progress', () => {
     // Mock the useSession hook to return loading state
     (useSession as jest.Mock).mockReturnValue({
       data: null,
@@ -64,7 +64,7 @@ describe('SignInButton Component', () => {
     expect(button).toBeDisabled();
   });
 
-  it('calls sign in function when clicked in signed out state', async () => {
+  test('calls sign in function when clicked in signed out state', async () => {
     // Mock the useSession hook to return unauthenticated state
     (useSession as jest.Mock).mockReturnValue({
       data: null,
@@ -85,7 +85,7 @@ describe('SignInButton Component', () => {
     expect(signIn).toHaveBeenCalledWith('google', { callbackUrl: '/dashboard' });
   });
 
-  it('calls sign out function when clicked in signed in state', async () => {
+  test('calls sign out function when clicked in signed in state', async () => {
     // Mock the useSession hook to return authenticated state
     (useSession as jest.Mock).mockReturnValue({
       data: {

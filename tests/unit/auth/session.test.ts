@@ -19,33 +19,33 @@ import {
 
 describe('Session Management', () => {
   describe('Session Cookie Configuration', () => {
-    it('should have the correct cookie name', () => {
+    test('should have the correct cookie name', () => {
       expect(SESSION_COOKIE_NAME).toBe('session');
     });
 
-    it('should support custom maxAge', () => {
+    test('should support custom maxAge', () => {
       const customMaxAge = 7200; // 2 hours
       const options = getSessionCookieOptions(customMaxAge);
 
       expect(options.maxAge).toBe(customMaxAge);
     });
 
-    it('should set path to root by default', () => {
+    test('should set path to root by default', () => {
       const options = getSessionCookieOptions();
       expect(options.path).toBe('/');
     });
 
-    it('should set httpOnly to true', () => {
+    test('should set httpOnly to true', () => {
       const options = getSessionCookieOptions();
       expect(options.httpOnly).toBe(true);
     });
 
-    it('should set sameSite to lax', () => {
+    test('should set sameSite to lax', () => {
       const options = getSessionCookieOptions();
       expect(options.sameSite).toBe('lax');
     });
 
-    it('should set secure based on NODE_ENV', () => {
+    test('should set secure based on NODE_ENV', () => {
       // We can't directly set NODE_ENV, but we can check that the current
       // environment setting gives us the expected result
       const options = getSessionCookieOptions();
@@ -55,7 +55,7 @@ describe('Session Management', () => {
   });
 
   describe('Session Operations', () => {
-    it('should create a session cookie from token', async () => {
+    test('should create a session cookie from token', async () => {
       const token = 'test-id-token';
       const expiresIn = 3600;
 
@@ -65,7 +65,7 @@ describe('Session Management', () => {
       expect(cookie).toContain(expiresIn.toString());
     });
 
-    it('should verify a valid session cookie', async () => {
+    test('should verify a valid session cookie', async () => {
       const validCookie = 'mock-session-cookie-valid-token-3600';
 
       const result = await verifySessionCookie(validCookie);
@@ -78,13 +78,13 @@ describe('Session Management', () => {
       );
     });
 
-    it('should reject an invalid session cookie', async () => {
+    test('should reject an invalid session cookie', async () => {
       const invalidCookie = 'invalid';
 
       await expect(verifySessionCookie(invalidCookie)).rejects.toThrow('Invalid session cookie');
     });
 
-    it('should generate destroy cookie options', () => {
+    test('should generate destroy cookie options', () => {
       const destroyOptions = destroySessionCookie();
 
       expect(destroyOptions).toEqual(
@@ -145,7 +145,7 @@ describe('Session Management', () => {
   });
 
   describe('getSession', () => {
-    it('should return user data for a valid session cookie', async () => {
+    test('should return user data for a valid session cookie', async () => {
       // Act
       const session = await getSession();
 
@@ -164,7 +164,7 @@ describe('Session Management', () => {
       expect(adminAuth.getUser).toHaveBeenCalledWith(mockUser.uid);
     });
 
-    it('should return null when no session cookie exists', async () => {
+    test('should return null when no session cookie exists', async () => {
       // Arrange
       (cookies as jest.Mock).mockReturnValue({
         get: jest.fn().mockReturnValue(undefined),
@@ -182,7 +182,7 @@ describe('Session Management', () => {
       expect(adminAuth.getUser).not.toHaveBeenCalled();
     });
 
-    it('should return null when session cookie verification fails', async () => {
+    test('should return null when session cookie verification fails', async () => {
       // Arrange
       (adminAuth.verifySessionCookie as jest.Mock).mockRejectedValue(
         new Error('Invalid session cookie')
@@ -200,7 +200,7 @@ describe('Session Management', () => {
       expect(adminAuth.getUser).not.toHaveBeenCalled();
     });
 
-    it('should return null when getUser fails', async () => {
+    test('should return null when getUser fails', async () => {
       // Arrange
       (adminAuth.getUser as jest.Mock).mockRejectedValue(new Error('User not found'));
 

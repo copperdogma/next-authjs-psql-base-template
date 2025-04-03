@@ -40,7 +40,7 @@ test.describe('User Authentication and Database Creation', () => {
     }
   });
 
-  test.afterAll(async () => {
+  test.afterEach(async () => {
     // Clean up any test users created during the test
     try {
       await prisma.account.deleteMany({

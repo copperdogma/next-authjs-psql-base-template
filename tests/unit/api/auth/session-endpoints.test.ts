@@ -134,7 +134,7 @@ describe('Session API Routes', () => {
   });
 
   describe('POST /api/auth/session', () => {
-    it('should create a session successfully with valid token', async () => {
+    test('should create a session successfully with valid token', async () => {
       // Arrange
       const mockRequest = {
         json: jest.fn().mockResolvedValue({ token: AUTH.MOCK_TOKEN }),
@@ -156,7 +156,7 @@ describe('Session API Routes', () => {
       );
     });
 
-    it('should return 400 if no token is provided', async () => {
+    test('should return 400 if no token is provided', async () => {
       // Arrange
       const mockRequest = {
         json: jest.fn().mockResolvedValue({}),
@@ -171,7 +171,7 @@ describe('Session API Routes', () => {
       expect(createSessionCookieMock).not.toHaveBeenCalled();
     });
 
-    it('should return 401 if token verification fails', async () => {
+    test('should return 401 if token verification fails', async () => {
       // Arrange
       const mockRequest = {
         json: jest.fn().mockResolvedValue({ token: AUTH.INVALID_TOKEN }),
@@ -189,7 +189,7 @@ describe('Session API Routes', () => {
       expect(createSessionCookieMock).not.toHaveBeenCalled();
     });
 
-    it('should return 401 if session cookie creation fails', async () => {
+    test('should return 401 if session cookie creation fails', async () => {
       // Arrange
       const mockRequest = {
         json: jest.fn().mockResolvedValue({ token: AUTH.MOCK_TOKEN }),
@@ -207,7 +207,7 @@ describe('Session API Routes', () => {
       expect(createSessionCookieMock).toHaveBeenCalled();
     });
 
-    it('should return 401 if request parsing fails', async () => {
+    test('should return 401 if request parsing fails', async () => {
       // Arrange
       const mockRequest = {
         json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
@@ -224,7 +224,7 @@ describe('Session API Routes', () => {
   });
 
   describe('DELETE /api/auth/session', () => {
-    it('should successfully delete the session', async () => {
+    test('should successfully delete the session', async () => {
       // Act
       const response = await handleDELETE();
 

@@ -63,7 +63,7 @@ describe('Auth Logging', () => {
   });
 
   describe('signInWithLogging', () => {
-    it('should log successful sign-in with provider and client info', async () => {
+    test('should log successful sign-in with provider and client info', async () => {
       // Call the function we're testing
       await signInWithLogging('google', { callbackUrl: '/dashboard' });
 
@@ -94,7 +94,7 @@ describe('Auth Logging', () => {
   });
 
   describe('signOutWithLogging', () => {
-    it('should log successful sign-out with client info', async () => {
+    test('should log successful sign-out with client info', async () => {
       // Call the function we're testing
       await signOutWithLogging({ callbackUrl: '/login' });
 
@@ -121,7 +121,7 @@ describe('Auth Logging', () => {
       );
     });
 
-    it('should use default callback URL if not provided', async () => {
+    test('should use default callback URL if not provided', async () => {
       // Call without options
       await signOutWithLogging();
 

@@ -1,4 +1,4 @@
-/**
+/* Jest globals are automatically available */ /**
  * This file tests that Jest is properly using SWC for test transpilation.
  * It includes modern JavaScript/TypeScript features that should be transpiled by SWC.
  */

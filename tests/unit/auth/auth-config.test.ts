@@ -50,7 +50,7 @@ describe('Auth Config', () => {
 
   describe('callbacks', () => {
     describe('session callback', () => {
-      it('should add user ID to session and log debug message', async () => {
+      test('should add user ID to session and log debug message', async () => {
         const mockUser: AdapterUser = {
           id: 'user123',
           email: 'test@example.com',
@@ -81,7 +81,7 @@ describe('Auth Config', () => {
         });
       });
 
-      it('should return session unchanged if no token.sub', async () => {
+      test('should return session unchanged if no token.sub', async () => {
         const mockUser: AdapterUser = {
           id: 'user123',
           email: 'test@example.com',
@@ -108,7 +108,7 @@ describe('Auth Config', () => {
     });
 
     describe('jwt callback', () => {
-      it('should add user ID to token and log info message', async () => {
+      test('should add user ID to token and log info message', async () => {
         const mockToken = {} as JWT;
         const mockUser: AdapterUser = {
           id: 'user123',
@@ -138,7 +138,7 @@ describe('Auth Config', () => {
         });
       });
 
-      it('should return token unchanged if no user', async () => {
+      test('should return token unchanged if no user', async () => {
         const mockToken = { sub: 'existing123' } as JWT;
 
         const result = await authConfig.callbacks!.jwt!({
@@ -155,7 +155,7 @@ describe('Auth Config', () => {
   });
 
   describe('events', () => {
-    it('should log signIn event', () => {
+    test('should log signIn event', () => {
       const mockUser = {
         id: 'user123',
         email: 'test@example.com',
@@ -170,7 +170,7 @@ describe('Auth Config', () => {
       });
     });
 
-    it('should log signOut event', () => {
+    test('should log signOut event', () => {
       const mockToken = {
         sub: 'user123',
       };
@@ -183,7 +183,7 @@ describe('Auth Config', () => {
       });
     });
 
-    it('should log createUser event', () => {
+    test('should log createUser event', () => {
       const mockUser = {
         id: 'user123',
         email: 'test@example.com',
@@ -198,7 +198,7 @@ describe('Auth Config', () => {
       });
     });
 
-    it('should log linkAccount event', () => {
+    test('should log linkAccount event', () => {
       const mockUser = {
         id: 'user123',
       };
@@ -215,7 +215,7 @@ describe('Auth Config', () => {
       });
     });
 
-    it('should log session event', () => {
+    test('should log session event', () => {
       const mockToken = {
         sub: 'user123',
       };
@@ -228,7 +228,7 @@ describe('Auth Config', () => {
       });
     });
 
-    it('should not log session event if no token.sub', () => {
+    test('should not log session event if no token.sub', () => {
       const mockToken = {};
 
       authConfig.events!.session!({ token: mockToken } as any);

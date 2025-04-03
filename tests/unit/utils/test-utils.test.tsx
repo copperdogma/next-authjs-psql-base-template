@@ -49,14 +49,14 @@ const TestComponent = () => {
 
 describe('Test Utils', () => {
   describe('render function', () => {
-    it('renders with default auth state', () => {
+    test('renders with default auth state', () => {
       const { container, mockSignIn, mockSignOut } = render(<TestComponent />);
       expect(container).toHaveTextContent('Test Component');
       expect(mockSignIn).toBeDefined();
       expect(mockSignOut).toBeDefined();
     });
 
-    it('renders with custom auth state', () => {
+    test('renders with custom auth state', () => {
       const customAuthState = {
         loading: false,
         error: null,
@@ -66,7 +66,7 @@ describe('Test Utils', () => {
       expect(container).toHaveTextContent('Test Component');
     });
 
-    it('renders with custom router config', () => {
+    test('renders with custom router config', () => {
       const customRouter = {
         push: jest.fn(),
       };
@@ -74,7 +74,7 @@ describe('Test Utils', () => {
       expect(mockRouter!.push).toBeDefined();
     });
 
-    it('uses default router values', () => {
+    test('uses default router values', () => {
       const { mockRouter } = render(<TestComponent />);
       expect(mockRouter!.push).toBeDefined();
       expect(mockRouter!.replace).toBeDefined();
@@ -84,7 +84,7 @@ describe('Test Utils', () => {
   });
 
   describe('setup function', () => {
-    it('provides userEvent and render result', () => {
+    test('provides userEvent and render result', () => {
       const { user, container, mockSignIn, mockSignOut } = setup(<TestComponent />);
       expect(user).toBeDefined();
       expect(container).toHaveTextContent('Test Component');
@@ -92,7 +92,7 @@ describe('Test Utils', () => {
       expect(mockSignOut).toBeDefined();
     });
 
-    it('works with custom auth state', () => {
+    test('works with custom auth state', () => {
       const customAuthState = {
         loading: false,
         error: null,
@@ -103,7 +103,7 @@ describe('Test Utils', () => {
       expect(container).toHaveTextContent('Test Component');
     });
 
-    it('works with custom router config', () => {
+    test('works with custom router config', () => {
       const customRouter = {
         push: jest.fn(),
       };
@@ -114,7 +114,7 @@ describe('Test Utils', () => {
   });
 
   describe('next/navigation mocks', () => {
-    it('mocks useRouter correctly', () => {
+    test('mocks useRouter correctly', () => {
       const router = useRouter();
       expect(router.push).toBeDefined();
       expect(router.replace).toBeDefined();
@@ -122,12 +122,12 @@ describe('Test Utils', () => {
       expect(router.back).toBeDefined();
     });
 
-    it('mocks usePathname correctly', () => {
+    test('mocks usePathname correctly', () => {
       const pathname = usePathname();
       expect(pathname).toBe('/');
     });
 
-    it('mocks useSearchParams correctly', () => {
+    test('mocks useSearchParams correctly', () => {
       const searchParams = useSearchParams();
       if (searchParams) {
         expect(searchParams.get('callbackUrl')).toBe('/dashboard');
@@ -136,12 +136,12 @@ describe('Test Utils', () => {
     });
   });
 
-  it('adds default auth state to rendered components', () => {
+  test('adds default auth state to rendered components', () => {
     const { container } = render(<TestComponent />);
     expect(container).toHaveTextContent('Test Component');
   });
 
-  it('supports custom auth state', () => {
+  test('supports custom auth state', () => {
     // Define a custom auth state with user
     const customAuthState = {
       loading: false,
@@ -153,7 +153,7 @@ describe('Test Utils', () => {
     expect(container).toHaveTextContent('Test Component');
   });
 
-  it('works with custom router configuration', () => {
+  test('works with custom router configuration', () => {
     // Define a custom router configuration
     const mockPush = jest.fn();
     const customRouter = {
@@ -171,7 +171,7 @@ describe('Test Utils', () => {
     expect(mockPush).toHaveBeenCalledWith('/test');
   });
 
-  it('uses default router methods when not specified', () => {
+  test('uses default router methods when not specified', () => {
     const { mockRouter } = render(<TestComponent />);
 
     mockRouter!.push('/some-route');
@@ -183,7 +183,7 @@ describe('Test Utils', () => {
     expect(true).toBe(true);
   });
 
-  it('combines default and custom router configuration', () => {
+  test('combines default and custom router configuration', () => {
     // Define a partial router configuration (only override pathname)
     const customPathname = '/custom-path';
     const customRouter = {
@@ -196,7 +196,7 @@ describe('Test Utils', () => {
     expect(mockRouter!.pathname).toBe(customPathname);
   });
 
-  it('correctly overrides all router methods', () => {
+  test('correctly overrides all router methods', () => {
     // Define custom implementations for all methods
     const mockPush = jest.fn();
     const mockReplace = jest.fn();
@@ -228,7 +228,7 @@ describe('Test Utils', () => {
     expect(mockPrefetch).toHaveBeenCalledWith('/prefetch-route');
   });
 
-  it('works with partial router configuration', () => {
+  test('works with partial router configuration', () => {
     // Only override the push method
     const mockPush = jest.fn();
     const customRouter = {

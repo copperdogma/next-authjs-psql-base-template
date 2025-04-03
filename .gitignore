@@ -25,6 +25,8 @@ page-content.html
 /tests/e2e/screenshots/
 **/test-results/*/trace.zip
 **/test-results/*/video.webm
+/tests/.auth/
+**/user.json
 
 # Do NOT ignore snapshot reference images used for visual testing
 # These should be committed: 

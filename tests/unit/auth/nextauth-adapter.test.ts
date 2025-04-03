@@ -45,7 +45,7 @@ describe('NextAuth Adapter Configuration', () => {
     jest.clearAllMocks();
   });
 
-  it('should use Prisma adapter in the auth configuration', () => {
+  test('should use Prisma adapter in the auth configuration', () => {
     // Check if adapter is defined in the auth config
     expect(authConfig.adapter).toBeDefined();
 
@@ -57,7 +57,7 @@ describe('NextAuth Adapter Configuration', () => {
     expect(adapter).toHaveProperty('linkAccount');
   });
 
-  it('should have properly configured OAuth providers', () => {
+  test('should have properly configured OAuth providers', () => {
     // Verify providers are configured
     expect(authConfig.providers).toBeDefined();
     expect(authConfig.providers.length).toBeGreaterThan(0);
@@ -70,28 +70,28 @@ describe('NextAuth Adapter Configuration', () => {
     expect(hasGoogleProvider).toBe(true);
   });
 
-  it('should have session configuration set to JWT strategy', () => {
+  test('should have session configuration set to JWT strategy', () => {
     // Verify session configuration
     expect(authConfig.session).toBeDefined();
     expect(authConfig.session?.strategy).toBe('jwt');
     expect(authConfig.session?.maxAge).toBe(30 * 24 * 60 * 60); // 30 days
   });
 
-  it('should have callback functions defined', () => {
+  test('should have callback functions defined', () => {
     // Verify callbacks are defined
     expect(authConfig.callbacks).toBeDefined();
     expect(typeof authConfig.callbacks?.session).toBe('function');
     expect(typeof authConfig.callbacks?.jwt).toBe('function');
   });
 
-  it('should have events for user creation', () => {
+  test('should have events for user creation', () => {
     // Verify events are defined
     expect(authConfig.events).toBeDefined();
     expect(typeof authConfig.events?.createUser).toBe('function');
     expect(typeof authConfig.events?.signIn).toBe('function');
   });
 
-  it('should have debug mode disabled in production', () => {
+  test('should have debug mode disabled in production', () => {
     // Since we can't directly modify NODE_ENV, we'll just check if debug is falsy
     // which should be the case in a real production environment
     expect(authConfig.debug).toBeFalsy();

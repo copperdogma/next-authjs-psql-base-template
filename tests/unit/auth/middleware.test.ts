@@ -41,7 +41,7 @@ describe('Auth Middleware', () => {
   });
 
   describe('URL encoding', () => {
-    it('should properly encode the callbackUrl parameter without double encoding', () => {
+    test('should properly encode the callbackUrl parameter without double encoding', () => {
       // Create a request for a protected route without a session
       const req = new NextRequest('http://localhost:3000/dashboard?no-session=true');
 

@@ -42,7 +42,7 @@ describe('UserProfile', () => {
     jest.clearAllMocks();
   });
 
-  it('renders loading state when authentication is loading', () => {
+  test('renders loading state when authentication is loading', () => {
     // Mock the useSession hook to return loading state
     (useSession as jest.Mock).mockReturnValue({
       data: null,
@@ -56,7 +56,7 @@ describe('UserProfile', () => {
     expect(screen.getByTestId('profile-loading')).toBeInTheDocument();
   });
 
-  it('renders authenticated user information correctly with image', () => {
+  test('renders authenticated user information correctly with image', () => {
     // Mock the useSession hook to return authenticated state with image
     (useSession as jest.Mock).mockReturnValue({
       data: {
@@ -83,7 +83,7 @@ describe('UserProfile', () => {
     expect(profileImage).toBeInTheDocument();
   });
 
-  it('renders avatar with initials when user has no image', () => {
+  test('renders avatar with initials when user has no image', () => {
     // Mock the useSession hook to return authenticated state without image
     (useSession as jest.Mock).mockReturnValue({
       data: {
@@ -112,7 +112,7 @@ describe('UserProfile', () => {
     expect(avatar).toBeInTheDocument();
   });
 
-  it('uses email initial when name is not available', () => {
+  test('uses email initial when name is not available', () => {
     // Mock the useSession hook to return authenticated state with only email
     (useSession as jest.Mock).mockReturnValue({
       data: {
@@ -137,7 +137,7 @@ describe('UserProfile', () => {
     expect(avatar).toBeInTheDocument();
   });
 
-  it('renders nothing when user is not authenticated', () => {
+  test('renders nothing when user is not authenticated', () => {
     // Mock the useSession hook to return unauthenticated state
     (useSession as jest.Mock).mockReturnValue({
       data: null,

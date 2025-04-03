@@ -19,7 +19,7 @@ const TestComponent = () => <div>Test Component</div>;
 
 describe('Test Fixtures', () => {
   describe('createMockUser', () => {
-    it('creates a default mock user', () => {
+    test('creates a default mock user', () => {
       const user = createMockUser();
       expect(user.uid).toBe(TEST_USER.ID);
       expect(user.email).toBe(TEST_USER.EMAIL);
@@ -27,7 +27,7 @@ describe('Test Fixtures', () => {
       expect(user.photoURL).toBe(TEST_USER.PHOTO_URL);
     });
 
-    it('creates a mock user with custom properties', () => {
+    test('creates a mock user with custom properties', () => {
       const props = {
         uid: 'custom-id',
         email: 'custom@example.com',
@@ -41,14 +41,14 @@ describe('Test Fixtures', () => {
       expect(user.photoURL).toBe(props.photoURL);
     });
 
-    it('merges custom properties with defaults', () => {
+    test('merges custom properties with defaults', () => {
       const user = createMockUser({ uid: 'custom-id' });
       expect(user.uid).toBe('custom-id');
       expect(user.email).toBe(TEST_USER.EMAIL);
       expect(user.displayName).toBe(TEST_USER.NAME);
     });
 
-    it('handles additional Firebase user fields', () => {
+    test('handles additional Firebase user fields', () => {
       const user = createMockUser({
         emailVerified: true,
         isAnonymous: false,
@@ -65,14 +65,14 @@ describe('Test Fixtures', () => {
   });
 
   describe('AuthStateFixtures', () => {
-    it('provides authenticated state', () => {
+    test('provides authenticated state', () => {
       const state = AuthStateFixtures.authenticated();
       expect(state.user).toBeDefined();
       expect(state.error).toBeNull();
       expect(state.loading).toBe(false);
     });
 
-    it('provides custom user in authenticated state', () => {
+    test('provides custom user in authenticated state', () => {
       const customUser = {
         uid: 'custom-id',
         displayName: 'Custom User',
@@ -82,28 +82,28 @@ describe('Test Fixtures', () => {
       expect(state.user?.displayName).toBe('Custom User');
     });
 
-    it('provides loading state', () => {
+    test('provides loading state', () => {
       const state = AuthStateFixtures.loading();
       expect(state.user).toBeNull();
       expect(state.error).toBeNull();
       expect(state.loading).toBe(true);
     });
 
-    it('provides signed out state', () => {
+    test('provides signed out state', () => {
       const state = AuthStateFixtures.signedOut();
       expect(state.user).toBeNull();
       expect(state.error).toBeNull();
       expect(state.loading).toBe(false);
     });
 
-    it('provides error state with default message', () => {
+    test('provides error state with default message', () => {
       const state = AuthStateFixtures.error();
       expect(state.user).toBeNull();
       expect(state.error?.message).toBe('Authentication error');
       expect(state.loading).toBe(false);
     });
 
-    it('provides error state with custom message', () => {
+    test('provides error state with custom message', () => {
       const customError = 'Custom error message';
       const state = AuthStateFixtures.error(customError);
       expect(state.error?.message).toBe(customError);
@@ -111,36 +111,36 @@ describe('Test Fixtures', () => {
   });
 
   describe('AuthTestUtils', () => {
-    it('renders with default auth state', () => {
+    test('renders with default auth state', () => {
       const result = AuthTestUtils.renderWithAuth(<TestComponent />);
       expect(result.user).toBeDefined();
       expect(result.mockSignIn).toBeDefined();
       expect(result.mockSignOut).toBeDefined();
     });
 
-    it('renders with authenticated state', () => {
+    test('renders with authenticated state', () => {
       const result = AuthTestUtils.renderAuthenticated(<TestComponent />);
       expect(result.user).toBeDefined();
       expect(result.container).toHaveTextContent('Test Component');
     });
 
-    it('renders with custom user properties', () => {
+    test('renders with custom user properties', () => {
       const customUser = { displayName: 'Custom User' } as Partial<User>;
       const result = AuthTestUtils.renderAuthenticated(<TestComponent />, customUser);
       expect(result.container).toHaveTextContent('Test Component');
     });
 
-    it('renders in loading state', () => {
+    test('renders in loading state', () => {
       const result = AuthTestUtils.renderLoading(<TestComponent />);
       expect(result.container).toHaveTextContent('Test Component');
     });
 
-    it('renders with error state', () => {
+    test('renders with error state', () => {
       const result = AuthTestUtils.renderWithError(<TestComponent />);
       expect(result.container).toHaveTextContent('Test Component');
     });
 
-    it('renders with custom error message', () => {
+    test('renders with custom error message', () => {
       const customError = 'Custom error';
       const result = AuthTestUtils.renderWithError(<TestComponent />, customError);
       expect(result.container).toHaveTextContent('Test Component');

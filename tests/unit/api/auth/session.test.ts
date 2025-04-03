@@ -153,7 +153,7 @@ describe('Auth Session API', () => {
   });
 
   describe('POST /api/auth/session', () => {
-    it('should create a session successfully', async () => {
+    test('should create a session successfully', async () => {
       // Arrange
       const request = createRequestMock({ token: AUTH.MOCK_TOKEN });
 
@@ -181,7 +181,7 @@ describe('Auth Session API', () => {
       );
     });
 
-    it('should handle missing token', async () => {
+    test('should handle missing token', async () => {
       // Arrange
       const request = createRequestMock({});
 
@@ -197,7 +197,7 @@ describe('Auth Session API', () => {
       expect(adminAuth.createSessionCookie).not.toHaveBeenCalled();
     });
 
-    it('should handle token verification failure', async () => {
+    test('should handle token verification failure', async () => {
       // Arrange
       const request = createRequestMock({ token: AUTH.INVALID_TOKEN });
       (adminAuth.verifyIdToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
@@ -214,7 +214,7 @@ describe('Auth Session API', () => {
       expect(adminAuth.createSessionCookie).not.toHaveBeenCalled();
     });
 
-    it('should handle session cookie creation failure', async () => {
+    test('should handle session cookie creation failure', async () => {
       // Arrange
       const request = createRequestMock({ token: AUTH.MOCK_TOKEN });
       (adminAuth.createSessionCookie as jest.Mock).mockRejectedValue(
@@ -235,7 +235,7 @@ describe('Auth Session API', () => {
   });
 
   describe('DELETE /api/auth/session', () => {
-    it('should delete session successfully', async () => {
+    test('should delete session successfully', async () => {
       // Act
       const response = await handleSession.DELETE();
 

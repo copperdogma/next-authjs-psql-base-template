@@ -1,11 +1,11 @@
-/**
+/* Jest globals are automatically available */ /**
  * This test verifies SWC transpilation features in the test environment.
  * It includes modern JavaScript/TypeScript features that should be properly
  * transpiled by SWC.
  */
 
 describe('SWC Transpilation Features', () => {
-  it('supports optional chaining', () => {
+  test('supports optional chaining', () => {
     const user = {
       profile: {
         name: 'Test User',
@@ -20,7 +20,7 @@ describe('SWC Transpilation Features', () => {
     expect(emptyUser?.profile?.name).toBeUndefined();
   });
 
-  it('supports nullish coalescing', () => {
+  test('supports nullish coalescing', () => {
     const value1 = null;
     const value2 = 0;
 
@@ -29,7 +29,7 @@ describe('SWC Transpilation Features', () => {
     expect(value2 ?? 'default').toBe(0);
   });
 
-  it('supports async/await', async () => {
+  test('supports async/await', async () => {
     // Async/await - should be transpiled correctly
     const asyncFunction = async () => {
       return 'async result';
@@ -39,7 +39,7 @@ describe('SWC Transpilation Features', () => {
     expect(result).toBe('async result');
   });
 
-  it('supports class fields', () => {
+  test('supports class fields', () => {
     // Use standard class field instead of private field for test compatibility
     class TestClass {
       // Using _ prefix instead of # for compatibility
@@ -54,7 +54,7 @@ describe('SWC Transpilation Features', () => {
     expect(instance.getPrivateField()).toBe('private');
   });
 
-  it('supports rest/spread operators', () => {
+  test('supports rest/spread operators', () => {
     // Rest/spread operators - should be transpiled correctly
     const obj1 = { a: 1, b: 2 };
     const obj2 = { c: 3, ...obj1 };

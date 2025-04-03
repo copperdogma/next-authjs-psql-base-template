@@ -27,7 +27,7 @@ describe.skip('Component with Proper Cleanup', () => {
     expect(heading).toHaveTextContent('Counter: 0');
   });
 
-  it('should increment count when button is clicked', async () => {
+  test('should increment count when button is clicked', async () => {
     // Arrange
     render(<CleanupExample initialCount={0} onMount={mockOnMount} onUnmount={mockOnUnmount} />);
 
@@ -38,7 +38,7 @@ describe.skip('Component with Proper Cleanup', () => {
     expect(screen.getByRole('heading')).toHaveTextContent('Counter: 1');
   });
 
-  it('should call onMount when component mounts', () => {
+  test('should call onMount when component mounts', () => {
     // Arrange & Act
     render(<CleanupExample initialCount={0} onMount={mockOnMount} onUnmount={mockOnUnmount} />);
 
@@ -47,7 +47,7 @@ describe.skip('Component with Proper Cleanup', () => {
     expect(mockOnUnmount).not.toHaveBeenCalled();
   });
 
-  it('demonstrates test isolation by not affecting other tests', () => {
+  test('demonstrates test isolation by not affecting other tests', () => {
     // Arrange & Act
     render(<CleanupExample initialCount={0} onMount={mockOnMount} onUnmount={mockOnUnmount} />);
 

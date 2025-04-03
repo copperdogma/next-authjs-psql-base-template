@@ -9,7 +9,7 @@ import {
 } from '../../../tests/utils/test-theme-wrapper';
 
 describe('ThemeWrapper', () => {
-  it('renders children correctly with default theme', () => {
+  test('renders children correctly with default theme', () => {
     // Arrange & Act
     render(
       <ThemeWrapper>
@@ -22,7 +22,7 @@ describe('ThemeWrapper', () => {
     expect(screen.getByTestId('test-child')).toHaveTextContent('Child Content');
   });
 
-  it('renders children with custom theme value', () => {
+  test('renders children with custom theme value', () => {
     // Arrange
     const customThemeValue = {
       theme: 'dark' as const,
@@ -45,7 +45,7 @@ describe('ThemeWrapper', () => {
 });
 
 describe('renderWithTheme', () => {
-  it('returns UI wrapped in ThemeWrapper with default theme', () => {
+  test('returns UI wrapped in ThemeWrapper with default theme', () => {
     // Arrange
     const TestComponent = () => <div data-testid="test-component">Test Content</div>;
 
@@ -58,7 +58,7 @@ describe('renderWithTheme', () => {
     expect(setThemeMock).toBeDefined();
   });
 
-  it('uses provided theme state correctly', () => {
+  test('uses provided theme state correctly', () => {
     // Arrange
     const TestComponent = () => <div data-testid="test-component">Test Content</div>;
     const themeState = { theme: 'dark' as const, resolvedTheme: 'dark' as const };
@@ -72,7 +72,7 @@ describe('renderWithTheme', () => {
     expect(setThemeMock).toBeDefined();
   });
 
-  it('resolves system theme to light by default', () => {
+  test('resolves system theme to light by default', () => {
     // Arrange
     const TestComponent = () => <div data-testid="test-component">Test Content</div>;
     const themeState = { theme: 'system' as const };
@@ -85,7 +85,7 @@ describe('renderWithTheme', () => {
     expect(screen.getByTestId('test-component')).toBeInTheDocument();
   });
 
-  it('uses provided resolved theme over automatic resolution', () => {
+  test('uses provided resolved theme over automatic resolution', () => {
     // Arrange
     const TestComponent = () => <div data-testid="test-component">Test Content</div>;
     const themeState = {
@@ -103,7 +103,7 @@ describe('renderWithTheme', () => {
 });
 
 describe('MockThemeContext', () => {
-  it('provides default theme context values', () => {
+  test('provides default theme context values', () => {
     // Arrange
     const TestConsumer = () => {
       const context = React.useContext(MockThemeContext);
@@ -125,7 +125,7 @@ describe('MockThemeContext', () => {
 });
 
 describe('useTheme hook', () => {
-  it('returns default theme context values', () => {
+  test('returns default theme context values', () => {
     // Arrange
     const TestComponent = () => {
       const themeContext = useTheme();

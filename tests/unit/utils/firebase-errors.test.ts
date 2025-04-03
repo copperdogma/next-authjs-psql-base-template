@@ -3,7 +3,7 @@ import { FirebaseError } from '@firebase/util';
 
 describe('Firebase Error Utilities', () => {
   describe('getFirebaseAuthErrorMessage', () => {
-    it('should return correct message for invalid-email error', () => {
+    test('should return correct message for invalid-email error', () => {
       const error = new FirebaseError(
         'auth/invalid-email',
         'Firebase: Error (auth/invalid-email).'
@@ -11,7 +11,7 @@ describe('Firebase Error Utilities', () => {
       expect(getFirebaseAuthErrorMessage(error)).toBe('The email address is not valid.');
     });
 
-    it('should return correct message for wrong-password error', () => {
+    test('should return correct message for wrong-password error', () => {
       const error = new FirebaseError(
         'auth/wrong-password',
         'Firebase: Error (auth/wrong-password).'
@@ -21,7 +21,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for user-not-found error', () => {
+    test('should return correct message for user-not-found error', () => {
       const error = new FirebaseError(
         'auth/user-not-found',
         'Firebase: Error (auth/user-not-found).'
@@ -29,7 +29,7 @@ describe('Firebase Error Utilities', () => {
       expect(getFirebaseAuthErrorMessage(error)).toBe('No user found with this email address.');
     });
 
-    it('should return correct message for email-already-in-use error', () => {
+    test('should return correct message for email-already-in-use error', () => {
       const error = new FirebaseError(
         'auth/email-already-in-use',
         'Firebase: Error (auth/email-already-in-use).'
@@ -39,7 +39,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for weak-password error', () => {
+    test('should return correct message for weak-password error', () => {
       const error = new FirebaseError(
         'auth/weak-password',
         'Firebase: Error (auth/weak-password).'
@@ -49,7 +49,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for account-exists-with-different-credential error', () => {
+    test('should return correct message for account-exists-with-different-credential error', () => {
       const error = new FirebaseError(
         'auth/account-exists-with-different-credential',
         'Firebase: Error (auth/account-exists-with-different-credential).'
@@ -59,7 +59,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for popup-closed-by-user error', () => {
+    test('should return correct message for popup-closed-by-user error', () => {
       const error = new FirebaseError(
         'auth/popup-closed-by-user',
         'Firebase: Error (auth/popup-closed-by-user).'
@@ -69,7 +69,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for network-request-failed error', () => {
+    test('should return correct message for network-request-failed error', () => {
       const error = new FirebaseError(
         'auth/network-request-failed',
         'Firebase: Error (auth/network-request-failed).'
@@ -79,7 +79,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for too-many-requests error', () => {
+    test('should return correct message for too-many-requests error', () => {
       const error = new FirebaseError(
         'auth/too-many-requests',
         'Firebase: Error (auth/too-many-requests).'
@@ -89,7 +89,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for cancelled-popup-request error', () => {
+    test('should return correct message for cancelled-popup-request error', () => {
       const error = new FirebaseError(
         'auth/cancelled-popup-request',
         'Firebase: Error (auth/cancelled-popup-request).'
@@ -99,7 +99,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for expired-action-code error', () => {
+    test('should return correct message for expired-action-code error', () => {
       const error = new FirebaseError(
         'auth/expired-action-code',
         'Firebase: Error (auth/expired-action-code).'
@@ -109,7 +109,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for popup-blocked error', () => {
+    test('should return correct message for popup-blocked error', () => {
       const error = new FirebaseError(
         'auth/popup-blocked',
         'Firebase: Error (auth/popup-blocked).'
@@ -119,7 +119,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return correct message for unauthorized-domain error', () => {
+    test('should return correct message for unauthorized-domain error', () => {
       const error = new FirebaseError(
         'auth/unauthorized-domain',
         'Firebase: Error (auth/unauthorized-domain).'
@@ -129,7 +129,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return the error message for unknown Firebase Auth errors', () => {
+    test('should return the error message for unknown Firebase Auth errors', () => {
       const error = new FirebaseError(
         'auth/some-unknown-error',
         'Firebase: This is a custom error message.'
@@ -139,14 +139,14 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    it('should return a generic message for non-Firebase errors', () => {
+    test('should return a generic message for non-Firebase errors', () => {
       const error = new Error('This is a generic error');
       expect(getFirebaseAuthErrorMessage(error)).toBe(
         'An unexpected authentication error occurred. Please try again.'
       );
     });
 
-    it('should handle error objects without messages', () => {
+    test('should handle error objects without messages', () => {
       const error = { code: 'auth/timeout' } as unknown as Error;
       expect(getFirebaseAuthErrorMessage(error)).toBe(
         'An unexpected authentication error occurred. Please try again.'

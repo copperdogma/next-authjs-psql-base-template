@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+/* Jest globals are automatically available */ import { test, expect } from '@playwright/test';
 
 /**
  * Helper function to check if a color is dark based on its RGB values

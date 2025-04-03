@@ -89,7 +89,7 @@ describe('Logger', () => {
   });
 
   describe('createLogger', () => {
-    it('should create a child logger with context', () => {
+    test('should create a child logger with context', () => {
       const logger = createLogger('test-context', { additionalData: 'test' });
       expect(mockLogger.child).toHaveBeenCalledWith({
         context: 'test-context',
@@ -99,7 +99,7 @@ describe('Logger', () => {
   });
 
   describe('getRequestId', () => {
-    it('should generate a unique request ID', () => {
+    test('should generate a unique request ID', () => {
       // Mock Math.random to return a specific value
       (Math.random as jest.Mock).mockReturnValue(0.123456789);
 
@@ -109,7 +109,7 @@ describe('Logger', () => {
       expect(Math.random).toHaveBeenCalled();
     });
 
-    it('should generate different IDs for multiple calls', () => {
+    test('should generate different IDs for multiple calls', () => {
       // Mock Math.random to return different values
       (Math.random as jest.Mock).mockReturnValueOnce(0.1).mockReturnValueOnce(0.2);
 
@@ -120,21 +120,21 @@ describe('Logger', () => {
   });
 
   describe('shouldSample', () => {
-    it('should return true for IDs that fall within the sampling rate', () => {
+    test('should return true for IDs that fall within the sampling rate', () => {
       // Test with ID ending in '0' (0/16 = 0)
       expect(shouldSample('test0', 0.1)).toBe(true);
       // Test with ID ending in '1' (1/16 ≈ 0.0625)
       expect(shouldSample('test1', 0.1)).toBe(true);
     });
 
-    it('should return false for IDs that fall outside the sampling rate', () => {
+    test('should return false for IDs that fall outside the sampling rate', () => {
       // Test with ID ending in 'a' (10/16 ≈ 0.625)
       expect(shouldSample('testa', 0.1)).toBe(false);
       // Test with ID ending in 'f' (15/16 ≈ 0.9375)
       expect(shouldSample('testf', 0.1)).toBe(false);
     });
 
-    it('should use default rate of 0.1 if not specified', () => {
+    test('should use default rate of 0.1 if not specified', () => {
       expect(shouldSample('test0')).toBe(true); // 0/16 = 0
       expect(shouldSample('testa')).toBe(false); // 10/16 ≈ 0.625
     });
@@ -148,7 +148,7 @@ describe('Logger', () => {
       (Math.random as jest.Mock).mockReturnValue(0);
     });
 
-    it('should create a sampled logger with wrapped methods', () => {
+    test('should create a sampled logger with wrapped methods', () => {
       const sampledLogger = createSampledLogger(mockLogger);
       expect(sampledLogger.info).toBeDefined();
       expect(sampledLogger.warn).toBeDefined();
@@ -156,7 +156,7 @@ describe('Logger', () => {
       expect(sampledLogger.debug).toBeDefined();
     });
 
-    it('should only log messages that fall within the sampling rate', () => {
+    test('should only log messages that fall within the sampling rate', () => {
       const sampledLogger = createSampledLogger(mockLogger, 0.1);
 
       // First message should be logged (request ID ends in '0')
@@ -168,7 +168,7 @@ describe('Logger', () => {
       expect(mockLogger.info).toHaveBeenCalledTimes(1);
     });
 
-    it('should use provided requestId if available', () => {
+    test('should use provided requestId if available', () => {
       const sampledLogger = createSampledLogger(mockLogger);
 
       // Message with requestId that will be sampled
@@ -177,7 +177,7 @@ describe('Logger', () => {
       expect(mockLogger.info).toHaveBeenCalledWith({ msg: 'test', requestId: 'test0' });
     });
 
-    it('should preserve the original logger methods', () => {
+    test('should preserve the original logger methods', () => {
       const sampledLogger = createSampledLogger(mockLogger);
 
       // Call a non-logging method

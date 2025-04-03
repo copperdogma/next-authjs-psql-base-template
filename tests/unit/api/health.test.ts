@@ -14,7 +14,7 @@ import { NextResponse } from 'next/server';
 import { HTTP_STATUS } from '../../utils/test-constants';
 
 describe('Health API', () => {
-  it('should return healthy status', async () => {
+  test('should return healthy status', async () => {
     const response = await GET();
     const data = await response.json();
 

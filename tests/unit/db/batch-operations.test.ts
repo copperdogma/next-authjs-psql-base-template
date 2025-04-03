@@ -35,7 +35,7 @@ jest.mock('@prisma/client', () => {
         // Individual operation methods
         delete: jest.fn(async args => {
           operationLog.push({ type: 'session.delete', count: 1, args });
-          return { id: 'session1', userId: 'user1', expiresAt: new Date() };
+          return { id: 'session1', userId: 'user1', expires: new Date() };
         }),
         deleteMany: jest.fn(async args => {
           // Explicitly ensure we return a count > 0 when deleting expired sessions
@@ -56,7 +56,7 @@ jest.mock('@prisma/client', () => {
           const mockSessions = Array.from({ length: 10 }, (_, i) => ({
             id: `session${i}`,
             userId: `user${i % 3}`, // Distribute users across sessions
-            expiresAt: new Date(Date.now() - i * 1000 * 60 * 60), // Some are expired
+            expires: new Date(Date.now() - i * 1000 * 60 * 60), // Some are expired
           }));
 
           return mockSessions;
@@ -69,7 +69,7 @@ jest.mock('@prisma/client', () => {
             return {
               id: `session_${args.where.userId}_current`,
               userId: args.where.userId,
-              expiresAt: new Date(Date.now() + 3600000), // 1 hour from now
+              expires: new Date(Date.now() + 3600000), // 1 hour from now
             };
           }
 
@@ -125,7 +125,7 @@ describe('Batch Session Cleanup', () => {
     const now = new Date();
     const sessions = await prisma.session.findMany({
       where: {
-        expiresAt: {
+        expires: {
           lt: now,
         },
       },
