@@ -1,0 +1,14 @@
+---
+description: For getting the AI to start working on the next highest priority task
+globs: src/tests/**/*
+alwaysApply: false
+---
+Please research this topic in great detail.
+
+I want this codebase to be as close to best practices as possible and for it to be used as a perfect base project, ready to go and easy to use out of the box. I want people to point to this codebase as a perfect example of best practices balanced with minimal, elegant code.
+
+Once you're done researching, check the entire codebase and compare what we have to the best practices you've researched.
+
+Create a comprehensive markdown checklist of work we need to do to accomplish that best practices solution.
+
+If you have essential questions, ask them before doing the work.

@@ -38,6 +38,28 @@ const sharedConfig = {
   testMatch: ['<rootDir>/tests/unit/**/*.test.ts?(x)'],
   setupFiles: ['<rootDir>/jest.setup.env.js'],
   testEnvironment: 'jest-environment-jsdom',
+
+  // Improved coverage reporting
+  collectCoverageFrom: [
+    'app/**/*.{js,jsx,ts,tsx}',
+    'components/**/*.{js,jsx,ts,tsx}',
+    'lib/**/*.{js,jsx,ts,tsx}',
+    'utils/**/*.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+  ],
+
+  // This ensures coverage is only collected from files that are actually tested
+  collectCoverage: true,
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    '/coverage/',
+    '/tests/',
+    '/scripts/',
+    '/public/',
+  ],
 };
 
 // Custom Jest configuration with multiple projects
@@ -81,16 +103,6 @@ const customJestConfig = {
       lines: 80,
     },
   },
-
-  // Only collect coverage from source files, not tests or configuration
-  collectCoverageFrom: [
-    'app/**/*.{js,jsx,ts,tsx}',
-    'components/**/*.{js,jsx,ts,tsx}',
-    'lib/**/*.{js,jsx,ts,tsx}',
-    '!**/*.d.ts',
-    '!**/node_modules/**',
-    '!**/.next/**',
-  ],
 };
 
 // Export the combined configuration

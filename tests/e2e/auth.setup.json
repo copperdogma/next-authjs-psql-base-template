@@ -1,28 +1,18 @@
 {
   "cookies": [
     {
-      "name": "__playwright_test",
-      "value": "true",
-      "domain": "localhost",
-      "path": "/",
-      "expires": 1743803452.633981,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "firebase-auth-test",
       "value": "true",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743803452.634093,
-      "httpOnly": false,
+      "expires": 1743894574,
+      "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "next-auth.csrf-token",
-      "value": "6182c6ff935fa6eb04a7cf432da57ef83566f60793bea494d8fd2324dd635caf%7C1bfa91d95ee4e28f8f9da7261b02c5c56bae2bf133edecbcb8b83a0b98f21611",
+      "value": "70dfc9800e11151e32b0d658edd4df0657043b15f5125f2e28e84bba7f45ca47%7C35535b82f7de1f5bb05f7e63aaf45fe9087d1e6946593d640d82fb5b311336b5",
       "domain": "localhost",
       "path": "/",
       "expires": -1,
@@ -39,6 +29,26 @@
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
+    },
+    {
+      "name": "__playwright_test",
+      "value": "true",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1743811775.467881,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.session-token",
+      "value": "mock-session-token-1743808175467",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1743811775.467977,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
     }
   ],
   "origins": [
@@ -47,15 +57,15 @@
       "localStorage": [
         {
           "name": "nextauth.message",
-          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743799854}"
+          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743808175}"
         },
         {
           "name": "firebaseTestAuth",
-          "value": "{\"uid\":\"test-uid-123\",\"email\":\"test@example.com\",\"authenticated\":true}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"authenticated\":true,\"accessToken\":\"test-access-token-1743808175468\"}"
         },
         {
           "name": "firebase:authUser:next-firebase-base-template",
-          "value": "{\"uid\":\"test-uid-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true,\"photoURL\":\"https://via.placeholder.com/150\",\"phoneNumber\":\"+15555555555\",\"createdAt\":\"1743808175468\",\"lastLoginAt\":\"1743808175468\",\"apiKey\":\"PLAYWRIGHT_TEST_API_KEY\",\"appName\":\"[DEFAULT]\",\"authDomain\":\"test-domain.firebaseapp.com\",\"stsTokenManager\":{\"refreshToken\":\"test-refresh-token-1743808175468\",\"accessToken\":\"test-access-token-1743808175468\",\"expirationTime\":1743811775468},\"redirectEventId\":null,\"multiFactor\":{\"enrolledFactors\":[]},\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"password\",\"uid\":\"test@example.com\",\"displayName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+15555555555\",\"photoURL\":\"https://via.placeholder.com/150\"}]}"
         }
       ]
     }

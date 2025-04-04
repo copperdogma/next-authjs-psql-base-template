@@ -1,94 +1,119 @@
-# E2E Testing with Playwright - Implementation Guide
+# E2E Testing with Playwright and Firebase Emulators
 
-This directory contains end-to-end tests using Playwright. This README focuses on implementation details specific to this codebase.
+This document provides an overview of the end-to-end testing setup for this project, which uses Playwright for browser automation and Firebase Emulators for backend testing.
 
-> **Note:** For the comprehensive testing guide, see the `/docs/testing/e2e-testing.mdc` file.
+## Key Features
 
-## Directory Structure
+- **Playwright Test Framework**: Automated browser testing with Chromium
+- **Firebase Emulator Integration**: Tests run against local Firebase emulators
+- **Authentication Testing**: Pre-authenticated test user for protected routes
+- **Accessibility Testing**: Automated accessibility audits with Axe
+- **Responsive Design Testing**: Tests for both mobile and desktop viewports
+- **Continuous Integration**: GitHub Actions workflow for automated testing
 
-```
-tests/e2e/
-├── fixtures/            # Test fixtures and utilities
-│   └── auth-fixtures.ts # Firebase authentication helpers
-├── auth/                # Authentication tests
-│   └── auth-flow.spec.ts # Tests basic auth patterns
-├── accessibility.spec.ts # Accessibility compliance tests
-├── navigation.spec.ts    # Navigation and structure tests
-├── performance.spec.ts   # Performance and loading tests
-└── README-e2e.md         # This file
-```
+## Test Structure
 
-## Local Setup
+The tests are organized into several projects within the Playwright configuration:
 
-### Installation
+1. **`setup`**: Handles authentication setup, creating a reusable authenticated state
+2. **`ui-tests`**: Basic UI tests that don't require authentication
+3. **`chromium`**: Tests that run with authentication enabled
+4. **`api`**: Tests for API endpoints without browser rendering
 
-Ensure you have installed the required dependencies:
+## Running Tests
 
-```bash
-npm install
-npx playwright install  # Installs browser binaries
-```
+### Basic Test Commands
 
-### Running Tests
+- **Run all tests**: `npm run test:e2e`
+- **Run UI tests only**: `npm run test:e2e:ui`
+- **Run authenticated tests**: `npm run test:e2e:auth`
+- **Run in debug mode**: `npm run test:e2e:debug`
+- **Run in headed mode**: `npm run test:e2e:headed`
+- **View test report**: `npm run test:e2e:report`
 
-```bash
-# Run all tests
-npm run test:e2e
+### Tests with Firebase Emulators
 
-# Run with UI mode (for debugging)
-npm run test:e2e:ui
+- **Run with emulators**: `npm run test:e2e:with-emulator`
+- **Complete test suite**: `npm run test:e2e:full`
 
-# Run with debugging
-npm run test:e2e:debug
+### Authentication Setup
 
-# Show HTML report
-npm run test:e2e:report
+- **Setup authentication state**: `npm run test:e2e:setup`
 
-# Run a specific test file
-npx playwright test tests/e2e/auth/auth-flow.spec.ts
+## Test Development Guidelines
 
-# Run tests with a specific browser
-npx playwright test --project=chromium
-```
+### Best Practices
 
-## Implementation Notes
+1. **Use Role-Based Selectors**: Prefer `page.getByRole()`, `getByLabel()`, and `getByText()` over CSS selectors for better test resilience.
 
-### Authentication Helpers
+2. **Avoid Timeouts**: Use Playwright's auto-waiting mechanisms instead of explicit waits. For example:
 
-The `fixtures/auth-fixtures.ts` file provides utilities for:
+   ```typescript
+   // Good - relies on Playwright's auto-waiting
+   await expect(page.getByRole('button')).toBeVisible();
 
-- Mocking Firebase authentication
-- Setting up authenticated page contexts
-- Cleaning up authentication state
+   // Bad - uses explicit timeout
+   await page.waitForTimeout(1000);
+   ```
 
-### Test Database
+3. **Test Isolation**: Ensure tests don't depend on each other's state. Each test should set up its own prerequisites and clean up after itself.
 
-When running tests that require database access:
+4. **Error Handling**: Use Playwright's built-in retry and timeout mechanisms for flaky operations rather than custom retry loops.
 
-1. Tests use the `TEST_DATABASE_URL` environment variable
-2. Database cleanup happens automatically in the `afterAll` hook
+5. **Accessibility Testing**: Include accessibility checks in your tests using the built-in Axe integration.
 
-### CSS Selectors
+### Adding New Tests
 
-For this project, use selectors in the following priority order:
+1. Create a new test file in the appropriate directory:
 
-1. `data-testid` attributes
-2. ARIA roles with name matchers
-3. Semantic HTML elements
-4. CSS classes (only when unavoidable)
+   - `/tests/e2e/` for general UI tests
+   - `/tests/e2e/auth/` for authentication-related tests
+   - `/tests/e2e/api/` for API tests
 
-### Performance Thresholds
+2. Use the existing test files as templates for the proper setup.
 
-Current performance thresholds are:
+3. If your test requires authentication, make sure it's in a project that depends on the `setup` project.
 
-- Page load: < 5000ms
-- Render blocking resources: Warning only
-- Memory usage: < 80% of available heap
+## Firebase Emulator Integration
 
-### Customization Points
+Tests utilize local Firebase emulators for Auth and Firestore, which provides several benefits:
 
-When adding new tests, focus on these customization points:
+- No interaction with production Firebase resources
+- Consistent, deterministic test environment
+- Fast test execution with no network delays
+- No billing costs for test operations
 
-1. `auth-fixtures.ts`: Update mock user data for your auth implementation
-2. Navigation tests: Update route list to match your application
-3. Accessibility tests: Adjust excluded rules if needed
+The Firebase emulators are automatically started before tests run and shut down afterward.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: If tests fail with port-in-use errors, ensure no previous test processes are running:
+
+   ```
+   npx kill-port 3777 9099 8080
+   ```
+
+2. **Authentication issues**: If tests can't access protected routes:
+
+   - Make sure the emulators are running
+   - Check that auth setup is completed with `npm run test:e2e:setup`
+   - Verify the test user exists in the Auth emulator
+
+3. **Flaky tests**: Some tests may be timing-sensitive. Try running with `--retries=3` flag.
+
+### Debugging
+
+- Use `npm run test:e2e:debug` to open the Playwright Inspector
+- Check screenshots in the `tests/e2e/screenshots` directory
+- Examine the test report with `npm run test:e2e:report`
+
+## Continuous Integration
+
+Tests run automatically on GitHub Actions when:
+
+- Code is pushed to the main branch
+- Pull requests are created against the main branch
+
+The workflow caches dependencies and emulators for faster execution.

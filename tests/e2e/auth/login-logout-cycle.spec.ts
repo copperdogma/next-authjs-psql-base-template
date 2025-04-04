@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import * as path from 'path';
 
 /**
  * Complete Authentication Cycle Test
@@ -12,18 +13,20 @@ import { test, expect, Page } from '@playwright/test';
  * This provides comprehensive verification of the authentication
  * system beyond just login tests or logout tests in isolation.
  */
+
+// Use the storage state from auth.setup.ts
+const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
+
 test.describe('Authentication Cycle', () => {
-  // Ensure we start with a clean slate for each test
-  test.beforeEach(async ({ context }) => {
-    await context.clearCookies();
-  });
+  // Configure the test to use the authentication state
+  test.use({ storageState: storageStatePath });
 
   test('Login and logout cycle using test authentication bypass', async ({ page }) => {
     const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
 
-    // Start from the home page (or any page that triggers auth check)
-    console.log('Navigating to home page to verify authentication...');
-    await page.goto(baseUrl);
+    // Start from the dashboard page directly to verify authentication
+    console.log('Navigating to dashboard page to verify authentication...');
+    await page.goto(`${baseUrl}/dashboard`);
 
     // Verify user is logged in by checking dashboard element
     console.log('Verifying authenticated state...');

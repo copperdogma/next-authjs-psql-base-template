@@ -1,8 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import firebaseAdmin from '@/lib/firebase-admin';
-import { loggers } from '@/lib/logger';
-
-const logger = loggers.auth;
 
 /**
  * @swagger
@@ -10,53 +7,111 @@ const logger = loggers.auth;
  *   get:
  *     tags:
  *       - Authentication
- *     description: Returns a custom Firebase authentication token for E2E testing
+ *     description: Provides a test authentication form for E2E testing
  *     responses:
  *       200:
- *         description: JSON object with a custom Firebase authentication token
- *         content:
- *           application/json:
- *             schema:
- *               type: object
+ *         description: An HTML form for test authentication
+ *       404:
+ *         description: Not found (in non-test environments)
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     description: Handles test authentication for E2E tests
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Authentication success response with mock token
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Not found (in non-test environments)
  */
 export async function GET() {
-  // Only allow this endpoint in test environments
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { error: 'This endpoint is only available in test environments' },
-      { status: 403 }
-    );
-  }
+  // Basic HTML form for test authentication
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Test Login</title>
+        <style>
+          body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 500px; margin: 0 auto; }
+          form { display: flex; flex-direction: column; gap: 1rem; }
+          button { padding: 0.5rem; cursor: pointer; }
+        </style>
+      </head>
+      <body>
+        <h1>E2E Test Authentication</h1>
+        <p>This endpoint is for E2E testing purposes only.</p>
+        <form method="POST">
+          <input name="email" placeholder="Email" value="test@example.com" />
+          <input name="password" placeholder="Password" type="password" value="Test123!" />
+          <button type="submit">Authenticate</button>
+        </form>
+      </body>
+    </html>
+  `;
 
+  return new NextResponse(html, {
+    headers: {
+      'Content-Type': 'text/html',
+    },
+  });
+}
+
+export async function POST(request: NextRequest) {
   try {
-    logger.info('Creating custom token for test user');
-
-    // Use test user from environment or fallback to default
-    const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
-    const testUid = process.env.TEST_USER_UID || 'test-user-123';
-    const auth = firebaseAdmin.auth();
-
-    // Try to find user by email first
-    let customToken, uid, email;
-    try {
-      const userRecord = await auth.getUserByEmail(testEmail);
-      customToken = await auth.createCustomToken(userRecord.uid);
-      uid = userRecord.uid;
-      email = userRecord.email;
-      logger.info('Created custom token for existing user', { uid });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      // If user not found, use default UID
-      logger.warn(`Couldn't find user by email ${testEmail}, using default UID instead`);
-      customToken = await auth.createCustomToken(testUid);
-      uid = testUid;
-      email = testEmail;
-      logger.info('Created custom token with default UID', { uid });
+    // Validate we're in a test environment
+    if (process.env.NODE_ENV !== 'test' && process.env.ALLOW_TEST_AUTH !== 'true') {
+      return NextResponse.json(
+        { error: 'Test authentication is only available in test environment' },
+        { status: 403 }
+      );
     }
 
-    return NextResponse.json({ customToken, uid, email });
-  } catch (err) {
-    logger.error('Error creating custom token', { error: err });
-    return NextResponse.json({ error: 'Failed to create authentication token' }, { status: 500 });
+    const formData = await request.formData();
+    const email = formData.get('email')?.toString() || 'test@example.com';
+
+    // Create a custom token for the test user
+    const customToken = await firebaseAdmin.auth().createCustomToken('test-user-id', {
+      email,
+      testAuth: true,
+    });
+
+    // Create response with the token
+    const response = NextResponse.json({
+      success: true,
+      token: customToken,
+      user: {
+        email,
+        uid: 'test-user-id',
+      },
+    });
+
+    // Set a cookie that will be used for authentication in tests
+    response.cookies.set('firebase-auth-test', customToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60, // 1 hour
+      path: '/',
+    });
+
+    return response;
+  } catch (error: unknown) {
+    console.error('Error in test login:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Failed to authenticate test user', details: errorMessage },
+      { status: 500 }
+    );
   }
 }

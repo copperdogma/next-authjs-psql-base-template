@@ -95,8 +95,9 @@ alwaysApply: true
 This file summarizes key commands for development, testing, and code quality within this project.
 
 ### Core Development
+- `npm run dev`: Start the development server.
 - `npm run build`: Create a production build.
-- NEVER run 'npm run dev'. Use the AI scripts:
+- `npm start`: Start the production server.
 
 ### AI Agent Server Management (PM2)
 - `npm run ai:start`: Start the dev server managed by PM2 (background).
@@ -178,7 +179,7 @@ REDIS_URL=
 - Firebase Firestore
 - Playwright for E2E testing
 - Jest for unit testing
-- PostgreSQL
+- PostgreSQL (pending)
 - Redis (pending)
 - Material Design components
 
