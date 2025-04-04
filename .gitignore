@@ -20,6 +20,7 @@
 /tests/reports
 /.swc
 page-content.html
+auth-verification-failed.png
 
 # Playwright test artifacts
 /tests/e2e/screenshots/

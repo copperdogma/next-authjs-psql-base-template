@@ -1,63 +1,62 @@
 import { NextResponse } from 'next/server';
-import logger from '@/lib/logger';
+import firebaseAdmin from '@/lib/firebase-admin';
+import { loggers } from '@/lib/logger';
+
+const logger = loggers.auth;
 
 /**
- * API route for programmatic test authentication
- *
- * This endpoint is ONLY available in non-production environments and is
- * specifically designed for E2E testing to provide faster authentication
- * without going through the UI flow.
- *
- * @returns Response with session cookies + redirect to dashboard
+ * @swagger
+ * /api/auth/test-login:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     description: Returns a custom Firebase authentication token for E2E testing
+ *     responses:
+ *       200:
+ *         description: JSON object with a custom Firebase authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  */
-export async function GET(request: Request) {
-  // Security: Only allow in development or test environments
+export async function GET() {
+  // Only allow this endpoint in test environments
   if (process.env.NODE_ENV === 'production') {
-    return new Response('Not Found', { status: 404 });
+    return NextResponse.json(
+      { error: 'This endpoint is only available in test environments' },
+      { status: 403 }
+    );
   }
 
   try {
-    console.log('🔑 Test login API: Authenticating test user...');
+    logger.info('Creating custom token for test user');
 
-    // Get test user credentials from environment variables
+    // Use test user from environment or fallback to default
     const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
+    const testUid = process.env.TEST_USER_UID || 'test-user-123';
+    const auth = firebaseAdmin.auth();
 
-    // Create a simple session object
-    const session = {
-      user: {
-        email: testEmail,
-        name: 'Test User',
-        id: 'test-user-id',
-      },
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-    };
+    // Try to find user by email first
+    let customToken, uid, email;
+    try {
+      const userRecord = await auth.getUserByEmail(testEmail);
+      customToken = await auth.createCustomToken(userRecord.uid);
+      uid = userRecord.uid;
+      email = userRecord.email;
+      logger.info('Created custom token for existing user', { uid });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      // If user not found, use default UID
+      logger.warn(`Couldn't find user by email ${testEmail}, using default UID instead`);
+      customToken = await auth.createCustomToken(testUid);
+      uid = testUid;
+      email = testEmail;
+      logger.info('Created custom token with default UID', { uid });
+    }
 
-    logger.info('Created test session for authentication', {
-      context: 'auth',
-      userId: session.user.id,
-      email: session.user.email,
-    });
-
-    // Get the callback URL or default to dashboard
-    const url = new URL(request.url);
-    const callbackUrl = url.searchParams.get('callbackUrl') || '/dashboard';
-
-    // Return redirect response
-    const response = NextResponse.redirect(new URL(callbackUrl, request.url));
-
-    // Set cookie would be done here in a real implementation
-    // cookies.set('next-auth.session-token', token, { ...cookieOptions });
-
-    return response;
-  } catch (error) {
-    console.error('❌ Test login API error:', error);
-    logger.error('Error creating test auth session', { error });
-    return NextResponse.json(
-      {
-        error: 'Test login failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ customToken, uid, email });
+  } catch (err) {
+    logger.error('Error creating custom token', { error: err });
+    return NextResponse.json({ error: 'Failed to create authentication token' }, { status: 500 });
   }
 }

@@ -1,11 +1,36 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { loggers } from '@/lib/logger'; // Assuming logger setup
+
+const logger = loggers.auth;
 
 // Recovery timeout in milliseconds
 const SESSION_RECOVERY_DELAY_MS = 3000;
+
+// Internal component to handle session logic
+function SessionLogic() {
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    logger.debug('Session status changed', { status, session });
+
+    if (status === 'authenticated' && session?.user) {
+      logger.info('User authenticated', { userId: session.user.id, email: session.user.email });
+      // Additional logic for authenticated users (e.g., analytics)
+    } else if (status === 'unauthenticated') {
+      logger.info('User unauthenticated');
+      // Additional logic for unauthenticated users
+    }
+    // Explicitly return undefined to satisfy TS7030
+    return undefined;
+  }, [session, status]);
+
+  // Return null as this component doesn't render anything itself
+  return null;
+}
 
 export default function SessionProviderWrapper({ children }: { children: React.ReactNode }) {
   const [sessionError, setSessionError] = useState<Error | null>(null);
@@ -51,10 +76,13 @@ export default function SessionProviderWrapper({ children }: { children: React.R
       }, SESSION_RECOVERY_DELAY_MS);
       return () => clearTimeout(timer);
     }
+    // Explicitly return undefined when no sessionError
+    return undefined;
   }, [sessionError, router]);
 
   return (
     <SessionProvider>
+      <SessionLogic />
       {sessionError ? (
         <div
           style={{

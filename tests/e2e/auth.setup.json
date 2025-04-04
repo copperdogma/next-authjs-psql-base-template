@@ -1,0 +1,63 @@
+{
+  "cookies": [
+    {
+      "name": "__playwright_test",
+      "value": "true",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1743803452.633981,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "firebase-auth-test",
+      "value": "true",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1743803452.634093,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.csrf-token",
+      "value": "6182c6ff935fa6eb04a7cf432da57ef83566f60793bea494d8fd2324dd635caf%7C1bfa91d95ee4e28f8f9da7261b02c5c56bae2bf133edecbcb8b83a0b98f21611",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "next-auth.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3777",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3777",
+      "localStorage": [
+        {
+          "name": "nextauth.message",
+          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743799854}"
+        },
+        {
+          "name": "firebaseTestAuth",
+          "value": "{\"uid\":\"test-uid-123\",\"email\":\"test@example.com\",\"authenticated\":true}"
+        },
+        {
+          "name": "firebase:authUser:next-firebase-base-template",
+          "value": "{\"uid\":\"test-uid-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true}"
+        }
+      ]
+    }
+  ]
+}

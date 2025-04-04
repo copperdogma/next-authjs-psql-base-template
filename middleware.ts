@@ -20,6 +20,29 @@ const isPublicRoute = (path: string) => {
   );
 };
 
+/**
+ * Determines if the request is from a Playwright test and has valid test auth
+ * @param request The incoming request
+ * @returns Object with isPlaywrightTest and hasValidTestAuth flags
+ */
+function getPlaywrightTestContext(request: NextRequest) {
+  // Check if this is a Playwright test
+  const isPlaywrightTest =
+    request.headers.get('user-agent')?.includes('Playwright') ||
+    request.cookies.has('__playwright_test');
+
+  if (!isPlaywrightTest) {
+    return { isPlaywrightTest: false, hasValidTestAuth: false };
+  }
+
+  // Check for valid test auth tokens
+  const mockSessionToken = request.cookies.get('next-auth.session-token')?.value;
+  const hasFirebaseAuthData = request.cookies.get('firebase-auth-test')?.value === 'true';
+  const hasValidTestAuth = mockSessionToken === 'mock-session-token' || hasFirebaseAuthData;
+
+  return { isPlaywrightTest, hasValidTestAuth };
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const requestId = getRequestId();
@@ -50,64 +73,42 @@ export async function middleware(request: NextRequest) {
 
   // Skip API auth routes to avoid the NextAuth error
   if (pathname.startsWith('/api/auth')) {
-    // Moved from debug to trace level to reduce log volume
     reqLogger.trace('Skipping API auth route');
     return NextResponse.next();
   }
 
   // Skip file requests
   if (pathname.includes('.')) {
-    // Moved from debug to trace level to reduce log volume
     reqLogger.trace('Skipping file request');
     return NextResponse.next();
   }
 
-  // Check for Playwright test bypass cookie for E2E testing - enhanced to be more reliable
-  const isPlaywrightTest = request.cookies.get('__playwright_auth_bypass')?.value === 'true';
+  // Handle Playwright test authentication
+  const { isPlaywrightTest, hasValidTestAuth } = getPlaywrightTestContext(request);
 
-  // For E2E testing with Playwright, allow bypassing authentication
+  // For E2E testing with valid auth tokens, allow auth bypass
   if (isPlaywrightTest) {
-    // Check for test session data in various forms
-    const testUserId = request.cookies.get('__playwright_test_user_id')?.value;
-    const hasTestSession =
-      !!testUserId ||
-      process.env.NODE_ENV === 'test' ||
-      request.headers.get('x-playwright-test') === 'true';
-
-    if (hasTestSession) {
+    if (hasValidTestAuth) {
       reqLogger.info({
-        msg: 'Playwright test detected - bypassing auth check',
-        testUserId: testUserId || 'not-specified',
+        msg: 'Playwright test with valid auth detected',
         path: pathname,
       });
 
-      // Create a test user for the middleware context
-      const testUser = {
-        sub: testUserId || 'test-user-123',
-        name: 'Test User',
-        email: 'test@example.com',
-      };
-
-      // For dashboard and other protected routes, treat as authenticated
+      // For protected routes, allow access
       if (!isPublicRoute(pathname)) {
-        reqLogger.info({
-          msg: 'Allowing E2E test access to protected route',
-          path: pathname,
-        });
         return NextResponse.next();
       }
 
-      // For login page, redirect to dashboard as if authenticated
+      // For login page, redirect to dashboard
       if (pathname === '/login') {
-        reqLogger.info({
-          msg: 'Redirecting E2E test from login to dashboard',
-          userId: testUser.sub,
-        });
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
+    } else {
+      reqLogger.debug('Playwright test detected but without valid auth tokens');
     }
   }
 
+  // Standard auth flow for non-test requests
   // Get token
   const token = await getToken({ req: request });
   const isAuthenticated = !!token;
