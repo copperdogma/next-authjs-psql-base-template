@@ -1,158 +1,103 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { Box, Paper, Typography, Stack } from '@mui/material';
-import React from 'react';
+import { Box, Paper, Typography, Stack, CircularProgress } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 
-export default function DashboardContent() {
-  const { data: session } = useSession();
-  const user = session?.user;
+export default function DashboardContent(): React.ReactNode {
+  const { data: session, status } = useSession();
+  const [error, setError] = useState<string | null>(null);
 
-  if (!user) {
-    return null;
+  // Add useEffect to log session status for debugging
+  useEffect(() => {
+    // Only log in development/test environments
+    if (process.env.NODE_ENV !== 'production') {
+      if (status === 'loading') {
+        console.log('DashboardContent: Session loading...');
+      } else if (status === 'authenticated') {
+        console.log('DashboardContent: Session authenticated', session);
+      } else if (status === 'unauthenticated') {
+        console.log('DashboardContent: Session unauthenticated');
+      }
+    }
+
+    if (status === 'unauthenticated') {
+      setError('Session not authenticated. Please log in again.');
+    }
+  }, [status, session]);
+
+  // Loading state
+  if (status === 'loading') {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
+
+  // Error state
+  if (error) {
+    return (
+      <Paper elevation={2} sx={{ p: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
+        <Typography variant="h6">Error Loading Dashboard</Typography>
+        <Typography variant="body1">{error}</Typography>
+        <Typography variant="body2" sx={{ mt: 2 }}>
+          Try refreshing the page or logging in again.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  // No session state
+  if (!session?.user) {
+    return (
+      <Paper elevation={2} sx={{ p: 3, bgcolor: 'warning.light' }}>
+        <Typography variant="h6">Session Not Available</Typography>
+        <Typography variant="body1">
+          Unable to load your user information. Please try logging in again.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  const user = session.user;
 
   return (
     <Stack spacing={4}>
       {/* Overview Section */}
-      <Paper
-        elevation={1}
-        sx={{
-          p: { xs: 3, sm: 4 },
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 3 }}>
+      <Paper elevation={1} sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
           Overview
         </Typography>
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: 'action.hover',
-                borderRadius: 2,
-                height: '100%',
-              }}
-            >
-              <Typography variant="subtitle1" component="h3" fontWeight="medium">
-                Metric 1
-              </Typography>
-              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
-                3,721
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: 'action.hover',
-                borderRadius: 2,
-                height: '100%',
-              }}
-            >
-              <Typography variant="subtitle1" component="h3" fontWeight="medium">
-                Metric 2
-              </Typography>
-              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
-                2,519
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: 'action.hover',
-                borderRadius: 2,
-                height: '100%',
-              }}
-            >
-              <Typography variant="subtitle1" component="h3" fontWeight="medium">
-                Metric 3
-              </Typography>
-              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
-                1,489
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: 'action.hover',
-                borderRadius: 2,
-                height: '100%',
-              }}
-            >
-              <Typography variant="subtitle1" component="h3" fontWeight="medium">
-                Metric 4
-              </Typography>
-              <Typography variant="h4" component="p" fontWeight="bold" sx={{ mt: 1 }}>
-                968
-              </Typography>
-            </Paper>
-          </Box>
-        </Box>
+        <Typography variant="body1">Welcome back, {user.name || user.email}!</Typography>
       </Paper>
 
-      {/* Dashboard Cards */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)' } }}>
-          <Paper
-            elevation={1}
-            sx={{
-              p: { xs: 3, sm: 4 },
-              height: '100%',
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
-              Welcome
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Hello, {user.name || user.email || 'User'}! This is your dashboard placeholder.
-            </Typography>
-          </Paper>
-        </Box>
-        <Box sx={{ width: { xs: '100%', md: 'calc(50% - 12px)' } }}>
-          <Paper
-            elevation={1}
-            sx={{
-              p: { xs: 3, sm: 4 },
-              height: '100%',
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
-              Statistics
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Your important metrics and data will appear here.
-            </Typography>
-          </Paper>
-        </Box>
-      </Box>
-
-      <Paper
-        elevation={1}
-        sx={{
-          p: { xs: 3, sm: 4 },
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2 }}>
+      {/* Activity Section */}
+      <Paper elevation={1} sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
           Recent Activity
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Your recent actions and activity will be displayed in this section.
+        <Typography variant="body2" color="text.secondary">
+          No recent activity to show.
         </Typography>
+      </Paper>
+
+      {/* Quick Actions Section */}
+      <Paper elevation={1} sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          Quick Actions
+        </Typography>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1, flex: 1 }}>
+            <Typography variant="body1">Create New Item</Typography>
+          </Box>
+          <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1, flex: 1 }}>
+            <Typography variant="body1">View Reports</Typography>
+          </Box>
+          <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 1, flex: 1 }}>
+            <Typography variant="body1">Profile Settings</Typography>
+          </Box>
+        </Stack>
       </Paper>
     </Stack>
   );

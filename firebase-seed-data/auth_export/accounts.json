@@ -2,14 +2,15 @@
   "kind": "identitytoolkit#DownloadAccountResponse",
   "users": [
     {
-      "localId": "test-user-id",
+      "localId": "IiqRBbwSkCUOd7OxMCgcH0qA5YEQ",
+      "lastLoginAt": "1743781596043",
+      "emailVerified": false,
       "email": "test@example.com",
-      "emailVerified": true,
-      "passwordHash": "fakeHash:salt=fakeSaltNWlq8wYK66B5:password=Test123!",
-      "salt": "fakeSaltNWlq8wYK66B5",
-      "displayName": "Test User",
-      "createdAt": "1611631110000",
-      "lastSignedInAt": "1672631110000",
+      "salt": "fakeSaltwUCPafQwfJ8cjtYEmUxu",
+      "passwordHash": "fakeHash:salt=fakeSaltwUCPafQwfJ8cjtYEmUxu:password=Test123!",
+      "passwordUpdatedAt": 1743781596043,
+      "validSince": "1743781596",
+      "createdAt": "1743781596043",
       "providerUserInfo": [
         {
           "providerId": "password",
@@ -18,7 +19,9 @@
           "rawId": "test@example.com",
           "displayName": "Test User"
         }
-      ]
+      ],
+      "lastRefreshAt": "2025-04-04T15:46:36.043Z",
+      "displayName": "Test User"
     }
   ]
 }

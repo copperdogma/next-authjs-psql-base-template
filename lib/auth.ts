@@ -7,6 +7,22 @@ import { prisma } from './prisma';
 
 const logger = loggers.auth;
 
+/**
+ * Helper function to dynamically determine the base URL
+ * This handles cases where the port might change between environments
+ */
+function getBaseUrl(): string {
+  // In the browser, use window.location
+  if (typeof window !== 'undefined') {
+    const { protocol, host } = window.location;
+    return `${protocol}//${host}`;
+  }
+
+  // In server context, use environment variables with fallbacks
+  const port = process.env.PORT || process.env.NEXT_PUBLIC_PORT || 3000;
+  return `http://localhost:${port}`;
+}
+
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -59,6 +75,11 @@ export const authConfig: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  // If NEXTAUTH_URL is not explicitly set or it contains an environment variable placeholder,
+  // use our dynamic detection
+  ...(!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('${')
+    ? { url: getBaseUrl() }
+    : {}),
   secret: process.env.NEXTAUTH_SECRET,
   events: {
     signIn: ({ user }) => {
