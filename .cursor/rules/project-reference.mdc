@@ -122,7 +122,6 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm run test:e2e:with-emulator`: Start Firebase emulators and run tests against them.
 - `npm run test:e2e:full`: Run the complete E2E test suite with emulators and imported test data.
 - `npm run test:e2e:setup`: Set up authentication state for manual testing.
-- `npm run test:e2e:ci`: Run tests in CI mode (more retries, no server reuse).
 
 ### Code Quality & Formatting
 - `npm run lint`: Check for ESLint issues.

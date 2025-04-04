@@ -1,0 +1,24 @@
+{
+  "kind": "identitytoolkit#DownloadAccountResponse",
+  "users": [
+    {
+      "localId": "test-user-id",
+      "email": "test@example.com",
+      "emailVerified": true,
+      "passwordHash": "fakeHash:salt=fakeSaltNWlq8wYK66B5:password=Test123!",
+      "salt": "fakeSaltNWlq8wYK66B5",
+      "displayName": "Test User",
+      "createdAt": "1611631110000",
+      "lastSignedInAt": "1672631110000",
+      "providerUserInfo": [
+        {
+          "providerId": "password",
+          "email": "test@example.com",
+          "federatedId": "test@example.com",
+          "rawId": "test@example.com",
+          "displayName": "Test User"
+        }
+      ]
+    }
+  ]
+}

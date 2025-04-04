@@ -47,10 +47,10 @@ const config: PlaywrightTestConfig = defineConfig({
   testDir: './tests/e2e',
   timeout: TIMEOUT_TEST,
   expect: { timeout: 15000 }, // Reasonable expectation timeout
-  fullyParallel: false, // Set to true when tests are fully isolated
+  fullyParallel: true, // Set to true to enable parallel test execution
   forbidOnly: !!process.env.CI,
   retries: TEST_RETRIES,
-  workers: process.env.CI ? 1 : 1, // Increase when tests are stable
+  workers: process.env.CI ? 2 : undefined, // Limit workers on CI, use auto-detection locally
   reporter: [['list'], ['html', { open: 'never' }]],
   globalSetup: './tests/e2e/global-setup.ts',
 
@@ -90,6 +90,15 @@ const config: PlaywrightTestConfig = defineConfig({
       testIgnore: /.*simple-test\.spec\.ts|.*navigation\.spec\.ts/,
     },
 
+    // API tests - no browser needed
+    {
+      name: 'api',
+      testMatch: /api\/.*\.spec\.ts/,
+      use: {
+        // No browser is needed for API tests
+      },
+    },
+
     // Uncomment to add Firefox testing
     // {
     //   name: 'firefox',
@@ -104,10 +113,10 @@ const config: PlaywrightTestConfig = defineConfig({
 
   // Built-in webServer configuration - manages Next.js server for tests
   webServer: {
-    command: `echo "🚀 Starting Next.js server for E2E tests on port ${PORT}..." && cross-env NODE_ENV=test FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p ${PORT}`,
+    command: `npm run dev:test`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 20000, // 20 seconds
+    timeout: TIMEOUT_SERVER,
     stdout: 'pipe',
     stderr: 'pipe',
   },

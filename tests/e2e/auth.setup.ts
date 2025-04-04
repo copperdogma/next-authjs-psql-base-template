@@ -1,5 +1,5 @@
 import { test as setup, Page } from '@playwright/test';
-import { STORAGE_STATE } from '../../tests/config/playwright.config';
+import { STORAGE_STATE } from '../../playwright.config';
 import { TEST_CONFIG } from '../utils/routes';
 
 /**
