@@ -179,6 +179,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off', // TypeScript can infer return types
       '@typescript-eslint/explicit-module-boundary-types': 'off', // TypeScript can infer exported types
       '@typescript-eslint/ban-ts-comment': 'warn', // Discourage @ts-ignore
+      '@typescript-eslint/no-non-null-assertion': 'warn', // Discourage ! operator, prefer proper null checking
     },
   },
 

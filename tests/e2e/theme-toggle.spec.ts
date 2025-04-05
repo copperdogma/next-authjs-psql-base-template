@@ -55,8 +55,10 @@ async function getAppliedTheme(page: Page) {
     const styles = {
       bodyBg: window.getComputedStyle(document.body).backgroundColor,
       bodyColor: window.getComputedStyle(document.body).color,
-      appBarBg: window.getComputedStyle(document.querySelector('header')!).backgroundColor,
-      cardBg: window.getComputedStyle(document.querySelector('.MuiPaper-root')!).backgroundColor,
+      appBarBg: window.getComputedStyle(document.querySelector('header') || document.body)
+        .backgroundColor,
+      cardBg: window.getComputedStyle(document.querySelector('.MuiPaper-root') || document.body)
+        .backgroundColor,
     };
     return styles;
   });
