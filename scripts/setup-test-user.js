@@ -90,38 +90,51 @@ async function handleUserCreationError(auth, error) {
   }
 }
 
+// Initialize Firebase app and auth
+function initializeFirebase() {
+  console.log('Initializing Firebase app...');
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Connect to Auth emulator with proper options
+  connectAuthEmulator(auth, 'http://localhost:9099', {
+    disableWarnings: true,
+    apiHost: 'http://localhost:9099',
+  });
+
+  console.log('Connecting to Auth emulator at http://localhost:9099...');
+
+  return auth;
+}
+
+// Handle user creation process
+async function createOrVerifyUser(auth) {
+  try {
+    // Try to create the user
+    return await createUser(auth);
+  } catch (error) {
+    return await handleUserCreationError(auth, error);
+  }
+}
+
 async function setupTestUser() {
   console.log('Setting up test user in Firebase Auth emulator...');
   console.log(`Email: ${TEST_USER.email}`);
   console.log(`Display Name: ${TEST_USER.displayName}`);
 
   try {
-    // Initialize Firebase app
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    // Initialize Firebase app and connect to auth emulator
+    const auth = initializeFirebase();
 
-    // Connect to Auth emulator with proper options
-    // Added apiHost property to fix connection issues
-    connectAuthEmulator(auth, 'http://localhost:9099', {
-      disableWarnings: true,
-      apiHost: 'http://localhost:9099',
-    });
-
-    // Log the emulator connection attempt
-    console.log('Connecting to Auth emulator at http://localhost:9099...');
-
-    try {
-      // Try to create the user
-      await createUser(auth);
-    } catch (error) {
-      await handleUserCreationError(auth, error);
-    }
+    // Create or verify the test user
+    await createOrVerifyUser(auth);
 
     console.log('✅ Test user setup complete.');
   } catch (error) {
     console.error('❌ Firebase setup error:', error);
     console.log('\nMake sure the Firebase Auth emulator is running:');
     console.log('npm run firebase:emulators');
+
     process.exit(1);
   }
 }
@@ -129,5 +142,6 @@ async function setupTestUser() {
 // Run the setup
 setupTestUser().catch(error => {
   console.error('Unhandled error:', error);
+
   process.exit(1);
 });

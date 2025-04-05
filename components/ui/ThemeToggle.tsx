@@ -7,6 +7,29 @@ import { useTheme } from 'next-themes';
 import ThemeMenu from './theme/ThemeMenu';
 
 /**
+ * Renders the appropriate theme icon based on current theme setting
+ */
+function ThemeIcon({
+  theme,
+  resolvedTheme,
+}: {
+  theme: string | undefined;
+  resolvedTheme: string | undefined;
+}) {
+  // First check if theme is set to system/auto
+  if (theme === 'system') {
+    return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
+  }
+
+  // Otherwise use the resolved theme for the icon (what's actually showing)
+  return resolvedTheme === 'dark' ? (
+    <DarkMode fontSize="small" data-testid="DarkModeIcon" />
+  ) : (
+    <LightMode fontSize="small" data-testid="LightModeIcon" />
+  );
+}
+
+/**
  * ThemeToggle component that provides a user interface for switching themes
  *
  * This component:
@@ -42,22 +65,6 @@ export default function ThemeToggle() {
     handleClose();
   };
 
-  // Choose the appropriate icon based on the current theme
-  const renderThemeIcon = () => {
-    // First check if theme is set to system/auto
-    if (theme === 'system') {
-      // Use BrightnessAuto for system/auto theme
-      return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
-    }
-
-    // Otherwise use the resolved theme for the icon (what's actually showing)
-    return resolvedTheme === 'dark' ? (
-      <DarkMode fontSize="small" data-testid="DarkModeIcon" />
-    ) : (
-      <LightMode fontSize="small" data-testid="LightModeIcon" />
-    );
-  };
-
   // Don't render during SSR to prevent hydration mismatch
   if (!mounted) return null;
 
@@ -72,7 +79,7 @@ export default function ThemeToggle() {
           aria-expanded={open ? 'true' : undefined}
           data-testid="theme-toggle"
         >
-          {renderThemeIcon()}
+          <ThemeIcon theme={theme} resolvedTheme={resolvedTheme} />
         </IconButton>
       </Tooltip>
 

@@ -67,10 +67,11 @@ async function updateFiles(answers) {
   }
 }
 
-async function main() {
-  console.log('🚀 Welcome to the Next.js Firebase PostgreSQL Template Setup!\n');
-
-  const answers = await inquirer.prompt([
+/**
+ * Gather user inputs through prompts
+ */
+async function promptUserForInputs() {
+  return inquirer.prompt([
     {
       type: 'input',
       name: 'projectName',
@@ -108,11 +109,12 @@ async function main() {
       default: answers => answers.projectName,
     },
   ]);
+}
 
-  console.log('\n🔄 Updating project files...');
-  await updateFiles(answers);
-
-  // Update package-lock.json
+/**
+ * Update package-lock.json by running npm install
+ */
+async function updateDependencies() {
   console.log('\n🔄 Updating package-lock.json...');
   try {
     execSync('npm install', { stdio: 'inherit' });
@@ -120,12 +122,34 @@ async function main() {
   } catch (error) {
     console.error('❌ Error updating package-lock.json:', error.message);
   }
+}
 
+/**
+ * Display completion message with next steps
+ */
+function displayCompletionMessage() {
   console.log('\n✨ Setup complete! Next steps:');
   console.log('1. Review the changes in your files');
   console.log('2. Update your .env file with your credentials');
   console.log("3. Run npm install if you haven't already");
   console.log('4. Start developing with npm run dev\n');
+}
+
+async function main() {
+  console.log('🚀 Welcome to the Next.js Firebase PostgreSQL Template Setup!\n');
+
+  // Get user inputs
+  const answers = await promptUserForInputs();
+
+  // Update project files
+  console.log('\n🔄 Updating project files...');
+  await updateFiles(answers);
+
+  // Update dependencies
+  await updateDependencies();
+
+  // Show next steps
+  displayCompletionMessage();
 }
 
 main().catch(error => {

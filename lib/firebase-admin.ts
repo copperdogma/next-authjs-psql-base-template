@@ -137,6 +137,33 @@ function initializeWithMinimalConfig(): admin.app.App {
 }
 
 /**
+ * Determines the appropriate initialization strategy based on environment and credentials
+ */
+function getInitStrategy() {
+  // Check if we're in test mode or using emulators
+  const usingEmulators =
+    process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true';
+
+  if (usingEmulators) {
+    return { strategy: 'emulators' };
+  }
+
+  // Get production credentials
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+
+  if (projectId && clientEmail && privateKey) {
+    return {
+      strategy: 'credentials',
+      credentials: { projectId, clientEmail, privateKey },
+    };
+  }
+
+  return { strategy: 'minimal' };
+}
+
+/**
  * Helper function to initialize Firebase Admin SDK
  */
 function initializeFirebaseAdmin() {
@@ -146,26 +173,17 @@ function initializeFirebaseAdmin() {
       return admin;
     }
 
-    // Check if we're in test mode or using emulators
-    const usingEmulators =
-      process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true';
+    // Determine initialization strategy
+    const { strategy, credentials } = getInitStrategy();
 
-    // Initialize based on environment
-    if (usingEmulators) {
+    // Initialize based on strategy
+    if (strategy === 'emulators') {
       initializeWithEmulators();
+    } else if (strategy === 'credentials' && credentials) {
+      const { projectId, clientEmail, privateKey } = credentials;
+      initializeWithCredentials(projectId, clientEmail, privateKey);
     } else {
-      // Get project configuration
-      const projectId = process.env.FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
-
-      if (projectId && clientEmail && privateKey) {
-        // Use service account if all credentials are available
-        initializeWithCredentials(projectId, clientEmail, privateKey);
-      } else {
-        // Fallback for when credentials are missing
-        initializeWithMinimalConfig();
-      }
+      initializeWithMinimalConfig();
     }
 
     // Log current environment for debugging
@@ -175,9 +193,6 @@ function initializeFirebaseAdmin() {
     return admin;
   } catch (error) {
     console.error('Error initializing Firebase Admin SDK:', error);
-
-    // Always return admin - even if initialization failed.
-    // This prevents the app from crashing on startup.
     return admin;
   }
 }

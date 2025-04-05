@@ -71,41 +71,43 @@ test.describe('Authentication Cycle', () => {
 });
 
 /**
- * Helper function to perform logout action.
- * Tries multiple methods to ensure logout works reliably.
+ * Try to logout using data-testid
  */
-async function performLogout(page: Page): Promise<void> {
-  let loggedOut = false;
-
-  // Method 1: Try to find the logout button by data-testid (most reliable)
+async function tryLogoutByTestId(page: Page): Promise<boolean> {
   try {
     const logoutByTestId = page.locator('[data-testid="auth-button"][data-loading="false"]');
     if (await logoutByTestId.isVisible({ timeout: 2000 })) {
       await logoutByTestId.click();
-      loggedOut = true;
       console.log('Logout method 1: Clicked logout button by data-testid');
+      return true;
     }
   } catch {
     /* Ignore if not found */
   }
+  return false;
+}
 
-  if (loggedOut) return;
-
-  // Method 2: Find by button with "Sign Out" text as a fallback
+/**
+ * Try to logout using button text
+ */
+async function tryLogoutByText(page: Page): Promise<boolean> {
   try {
     const logoutButton = page.locator('button:has-text("Sign Out"), button:has-text("Logout")');
     if (await logoutButton.isVisible({ timeout: 2000 })) {
       await logoutButton.click();
-      loggedOut = true;
       console.log('Logout method 2: Clicked logout button by text');
+      return true;
     }
   } catch {
     /* Ignore if not found */
   }
+  return false;
+}
 
-  if (loggedOut) return;
-
-  // Method 3: Look for logout icon
+/**
+ * Try to logout using icon
+ */
+async function tryLogoutByIcon(page: Page): Promise<boolean> {
   try {
     const logoutIcon = page.locator(
       'button svg[data-testid="LogoutIcon"], button svg[data-testid="LogoutOutlinedIcon"]'
@@ -113,16 +115,19 @@ async function performLogout(page: Page): Promise<void> {
     if (await logoutIcon.isVisible({ timeout: 2000 })) {
       // Click the parent button
       await logoutIcon.locator('xpath=ancestor::button').click();
-      loggedOut = true;
       console.log('Logout method 3: Clicked logout button by icon');
+      return true;
     }
   } catch {
     /* Ignore if not found */
   }
+  return false;
+}
 
-  if (loggedOut) return;
-
-  // Method 4: Clear relevant cookies and local storage (fallback)
+/**
+ * Try to logout by clearing storage
+ */
+async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
   console.log('Logout method 4: Clearing cookies and storage');
   await page.context().clearCookies();
   await page.evaluate(() => {
@@ -136,9 +141,26 @@ async function performLogout(page: Page): Promise<void> {
   // Reload to reflect cleared state
   await page.reload({ waitUntil: 'networkidle' });
   console.log('✅ Successfully cleared authentication cookies and storage');
-  loggedOut = true;
+  return true;
+}
 
-  if (!loggedOut) {
-    throw new Error('Failed to perform logout using any available method.');
+/**
+ * Helper function to perform logout action.
+ * Tries multiple methods to ensure logout works reliably.
+ */
+async function performLogout(page: Page): Promise<void> {
+  // Try each logout method in sequence until one succeeds
+  const logoutMethods = [
+    tryLogoutByTestId,
+    tryLogoutByText,
+    tryLogoutByIcon,
+    tryLogoutByClearingStorage,
+  ];
+
+  for (const method of logoutMethods) {
+    const success = await method(page);
+    if (success) return;
   }
+
+  throw new Error('Failed to perform logout using any available method.');
 }

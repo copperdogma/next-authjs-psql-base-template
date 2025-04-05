@@ -201,6 +201,65 @@ function logRequestCompletion(
   }
 }
 
+/**
+ * Process the request and generate appropriate response
+ */
+async function processRequest(
+  request: NextRequest,
+  context: RequestContext,
+  startTime: number
+): Promise<NextResponse> {
+  const { pathname, reqLogger } = context;
+
+  // Check for skippable routes (API, static files)
+  const skippableResponse = handleSkippableRoutes(pathname, reqLogger);
+  if (skippableResponse) {
+    return skippableResponse;
+  }
+
+  // Handle Playwright test authentication
+  const playwrightResponse = await handlePlaywrightTestAuth(request, pathname, reqLogger);
+  if (playwrightResponse) {
+    return playwrightResponse;
+  }
+
+  // Process standard authentication
+  const authResult = await processAuthentication(request, context, startTime);
+  if (authResult.response) {
+    return authResult.response;
+  }
+
+  // Set custom headers for tracking
+  const response = NextResponse.next();
+  response.headers.set('x-request-id', getRequestId());
+
+  return response;
+}
+
+/**
+ * Handle authentication and return auth state and optional response
+ */
+async function processAuthentication(
+  request: NextRequest,
+  context: RequestContext,
+  startTime: number
+): Promise<{ isAuthenticated: boolean; response: NextResponse | null }> {
+  // Handle standard authentication
+  const token = await getToken({ req: request });
+  const isAuthenticated = !!token;
+
+  // Check if we need to redirect
+  const authResponse = await handleStandardAuth(request, context);
+
+  // Log request completion
+  logRequestCompletion(context, startTime, isAuthenticated);
+
+  return {
+    isAuthenticated,
+    response: authResponse,
+  };
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const requestId = getRequestId();
@@ -223,35 +282,8 @@ export async function middleware(request: NextRequest) {
   // Log initial request information
   logRequest(reqLogger, request, pathname, isHighTrafficPath);
 
-  // Check for skippable routes (API, static files)
-  const skippableResponse = handleSkippableRoutes(pathname, reqLogger);
-  if (skippableResponse) {
-    return skippableResponse;
-  }
-
-  // Handle Playwright test authentication
-  const playwrightResponse = await handlePlaywrightTestAuth(request, pathname, reqLogger);
-  if (playwrightResponse) {
-    return playwrightResponse;
-  }
-
-  // Handle standard authentication
-  const token = await getToken({ req: request });
-  const isAuthenticated = !!token;
-
-  const authResponse = await handleStandardAuth(request, context);
-
-  if (authResponse) {
-    return authResponse;
-  }
-
-  // Allow access for public routes or authenticated users
-  const response = NextResponse.next();
-
-  // Log request completion
-  logRequestCompletion(context, startTime, isAuthenticated);
-
-  return response;
+  // Process the request and return appropriate response
+  return processRequest(request, context, startTime);
 }
 
 export const config = {

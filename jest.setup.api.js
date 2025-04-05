@@ -1,6 +1,13 @@
-// Ensure Request is defined before anything else
-if (typeof global.Request === 'undefined') {
-  global.Request = class Request {
+/**
+ * Factory functions for browser API mocks in Jest tests
+ * Each function creates a constructor for a specific API class
+ */
+
+/**
+ * Create the Request class constructor
+ */
+export function createRequestClass() {
+  return class Request {
     constructor(input, init = {}) {
       this._url = typeof input === 'string' ? new URL(input, 'http://localhost') : input;
       this.method = init.method || 'GET';
@@ -14,9 +21,11 @@ if (typeof global.Request === 'undefined') {
   };
 }
 
-// Mock Headers if not defined
-if (typeof global.Headers === 'undefined') {
-  global.Headers = class Headers {
+/**
+ * Create the Headers class constructor
+ */
+export function createHeadersClass() {
+  return class Headers {
     constructor(init = {}) {
       this._headers = new Map();
       if (init) {
@@ -52,9 +61,11 @@ if (typeof global.Headers === 'undefined') {
   };
 }
 
-// Mock Response if not defined
-if (typeof global.Response === 'undefined') {
-  global.Response = class Response {
+/**
+ * Create the Response class constructor
+ */
+export function createResponseClass() {
+  return class Response {
     constructor(body, init = {}) {
       this._body = body;
       this.status = init.status || 200;
@@ -69,50 +80,21 @@ if (typeof global.Response === 'undefined') {
   };
 }
 
-// Import Next.js server after mocking Request and Response
-jest.mock('next/server', () => {
-  return {
-    NextRequest: class NextRequest extends global.Request {
-      constructor(input, init = {}) {
-        super(input, init);
-        this.nextUrl = new URL(typeof input === 'string' ? input : input.url, 'http://localhost');
-      }
-    },
-    NextResponse: {
-      json: (body, init = {}) => {
-        const jsonBody = typeof body === 'string' ? body : JSON.stringify(body);
-        const response = new global.Response(jsonBody, {
-          ...init,
-          headers: {
-            ...init?.headers,
-            'content-type': 'application/json',
-          },
-        });
-
-        // Add cookies functionality
-        response.cookies = {
-          set: jest.fn(),
-          get: jest.fn(),
-          delete: jest.fn(),
-        };
-
-        return response;
-      },
-      redirect: jest.fn(url => {
-        return {
-          url,
-          status: 302,
-          headers: new Headers({ location: url }),
-          cookies: {
-            set: jest.fn(),
-            get: jest.fn(),
-            delete: jest.fn(),
-          },
-        };
-      }),
-    },
+/**
+ * Create NextRequest constructor function
+ */
+export function createNextRequestClass() {
+  return class NextRequest extends Request {
+    constructor(input, init = {}) {
+      super(input, init);
+      this.nextUrl = new URL(typeof input === 'string' ? input : input.url, 'http://localhost');
+    }
   };
-});
+}
+
+// Import the factory functions and set up global objects
+import { createJestApiSetup } from './mocks/jest-api-setup';
+createJestApiSetup();
 
 // Reset mocks after each test
 afterEach(() => {

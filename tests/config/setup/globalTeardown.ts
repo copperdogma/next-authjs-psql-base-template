@@ -71,6 +71,50 @@ async function fallbackCleanup(prisma: any): Promise<boolean> {
 }
 
 /**
+ * Check environment to ensure we're in test mode
+ */
+function validateTestEnvironment() {
+  if (process.env.NODE_ENV !== 'test') {
+    console.error('⚠️ SAFETY ERROR: Attempted to run test teardown in non-test environment');
+    throw new Error('globalTeardown should only run in test environment');
+  }
+}
+
+/**
+ * Perform the database cleanup using both strategies
+ */
+async function performDatabaseCleanup(prisma: any) {
+  console.log('🧹 Cleaning up test database...');
+
+  // Try standard cleanup first
+  let cleanupSuccessful = await standardCleanup(prisma);
+
+  // If standard cleanup fails, try fallback
+  if (!cleanupSuccessful) {
+    cleanupSuccessful = await fallbackCleanup(prisma);
+  }
+
+  if (cleanupSuccessful) {
+    console.log('✅ Test database cleaned');
+  }
+
+  return cleanupSuccessful;
+}
+
+/**
+ * Reset database settings and disconnect
+ */
+async function resetDatabaseSettings(prisma: any) {
+  try {
+    await prisma.$executeRaw`SET session_replication_role = 'origin';`;
+  } catch (finallyError) {
+    console.warn('⚠️ Could not reset foreign key constraints:', finallyError);
+  }
+
+  await prisma.$disconnect();
+}
+
+/**
  * Global teardown function for test environment
  *
  * This function safely cleans up the test database after tests run.
@@ -78,40 +122,18 @@ async function fallbackCleanup(prisma: any): Promise<boolean> {
  */
 async function globalTeardown() {
   // Safety check to prevent accidental runs in non-test environments
-  if (process.env.NODE_ENV !== 'test') {
-    console.error('⚠️ SAFETY ERROR: Attempted to run test teardown in non-test environment');
-    throw new Error('globalTeardown should only run in test environment');
-  }
+  validateTestEnvironment();
 
   const prisma = new PrismaTeardownClient();
-  let cleanupSuccessful = false;
 
   try {
-    console.log('🧹 Cleaning up test database...');
-
-    // Try standard cleanup first
-    cleanupSuccessful = await standardCleanup(prisma);
-
-    // If standard cleanup fails, try fallback
-    if (!cleanupSuccessful) {
-      cleanupSuccessful = await fallbackCleanup(prisma);
-    }
-
-    if (cleanupSuccessful) {
-      console.log('✅ Test database cleaned');
-    }
+    await performDatabaseCleanup(prisma);
   } catch (error) {
     console.error('❌ Database cleanup failed:', error);
     throw error;
   } finally {
-    // Always re-enable foreign key constraints
-    try {
-      await prisma.$executeRaw`SET session_replication_role = 'origin';`;
-    } catch (finallyError) {
-      console.warn('⚠️ Could not reset foreign key constraints:', finallyError);
-    }
-
-    await prisma.$disconnect();
+    // Always re-enable foreign key constraints and disconnect
+    await resetDatabaseSettings(prisma);
   }
 }
 
