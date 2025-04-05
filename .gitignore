@@ -28,6 +28,7 @@ auth-verification-failed.png
 **/test-results/*/video.webm
 /tests/.auth/
 **/user.json
+tests/e2e/auth.setup.json
 
 # Do NOT ignore snapshot reference images used for visual testing
 # These should be committed: 
