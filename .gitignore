@@ -103,3 +103,5 @@ tests/e2e/screenshots/
 
 # Add firestore-debug.log to ignored files
 firestore-debug.log
+firestore-debug.log
+tests/e2e/auth.setup.json
