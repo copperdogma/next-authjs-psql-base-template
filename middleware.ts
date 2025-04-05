@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { loggers, getRequestId, createSampledLogger } from './lib/logger';
+import pino from 'pino';
 
 // Create a sampled logger for middleware with 10% sampling rate for high-volume paths
 const logger = createSampledLogger(loggers.middleware, 0.1);
@@ -43,34 +43,10 @@ function getPlaywrightTestContext(request: NextRequest) {
   return { isPlaywrightTest, hasValidTestAuth };
 }
 
-export async function middleware(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
-  const requestId = getRequestId();
-  const startTime = Date.now();
-
-  // Create request-specific logger with request ID
-  const reqLogger = logger.child({ requestId, path: pathname });
-
-  // Use standard rate for important events, sampled rate for routine events
-  const isHighTrafficPath = pathname.startsWith('/api/auth') || pathname.includes('.');
-
-  // Only log detailed request info for non-static resources to reduce noise
-  if (!isHighTrafficPath) {
-    reqLogger.info({
-      msg: 'Request started',
-      method: request.method,
-      url: request.url,
-      userAgent: request.headers.get('user-agent'),
-    });
-  } else {
-    // For high-traffic paths, use trace level with minimal info
-    reqLogger.trace({
-      msg: 'Static request',
-      method: request.method,
-      path: pathname,
-    });
-  }
-
+/**
+ * Handle static and API routes that should be skipped by middleware
+ */
+function handleSkippableRoutes(pathname: string, reqLogger: pino.Logger): NextResponse | null {
   // Skip API auth routes to avoid the NextAuth error
   if (pathname.startsWith('/api/auth')) {
     reqLogger.trace('Skipping API auth route');
@@ -83,32 +59,64 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Handle Playwright test authentication
+  return null;
+}
+
+/**
+ * Handle authentication for Playwright E2E testing
+ */
+async function handlePlaywrightTestAuth(
+  request: NextRequest,
+  pathname: string,
+  reqLogger: pino.Logger
+): Promise<NextResponse | null> {
   const { isPlaywrightTest, hasValidTestAuth } = getPlaywrightTestContext(request);
 
-  // For E2E testing with valid auth tokens, allow auth bypass
-  if (isPlaywrightTest) {
-    if (hasValidTestAuth) {
-      reqLogger.info({
-        msg: 'Playwright test with valid auth detected',
-        path: pathname,
-      });
-
-      // For protected routes, allow access
-      if (!isPublicRoute(pathname)) {
-        return NextResponse.next();
-      }
-
-      // For login page, redirect to dashboard
-      if (pathname === '/login') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    } else {
-      reqLogger.debug('Playwright test detected but without valid auth tokens');
-    }
+  if (!isPlaywrightTest) {
+    return null;
   }
 
-  // Standard auth flow for non-test requests
+  if (hasValidTestAuth) {
+    reqLogger.info({
+      msg: 'Playwright test with valid auth detected',
+      path: pathname,
+    });
+
+    // For protected routes, allow access
+    if (!isPublicRoute(pathname)) {
+      return NextResponse.next();
+    }
+
+    // For login page, redirect to dashboard
+    if (pathname === '/login') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  } else {
+    reqLogger.debug('Playwright test detected but without valid auth tokens');
+  }
+
+  return null;
+}
+
+/**
+ * Config for request context with auth and logging information
+ */
+interface RequestContext {
+  pathname: string;
+  search: string;
+  reqLogger: pino.Logger;
+  isHighTrafficPath: boolean;
+}
+
+/**
+ * Handle standard authentication logic
+ */
+async function handleStandardAuth(
+  request: NextRequest,
+  context: RequestContext
+): Promise<NextResponse | null> {
+  const { pathname, search, reqLogger, isHighTrafficPath } = context;
+
   // Get token
   const token = await getToken({ req: request });
   const isAuthenticated = !!token;
@@ -142,10 +150,46 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, request.url));
   }
 
-  // Allow access for public routes or authenticated users
-  const response = NextResponse.next();
+  return null;
+}
 
-  // Log request completion only for non-static resources
+/**
+ * Log request information based on traffic type
+ */
+function logRequest(
+  reqLogger: pino.Logger,
+  request: NextRequest,
+  pathname: string,
+  isHighTrafficPath: boolean
+) {
+  // Only log detailed request info for non-static resources to reduce noise
+  if (!isHighTrafficPath) {
+    reqLogger.info({
+      msg: 'Request started',
+      method: request.method,
+      url: request.url,
+      userAgent: request.headers.get('user-agent'),
+    });
+  } else {
+    // For high-traffic paths, use trace level with minimal info
+    reqLogger.trace({
+      msg: 'Static request',
+      method: request.method,
+      path: pathname,
+    });
+  }
+}
+
+/**
+ * Log request completion information
+ */
+function logRequestCompletion(
+  context: RequestContext,
+  startTime: number,
+  isAuthenticated: boolean
+) {
+  const { reqLogger, pathname, isHighTrafficPath } = context;
+
   if (!isHighTrafficPath) {
     const duration = Date.now() - startTime;
     reqLogger.info({
@@ -155,6 +199,57 @@ export async function middleware(request: NextRequest) {
       isAuthenticated,
     });
   }
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  const requestId = getRequestId();
+  const startTime = Date.now();
+
+  // Create request-specific logger with request ID
+  const reqLogger = logger.child({ requestId, path: pathname });
+
+  // Use standard rate for important events, sampled rate for routine events
+  const isHighTrafficPath = pathname.startsWith('/api/auth') || pathname.includes('.');
+
+  // Create request context
+  const context: RequestContext = {
+    pathname,
+    search,
+    reqLogger,
+    isHighTrafficPath,
+  };
+
+  // Log initial request information
+  logRequest(reqLogger, request, pathname, isHighTrafficPath);
+
+  // Check for skippable routes (API, static files)
+  const skippableResponse = handleSkippableRoutes(pathname, reqLogger);
+  if (skippableResponse) {
+    return skippableResponse;
+  }
+
+  // Handle Playwright test authentication
+  const playwrightResponse = await handlePlaywrightTestAuth(request, pathname, reqLogger);
+  if (playwrightResponse) {
+    return playwrightResponse;
+  }
+
+  // Handle standard authentication
+  const token = await getToken({ req: request });
+  const isAuthenticated = !!token;
+
+  const authResponse = await handleStandardAuth(request, context);
+
+  if (authResponse) {
+    return authResponse;
+  }
+
+  // Allow access for public routes or authenticated users
+  const response = NextResponse.next();
+
+  // Log request completion
+  logRequestCompletion(context, startTime, isAuthenticated);
 
   return response;
 }

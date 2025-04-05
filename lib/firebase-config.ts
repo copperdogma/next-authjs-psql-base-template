@@ -1,8 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from '@firebase/app';
 import { getApps, getApp } from '@firebase/app';
-import { connectAuthEmulator, getAuth } from '@firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from '@firebase/firestore';
+import { connectAuthEmulator, getAuth, Auth } from '@firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from '@firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -31,6 +31,60 @@ let firestore;
 let authEmulatorConnected = false;
 let firestoreEmulatorConnected = false;
 
+/**
+ * Connect to Firebase Auth emulator if configured
+ */
+function connectToAuthEmulator(auth: Auth): void {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || authEmulatorConnected) {
+    return;
+  }
+
+  // Format: "localhost:9099"
+  const [host, port] = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST.split(':');
+  try {
+    console.log(`🔸 Connecting to Firebase Auth emulator at ${host}:${port}`);
+    connectAuthEmulator(auth, `http://${host}:${port}`, { disableWarnings: true });
+    authEmulatorConnected = true;
+  } catch (error) {
+    console.error('Failed to connect to Auth emulator:', error);
+  }
+}
+
+/**
+ * Connect to Firestore emulator if configured
+ */
+function connectToFirestoreEmulator(firestore: Firestore): void {
+  if (!process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || firestoreEmulatorConnected) {
+    return;
+  }
+
+  // Format: "localhost:8080"
+  const [host, port] = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST.split(':');
+  try {
+    console.log(`🔸 Connecting to Firestore emulator at ${host}:${port}`);
+    connectFirestoreEmulator(firestore, host, parseInt(port, 10));
+    firestoreEmulatorConnected = true;
+  } catch (error) {
+    console.error('Failed to connect to Firestore emulator:', error);
+  }
+}
+
+/**
+ * Setup Firebase emulators when in development or test mode
+ */
+function setupEmulators(auth: Auth, firestore: Firestore): void {
+  const shouldUseEmulator =
+    process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
+
+  if (!shouldUseEmulator) {
+    return;
+  }
+
+  connectToAuthEmulator(auth);
+  connectToFirestoreEmulator(firestore);
+  console.log('🔸 Firebase emulator mode active');
+}
+
 // Create a client-only implementation that will be properly initialized
 if (typeof window !== 'undefined') {
   // Only initialize Firebase on the client side
@@ -40,39 +94,8 @@ if (typeof window !== 'undefined') {
   auth = getAuth(firebaseApp);
   firestore = getFirestore(firebaseApp);
 
-  // Connect to emulators when in test or development mode with emulator env vars
-  if (
-    (process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') &&
-    typeof window !== 'undefined'
-  ) {
-    // Check if AUTH emulator host is set
-    if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST && !authEmulatorConnected) {
-      // Format: "localhost:9099"
-      const [host, port] = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST.split(':');
-      try {
-        console.log(`🔸 Connecting to Firebase Auth emulator at ${host}:${port}`);
-        connectAuthEmulator(auth, `http://${host}:${port}`, { disableWarnings: true });
-        authEmulatorConnected = true;
-      } catch (error) {
-        console.error('Failed to connect to Auth emulator:', error);
-      }
-    }
-
-    // Check if Firestore emulator host is set
-    if (process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST && !firestoreEmulatorConnected) {
-      // Format: "localhost:8080"
-      const [host, port] = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST.split(':');
-      try {
-        console.log(`🔸 Connecting to Firestore emulator at ${host}:${port}`);
-        connectFirestoreEmulator(firestore, host, parseInt(port, 10));
-        firestoreEmulatorConnected = true;
-      } catch (error) {
-        console.error('Failed to connect to Firestore emulator:', error);
-      }
-    }
-
-    console.log('🔸 Firebase emulator mode active');
-  }
+  // Connect to emulators if needed
+  setupEmulators(auth, firestore);
 } else {
   // Provide placeholders for SSR context that won't be used
   firebaseApp = undefined;

@@ -2,6 +2,75 @@
 const { PrismaClient: PrismaTeardownClient } = require('@prisma/client');
 
 /**
+ * Attempt standard table truncation cleanup
+ */
+async function standardCleanup(prisma: any): Promise<boolean> {
+  try {
+    // Temporarily disable foreign key constraints
+    await prisma.$executeRaw`SET session_replication_role = 'replica';`;
+
+    // Get all table names from the current schema
+    const tables = await prisma.$queryRaw`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public'
+      AND tablename != '_prisma_migrations' -- Skip Prisma migrations table
+    `;
+
+    // If no tables found, nothing to clean
+    if (tables.length === 0) {
+      console.log('ℹ️ No tables found in database');
+      return true;
+    }
+
+    // Truncate all tables in a single transaction
+    await prisma.$transaction(
+      async (
+        tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>
+      ) => {
+        for (const { tablename } of tables) {
+          await tx.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE`);
+        }
+      }
+    );
+
+    return true;
+  } catch (error) {
+    console.warn('⚠️ Standard cleanup failed, attempting fallback method:', error);
+    return false;
+  }
+}
+
+/**
+ * Fallback cleanup approach (delete from tables in reverse dependency order)
+ */
+async function fallbackCleanup(prisma: any): Promise<boolean> {
+  try {
+    // Get all tables with their dependencies ordered
+    const tableOrder = await prisma.$queryRaw`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public'
+      AND tablename != '_prisma_migrations'
+      ORDER BY tablename;
+    `;
+
+    // Try to delete from each table in reverse order (dependencies last)
+    for (const { tablename } of [...tableOrder].reverse()) {
+      try {
+        await prisma.$executeRawUnsafe(`DELETE FROM "public"."${tablename}"`);
+      } catch (tableError) {
+        console.warn(`- Could not clean table ${tablename}:`, tableError);
+      }
+    }
+
+    return true;
+  } catch (fallbackError) {
+    console.error('❌ Fallback cleanup also failed:', fallbackError);
+    throw fallbackError;
+  }
+}
+
+/**
  * Global teardown function for test environment
  *
  * This function safely cleans up the test database after tests run.
@@ -20,67 +89,12 @@ async function globalTeardown() {
   try {
     console.log('🧹 Cleaning up test database...');
 
-    // First try: Disable foreign key checks and truncate all tables
-    try {
-      // Temporarily disable foreign key constraints
-      await prisma.$executeRaw`SET session_replication_role = 'replica';`;
+    // Try standard cleanup first
+    cleanupSuccessful = await standardCleanup(prisma);
 
-      // Get all table names from the current schema
-      const tables = await prisma.$queryRaw`
-        SELECT tablename 
-        FROM pg_tables 
-        WHERE schemaname = 'public'
-        AND tablename != '_prisma_migrations' -- Skip Prisma migrations table
-      `;
-
-      // If no tables found, nothing to clean
-      if (tables.length === 0) {
-        console.log('ℹ️ No tables found in database');
-        return;
-      }
-
-      // Truncate all tables in a single transaction
-      await prisma.$transaction(
-        async (
-          tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>
-        ) => {
-          for (const { tablename } of tables) {
-            await tx.$executeRawUnsafe(`TRUNCATE TABLE "public"."${tablename}" CASCADE`);
-          }
-        }
-      );
-
-      cleanupSuccessful = true;
-    } catch (error) {
-      console.warn('⚠️ Standard cleanup failed, attempting fallback method:', error);
-
-      // Second try: Delete records from each table (fallback approach)
-      try {
-        // Get all tables with their dependencies ordered
-        const tableOrder = await prisma.$queryRaw`
-          SELECT tablename FROM pg_tables
-          WHERE schemaname = 'public'
-          AND tablename != '_prisma_migrations'
-          ORDER BY tablename;
-        `;
-
-        // Try to delete from each table in reverse order (dependencies last)
-        for (const { tablename } of [...tableOrder].reverse()) {
-          try {
-            await prisma.$executeRawUnsafe(`DELETE FROM "public"."${tablename}"`);
-          } catch (tableError) {
-            console.warn(`- Could not clean table ${tablename}:`, tableError);
-          }
-        }
-
-        cleanupSuccessful = true;
-      } catch (fallbackError) {
-        console.error('❌ Fallback cleanup also failed:', fallbackError);
-        throw fallbackError;
-      }
-    } finally {
-      // Always re-enable foreign key constraints
-      await prisma.$executeRaw`SET session_replication_role = 'origin';`;
+    // If standard cleanup fails, try fallback
+    if (!cleanupSuccessful) {
+      cleanupSuccessful = await fallbackCleanup(prisma);
     }
 
     if (cleanupSuccessful) {
@@ -90,6 +104,13 @@ async function globalTeardown() {
     console.error('❌ Database cleanup failed:', error);
     throw error;
   } finally {
+    // Always re-enable foreign key constraints
+    try {
+      await prisma.$executeRaw`SET session_replication_role = 'origin';`;
+    } catch (finallyError) {
+      console.warn('⚠️ Could not reset foreign key constraints:', finallyError);
+    }
+
     await prisma.$disconnect();
   }
 }

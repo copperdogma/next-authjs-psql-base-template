@@ -124,34 +124,107 @@ export const authConfig: NextAuthOptions = {
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
 /**
- * Enhanced signIn function with comprehensive logging and error handling
- *
- * This function extends the NextAuth signIn with:
- * 1. Pre-auth attempt logging
- * 2. Error capture and logging
- * 3. Client context tracking
- * 4. Performance timing
- *
- * @param args - Standard signIn parameters
- * @returns The result from NextAuth signIn
+ * Type definitions for logging parameters
  */
-export const signInWithLogging = async (...args: Parameters<typeof signIn>) => {
-  const startTime = Date.now();
-  const provider = args[0];
-  const options = args[1] || {};
+export interface SignInLoggingParams {
+  logger: any;
+  provider: string | undefined;
+  correlationId: string;
+  startTime: number;
+}
 
-  // Extract client info (can be passed by components)
-  const clientInfo = {
+export interface SignInFailureParams extends SignInLoggingParams {
+  error: string;
+}
+
+export interface SignInErrorParams extends SignInLoggingParams {
+  error: unknown;
+}
+
+/**
+ * Extracts client information from sign-in options
+ */
+export function extractClientInfo(options: any, isServerSide: boolean): Record<string, string> {
+  return {
     source:
       typeof options === 'object' && 'callbackUrl' in options
         ? (options.callbackUrl as string)
         : 'unknown',
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+    userAgent: !isServerSide ? window.navigator.userAgent : 'server',
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * Creates a correlation ID for tracking auth attempts
+ */
+export function createCorrelationId(prefix: string = 'auth'): string {
+  return `${prefix}_${Math.random().toString(36).substring(2, 10)}`;
+}
+
+/**
+ * Logs successful sign-in completion
+ */
+export function logSignInSuccess(params: SignInLoggingParams): void {
+  const { logger, provider, correlationId, startTime } = params;
+
+  logger.info({
+    msg: 'Sign-in attempt completed',
+    provider,
+    success: true,
+    correlationId,
+    duration: Date.now() - startTime,
+  });
+}
+
+/**
+ * Logs sign-in failure from result
+ */
+export function logSignInFailure(params: SignInFailureParams): void {
+  const { logger, provider, error, correlationId, startTime } = params;
+
+  logger.warn({
+    msg: 'Sign-in attempt failed',
+    provider,
+    error,
+    correlationId,
+    duration: Date.now() - startTime,
+  });
+}
+
+/**
+ * Logs unexpected sign-in error
+ */
+export function logSignInError(params: SignInErrorParams): void {
+  const { logger, provider, error, correlationId, startTime } = params;
+
+  logger.error({
+    msg: 'Sign-in attempt threw exception',
+    provider,
+    error: {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    },
+    correlationId,
+    duration: Date.now() - startTime,
+  });
+}
+
+/**
+ * Enhanced signIn function with comprehensive logging and error handling
+ */
+export const signInWithLogging = async (...args: Parameters<typeof signIn>) => {
+  const startTime = Date.now();
+  const provider = args[0] as string | undefined;
+  const options = args[1] || {};
+  const isServerSide = typeof window === 'undefined';
+
+  // Extract client info
+  const clientInfo = extractClientInfo(options, isServerSide);
 
   // Create a correlation ID for this authentication attempt
-  const correlationId = `auth_${Math.random().toString(36).substring(2, 10)}`;
+  const correlationId = createCorrelationId();
 
   logger.info({
     msg: 'Sign-in attempt initiated',
@@ -163,38 +236,33 @@ export const signInWithLogging = async (...args: Parameters<typeof signIn>) => {
   try {
     const result = await signIn(...args);
 
-    // Log success/error based on result
+    // Log based on result
     if (result?.error) {
-      logger.warn({
-        msg: 'Sign-in attempt failed',
+      logSignInFailure({
+        logger,
         provider,
         error: result.error,
         correlationId,
-        duration: Date.now() - startTime,
+        startTime,
       });
     } else {
-      logger.info({
-        msg: 'Sign-in attempt completed',
+      logSignInSuccess({
+        logger,
         provider,
-        success: true,
         correlationId,
-        duration: Date.now() - startTime,
+        startTime,
       });
     }
 
     return result;
   } catch (error) {
-    // Log unexpected errors during sign-in
-    logger.error({
-      msg: 'Sign-in attempt threw exception',
+    // Log unexpected errors
+    logSignInError({
+      logger,
       provider,
-      error: {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      },
+      error,
       correlationId,
-      duration: Date.now() - startTime,
+      startTime,
     });
 
     // Re-throw to allow caller to handle

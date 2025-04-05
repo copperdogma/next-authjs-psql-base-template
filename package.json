@@ -133,6 +133,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jest-dom": "^5.5.0",
     "eslint-plugin-prettier": "^5.2.5",
+    "eslint-plugin-sonarjs": "^3.0.2",
     "firebase": "^11.5.0",
     "firebase-tools": "^14.0.1",
     "globals": "^16.0.0",

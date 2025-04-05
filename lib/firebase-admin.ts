@@ -1,18 +1,16 @@
 import * as admin from 'firebase-admin';
 
-// Helper function to safely parse the private key
-function parsePrivateKey(key?: string): string | undefined {
-  if (!key) return undefined;
+/**
+ * Checks if the key is a test key that should be ignored
+ */
+function isTestKey(key: string): boolean {
+  return key === 'test-private-key' || key.includes('test') || key === 'dummy-key';
+}
 
-  // Test environment handling
-  if (
-    (process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true') &&
-    (key === 'test-private-key' || key.includes('test') || key === 'dummy-key')
-  ) {
-    console.log('🔸 [Admin SDK] Using placeholder private key for test environment');
-    return undefined;
-  }
-
+/**
+ * Formats the private key with proper newlines and headers
+ */
+function formatPrivateKey(key: string): string {
   // Already properly formatted key
   if (key.includes('-----BEGIN PRIVATE KEY-----') && key.includes('\n')) {
     return key;
@@ -34,7 +32,27 @@ function parsePrivateKey(key?: string): string | undefined {
   return key;
 }
 
-// Get the current environment's base URL for callbacks and redirects
+/**
+ * Helper function to safely parse the private key
+ */
+function parsePrivateKey(key?: string): string | undefined {
+  if (!key) return undefined;
+
+  // Test environment handling
+  const isTestEnvironment =
+    process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true';
+
+  if (isTestEnvironment && isTestKey(key)) {
+    console.log('🔸 [Admin SDK] Using placeholder private key for test environment');
+    return undefined;
+  }
+
+  return formatPrivateKey(key);
+}
+
+/**
+ * Get the current environment's base URL for callbacks and redirects
+ */
 function getEmulatorHost(): string | undefined {
   // If explicitly set via environment variables, use those
   if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
@@ -51,7 +69,76 @@ function getEmulatorHost(): string | undefined {
   return undefined;
 }
 
-// Helper function to initialize Firebase Admin SDK
+/**
+ * Initialize with emulator configuration
+ */
+function initializeWithEmulators(): admin.app.App {
+  // For test environments, use minimal configuration
+  const app = admin.initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || 'test-project-id',
+  });
+
+  console.log('🔸 [Admin SDK] Initialized for emulator use');
+
+  // Get emulator host configuration
+  const authEmulatorHost = getEmulatorHost();
+
+  if (authEmulatorHost) {
+    console.log(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+    // Auth emulator is auto-connected via environment variable
+  }
+
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
+    console.log(
+      `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
+    );
+    admin.firestore().settings({
+      host: process.env.FIRESTORE_EMULATOR_HOST,
+      ssl: false,
+    });
+  }
+
+  return app;
+}
+
+/**
+ * Initialize with production credentials
+ */
+function initializeWithCredentials(
+  projectId: string,
+  clientEmail: string,
+  privateKey: string
+): admin.app.App {
+  const serviceAccount = {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
+
+  const app = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  });
+
+  console.log('✅ [Admin SDK] Initialized with service account credentials');
+  return app;
+}
+
+/**
+ * Initialize with minimal configuration (fallback)
+ */
+function initializeWithMinimalConfig(): admin.app.App {
+  const app = admin.initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || 'default-project-id',
+  });
+
+  console.log('⚠️ [Admin SDK] Initialized with minimal configuration due to missing credentials');
+
+  return app;
+}
+
+/**
+ * Helper function to initialize Firebase Admin SDK
+ */
 function initializeFirebaseAdmin() {
   try {
     // Check if app is already initialized
@@ -63,64 +150,21 @@ function initializeFirebaseAdmin() {
     const usingEmulators =
       process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true';
 
-    // Get project configuration
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
-
-    // Initialize the app
+    // Initialize based on environment
     if (usingEmulators) {
-      // For test environments, use minimal configuration
-      admin.initializeApp({
-        projectId: projectId || 'test-project-id',
-      });
-
-      console.log('🔸 [Admin SDK] Initialized for emulator use');
+      initializeWithEmulators();
     } else {
-      // For production/development environments
+      // Get project configuration
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+
       if (projectId && clientEmail && privateKey) {
         // Use service account if all credentials are available
-        const serviceAccount = {
-          projectId,
-          clientEmail,
-          privateKey,
-        };
-
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-        });
-
-        console.log('✅ [Admin SDK] Initialized with service account credentials');
+        initializeWithCredentials(projectId, clientEmail, privateKey);
       } else {
         // Fallback for when credentials are missing
-        admin.initializeApp({
-          projectId: projectId || 'default-project-id',
-        });
-
-        console.log(
-          '⚠️ [Admin SDK] Initialized with minimal configuration due to missing credentials'
-        );
-      }
-    }
-
-    // Configure emulator connections if needed
-    if (usingEmulators) {
-      // Get emulator host configuration
-      const authEmulatorHost = getEmulatorHost();
-
-      if (authEmulatorHost) {
-        console.log(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
-        // Auth emulator is auto-connected via environment variable
-      }
-
-      if (process.env.FIRESTORE_EMULATOR_HOST) {
-        console.log(
-          `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
-        );
-        admin.firestore().settings({
-          host: process.env.FIRESTORE_EMULATOR_HOST,
-          ssl: false,
-        });
+        initializeWithMinimalConfig();
       }
     }
 

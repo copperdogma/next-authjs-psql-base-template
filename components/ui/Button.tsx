@@ -8,6 +8,53 @@ import {
 } from '@mui/material';
 
 /**
+ * Renders a loading spinner
+ */
+const LoadingSpinner = () => <CircularProgress size={20} color="inherit" sx={{ mx: 1 }} />;
+
+/**
+ * Determines the icon to show at the start position
+ */
+const getStartIcon = (loadingPosition: string, isLoading: boolean, startIcon: React.ReactNode) => {
+  if (loadingPosition === 'center') {
+    return undefined;
+  }
+
+  return loadingPosition === 'start' && isLoading ? <LoadingSpinner /> : startIcon;
+};
+
+/**
+ * Determines the icon to show at the end position
+ */
+const getEndIcon = (loadingPosition: string, isLoading: boolean, endIcon: React.ReactNode) => {
+  if (loadingPosition === 'center') {
+    return undefined;
+  }
+
+  return loadingPosition === 'end' && isLoading ? <LoadingSpinner /> : endIcon;
+};
+
+/**
+ * Renders the button content based on loading state and position
+ */
+const renderButtonContent = (
+  loadingPosition: string,
+  isLoading: boolean,
+  content: React.ReactNode
+) => {
+  if (loadingPosition === 'center' && isLoading) {
+    return (
+      <>
+        <LoadingSpinner />
+        {content}
+      </>
+    );
+  }
+
+  return content;
+};
+
+/**
  * Extended button props with additional options specific to this template
  */
 export type ButtonProps = MuiButtonProps & {
@@ -67,20 +114,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
   // Handle loading state display
   const content = isLoading && loadingText ? loadingText : children;
 
-  // Determine loading spinner position
-  const showLoadingSpinner = isLoading && (
-    <CircularProgress size={20} color="inherit" sx={{ mx: 1 }} />
-  );
-
-  const startContent = loadingPosition === 'start' && isLoading ? showLoadingSpinner : startIcon;
-
-  const endContent = loadingPosition === 'end' && isLoading ? showLoadingSpinner : endIcon;
+  // Get icons based on loading position
+  const startContent = getStartIcon(loadingPosition, !!isLoading, startIcon);
+  const endContent = getEndIcon(loadingPosition, !!isLoading, endIcon);
 
   return (
     <MuiButton
       ref={ref}
-      startIcon={loadingPosition !== 'center' ? startContent : undefined}
-      endIcon={loadingPosition !== 'center' ? endContent : undefined}
+      startIcon={startContent}
+      endIcon={endContent}
       disabled={disabled || isLoading}
       sx={{
         ...(fixedWidth && { minWidth: '120px' }),
@@ -88,14 +130,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
       }}
       {...rest}
     >
-      {loadingPosition === 'center' && isLoading ? (
-        <>
-          {showLoadingSpinner}
-          {content}
-        </>
-      ) : (
-        content
-      )}
+      {renderButtonContent(loadingPosition, !!isLoading, content)}
     </MuiButton>
   );
 });

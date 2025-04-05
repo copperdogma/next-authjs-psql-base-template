@@ -1,6 +1,12 @@
 'use client';
 
-import { TextField as MuiTextField, TextFieldProps as MuiTextFieldProps } from '@mui/material';
+import {
+  TextField as MuiTextField,
+  TextFieldProps as MuiTextFieldProps,
+  InputLabelProps,
+  InputProps,
+  FormHelperTextProps,
+} from '@mui/material';
 import { forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +15,35 @@ export type TextFieldProps = MuiTextFieldProps & {
   variant?: 'outlined' | 'filled' | 'standard';
   size?: 'small' | 'medium' | 'large';
 };
+
+/**
+ * Prepares Input Label props with proper styling
+ */
+const prepareInputLabelProps = (
+  inputLabelProps?: Partial<InputLabelProps>
+): Partial<InputLabelProps> => ({
+  ...(inputLabelProps || {}),
+  className: cn('text-muted', inputLabelProps?.className),
+  shrink: true,
+});
+
+/**
+ * Prepares Input props with proper styling
+ */
+const prepareInputProps = (inputProps?: Partial<InputProps>): Partial<InputProps> => ({
+  ...(inputProps || {}),
+  className: cn('bg-background border-foreground/20 rounded-md', inputProps?.className),
+});
+
+/**
+ * Prepares Form Helper Text props with proper styling
+ */
+const prepareFormHelperTextProps = (
+  formHelperTextProps?: Partial<FormHelperTextProps>
+): Partial<FormHelperTextProps> => ({
+  ...(formHelperTextProps || {}),
+  className: cn('text-xs mt-1', formHelperTextProps?.className),
+});
 
 const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
   ({ className = '', fullWidth = true, variant = 'outlined', size = 'medium', ...props }, ref) => {
@@ -20,22 +55,9 @@ const TextField = forwardRef<HTMLDivElement, TextFieldProps>(
         variant={variant}
         size={size}
         className={cn(className, 'transition-all duration-200')}
-        InputLabelProps={{
-          ...(props.InputLabelProps || {}),
-          className: cn('text-muted', props.InputLabelProps?.className),
-          shrink: true,
-        }}
-        InputProps={{
-          ...(props.InputProps || {}),
-          className: cn(
-            'bg-background border-foreground/20 rounded-md',
-            props.InputProps?.className
-          ),
-        }}
-        FormHelperTextProps={{
-          ...(props.FormHelperTextProps || {}),
-          className: cn('text-xs mt-1', props.FormHelperTextProps?.className),
-        }}
+        InputLabelProps={prepareInputLabelProps(props.InputLabelProps)}
+        InputProps={prepareInputProps(props.InputProps)}
+        FormHelperTextProps={prepareFormHelperTextProps(props.FormHelperTextProps)}
       />
     );
   }

@@ -35,6 +35,61 @@ const firebaseConfig = {
   projectId: 'next-firebase-base-template',
 };
 
+// Helper function to create a new user
+async function createUser(auth) {
+  console.log('Attempting to create test user...');
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    TEST_USER.email,
+    TEST_USER.password
+  );
+
+  // Set display name
+  await updateProfile(userCredential.user, {
+    displayName: TEST_USER.displayName,
+  });
+
+  console.log(`✅ Test user created successfully with UID: ${userCredential.user.uid}`);
+
+  return userCredential;
+}
+
+// Helper function to verify existing user
+async function verifyExistingUser(auth) {
+  console.log('Test user already exists, signing in to verify...');
+
+  try {
+    // Sign in to verify credentials work
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      TEST_USER.email,
+      TEST_USER.password
+    );
+
+    console.log(`✅ Verified existing test user with UID: ${userCredential.user.uid}`);
+
+    return userCredential;
+  } catch (signInError) {
+    console.error('❌ Failed to verify existing test user:', signInError);
+    console.log('Error code:', signInError.code);
+    console.log('Error message:', signInError.message);
+    process.exit(1);
+  }
+}
+
+// Helper function to handle user creation errors
+async function handleUserCreationError(auth, error) {
+  if (error.code === 'auth/email-already-in-use') {
+    return await verifyExistingUser(auth);
+  } else {
+    console.error('❌ Failed to create test user:', error);
+    console.log('Error code:', error.code);
+    console.log('Error message:', error.message);
+
+    process.exit(1);
+  }
+}
+
 async function setupTestUser() {
   console.log('Setting up test user in Firebase Auth emulator...');
   console.log(`Email: ${TEST_USER.email}`);
@@ -57,44 +112,9 @@ async function setupTestUser() {
 
     try {
       // Try to create the user
-      console.log('Attempting to create test user...');
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        TEST_USER.email,
-        TEST_USER.password
-      );
-
-      // Set display name
-      await updateProfile(userCredential.user, {
-        displayName: TEST_USER.displayName,
-      });
-
-      console.log(`✅ Test user created successfully with UID: ${userCredential.user.uid}`);
-    } catch (createError) {
-      if (createError.code === 'auth/email-already-in-use') {
-        console.log('Test user already exists, signing in to verify...');
-
-        try {
-          // Sign in to verify credentials work
-          const userCredential = await signInWithEmailAndPassword(
-            auth,
-            TEST_USER.email,
-            TEST_USER.password
-          );
-
-          console.log(`✅ Verified existing test user with UID: ${userCredential.user.uid}`);
-        } catch (signInError) {
-          console.error('❌ Failed to verify existing test user:', signInError);
-          console.log('Error code:', signInError.code);
-          console.log('Error message:', signInError.message);
-          process.exit(1);
-        }
-      } else {
-        console.error('❌ Failed to create test user:', createError);
-        console.log('Error code:', createError.code);
-        console.log('Error message:', createError.message);
-        process.exit(1);
-      }
+      await createUser(auth);
+    } catch (error) {
+      await handleUserCreationError(auth, error);
     }
 
     console.log('✅ Test user setup complete.');

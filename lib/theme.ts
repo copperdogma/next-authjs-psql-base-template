@@ -1,8 +1,14 @@
 'use client';
 
-import { createTheme, responsiveFontSizes, ThemeOptions } from '@mui/material/styles';
+import {
+  createTheme,
+  responsiveFontSizes,
+  ThemeOptions,
+  Components,
+  Theme,
+} from '@mui/material/styles';
 import { red, blue, grey, lightBlue } from '@mui/material/colors';
-import { PaletteMode, Theme } from '@mui/material';
+import { PaletteMode, TypographyVariantsOptions } from '@mui/material';
 
 /**
  * Define spacing constants for consistent use throughout the app
@@ -86,7 +92,260 @@ const PALETTE = {
 };
 
 /**
- * Creates theme tokens based on the specified color mode
+ * Get typography configuration for the theme
+ */
+const getTypography = (): TypographyVariantsOptions => ({
+  fontFamily: [
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    'Roboto',
+    '"Helvetica Neue"',
+    'Arial',
+    'sans-serif',
+    '"Apple Color Emoji"',
+    '"Segoe UI Emoji"',
+    '"Segoe UI Symbol"',
+  ].join(','),
+  h1: {
+    fontSize: '2.5rem',
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+  h2: {
+    fontSize: '2rem',
+    fontWeight: 600,
+    lineHeight: 1.3,
+  },
+  h3: {
+    fontSize: '1.75rem',
+    fontWeight: 600,
+    lineHeight: 1.3,
+  },
+  h4: {
+    fontSize: '1.5rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  h5: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  h6: {
+    fontSize: '1rem',
+    fontWeight: 600,
+    lineHeight: 1.5,
+  },
+  subtitle1: {
+    fontSize: '1rem',
+    fontWeight: 400,
+    lineHeight: 1.5,
+  },
+  subtitle2: {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    lineHeight: 1.57,
+  },
+  body1: {
+    fontSize: '1rem',
+    lineHeight: 1.5,
+    letterSpacing: '0.00938em',
+  },
+  body2: {
+    fontSize: '0.875rem',
+    lineHeight: 1.43,
+    letterSpacing: '0.01071em',
+  },
+  button: {
+    textTransform: 'none' as const,
+    fontWeight: 500,
+    letterSpacing: '0.02857em',
+  },
+});
+
+/**
+ * Get scrollbar styles based on current theme mode
+ */
+const getScrollbarStyles = (mode: PaletteMode) => ({
+  body: {
+    scrollbarColor: mode === 'dark' ? '#6b6b6b #2b2b2b' : '#959595 #f5f5f5',
+    '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+      width: 8,
+      height: 8,
+      backgroundColor: mode === 'dark' ? '#2b2b2b' : '#f5f5f5',
+    },
+    '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+      borderRadius: 8,
+      backgroundColor: mode === 'dark' ? '#6b6b6b' : '#959595',
+      minHeight: 24,
+    },
+    '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
+      backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+    },
+    '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
+      backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+    },
+    '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
+      backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
+    },
+  },
+});
+
+/**
+ * Get component overrides for the theme
+ */
+const getComponentOverrides = (mode: PaletteMode): Components<Theme> => ({
+  MuiCssBaseline: {
+    styleOverrides: {
+      ...getScrollbarStyles(mode),
+    },
+  },
+  MuiButton: {
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+        padding: '8px 16px',
+        transition: 'all 0.2s',
+        fontWeight: 500,
+      },
+      contained: ({ theme }: { theme: Theme }) => ({
+        boxShadow: theme.shadows[1],
+        '&:hover': {
+          boxShadow: theme.shadows[2],
+        },
+      }),
+      outlined: {
+        borderWidth: 1.5,
+        '&:hover': {
+          borderWidth: 1.5,
+        },
+      },
+      // Improve focus visibility for accessibility
+      sizeMedium: {
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+          outlineOffset: 2,
+        },
+      },
+    },
+  },
+  MuiPaper: getCardAndPaperOverrides(mode),
+  MuiAppBar: {
+    styleOverrides: {
+      root: ({ theme }: { theme: Theme }) => ({
+        boxShadow: theme.shadows[1],
+      }),
+    },
+  },
+  MuiCard: getCardAndPaperOverrides(mode),
+  MuiCardHeader: {
+    styleOverrides: {
+      root: {
+        padding: 16,
+      },
+    },
+  },
+  MuiCardContent: {
+    styleOverrides: {
+      root: {
+        padding: 16,
+        '&:last-child': {
+          paddingBottom: 16,
+        },
+      },
+    },
+  },
+  MuiCardActions: {
+    styleOverrides: {
+      root: {
+        padding: '8px 16px',
+      },
+    },
+  },
+  MuiLink: {
+    defaultProps: {
+      underline: 'hover' as const,
+    },
+  },
+  MuiTable: {
+    styleOverrides: {
+      root: {
+        tableLayout: 'fixed',
+      },
+    },
+  },
+  MuiTableCell: {
+    styleOverrides: {
+      root: {
+        borderBottom: `1px solid ${mode === 'dark' ? PALETTE.dark.divider : PALETTE.light.divider}`,
+      },
+      head: {
+        fontWeight: 600,
+      },
+    },
+  },
+  MuiTableRow: {
+    styleOverrides: {
+      root: {
+        '&:last-child td': {
+          borderBottom: 0,
+        },
+      },
+    },
+  },
+  MuiListItemButton: {
+    styleOverrides: {
+      root: {
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+          outlineOffset: -2,
+        },
+      },
+    },
+  },
+  MuiMenuItem: {
+    styleOverrides: {
+      root: {
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
+          outlineOffset: -2,
+        },
+      },
+    },
+  },
+  MuiInputBase: {
+    styleOverrides: {
+      root: {
+        '&.Mui-focused': {
+          outlineOffset: 2,
+        },
+      },
+    },
+  },
+});
+
+/**
+ * Get card and paper shared overrides
+ */
+const getCardAndPaperOverrides = (mode: PaletteMode) => ({
+  styleOverrides: {
+    root: {
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+      color: mode === 'dark' ? '#ffffff' : '#212121',
+      boxShadow:
+        mode === 'dark' ? '0px 3px 15px rgba(0, 0, 0, 0.4)' : '0px 3px 15px rgba(0, 0, 0, 0.1)',
+    },
+  },
+});
+
+/**
+ * Generate theme options based on selected palette mode
  *
  * @param mode - The palette mode ('light' or 'dark')
  * @returns ThemeOptions object with configured tokens
@@ -100,261 +359,9 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
     ...(mode === 'light' ? PALETTE.light : PALETTE.dark),
   },
 
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
-    ].join(','),
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 700,
-      lineHeight: 1.2,
-    },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 600,
-      lineHeight: 1.3,
-    },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 600,
-      lineHeight: 1.3,
-    },
-    h4: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h6: {
-      fontSize: '1rem',
-      fontWeight: 600,
-      lineHeight: 1.5,
-    },
-    subtitle1: {
-      fontSize: '1rem',
-      fontWeight: 400,
-      lineHeight: 1.5,
-    },
-    subtitle2: {
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      lineHeight: 1.57,
-    },
-    body1: {
-      fontSize: '1rem',
-      lineHeight: 1.5,
-      letterSpacing: '0.00938em',
-    },
-    body2: {
-      fontSize: '0.875rem',
-      lineHeight: 1.43,
-      letterSpacing: '0.01071em',
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 500,
-      letterSpacing: '0.02857em',
-    },
-  },
+  typography: getTypography(),
 
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          scrollbarColor: mode === 'dark' ? '#6b6b6b #2b2b2b' : '#959595 #f5f5f5',
-          '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
-            width: 8,
-            height: 8,
-            backgroundColor: mode === 'dark' ? '#2b2b2b' : '#f5f5f5',
-          },
-          '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
-            borderRadius: 8,
-            backgroundColor: mode === 'dark' ? '#6b6b6b' : '#959595',
-            minHeight: 24,
-          },
-          '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
-            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
-          },
-          '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
-            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
-          },
-          '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-            backgroundColor: mode === 'dark' ? '#818181' : '#bdbdbd',
-          },
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          padding: '8px 16px',
-          transition: 'all 0.2s',
-          fontWeight: 500,
-        },
-        contained: ({ theme }: { theme: Theme }) => ({
-          boxShadow: theme.shadows[1],
-          '&:hover': {
-            boxShadow: theme.shadows[2],
-          },
-        }),
-        outlined: {
-          borderWidth: 1.5,
-          '&:hover': {
-            borderWidth: 1.5,
-          },
-        },
-        // Improve focus visibility for accessibility
-        sizeMedium: {
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
-          color: mode === 'dark' ? '#ffffff' : '#212121',
-        },
-        elevation1: {
-          boxShadow:
-            mode === 'dark' ? '0px 2px 8px rgba(0, 0, 0, 0.5)' : '0px 2px 8px rgba(0, 0, 0, 0.1)',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: ({ theme }: { theme: Theme }) => ({
-          boxShadow: theme.shadows[1],
-        }),
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          overflow: 'hidden',
-          backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
-          color: mode === 'dark' ? '#ffffff' : '#212121',
-          boxShadow:
-            mode === 'dark' ? '0px 3px 15px rgba(0, 0, 0, 0.4)' : '0px 3px 15px rgba(0, 0, 0, 0.1)',
-        },
-      },
-    },
-    MuiCardHeader: {
-      styleOverrides: {
-        root: {
-          padding: 16,
-        },
-      },
-    },
-    MuiCardContent: {
-      styleOverrides: {
-        root: {
-          padding: 16,
-          '&:last-child': {
-            paddingBottom: 16,
-          },
-        },
-      },
-    },
-    MuiCardActions: {
-      styleOverrides: {
-        root: {
-          padding: '8px 16px',
-        },
-      },
-    },
-    MuiLink: {
-      defaultProps: {
-        underline: 'hover',
-      },
-      styleOverrides: {
-        root: {
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-    MuiTable: {
-      styleOverrides: {
-        root: {
-          tableLayout: 'fixed',
-        },
-      },
-    },
-    MuiTableCell: {
-      styleOverrides: {
-        root: {
-          borderBottom: `1px solid ${mode === 'dark' ? PALETTE.dark.divider : PALETTE.light.divider}`,
-        },
-        head: {
-          fontWeight: 600,
-        },
-      },
-    },
-    MuiTableRow: {
-      styleOverrides: {
-        root: {
-          '&:last-child td': {
-            borderBottom: 0,
-          },
-        },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
-            outlineOffset: -2,
-          },
-        },
-      },
-    },
-    MuiMenuItem: {
-      styleOverrides: {
-        root: {
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: mode === 'light' ? PALETTE.light.primary.main : PALETTE.dark.primary.main,
-            outlineOffset: -2,
-          },
-        },
-      },
-    },
-    MuiInputBase: {
-      styleOverrides: {
-        root: {
-          '&.Mui-focused': {
-            outlineOffset: 2,
-          },
-        },
-      },
-    },
-  },
+  components: getComponentOverrides(mode),
 });
 
 /**

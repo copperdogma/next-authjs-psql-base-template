@@ -260,6 +260,107 @@ export async function getElementLocator(
 }
 
 /**
+ * Find an element in the UI_ELEMENTS map based on a dot-notation key path
+ */
+function findElementByKeyPath(elementKey: string): ElementSelector {
+  // Parse the element key path (e.g., "LAYOUT.NAVBAR")
+  const keyParts = elementKey.split('.');
+
+  // Navigate through the UI_ELEMENTS object to find the requested element
+  let currentLevel: any = UI_ELEMENTS;
+  for (const part of keyParts) {
+    if (!currentLevel[part]) {
+      throw new Error(`Element key not found: ${elementKey} (part ${part} missing)`);
+    }
+    currentLevel = currentLevel[part];
+  }
+
+  if (!currentLevel) {
+    throw new Error(`Unknown element key: ${elementKey}`);
+  }
+
+  return currentLevel;
+}
+
+/**
+ * Try to find element using primary selectors
+ */
+async function tryPrimarySelector(
+  page: Page,
+  element: ElementSelector,
+  options: SelectorOptions = {},
+  timeout: number
+): Promise<Locator | null> {
+  const locator = await getElementLocator(page, element, options);
+
+  try {
+    await locator.waitFor({ state: 'visible', timeout });
+    console.log(`Found element ${element.description}`);
+    return locator;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try fallback strategies when primary selectors fail
+ */
+async function tryFallbackStrategies(
+  page: Page,
+  element: ElementSelector,
+  elementKey: string
+): Promise<Locator> {
+  console.log(`Failed to find ${elementKey} with primary selectors, trying fallbacks...`);
+
+  // Generate fallback selectors based on element properties
+  const fallbacks = generateFallbackSelectors(element);
+
+  // Try each fallback selector
+  for (const fallback of fallbacks) {
+    try {
+      const fallbackLocator = page.locator(fallback).first();
+      const isVisible = await fallbackLocator.isVisible().catch(() => false);
+      if (isVisible) {
+        console.log(`Found element ${elementKey} with fallback selector: ${fallback}`);
+        return fallbackLocator;
+      }
+    } catch {
+      // Continue trying other fallbacks
+    }
+  }
+
+  // If all fallbacks fail, check if page has any content
+  const content = await page.content();
+  if (content && content.length > 500) {
+    console.log(`Page has content, but ${elementKey} was not found. Using body as fallback.`);
+    return page.locator('body');
+  }
+
+  // If we get here, all strategies failed
+  throw new Error(`Failed to find element ${elementKey} using all strategies`);
+}
+
+/**
+ * Generate fallback selectors based on element properties
+ */
+function generateFallbackSelectors(element: ElementSelector): string[] {
+  const roleSelectors = element.role
+    ? [
+        typeof element.role === 'string'
+          ? `[role="${element.role}"]`
+          : `[role="${element.role.name}"]`,
+      ]
+    : [];
+
+  const tagSelectors = element.tag ? [`${element.tag}`] : [];
+
+  // Very generic fallbacks if all else fails
+  const genericFallbacks = ['header', 'main', 'footer', 'nav', 'div.container', 'div.mx-auto'];
+
+  return [...roleSelectors, ...tagSelectors, ...genericFallbacks];
+}
+
+/**
  * Wait for an element to be visible using the best available selector strategy
  * with fallback mechanisms for better reliability
  */
@@ -271,77 +372,17 @@ export async function waitForElementToBeVisible(
   const { timeout = 15000 } = options;
   console.log(`Waiting for ${elementKey} to be visible...`);
 
-  // Parse the element key path (e.g., "LAYOUT.NAVBAR")
-  const keyParts = elementKey.split('.');
-  let element: ElementSelector | undefined;
+  // Find the element definition
+  const element = findElementByKeyPath(elementKey);
 
-  // Navigate through the UI_ELEMENTS object to find the requested element
-  let currentLevel: any = UI_ELEMENTS;
-  for (const part of keyParts) {
-    if (!currentLevel[part]) {
-      throw new Error(`Element key not found: ${elementKey} (part ${part} missing)`);
-    }
-    currentLevel = currentLevel[part];
+  // Try primary selector first
+  const primaryResult = await tryPrimarySelector(page, element, options, timeout);
+  if (primaryResult) {
+    return primaryResult;
   }
 
-  element = currentLevel;
-
-  if (!element) {
-    throw new Error(`Unknown element key: ${elementKey}`);
-  }
-
-  const locator = await getElementLocator(page, element, options);
-
-  try {
-    await locator.waitFor({ state: 'visible', timeout });
-    console.log(`Found element ${elementKey} (${element.description})`);
-    return locator;
-  } catch {
-    console.log(`Failed to find ${elementKey} with primary selectors, trying fallbacks...`);
-
-    // Attempt fallback strategies
-    const fallbacks = [
-      // Try general selectors based on element type
-      ...(element.role
-        ? [
-            typeof element.role === 'string'
-              ? `[role="${element.role}"]`
-              : `[role="${element.role.name}"]`,
-          ]
-        : []),
-      ...(element.tag ? [`${element.tag}`] : []),
-      // Very generic fallbacks if all else fails
-      'header',
-      'main',
-      'footer',
-      'nav',
-      'div.container',
-      'div.mx-auto',
-    ];
-
-    for (const fallback of fallbacks) {
-      try {
-        const fallbackLocator = page.locator(fallback).first();
-        const isVisible = await fallbackLocator.isVisible().catch(() => false);
-        if (isVisible) {
-          console.log(`Found element ${elementKey} with fallback selector: ${fallback}`);
-          return fallbackLocator;
-        }
-      } catch {
-        // Continue trying other fallbacks
-      }
-    }
-
-    // If all fallbacks fail, check if page has any content
-    const content = await page.content();
-    if (content && content.length > 500) {
-      console.log(`Page has content, but ${elementKey} was not found. Using body as fallback.`);
-      return page.locator('body');
-    }
-
-    // If we get here, all strategies failed
-    throw new Error(`Failed to find element ${elementKey} using all strategies`);
-  }
+  // If primary selector fails, try fallbacks
+  return tryFallbackStrategies(page, element, elementKey);
 }
 
 export async function waitForElement(

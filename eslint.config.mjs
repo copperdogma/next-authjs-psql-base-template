@@ -7,6 +7,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettierPlugin from 'eslint-plugin-prettier';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import sonarjs from 'eslint-plugin-sonarjs';
 import globals from 'globals';
 
 /**
@@ -62,6 +63,7 @@ export default [
       prettier: prettierPlugin,
       '@next/next': nextPlugin,
       'jest-dom': jestDom,
+      sonarjs: sonarjs,
     },
     rules: {
       // Error Prevention
@@ -69,6 +71,12 @@ export default [
       'no-unused-vars': 'off', // Disabled in favor of TypeScript's version
       semi: ['error', 'always'], // Consistent semicolon usage
       curly: ['error', 'multi-line'], // Clear block structure
+
+      // Code Complexity Rules
+      complexity: ['error', 10], // Cyclomatic complexity
+      'sonarjs/cognitive-complexity': ['error', 15], // Cognitive complexity
+      'max-depth': ['error', 3], // Maximum nesting depth
+      'max-params': ['error', 4], // Maximum parameters
 
       // React Best Practices
       'react/react-in-jsx-scope': 'off', // Not needed in Next.js
@@ -135,10 +143,17 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      sonarjs: sonarjs,
     },
     rules: {
       // Disable JS rules in favor of TS equivalents
       'no-unused-vars': 'off',
+
+      // Code Complexity Rules
+      complexity: ['error', 10], // Cyclomatic complexity
+      'sonarjs/cognitive-complexity': ['error', 15], // Cognitive complexity
+      'max-depth': ['error', 3], // Maximum nesting depth
+      'max-params': ['error', 4], // Maximum parameters
 
       // TypeScript-specific rules for better type safety
       '@typescript-eslint/no-unused-vars': 'error', // Catch unused variables
@@ -158,12 +173,22 @@ export default [
       'tests/unit/components/UserProfile.test.tsx',
       'tests/unit/api/auth/*.test.ts',
       'tests/unit/auth/*.test.ts',
+      'tests/e2e/**/*.ts',
+      'tests/e2e/**/*.js',
+      'tests/config/**/*.ts',
+      'tests/utils/**/*.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
       'no-console': 'off', // Allow console in tests for debugging
       '@next/next/no-img-element': 'off', // Allow img in tests
       '@typescript-eslint/no-unused-vars': 'off', // Allow unused variables in tests
+
+      // Allow moderately higher complexity in test files
+      complexity: ['error', 15], // Higher complexity limit for tests
+      'sonarjs/cognitive-complexity': ['error', 20], // Higher cognitive complexity limit for tests
+      'max-depth': ['error', 4], // Higher nesting depth limit for tests
+      'max-params': ['error', 6], // Higher parameter limit for tests
     },
   },
 
