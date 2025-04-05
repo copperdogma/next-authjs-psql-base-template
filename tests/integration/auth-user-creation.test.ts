@@ -2,14 +2,14 @@ import { describe, expect } from '@jest/globals';
 import { createMockUser } from '../utils/test-fixtures';
 
 describe('Auth User Creation', () => {
-  test('should create a mock user with default values', () => {
+  it('should create a mock user with default values', () => {
     const mockUser = createMockUser();
     expect(mockUser).toBeDefined();
     expect(mockUser.uid).toBe('test-uid');
     expect(mockUser.email).toBe('test@example.com');
   });
 
-  test('should create a mock user with overridden values', () => {
+  it('should create a mock user with overridden values', () => {
     const mockUser = createMockUser({
       uid: 'custom-uid',
       email: 'custom@example.com',

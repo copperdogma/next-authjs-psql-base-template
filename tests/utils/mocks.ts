@@ -38,12 +38,17 @@ export const mockPinoLogger = {
 export const setupMathRandomMock = () => {
   const originalRandom = Math.random;
 
-  beforeAll(() => {
-    Math.random = jest.fn().mockReturnValue(0.1);
-  });
+  // When this function is used, it should be within a describe block
+  // This describe block is not executed when the function is defined,
+  // only when it's called by test files, which must have their own describe
+  describe('Math.random mock setup', () => {
+    beforeAll(() => {
+      Math.random = jest.fn().mockReturnValue(0.1);
+    });
 
-  afterAll(() => {
-    Math.random = originalRandom;
+    afterAll(() => {
+      Math.random = originalRandom;
+    });
   });
 
   return () => Math.random as jest.Mock;

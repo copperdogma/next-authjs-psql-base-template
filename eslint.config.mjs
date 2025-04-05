@@ -2,6 +2,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
+import jestPlugin from 'eslint-plugin-jest';
 import jestDom from 'eslint-plugin-jest-dom';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettierPlugin from 'eslint-plugin-prettier';
@@ -195,11 +196,27 @@ export default [
       'tests/config/**/*.ts',
       'tests/utils/**/*.ts',
     ],
+    plugins: {
+      jest: jestPlugin,
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
       'no-console': 'off', // Allow console in tests for debugging
       '@next/next/no-img-element': 'off', // Allow img in tests
       '@typescript-eslint/no-unused-vars': 'off', // Allow unused variables in tests
+
+      // Jest-specific test naming and structure rules
+      'jest/consistent-test-it': ['error', { fn: 'it', withinDescribe: 'it' }],
+      'jest/require-top-level-describe': 'error',
+      'jest/no-identical-title': 'error',
+      'jest/valid-title': 'error',
+
+      // Prevent accidentally committed skipped/focused tests
+      'jest/no-disabled-tests': 'warn',
+      'jest/no-focused-tests': 'error',
+
+      // Test isolation (prevents shared state/fixture misuse)
+      'jest/no-standalone-expect': 'error',
 
       // Adjusted complexity thresholds for test files
       // These allow for more complex test cases while still encouraging good practices

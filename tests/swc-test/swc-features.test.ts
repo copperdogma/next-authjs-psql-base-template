@@ -5,7 +5,7 @@
  */
 
 describe('SWC Transpilation Features', () => {
-  test('supports optional chaining', () => {
+  it('supports optional chaining', () => {
     const user = {
       profile: {
         name: 'Test User',
@@ -20,7 +20,7 @@ describe('SWC Transpilation Features', () => {
     expect(emptyUser?.profile?.name).toBeUndefined();
   });
 
-  test('supports nullish coalescing', () => {
+  it('supports nullish coalescing', () => {
     const value1 = null;
     const value2 = 0;
 
@@ -29,7 +29,7 @@ describe('SWC Transpilation Features', () => {
     expect(value2 ?? 'default').toBe(0);
   });
 
-  test('supports async/await', async () => {
+  it('supports async/await', async () => {
     // Async/await - should be transpiled correctly
     const asyncFunction = async () => {
       return 'async result';
@@ -39,7 +39,7 @@ describe('SWC Transpilation Features', () => {
     expect(result).toBe('async result');
   });
 
-  test('supports class fields', () => {
+  it('supports class fields', () => {
     // Use standard class field instead of private field for test compatibility
     class TestClass {
       // Using _ prefix instead of # for compatibility
@@ -54,7 +54,7 @@ describe('SWC Transpilation Features', () => {
     expect(instance.getPrivateField()).toBe('private');
   });
 
-  test('supports rest/spread operators', () => {
+  it('supports rest/spread operators', () => {
     // Rest/spread operators - should be transpiled correctly
     const obj1 = { a: 1, b: 2 };
     const obj2 = { c: 3, ...obj1 };

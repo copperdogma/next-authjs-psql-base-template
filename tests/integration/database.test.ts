@@ -22,14 +22,14 @@ describe('Database Integration Tests', () => {
   });
 
   describe('Database Connection', () => {
-    test('should successfully connect to the database', async () => {
+    it('should successfully connect to the database', async () => {
       // Test basic query execution - using raw SQL directly
       const result = await prisma.$queryRaw<Array<{ result: number }>>`SELECT 1 as result`;
       expect(Array.isArray(result)).toBe(true);
       expect(result[0]).toHaveProperty('result', 1);
     });
 
-    test('should handle connection errors gracefully', async () => {
+    it('should handle connection errors gracefully', async () => {
       // Instead of creating a new client, test error handling with invalid SQL
       await expect(prisma.$queryRaw`SELECT * FROM table_that_does_not_exist`).rejects.toThrow();
     });
@@ -45,7 +45,7 @@ describe('Database Integration Tests', () => {
     });
 
     // Use transactions for test isolation instead of cleanup
-    test('should create a new user successfully', async () => {
+    it('should create a new user successfully', async () => {
       // Use transaction to ensure test isolation
       await prisma.$transaction(
         async tx => {
@@ -65,7 +65,7 @@ describe('Database Integration Tests', () => {
       );
     });
 
-    test('should update existing user details', async () => {
+    it('should update existing user details', async () => {
       // Use transaction for test isolation
       await prisma.$transaction(
         async tx => {
@@ -96,7 +96,7 @@ describe('Database Integration Tests', () => {
   });
 
   describe('Connection Pool Behavior', () => {
-    test('should handle multiple concurrent connections', async () => {
+    it('should handle multiple concurrent connections', async () => {
       // Use multiple concurrent queries within a single client instance
       const queries = Array(5)
         .fill(null)
@@ -106,7 +106,7 @@ describe('Database Integration Tests', () => {
       expect(true).toBe(true); // If we reach here, all queries completed successfully
     });
 
-    test('should maintain connection under load', async () => {
+    it('should maintain connection under load', async () => {
       // Test with loop of sequential requests using shared client
       const iterations = 10;
       for (let i = 0; i < iterations; i++) {
@@ -116,7 +116,7 @@ describe('Database Integration Tests', () => {
       }
     });
 
-    test('should handle transactions properly', async () => {
+    it('should handle transactions properly', async () => {
       // Generate a unique email for this test to avoid conflicts
       const tempEmail = `temp-${testRunId}-${Date.now()}@example.com`;
       let tempUserId: string | undefined;
