@@ -2,10 +2,12 @@
 
 import { memo } from 'react';
 import { useForm, ValidationFn, FormFieldValue } from '../hooks/useForm';
-import { Checkbox, FormControlLabel, Alert, Stack } from '@mui/material';
-import { EmailOutlined, LockOutlined } from '@mui/icons-material';
-import { Button } from '../ui/Button';
-import { FormField } from './FormField';
+import { Stack } from '@mui/material';
+import EmailField from './EmailField';
+import PasswordField from './PasswordField';
+import RememberMeCheckbox from './RememberMeCheckbox';
+import FormErrorAlert from './FormErrorAlert';
+import SubmitButton from './SubmitButton';
 
 // Make FormValues compatible with Record<string, FormFieldValue>
 interface FormValues extends Record<string, FormFieldValue> {
@@ -66,67 +68,30 @@ const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps
   const { values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit } =
     useForm<FormValues>(initialValues, onSubmit, validate);
 
-  // Form-level error state for general errors not tied to a specific field
-  const formError = errors.form || '';
-
   return (
     <form onSubmit={handleSubmit} noValidate>
       <Stack spacing={3}>
-        <FormField
-          name="email"
-          label="Email"
-          type="email"
+        <EmailField
           value={values.email}
           onChange={handleChange}
           onBlur={() => handleBlur('email')}
           error={errors.email}
           touched={touched.email}
-          placeholder="your@email.com"
-          startAdornment={<EmailOutlined />}
-          helpText="Enter your email address"
         />
 
-        <FormField
-          name="password"
-          label="Password"
-          type="password"
+        <PasswordField
           value={values.password}
           onChange={handleChange}
           onBlur={() => handleBlur('password')}
           error={errors.password}
           touched={touched.password}
-          startAdornment={<LockOutlined />}
-          helpText="Password must be at least 8 characters"
         />
 
-        <FormControlLabel
-          control={
-            <Checkbox
-              id="rememberMe"
-              name="rememberMe"
-              checked={values.rememberMe}
-              onChange={handleChange}
-              color="primary"
-            />
-          }
-          label="Remember me"
-        />
+        <RememberMeCheckbox checked={values.rememberMe} onChange={handleChange} />
 
-        {formError && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {formError}
-          </Alert>
-        )}
+        <FormErrorAlert error={errors.form || ''} />
 
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          variant="contained"
-          fullWidth
-          data-testid="form-submit"
-        >
-          {isSubmitting ? 'Submitting...' : submitButtonText}
-        </Button>
+        <SubmitButton isSubmitting={isSubmitting} text={submitButtonText} />
       </Stack>
     </form>
   );
