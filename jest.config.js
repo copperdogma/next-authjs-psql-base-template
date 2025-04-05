@@ -50,8 +50,6 @@ const sharedConfig = {
   ],
 
   // This ensures coverage is only collected from files that are actually tested
-  collectCoverage: true,
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
@@ -93,6 +91,10 @@ const customJestConfig = {
       ...sharedConfig,
     },
   ],
+
+  // Move coverage options here
+  collectCoverage: true,
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
 
   // Set coverage thresholds to enforce code quality
   coverageThreshold: {
