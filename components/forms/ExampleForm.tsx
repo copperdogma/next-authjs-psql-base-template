@@ -1,7 +1,8 @@
 'use client';
 
 import { memo } from 'react';
-import { useForm, ValidationFn, FormFieldValue } from '../hooks/useForm';
+import { useForm } from '../hooks/useForm';
+import { ValidationFn, FormFieldValue } from '../hooks/form-types';
 import { Stack } from '@mui/material';
 import EmailField from './EmailField';
 import PasswordField from './PasswordField';

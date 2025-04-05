@@ -1,11 +1,11 @@
 // This component must be a Client Component
 'use client';
 
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { lightTheme, darkTheme } from '@/lib/theme';
-import { ReactNode, useEffect, useState, useMemo } from 'react';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import { createAppTheme } from '@/lib/theme';
 import { useTheme } from 'next-themes';
 
 /**
@@ -25,49 +25,26 @@ import { useTheme } from 'next-themes';
  * @param {ReactNode} props.children - Child components that will use the Material UI theme
  * @returns {JSX.Element} Themed application with Material UI support
  */
-export default function ThemeRegistry({ children }: { children: ReactNode }) {
+export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
-  // Force initial mount of MUI with the correct theme
-  const initialTheme = useMemo(() => {
-    return typeof document !== 'undefined'
-      ? document.documentElement.classList.contains('dark')
-        ? 'dark'
-        : 'light'
-      : 'light';
-  }, []);
-
-  // Monitor mounting state to prevent hydration issues
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Use the pre-created theme directly based on resolved theme
-  const muiTheme = useMemo(() => {
-    if (!mounted) {
-      // Use the initialTheme we detected to avoid hydration mismatches
-      return initialTheme === 'dark' ? darkTheme : lightTheme;
-    }
+  const currentTheme = React.useMemo(() => {
+    return createAppTheme(resolvedTheme === 'dark' ? 'dark' : 'light');
+  }, [resolvedTheme]);
 
-    // After mounting, use the resolved theme from next-themes
-    return resolvedTheme === 'dark' ? darkTheme : lightTheme;
-  }, [resolvedTheme, mounted, initialTheme]);
-
-  // Debugging in development only
-  if (process.env.NODE_ENV === 'development' && mounted) {
-    console.log('ThemeRegistry:', {
-      resolvedTheme,
-      initialTheme,
-      usingDarkTheme: resolvedTheme === 'dark',
-      muiThemePaletteMode: muiTheme.palette.mode,
-    });
+  if (!mounted) {
+    return null;
   }
 
   return (
     <AppRouterCacheProvider options={{ key: 'mui' }}>
-      <ThemeProvider theme={muiTheme}>
-        <CssBaseline enableColorScheme />
+      <ThemeProvider theme={currentTheme}>
+        <CssBaseline />
         {children}
       </ThemeProvider>
     </AppRouterCacheProvider>

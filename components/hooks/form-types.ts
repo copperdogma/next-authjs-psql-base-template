@@ -2,16 +2,19 @@
 
 import { ChangeEvent, FormEvent } from 'react';
 
-export type ValidationFn<T> = (values: T) => Partial<Record<keyof T, string>>;
-
-export type FieldChange = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+// Type for form field values
+export type FormFieldValue = string | number | boolean | null | undefined;
 
 // Extended error type that includes form-level errors
 export type FormErrors<T> = Partial<Record<keyof T, string>> & { form?: string };
 
-// Type for form field values
-export type FormFieldValue = string | number | boolean | null | undefined;
+// Type for validation function
+export type ValidationFn<T> = (values: T) => FormErrors<T>;
 
+// Type for field change events
+export type FieldChange = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+
+// Interface for useForm result
 export interface UseFormResult<T> {
   values: T;
   errors: FormErrors<T>;
