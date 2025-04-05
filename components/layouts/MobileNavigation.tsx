@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Drawer, Box, IconButton, Typography, Divider, List } from '@mui/material';
+import { Drawer, IconButton } from '@mui/material';
 import { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
-import { NavItem, MobileNavItem, useNavigation } from './NavItems';
+import { NavItem, useNavigation } from './NavItems';
+import MobileDrawerContent from './MobileDrawerContent';
 
 interface MobileNavigationProps {
   /**
@@ -19,7 +20,7 @@ interface MobileNavigationProps {
  */
 export default function MobileNavigation({ navItems }: MobileNavigationProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { visibleItems, isActive } = useNavigation(navItems);
+  const { isActive } = useNavigation(navItems);
 
   const toggleDrawer = () => {
     setDrawerOpen(!drawerOpen);
@@ -53,24 +54,11 @@ export default function MobileNavigation({ navItems }: MobileNavigationProps) {
           '& .MuiDrawer-paper': { width: '70%', maxWidth: 300, boxSizing: 'border-box' },
         }}
       >
-        <Box sx={{ width: '100%', pt: 2, px: 2 }} role="presentation">
-          <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mb: 2 }}>
-            Menu
-          </Typography>
-          <Divider />
-          <Box component="nav" aria-label="Mobile Navigation" data-testid="mobile-navigation">
-            <List>
-              {visibleItems.map(item => (
-                <MobileNavItem
-                  key={item.name}
-                  item={item}
-                  isActive={isActive(item.href)}
-                  onClick={handleItemClick}
-                />
-              ))}
-            </List>
-          </Box>
-        </Box>
+        <MobileDrawerContent
+          navItems={navItems}
+          isActive={isActive}
+          onItemClick={handleItemClick}
+        />
       </Drawer>
     </>
   );

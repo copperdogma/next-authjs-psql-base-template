@@ -1,15 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import ThemeToggle from '@/components/ui/ThemeToggle';
-import UserProfile from '@/components/auth/UserProfile';
 import { useSession } from 'next-auth/react';
 import { Home, Dashboard, Person, Info } from '@mui/icons-material';
-import { AppBar, Toolbar, Typography, Button, Box, Container, useTheme } from '@mui/material';
+import { Box } from '@mui/material';
 import { NavItem } from './NavItems';
 import { SkipToContent } from './SkipToContent';
-import MobileNavigation from './MobileNavigation';
-import DesktopNavigation from './DesktopNavigation';
+import ApplicationHeader from './ApplicationHeader';
+import ApplicationFooter from './ApplicationFooter';
+import MainContent from './MainContent';
 
 /**
  * Base layout component that provides the main application structure
@@ -23,7 +21,6 @@ import DesktopNavigation from './DesktopNavigation';
  * - Skip to content link for accessibility
  */
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
-  const theme = useTheme();
   const { data: session } = useSession();
   const user = session?.user;
 
@@ -57,89 +54,9 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
     <Box component="div" sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Skip to content link for accessibility */}
       <SkipToContent />
-
-      <AppBar position="sticky" color="default" elevation={1} component="header">
-        <Toolbar>
-          <Typography
-            variant="h1"
-            component={Link}
-            href="/"
-            sx={{
-              fontSize: '1.25rem', // Same size as h6 but semantically correct h1
-              fontWeight: 'bold',
-              textDecoration: 'none',
-              color: 'inherit',
-              flexGrow: 0,
-              mr: 2,
-            }}
-          >
-            {'{{YOUR_APP_NAME}}'}
-          </Typography>
-
-          {/* Desktop Navigation */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <DesktopNavigation navItems={NAVIGATION_ITEMS} />
-          </Box>
-
-          {/* Right-side controls: Theme toggle and User profile */}
-          <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
-            <ThemeToggle />
-            <UserProfile />
-          </Box>
-
-          {/* Mobile Navigation */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <MobileNavigation navItems={NAVIGATION_ITEMS} />
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Box
-        component="main"
-        id="main-content"
-        aria-label="Main content"
-        tabIndex={-1}
-        sx={{
-          flex: 1,
-          outline: 'none', // Remove focus outline when skipped to
-          p: { xs: 2, sm: 3 }, // Add responsive padding for better spacing
-        }}
-      >
-        {children}
-      </Box>
-
-      {/* Footer */}
-      <Box
-        component="footer"
-        sx={{
-          py: 3,
-          backgroundColor:
-            theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[900],
-        }}
-      >
-        <Container maxWidth="lg">
-          <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} {'{{YOUR_COMPANY_NAME}}'} All rights reserved.
-          </Typography>
-          <Box
-            component="nav"
-            aria-label="Footer Navigation"
-            data-testid="footer-navigation"
-            sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}
-          >
-            <Button component={Link} href="/privacy" color="inherit" size="small">
-              Privacy
-            </Button>
-            <Button component={Link} href="/terms" color="inherit" size="small">
-              Terms
-            </Button>
-            <Button component={Link} href="/contact" color="inherit" size="small">
-              Contact
-            </Button>
-          </Box>
-        </Container>
-      </Box>
+      <ApplicationHeader navItems={NAVIGATION_ITEMS} />
+      <MainContent>{children}</MainContent>
+      <ApplicationFooter />
     </Box>
   );
 }
