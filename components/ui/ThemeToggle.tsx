@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
-import { DarkMode, LightMode } from '@mui/icons-material';
+import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
 import { useTheme } from 'next-themes';
 import ThemeMenu from './theme/ThemeMenu';
 
@@ -44,11 +44,17 @@ export default function ThemeToggle() {
 
   // Choose the appropriate icon based on the current theme
   const renderThemeIcon = () => {
-    // Use the resolved theme for the icon (what's actually showing)
+    // First check if theme is set to system/auto
+    if (theme === 'system') {
+      // Use BrightnessAuto for system/auto theme
+      return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
+    }
+
+    // Otherwise use the resolved theme for the icon (what's actually showing)
     return resolvedTheme === 'dark' ? (
-      <DarkMode fontSize="small" />
+      <DarkMode fontSize="small" data-testid="DarkModeIcon" />
     ) : (
-      <LightMode fontSize="small" />
+      <LightMode fontSize="small" data-testid="LightModeIcon" />
     );
   };
 
