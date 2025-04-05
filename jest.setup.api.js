@@ -92,9 +92,58 @@ export function createNextRequestClass() {
   };
 }
 
-// Import the factory functions and set up global objects
-import { createJestApiSetup } from './mocks/jest-api-setup';
-createJestApiSetup();
+// Setup the API environment directly
+if (typeof global.Request === 'undefined') {
+  global.Request = createRequestClass();
+}
+
+if (typeof global.Headers === 'undefined') {
+  global.Headers = createHeadersClass();
+}
+
+if (typeof global.Response === 'undefined') {
+  global.Response = createResponseClass();
+}
+
+// Mock Next.js server
+jest.mock('next/server', () => {
+  return {
+    NextRequest: createNextRequestClass(),
+    NextResponse: {
+      json: (body, init = {}) => {
+        const jsonBody = typeof body === 'string' ? body : JSON.stringify(body);
+        const response = new global.Response(jsonBody, {
+          ...init,
+          headers: {
+            ...init?.headers,
+            'content-type': 'application/json',
+          },
+        });
+
+        // Add cookies functionality
+        response.cookies = {
+          set: jest.fn(),
+          get: jest.fn(),
+          delete: jest.fn(),
+        };
+
+        return response;
+      },
+      redirect: jest.fn(url => {
+        return {
+          url,
+          status: 302,
+          headers: new Headers({ location: url }),
+          cookies: {
+            set: jest.fn(),
+            get: jest.fn(),
+            delete: jest.fn(),
+          },
+        };
+      }),
+    },
+  };
+});
 
 // Reset mocks after each test
 afterEach(() => {

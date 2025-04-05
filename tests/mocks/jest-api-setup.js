@@ -7,7 +7,7 @@ import {
   createHeadersClass,
   createResponseClass,
   createNextRequestClass,
-} from '../jest.setup.api';
+} from '../../jest.setup.api';
 
 /**
  * Initialize all global API mocks and Next.js server mocks

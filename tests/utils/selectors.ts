@@ -6,7 +6,6 @@
  */
 import { Page, Locator } from '@playwright/test';
 import { ElementSelector, SelectorOptions } from './selector-types';
-import { UI_ELEMENTS } from './ui-elements';
 import {
   getLocatorByRole,
   getLocatorByText,
@@ -18,7 +17,6 @@ import {
 
 // Re-export types and constants
 export * from './selector-types';
-export { UI_ELEMENTS } from './ui-elements';
 
 /**
  * Gets a locator using the best available selector strategy

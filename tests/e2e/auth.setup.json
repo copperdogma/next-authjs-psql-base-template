@@ -1,8 +1,18 @@
 {
   "cookies": [
     {
+      "name": "firebase-auth-test",
+      "value": "true",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1743959501,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
       "name": "next-auth.csrf-token",
-      "value": "02012f9e129277af9010bc3e25a054c17092cfeea3fca557eed52ebf5a17bea8%7Cfce1d61c89ec256a53fa7dc4a7da925f2d102c7c5762f043bf88216ebbb25923",
+      "value": "f1ea5ccea670d97121ca3827ef8e5067d3adf0095198a434e4c4d0d216abd0db%7Ce14814c0f666008167d59a3eb4007d1b732c200acf31722f56a3487e7ed2f8f6",
       "domain": "localhost",
       "path": "/",
       "expires": -1,
@@ -21,31 +31,21 @@
       "sameSite": "Lax"
     },
     {
-      "name": "firebase-auth-test",
-      "value": "true",
-      "domain": "localhost",
-      "path": "/",
-      "expires": 1743915948,
-      "httpOnly": true,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "__playwright_test",
       "value": "true",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743833149.976699,
+      "expires": 1743876703.464875,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "next-auth.session-token",
-      "value": "mock-session-token-1743829549976",
+      "value": "mock-session-token-1743873103464",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743833149.976821,
+      "expires": 1743876703.464989,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -57,15 +57,15 @@
       "localStorage": [
         {
           "name": "nextauth.message",
-          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743829549}"
+          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743873103}"
         },
         {
           "name": "firebaseTestAuth",
-          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"authenticated\":true,\"accessToken\":\"test-access-token-1743829549976\"}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"authenticated\":true,\"accessToken\":\"test-access-token-1743873103465\"}"
         },
         {
           "name": "firebase:authUser:next-firebase-base-template",
-          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true,\"photoURL\":\"https://via.placeholder.com/150\",\"phoneNumber\":\"+15555555555\",\"createdAt\":\"1743829549976\",\"lastLoginAt\":\"1743829549976\",\"apiKey\":\"PLAYWRIGHT_TEST_API_KEY\",\"appName\":\"[DEFAULT]\",\"authDomain\":\"test-domain.firebaseapp.com\",\"stsTokenManager\":{\"refreshToken\":\"test-refresh-token-1743829549976\",\"accessToken\":\"test-access-token-1743829549976\",\"expirationTime\":1743833149976},\"redirectEventId\":null,\"multiFactor\":{\"enrolledFactors\":[]},\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"password\",\"uid\":\"test@example.com\",\"displayName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+15555555555\",\"photoURL\":\"https://via.placeholder.com/150\"}]}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true,\"photoURL\":\"https://via.placeholder.com/150\",\"phoneNumber\":\"+15555555555\",\"createdAt\":\"1743873103465\",\"lastLoginAt\":\"1743873103465\",\"apiKey\":\"PLAYWRIGHT_TEST_API_KEY\",\"appName\":\"[DEFAULT]\",\"authDomain\":\"test-domain.firebaseapp.com\",\"stsTokenManager\":{\"refreshToken\":\"test-refresh-token-1743873103465\",\"accessToken\":\"test-access-token-1743873103465\",\"expirationTime\":1743876703465},\"redirectEventId\":null,\"multiFactor\":{\"enrolledFactors\":[]},\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"password\",\"uid\":\"test@example.com\",\"displayName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+15555555555\",\"photoURL\":\"https://via.placeholder.com/150\"}]}"
         }
       ]
     }

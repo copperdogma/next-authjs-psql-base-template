@@ -2,7 +2,7 @@
  * UI element definitions for test selectors
  * Extracted from selectors.ts to reduce file size
  */
-import { AriaRole, ElementSelector } from './selector-types';
+import { AriaRole } from './selector-types';
 
 /**
  * UI Elements grouped by component/page

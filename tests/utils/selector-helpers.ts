@@ -3,7 +3,7 @@
  * Extracted from selectors.ts to reduce file size
  */
 import { Page, Locator } from '@playwright/test';
-import { ElementSelector, SelectorOptions } from './selector-types';
+import { ElementSelector } from './selector-types';
 import { UI_ELEMENTS } from './ui-elements';
 
 /**
