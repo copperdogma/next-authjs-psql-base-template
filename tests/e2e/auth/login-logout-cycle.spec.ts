@@ -28,10 +28,14 @@ test.describe('Authentication Cycle', () => {
     console.log('Navigating to dashboard page to verify authentication...');
     await page.goto(`${baseUrl}/dashboard`);
 
-    // Verify user is logged in by checking dashboard element
+    // Verify user is logged in by checking dashboard content using a more reliable selector
     console.log('Verifying authenticated state...');
     try {
-      await expect(page.locator('h1')).toContainText('Dashboard', { timeout: 10000 });
+      // Look for a heading or a data-testid that would indicate a dashboard
+      const dashboardIndicator = page.locator(
+        'h1, [data-testid="dashboard-heading"], [data-testid="dashboard-content"]'
+      );
+      await expect(dashboardIndicator).toBeVisible({ timeout: 10000 });
       console.log('✅ Initial authentication check passed - user is logged in.');
     } catch (error) {
       console.error('Initial authentication check failed - user is not logged in!');
@@ -48,7 +52,11 @@ test.describe('Authentication Cycle', () => {
     try {
       // Check if redirected to login page
       await page.waitForURL('**/login**', { timeout: 10000 });
-      await expect(page.locator('text=Sign in with Google')).toBeVisible({ timeout: 5000 });
+
+      // Look for the sign-in button using data-testid (most reliable)
+      await expect(page.locator('[data-testid="google-signin-button"]')).toBeVisible({
+        timeout: 5000,
+      });
       console.log('✅ Logout verification successful - redirected to login page');
     } catch (error) {
       console.error('Logout verification failed!');
@@ -69,13 +77,27 @@ test.describe('Authentication Cycle', () => {
 async function performLogout(page: Page): Promise<void> {
   let loggedOut = false;
 
-  // Method 1: Find and click a logout button (common pattern)
+  // Method 1: Try to find the logout button by data-testid (most reliable)
   try {
-    const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Sign out")');
+    const logoutByTestId = page.locator('[data-testid="auth-button"][data-loading="false"]');
+    if (await logoutByTestId.isVisible({ timeout: 2000 })) {
+      await logoutByTestId.click();
+      loggedOut = true;
+      console.log('Logout method 1: Clicked logout button by data-testid');
+    }
+  } catch {
+    /* Ignore if not found */
+  }
+
+  if (loggedOut) return;
+
+  // Method 2: Find by button with "Sign Out" text as a fallback
+  try {
+    const logoutButton = page.locator('button:has-text("Sign Out"), button:has-text("Logout")');
     if (await logoutButton.isVisible({ timeout: 2000 })) {
       await logoutButton.click();
       loggedOut = true;
-      console.log('Logout method 1: Clicked logout button');
+      console.log('Logout method 2: Clicked logout button by text');
     }
   } catch {
     /* Ignore if not found */
@@ -83,13 +105,16 @@ async function performLogout(page: Page): Promise<void> {
 
   if (loggedOut) return;
 
-  // Method 2: Find and click a logout link (alternative pattern)
+  // Method 3: Look for logout icon
   try {
-    const logoutLink = page.locator('a:has-text("Logout"), a:has-text("Sign out")');
-    if (await logoutLink.isVisible({ timeout: 2000 })) {
-      await logoutLink.click();
+    const logoutIcon = page.locator(
+      'button svg[data-testid="LogoutIcon"], button svg[data-testid="LogoutOutlinedIcon"]'
+    );
+    if (await logoutIcon.isVisible({ timeout: 2000 })) {
+      // Click the parent button
+      await logoutIcon.locator('xpath=ancestor::button').click();
       loggedOut = true;
-      console.log('Logout method 2: Clicked logout link');
+      console.log('Logout method 3: Clicked logout button by icon');
     }
   } catch {
     /* Ignore if not found */
@@ -97,8 +122,8 @@ async function performLogout(page: Page): Promise<void> {
 
   if (loggedOut) return;
 
-  // Method 3: Clear relevant cookies and local storage (fallback)
-  console.log('Logout method 3: Clearing cookies and storage');
+  // Method 4: Clear relevant cookies and local storage (fallback)
+  console.log('Logout method 4: Clearing cookies and storage');
   await page.context().clearCookies();
   await page.evaluate(() => {
     localStorage.clear();

@@ -112,17 +112,24 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm test` or `npm run test:unit`: Run all Jest unit tests (components, API, utils).
 - `npm run test:watch`: Run unit tests in watch mode.
 - `npm run test:coverage`: Run unit tests with coverage report.
+- `npm test <test-file> -- --coverage --collectCoverageFrom=<source-file>`: Run a specific test file with coverage report limited to its corresponding source file.
 
 #### E2E Testing
-- `npm run test:e2e`: Run all Playwright E2E tests using the built-in webServer.
-- `npm run test:e2e:ui`: Run only UI tests that don't require authentication.
-- `npm run test:e2e:auth`: Run authenticated tests (using the setup project for auth).
+- `npm run test:e2e`: **Primary E2E command** - Automatically starts Firebase emulators with seed data, starts the test server, runs all Playwright tests.
+- `npm run test:e2e:ui-only`: Run only UI tests with emulators (no seed data).
+- `npm run test:e2e:auth-only`: Run only authentication tests with emulators (no seed data).
+- `npm run test:e2e:with-emulator`: Alternative way to run all tests with seed data (identical to test:e2e).
 - `npm run test:e2e:debug`: Run E2E tests with Playwright's debug mode enabled.
 - `npm run test:e2e:headed`: Run E2E tests in headed mode (visible browser).
 - `npm run test:e2e:report`: View the HTML test report from previous test runs.
-- `npm run test:e2e:with-emulator`: Start Firebase emulators and run tests against them.
-- `npm run test:e2e:full`: Run the complete E2E test suite with emulators and imported test data.
-- `npm run test:e2e:setup`: Set up authentication state for manual testing.
+- `npm run test:e2e:auth-setup`: Run only the auth setup script (useful for preparing authentication for manual testing).
+
+#### Firebase Emulators
+- `npm run firebase:emulators`: Start Firebase emulators (Auth + Firestore) with clean state.
+- `npm run firebase:emulators:import`: Start emulators with imported seed data.
+- `npm run firebase:setup-test-user`: Create a test user in the Auth emulator.
+- `npm run firebase:update-seed-data`: Update the seed data used for testing.
+- `npm run firebase:emulators:export`: Export data from running emulators.
 
 ### Code Quality & Formatting
 - `npm run lint`: Check for ESLint issues.
@@ -131,12 +138,6 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm run format:check`: Check code formatting without making changes.
 - `npm run type-check`: Run TypeScript compiler for type checking.
 - `npm run validate`: Run lint, format check, and type check together.
-
-### Firebase Emulators
-- `npm run firebase:emulators`: Start Firebase emulators.
-- `npm run firebase:emulators:export`: Export data from emulators.
-- `npm run firebase:emulators:import`: Start emulators with imported data.
-- `npm run firebase:setup-test-user`: Create a test user in the Auth emulator.
 
 ## Environment Variables
 Required in `.env.local`:

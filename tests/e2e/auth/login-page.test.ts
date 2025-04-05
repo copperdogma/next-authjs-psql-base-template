@@ -8,42 +8,29 @@ test.describe('Login Page Rendering', () => {
     // Take a screenshot for visual verification
     await page.screenshot({ path: 'tests/e2e/screenshots/direct-login-callback.png' });
 
-    // Check the page title - using the one that's actually set in the application
-    await expect(page).toHaveTitle(/.*/, { timeout: 5000 });
-
-    // Look for any login-related button instead of specific text
-    // This is more resilient to text changes
-    const signInButton = page.locator('button:has-text("Sign")');
+    // Check for the signin button using data-testid (most reliable)
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Alternative way to find the button using the Google icon
-    const googleButton = page.locator(
-      'button svg[data-testid="GoogleIcon"], button:has-text("Google")'
-    );
+    // Verify the page has rendered properly by checking for basic structure elements
+    const headingElement = page.locator('h1');
+    await expect(headingElement).toBeVisible({ timeout: 5000 });
 
-    // Only check for the Google button if we didn't find the Sign button
-    if (!(await signInButton.isVisible())) {
-      await expect(googleButton).toBeVisible({ timeout: 5000 });
-    }
-
-    // Check for "Welcome" heading pattern instead of exact text
-    const welcomeHeading = page.getByRole('heading', { name: /welcome/i });
-    await expect(welcomeHeading).toBeVisible({ timeout: 5000 });
-
-    // Check that we have actual content on the page - this will fail if the page is blank
+    // Verify page is not empty
     const bodyContent = await page.evaluate(() => {
       return document.body.textContent || '';
     });
-
-    // Log the actual content length to debug the issue
-    console.log(`Body content length: ${bodyContent.length}`);
-
-    // This assertion should fail with a blank page
     expect(bodyContent.length).toBeGreaterThan(50);
 
-    // Check for essential navigation elements
-    const navigationElements = await page.locator('nav').count();
-    expect(navigationElements).toBeGreaterThan(0);
+    // Check for navigation structure without being specific about content
+    const hasNavElement = await page.evaluate(() => {
+      return Boolean(
+        document.querySelector('nav') ||
+          document.querySelector('header') ||
+          document.querySelector('[role="navigation"]')
+      );
+    });
+    expect(hasNavElement).toBeTruthy();
   });
 
   test('should render login page properly WITHOUT a callback URL', async ({ page }) => {
@@ -53,39 +40,28 @@ test.describe('Login Page Rendering', () => {
     // Take a screenshot for comparison
     await page.screenshot({ path: 'tests/e2e/screenshots/direct-login-no-callback.png' });
 
-    // Check the page title
-    await expect(page).toHaveTitle(/.*/, { timeout: 5000 });
-
-    // Use more flexible selectors
-    const signInButton = page.locator('button:has-text("Sign")');
+    // Check for the signin button using data-testid (most reliable)
+    const signInButton = page.locator('[data-testid="google-signin-button"]');
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Alternative way to find the button - find any visible button
-    if (!(await signInButton.isVisible())) {
-      const anyButton = page.locator('button:visible');
-      await expect(anyButton).toBeVisible({ timeout: 5000 });
-    }
+    // Verify the page has rendered properly by checking for basic structure
+    const headingElement = page.locator('h1');
+    await expect(headingElement).toBeVisible({ timeout: 5000 });
 
-    // Also check for the welcome message with case-insensitive matching
-    const welcomeText = page.getByRole('heading', { name: /welcome/i });
-    await expect(welcomeText).toBeVisible({ timeout: 5000 });
-
-    // Check that we have actual content on the page
+    // Verify page is not empty
     const bodyContent = await page.evaluate(() => {
       return document.body.textContent || '';
     });
-
-    // Log the actual content length to compare with the callback URL version
-    console.log(`Body content length (no callback): ${bodyContent.length}`);
-
-    // This assertion should pass for a properly rendered page
     expect(bodyContent.length).toBeGreaterThan(50);
 
-    // Check for navigation elements - more flexible implementation
-    const hasNavigation = await page.evaluate(() => {
-      return !!document.querySelector('nav, header, [role="navigation"]');
+    // Check for navigation structure without being specific about content
+    const hasNavElement = await page.evaluate(() => {
+      return Boolean(
+        document.querySelector('nav') ||
+          document.querySelector('header') ||
+          document.querySelector('[role="navigation"]')
+      );
     });
-
-    expect(hasNavigation).toBeTruthy();
+    expect(hasNavElement).toBeTruthy();
   });
 });

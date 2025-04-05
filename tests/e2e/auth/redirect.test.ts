@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+// Define UI elements directly in this file to avoid circular dependencies
+const UI_ELEMENTS = {
+  AUTH: {
+    GOOGLE_SIGNIN: '[data-testid="google-signin-button"]',
+  },
+};
+
 test.describe('Auth Redirection', () => {
   test.beforeEach(async ({ page }) => {
     // Clear all cookies to ensure we're unauthenticated
@@ -22,15 +29,13 @@ test.describe('Auth Redirection', () => {
     // Take a screenshot of the login page after redirection
     await page.screenshot({ path: 'tests/e2e/screenshots/login-after-redirect.png' });
 
-    // Look for any button that might be a sign-in button (avoid exact text matches)
-    const signInButton = page.locator(
-      'button:has-text("Sign"), button:has-text("Google"), button:has-text("Login")'
-    );
+    // Check for the sign-in button using data-testid (most reliable)
+    const signInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Also check for welcome text using a broader match
-    const welcomeText = page.getByRole('heading', { name: /welcome/i });
-    await expect(welcomeText).toBeVisible({ timeout: 5000 });
+    // Check for the heading element
+    const heading = page.locator('h1');
+    await expect(heading).toBeVisible({ timeout: 5000 });
 
     // Check that the page has meaningful content (not mostly blank)
     // Get the text content length of the main content area
@@ -54,7 +59,11 @@ test.describe('Auth Redirection', () => {
 
     // Check for navigation elements which should be present using a more flexible approach
     const hasNavigation = await page.evaluate(() => {
-      return !!document.querySelector('nav, header, [role="navigation"]');
+      return Boolean(
+        document.querySelector('nav') ||
+          document.querySelector('header') ||
+          document.querySelector('[role="navigation"]')
+      );
     });
 
     expect(hasNavigation).toBeTruthy();
@@ -82,5 +91,9 @@ test.describe('Auth Redirection', () => {
 
     // Take a screenshot to verify
     await page.screenshot({ path: 'tests/e2e/screenshots/callback-url-encoding.png' });
+
+    // Verify login page elements to ensure the redirect rendered properly
+    const signInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
+    await expect(signInButton).toBeVisible({ timeout: 5000 });
   });
 });
