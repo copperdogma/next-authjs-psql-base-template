@@ -78,6 +78,16 @@ export default [
       'no-dupe-else-if': 'error', // Prevent duplicate conditions in else-if chains
       'no-empty': ['error', { allowEmptyCatch: false }], // Disallow empty blocks
 
+      // SOLID Principles - Open/Closed Principle (OCP)
+      'no-param-reassign': ['error', { props: false }], // Prevent direct modification of parameters
+      'sonarjs/no-ignored-return': 'warn', // Encourage immutability by not ignoring returns from functions that create new values
+
+      // SOLID Principles - Interface Segregation Principle (ISP)
+      'sonarjs/no-all-duplicated-branches': 'warn', // Prefer composition over inheritance
+
+      // SOLID Principles - Dependency Inversion Principle (DIP)
+      'import/no-cycle': ['error', { maxDepth: 5 }], // Prevent circular dependencies, which often violate DIP
+
       // Code Complexity Rules
       complexity: ['error', 10], // Cyclomatic complexity
       'sonarjs/cognitive-complexity': ['error', 15], // Cognitive complexity
@@ -156,10 +166,21 @@ export default [
     plugins: {
       '@typescript-eslint': tsPlugin,
       sonarjs: sonarjs,
+      import: importPlugin,
     },
     rules: {
       // Disable JS rules in favor of TS equivalents
       'no-unused-vars': 'off',
+
+      // SOLID Principles - Open/Closed Principle (OCP)
+      'no-param-reassign': ['error', { props: false }], // Prevent direct modification of parameters
+      'sonarjs/no-ignored-return': 'warn', // Encourage immutability by not ignoring returns from functions that create new values
+
+      // SOLID Principles - Interface Segregation Principle (ISP)
+      'sonarjs/no-all-duplicated-branches': 'warn', // Prefer composition over inheritance
+
+      // SOLID Principles - Dependency Inversion Principle (DIP)
+      'import/no-cycle': ['error', { maxDepth: 5 }], // Prevent circular dependencies, which often violate DIP
 
       // Code Complexity Rules
       complexity: ['error', 10], // Cyclomatic complexity
