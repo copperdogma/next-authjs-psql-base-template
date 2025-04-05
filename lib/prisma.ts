@@ -18,17 +18,18 @@ const getPrismaConfig = () => {
     config.log = process.env.DEBUG_PRISMA ? ['query', 'error', 'warn'] : ['error', 'warn'];
   }
 
-  // Configure connection pool for specific scenarios
-  if (process.env.NODE_ENV === 'production') {
-    // Adjust connection pool for production environment
-    // For long-running applications, increase the pool size
-    // For serverless, keep it small (typically 1-3)
-    config.datasources = {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    };
-  }
+  // Datasource URL is handled by env("DATABASE_URL") in schema.prisma
+  // No need to explicitly set it here again, especially for production.
+  // if (process.env.NODE_ENV === 'production') {
+  //   // Adjust connection pool for production environment
+  //   // For long-running applications, increase the pool size
+  //   // For serverless, keep it small (typically 1-3)
+  //   config.datasources = {
+  //     db: {
+  //       url: process.env.DATABASE_URL,
+  //     },
+  //   };
+  // }
 
   return config;
 };
