@@ -2,7 +2,7 @@
   "cookies": [
     {
       "name": "next-auth.csrf-token",
-      "value": "a537df2ef0eb91ff8744ed49cba051cea75fd4356a706beaf39dbcc33f9bdc06%7Cfb675d1d6334c88c65d290256e9bd1b895f2a641295757e0e52915986328443e",
+      "value": "02012f9e129277af9010bc3e25a054c17092cfeea3fca557eed52ebf5a17bea8%7Cfce1d61c89ec256a53fa7dc4a7da925f2d102c7c5762f043bf88216ebbb25923",
       "domain": "localhost",
       "path": "/",
       "expires": -1,
@@ -25,7 +25,7 @@
       "value": "true",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743911359,
+      "expires": 1743915948,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
@@ -35,17 +35,17 @@
       "value": "true",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743828560.779739,
+      "expires": 1743833149.976699,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "next-auth.session-token",
-      "value": "mock-session-token-1743824960779",
+      "value": "mock-session-token-1743829549976",
       "domain": "localhost",
       "path": "/",
-      "expires": 1743828560.77983,
+      "expires": 1743833149.976821,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -57,15 +57,15 @@
       "localStorage": [
         {
           "name": "nextauth.message",
-          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743824960}"
+          "value": "{\"event\":\"session\",\"data\":{\"trigger\":\"getSession\"},\"timestamp\":1743829549}"
         },
         {
           "name": "firebaseTestAuth",
-          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"authenticated\":true,\"accessToken\":\"test-access-token-1743824960779\"}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"authenticated\":true,\"accessToken\":\"test-access-token-1743829549976\"}"
         },
         {
           "name": "firebase:authUser:next-firebase-base-template",
-          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true,\"photoURL\":\"https://via.placeholder.com/150\",\"phoneNumber\":\"+15555555555\",\"createdAt\":\"1743824960779\",\"lastLoginAt\":\"1743824960779\",\"apiKey\":\"PLAYWRIGHT_TEST_API_KEY\",\"appName\":\"[DEFAULT]\",\"authDomain\":\"test-domain.firebaseapp.com\",\"stsTokenManager\":{\"refreshToken\":\"test-refresh-token-1743824960779\",\"accessToken\":\"test-access-token-1743824960779\",\"expirationTime\":1743828560779},\"redirectEventId\":null,\"multiFactor\":{\"enrolledFactors\":[]},\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"password\",\"uid\":\"test@example.com\",\"displayName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+15555555555\",\"photoURL\":\"https://via.placeholder.com/150\"}]}"
+          "value": "{\"uid\":\"test-uid-playwright-123\",\"email\":\"test@example.com\",\"displayName\":\"Test User\",\"emailVerified\":true,\"photoURL\":\"https://via.placeholder.com/150\",\"phoneNumber\":\"+15555555555\",\"createdAt\":\"1743829549976\",\"lastLoginAt\":\"1743829549976\",\"apiKey\":\"PLAYWRIGHT_TEST_API_KEY\",\"appName\":\"[DEFAULT]\",\"authDomain\":\"test-domain.firebaseapp.com\",\"stsTokenManager\":{\"refreshToken\":\"test-refresh-token-1743829549976\",\"accessToken\":\"test-access-token-1743829549976\",\"expirationTime\":1743833149976},\"redirectEventId\":null,\"multiFactor\":{\"enrolledFactors\":[]},\"isAnonymous\":false,\"providerData\":[{\"providerId\":\"password\",\"uid\":\"test@example.com\",\"displayName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+15555555555\",\"photoURL\":\"https://via.placeholder.com/150\"}]}"
         }
       ]
     }

@@ -78,6 +78,12 @@ export default [
       'max-depth': ['error', 3], // Maximum nesting depth
       'max-params': ['error', 4], // Maximum parameters
 
+      // Code Organization Rules
+      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }], // Max lines per file
+      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }], // Max lines per function
+      'max-statements': ['warn', 15], // Max statements per function
+      'max-classes-per-file': ['warn', 1], // Single class per file
+
       // React Best Practices
       'react/react-in-jsx-scope': 'off', // Not needed in Next.js
       'react/prop-types': 'off', // Using TypeScript for prop validation
@@ -155,6 +161,12 @@ export default [
       'max-depth': ['error', 3], // Maximum nesting depth
       'max-params': ['error', 4], // Maximum parameters
 
+      // Code Organization Rules
+      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }], // Max lines per file
+      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }], // Max lines per function
+      'max-statements': ['warn', 15], // Max statements per function
+      'max-classes-per-file': ['warn', 1], // Single class per file
+
       // TypeScript-specific rules for better type safety
       '@typescript-eslint/no-unused-vars': 'error', // Catch unused variables
       '@typescript-eslint/no-explicit-any': 'warn', // Encourage proper typing
@@ -189,6 +201,11 @@ export default [
       'sonarjs/cognitive-complexity': ['error', 20], // Higher cognitive complexity limit for tests
       'max-depth': ['error', 4], // Higher nesting depth limit for tests
       'max-params': ['error', 6], // Higher parameter limit for tests
+
+      // Allow more relaxed code organization in tests
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }], // Higher file line limit for tests
+      'max-lines-per-function': ['warn', { max: 100, skipBlankLines: true, skipComments: true }], // Higher function line limit for tests
+      'max-statements': ['warn', 25], // Higher statement limit for tests
     },
   },
 

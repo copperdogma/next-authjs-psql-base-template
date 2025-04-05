@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
+import { IconButton, Tooltip } from '@mui/material';
+import { DarkMode, LightMode } from '@mui/icons-material';
 import { useTheme } from 'next-themes';
+import ThemeMenu from './theme/ThemeMenu';
 
 /**
  * ThemeToggle component that provides a user interface for switching themes
@@ -44,10 +45,11 @@ export default function ThemeToggle() {
   // Choose the appropriate icon based on the current theme
   const renderThemeIcon = () => {
     // Use the resolved theme for the icon (what's actually showing)
-    if (resolvedTheme === 'dark') {
-      return <DarkMode fontSize="small" />;
-    }
-    return <LightMode fontSize="small" />;
+    return resolvedTheme === 'dark' ? (
+      <DarkMode fontSize="small" />
+    ) : (
+      <LightMode fontSize="small" />
+    );
   };
 
   // Don't render during SSR to prevent hydration mismatch
@@ -67,47 +69,14 @@ export default function ThemeToggle() {
           {renderThemeIcon()}
         </IconButton>
       </Tooltip>
-      <Menu
-        id="theme-menu"
+
+      <ThemeMenu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': 'theme-button',
-          dense: true,
-        }}
-      >
-        <MenuItem
-          onClick={() => handleThemeChange('light')}
-          selected={theme === 'light'}
-          data-testid="theme-light"
-        >
-          <ListItemIcon>
-            <LightMode fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Light</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleThemeChange('dark')}
-          selected={theme === 'dark'}
-          data-testid="theme-dark"
-        >
-          <ListItemIcon>
-            <DarkMode fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Dark</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleThemeChange('system')}
-          selected={theme === 'system'}
-          data-testid="theme-system"
-        >
-          <ListItemIcon>
-            <BrightnessAuto fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>System</ListItemText>
-        </MenuItem>
-      </Menu>
+        currentTheme={theme}
+        onThemeChange={handleThemeChange}
+      />
     </>
   );
 }
