@@ -15,7 +15,7 @@ import {
   generateFallbackSelectors,
 } from './selector-helpers';
 
-// Re-export types and constants
+// Re-export types only
 export * from './selector-types';
 
 /**
