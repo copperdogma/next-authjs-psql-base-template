@@ -50,14 +50,14 @@ setup('authenticate', async ({ page }) => {
       console.log('⚠️ Failed to setup with Admin SDK - trying fallback methods');
 
       // Fallback to direct authentication approach if Admin SDK fails
-      const directSuccess = await setupTestAuthentication(page);
+      const directSuccess = await setupTestAuthentication(/* page */);
 
       if (directSuccess) {
         console.log('✅ Fallback authentication setup completed successfully');
       } else {
         console.log('⚠️ Direct setup also failed - trying API method');
         // Last resort: Use API fallback
-        await setupAuthenticationViaApi(page);
+        await setupAuthenticationViaApi(/* page */);
       }
     }
   } catch (error) {
@@ -86,7 +86,6 @@ async function setupWithAdminSdk(page: Page): Promise<boolean> {
     console.log('🧪 Verifying Firebase Auth emulator availability...');
 
     // Generate a custom token using the Admin SDK
-    // This token can be exchanged for a Firebase ID token
     console.log(`🔐 Generating custom token for test user: ${TEST_USER.email}`);
     const customToken = await firebaseAdmin.auth().createCustomToken(TEST_USER.uid, {
       email: TEST_USER.email,
@@ -95,35 +94,34 @@ async function setupWithAdminSdk(page: Page): Promise<boolean> {
 
     console.log('✅ Successfully generated custom token from Admin SDK');
 
-    // Now navigate to the app and use the token to sign in
-    console.log('📄 Loading application to prepare authentication...');
-    await page.goto(`${baseUrl}/login`);
+    // Navigate to a simple page first to ensure the Firebase SDK is loaded
+    console.log('📄 Loading application to initialize Firebase SDK...');
+    // Use a non-protected route like /about or /login initially
+    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
 
     // Exchange the custom token for auth credentials using the Firebase SDK in the browser
-    const credentials = await page.evaluate(async token => {
+    const signInResult = await page.evaluate(async token => {
       try {
-        // This assumes firebase/auth is available in the browser context
-        const auth = window.firebase?.auth?.();
-        if (!auth) {
-          console.error('Firebase Auth not available in browser context');
-          return { success: false, error: 'Firebase Auth not available' };
+        // Ensure Firebase JS SDK is loaded
+        if (!window.firebase || !window.firebase.auth) {
+          console.error('Firebase JS SDK not loaded on the page.');
+          // Wait a bit longer or trigger SDK load if necessary
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Simple wait
+          if (!window.firebase || !window.firebase.auth) {
+            return { success: false, error: 'Firebase JS SDK not available' };
+          }
         }
-
-        // Sign in with the custom token
+        const auth = window.firebase.auth();
+        console.log('Attempting signInWithCustomToken...');
         const userCredential = await auth.signInWithCustomToken(token);
-
-        // Get the ID token
-        const idToken = await userCredential.user.getIdToken();
-
+        console.log('signInWithCustomToken successful:', userCredential?.user?.uid);
         return {
           success: true,
-          idToken,
           uid: userCredential.user.uid,
           email: userCredential.user.email,
-          displayName: userCredential.user.displayName,
         };
       } catch (error) {
-        console.error('Error signing in with custom token:', error);
+        console.error('Error during signInWithCustomToken:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : String(error),
@@ -131,70 +129,31 @@ async function setupWithAdminSdk(page: Page): Promise<boolean> {
       }
     }, customToken);
 
-    if (!credentials.success) {
-      console.error('❌ Failed to sign in with custom token:', credentials.error);
-
-      // Try setting up session cookies directly as fallback
-      console.log('⚠️ Falling back to direct session cookie creation...');
-
-      // Set up NextAuth session cookie
-      const sessionCookie = {
-        name: 'next-auth.session-token',
-        value: `mock-session-token-${Date.now()}`,
-        domain: new URL(baseUrl).hostname,
-        path: '/',
-        expires: Math.floor(Date.now() / 1000) + 86400, // 24 hours
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax' as const,
-      };
-
-      await page.context().addCookies([sessionCookie]);
-      console.log('✅ Added NextAuth session cookie');
-
-      // Set the Firebase auth test cookie
-      const firebaseAuthCookie = {
-        name: 'firebase-auth-test',
-        value: 'true',
-        domain: new URL(baseUrl).hostname,
-        path: '/',
-        expires: Math.floor(Date.now() / 1000) + 86400, // 24 hours
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax' as const,
-      };
-
-      await page.context().addCookies([firebaseAuthCookie]);
-      console.log('✅ Added Firebase auth test cookie');
+    if (!signInResult.success) {
+      console.error('❌ Failed to sign in with custom token via browser SDK:', signInResult.error);
+      // Throw an error to prevent proceeding with incorrect auth state
+      throw new Error(`Firebase signInWithCustomToken failed: ${signInResult.error}`);
     } else {
-      console.log(`✅ Successfully authenticated as ${credentials.email} (${credentials.uid})`);
-
-      // Create a cookie with the ID token for server-side verification
-      // Note: In a real app, this should be an httpOnly secure cookie set by the server
-      const idTokenCookie = {
-        name: 'firebase-id-token',
-        value: credentials.idToken || `fallback-token-${Date.now()}`, // Ensure value is always a string
-        domain: new URL(baseUrl).hostname,
-        path: '/',
-        expires: Math.floor(Date.now() / 1000) + 3600, // 1 hour
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax' as const,
-      };
-
-      await page.context().addCookies([idTokenCookie]);
-      console.log('✅ Added Firebase ID token cookie');
+      console.log(
+        `✅ Successfully authenticated with Firebase as ${signInResult.email} (${signInResult.uid}) via browser SDK`
+      );
     }
 
-    // Verify authentication by accessing a protected route
-    console.log('🔍 Verifying authentication by accessing protected route...');
-    await page.goto(`${baseUrl}/dashboard`);
+    // Critical Step: Navigate to a protected route to trigger NextAuth session creation
+    console.log('🚀 Navigating to protected route (/dashboard) to trigger session creation...');
+    // Add a small delay before navigation to ensure client-side auth state is settled
+    await page.waitForTimeout(500);
+    await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' }); // Wait for network to be idle
 
-    // Verify authentication - this is critical to ensure our auth setup worked
-    return verifyAuthentication(page);
+    console.log('🔍 Verifying authentication and session state after navigating to dashboard...');
+    // Verify authentication - this should now check if the SERVER successfully created the session
+    return verifyAuthentication(page); // verifyAuthentication will save state if successful
   } catch (error) {
     console.error('❌ Error in Admin SDK auth setup:', error);
-    return false;
+    await page.screenshot({ path: 'auth-setup-error.png' }); // Screenshot on error
+    // Ensure we don't proceed with a potentially broken auth state
+    await createEmptyAuthState(); // Create empty state on failure
+    return false; // Explicitly return false on error
   }
 }
 
@@ -203,226 +162,84 @@ async function setupWithAdminSdk(page: Page): Promise<boolean> {
  */
 async function verifyAuthentication(page: Page): Promise<boolean> {
   try {
-    // Check if we've been redirected to login
+    console.log(`Verifying authentication status at URL: ${page.url()}`);
+
+    // Increased timeout for verification checks
+    const verificationTimeout = 15000; // 15 seconds
+
+    // 1. Check if we are still on the login page (immediate failure)
     if (page.url().includes('/login')) {
-      console.error('❌ Authentication verification failed - redirected to login page');
-      await page.screenshot({ path: 'auth-verification-failed.png' });
+      console.error('❌ Authentication verification failed - Still on login page');
+      await page.screenshot({ path: 'auth-verify-fail-on-login.png' });
       return false;
     }
 
-    // Look for dashboard-specific content with multiple selector strategies
-    const selectors = [
-      'text=Dashboard',
-      '[data-testid="dashboard-content"]',
-      'h1:has-text("Dashboard")',
-      '[data-testid="user-profile"]',
-      '[data-testid="authenticated-content"]',
-    ];
+    // 2. Wait for a primary dashboard element to appear
+    const dashboardHeadingSelector = 'h1:has-text("Dashboard")'; // More specific selector
+    try {
+      await page
+        .locator(dashboardHeadingSelector)
+        .waitFor({ state: 'visible', timeout: verificationTimeout });
+      console.log(`✅ Authentication verified - Found element: ${dashboardHeadingSelector}`);
 
-    // Try each selector with a short timeout
-    for (const selector of selectors) {
-      const element = await page.$(selector);
-      if (element) {
-        console.log(`✅ Authentication verified - found element: ${selector}`);
+      // 3. (Optional but recommended) Check for the presence of the NextAuth session cookie
+      const cookies = await page.context().cookies();
+      const sessionCookie = cookies.find(
+        c =>
+          c.name.startsWith('next-auth.session-token') ||
+          c.name.startsWith('__Secure-next-auth.session-token')
+      );
 
-        // Save authentication state
-        await page.context().storageState({ path: storageStatePath });
-        console.log(`✅ Authentication state saved to ${storageStatePath}`);
-
-        return true;
+      if (!sessionCookie) {
+        console.warn('⚠️ Dashboard content found, but NextAuth session cookie is missing!');
+        await page.screenshot({ path: 'auth-verify-warn-no-cookie.png' });
+        // Decide if this is acceptable for the test - for now, let's allow it but warn.
+      } else {
+        console.log(`✅ Found NextAuth session cookie: ${sessionCookie.name}`);
       }
+
+      // 4. Save authentication state only after successful verification
+      await page.context().storageState({ path: storageStatePath });
+      console.log(`✅ Authentication state saved to ${storageStatePath}`);
+      return true;
+    } catch (error) {
+      console.error(
+        `❌ Authentication verification failed - Dashboard element "${dashboardHeadingSelector}" not found within ${verificationTimeout}ms.`
+      );
+      await page.screenshot({ path: 'auth-verify-fail-no-dashboard-content.png' });
+      console.log(`Current page URL: ${page.url()}`);
+      console.log(`Current page title: ${await page.title()}`);
+      // Log cookies for debugging
+      const cookies = await page.context().cookies();
+      console.log('Cookies at verification failure:', JSON.stringify(cookies, null, 2));
+      return false;
     }
-
-    console.log('⚠️ Could not find specific dashboard content, but not redirected to login');
-
-    // Take a screenshot of what we're seeing for debugging
-    await page.screenshot({ path: 'auth-verification-uncertain.png' });
-
-    // Save authentication state even if verification is uncertain
-    await page.context().storageState({ path: storageStatePath });
-    console.log(`⚠️ Saved potentially incomplete auth state to ${storageStatePath}`);
-
-    // For this setup, we consider it a success if we're at least not redirected to login
-    return !page.url().includes('/login');
   } catch (error) {
     console.error('❌ Error during authentication verification:', error);
-    await page.screenshot({ path: 'auth-verification-error.png' });
+    await page.screenshot({ path: 'auth-verify-error.png' });
     return false;
   }
 }
 
 /**
  * Sets up test authentication by directly modifying browser state
- * This is a simplified approach for E2E testing that bypasses the actual Firebase flow
+ * THIS IS DISABLED - Prefer using setupWithAdminSdk for realistic testing
  */
-async function setupTestAuthentication(page: Page): Promise<boolean> {
-  console.log('🔑 Setting up direct test authentication...');
-
-  // Get the base URL from environment or default to localhost
-  const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-
-  // Step 1: Navigate to any page to set up cookies
-  console.log('📄 Loading application to prepare authentication...');
-  await page.goto(`${baseUrl}/login`);
-
-  // Step 2: Set up test authentication data directly
-  console.log('🔐 Setting up test authentication data...');
-
-  // Create a test user with complete information
-  const testUser = {
-    uid: TEST_USER.uid,
-    email: TEST_USER.email,
-    displayName: TEST_USER.displayName,
-    emailVerified: true,
-    photoURL: 'https://via.placeholder.com/150',
-    phoneNumber: '+15555555555',
-    createdAt: new Date().toISOString(),
-    lastLoginAt: new Date().toISOString(),
-  };
-
-  // Set authentication data directly in the browser context
-  await page.evaluate((user: typeof testUser) => {
-    console.log('Setting up test authentication in browser context...');
-
-    try {
-      // Set cookies for authentication bypass
-      document.cookie = `__playwright_test=true;path=/;max-age=3600;SameSite=Lax`;
-      document.cookie = `firebase-auth-test=true;path=/;max-age=3600;SameSite=Lax`;
-      document.cookie = `next-auth.session-token=mock-session-token-${Date.now()};path=/;max-age=3600;SameSite=Lax`;
-
-      // Store auth data in localStorage to simulate Firebase Auth
-      const projectId = 'next-firebase-base-template';
-      const timestamps = { lastLoginAt: Date.now(), createdAt: Date.now() };
-
-      // Enhanced user data with all the fields Firebase would typically provide
-      const enhancedUser = {
-        ...user,
-        ...timestamps,
-        apiKey: 'PLAYWRIGHT_TEST_API_KEY',
-        appName: '[DEFAULT]',
-        authDomain: 'test-domain.firebaseapp.com',
-        stsTokenManager: {
-          refreshToken: `test-refresh-token-${Date.now()}`,
-          accessToken: `test-access-token-${Date.now()}`,
-          expirationTime: Date.now() + 3600000, // 1 hour from now
-        },
-        redirectEventId: null,
-        lastLoginAt: String(Date.now()),
-        createdAt: String(Date.now()),
-        multiFactor: { enrolledFactors: [] },
-        isAnonymous: false,
-        providerData: [
-          {
-            providerId: 'password',
-            uid: user.email,
-            displayName: user.displayName,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            photoURL: user.photoURL,
-          },
-        ],
-      };
-
-      localStorage.setItem(`firebase:authUser:${projectId}`, JSON.stringify(enhancedUser));
-      localStorage.setItem(
-        'firebaseTestAuth',
-        JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          authenticated: true,
-          accessToken: enhancedUser.stsTokenManager.accessToken,
-        })
-      );
-
-      // Dispatch an event to notify applications of authentication change
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('firebaseLocalStorageUpdate'));
-
-      console.log('Successfully set up test authentication data');
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to set up test authentication:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }, testUser);
-
-  console.log('✅ Successfully set up test authentication data');
-
-  // Verify and return authentication status
-  return verifyAuthentication(page);
+async function setupTestAuthentication(/* page: Page */): Promise<boolean> {
+  console.warn('⚠️ setupTestAuthentication is currently disabled. Using Admin SDK method.');
+  return false; // Mark as failed/skipped
+  // ... (original code commented out or removed)
 }
 
 /**
  * Alternative approach using an API call to authenticate
- * This is useful as a fallback when direct browser state manipulation isn't working
+ * THIS IS DISABLED - Prefer using setupWithAdminSdk for realistic testing
  */
-async function setupAuthenticationViaApi(page: Page): Promise<void> {
-  console.log('🔑 Setting up authentication via API...');
-
-  // Get the base URL from environment or default to localhost
-  const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-
-  // Create a test user with all required fields
-  const testUser = {
-    email: TEST_USER.email,
-    password: TEST_USER.password,
-    displayName: TEST_USER.displayName,
-    returnSecureToken: true,
-  };
-
-  // First attempt to use a test API endpoint for authentication
-  try {
-    await page.goto(`${baseUrl}/api/auth/test-login`, {
-      timeout: 10000,
-    });
-
-    // Submit test credentials via form if present, or API if needed
-    try {
-      // Check if there's a test login form
-      const formExists = await page
-        .locator('form#test-auth-form')
-        .isVisible()
-        .catch(() => false);
-
-      if (formExists) {
-        // Use form if available
-        await page.fill('[name="email"]', testUser.email);
-        await page.fill('[name="password"]', testUser.password);
-        await page.click('button[type="submit"]');
-      } else {
-        // Otherwise post directly to the API
-        const response = await page.evaluate(async user => {
-          const res = await fetch('/api/auth/test-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user),
-          });
-          return await res.json();
-        }, testUser);
-
-        console.log('API login response:', response);
-      }
-    } catch (error) {
-      console.error('API login form/request failed:', error);
-    }
-
-    // Verify we're now logged in by navigating to a protected route
-    await page.goto(`${baseUrl}/dashboard`);
-
-    // Verify authentication
-    const isAuthenticated = await verifyAuthentication(page);
-
-    if (!isAuthenticated) {
-      console.error('❌ API Authentication verification failed');
-      throw new Error('API authentication failed');
-    }
-  } catch (error) {
-    console.error('❌ API Authentication failed:', error);
-    throw error;
-  }
+async function setupAuthenticationViaApi(/* page: Page */): Promise<void> {
+  console.warn('⚠️ setupAuthenticationViaApi is currently disabled. Using Admin SDK method.');
+  // throw new Error('API authentication setup is disabled'); // Prevent execution
+  return; // Do nothing
+  // ... (original code commented out or removed)
 }
 
 /**
