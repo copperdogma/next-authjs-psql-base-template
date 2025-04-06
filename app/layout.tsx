@@ -13,6 +13,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Next.js + NextAuth + PostgreSQL',
   description: 'A Next.js starter template with NextAuth.js Authentication and PostgreSQL database',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
 };
 
 // This script runs before page renders to prevent theme flashing

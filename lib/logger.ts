@@ -2,7 +2,7 @@ import pino from 'pino';
 import { env } from './env';
 
 // Determine if we're in development mode
-const isDev = process.env.NODE_ENV !== 'production';
+// const isDev = process.env.NODE_ENV !== 'production'; // REMOVED: Unused variable
 
 // Define fields that should be redacted from logs
 const redactFields = [
@@ -28,7 +28,7 @@ const redactFields = [
 
 // Create base logger configuration with Next.js-compatible settings
 const baseLogger = pino({
-  level: isDev ? 'debug' : 'info',
+  level: 'info',
   redact: {
     paths: redactFields,
     censor: '[REDACTED]',

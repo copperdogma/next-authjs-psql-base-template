@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 // import type { RuntimeCaching } from 'next-pwa'; // Remove potentially outdated/incorrect type
-import path from 'path'; // Import path for __dirname equivalent
 import { loggers } from '@/lib/logger'; // Import logger
 
 // Use ESM imports instead of require
@@ -201,31 +200,6 @@ const nextConfig: NextConfig = {
     // config.externals.push({
     //   'thread-stream': 'commonjs thread-stream',
     // });
-
-    // Enable persistent cache for faster builds
-    config.cache = {
-      type: 'filesystem',
-      buildDependencies: {
-        // Invalidate cache when this config file changes
-        // Use __filename directly in CommonJS, need import.meta.url in ESM
-        // Using path.resolve as a workaround for __filename in ESM context
-        config: [path.resolve(import.meta.url.replace('file://', ''))],
-      },
-    };
-
-    // Optimize bundle size in production (Next.js does this by default)
-    // config.optimization = config.optimization || {};
-    // config.optimization.minimize = true; // Default true in production
-
-    // Enable tree shaking (webpack does this automatically in production mode)
-    // config.optimization.usedExports = true; // Default true in production
-
-    // Add DefinePlugin for process.env variables if needed on client
-    // config.plugins.push(
-    //   new webpack.DefinePlugin({
-    //     'process.env.NEXT_PUBLIC_SOME_VAR': JSON.stringify(process.env.NEXT_PUBLIC_SOME_VAR),
-    //   })
-    // );
 
     // Let Next.js handle the rest of the configuration
     return config;
