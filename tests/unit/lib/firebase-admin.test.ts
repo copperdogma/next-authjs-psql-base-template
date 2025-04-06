@@ -1,71 +1,66 @@
 /**
- * @jest-environment node
+ * @jest-environment jsdom
  */
 
-import * as admin from 'firebase-admin';
+import { jest } from '@jest/globals';
 
-// Mock Firebase Admin functions
 jest.mock('firebase-admin', () => {
+  const mockFirestore = jest.fn().mockReturnValue({
+    collection: jest.fn().mockReturnValue({
+      doc: jest.fn().mockReturnValue({
+        set: jest.fn(),
+        get: jest.fn(),
+      }),
+    }),
+  });
+
   return {
     apps: [],
-    initializeApp: jest.fn().mockReturnValue({ name: 'mocked-app' }),
-    credential: {
-      cert: jest.fn().mockReturnValue('mocked-cert'),
-    },
-    firestore: jest.fn().mockReturnValue({
-      settings: jest.fn(),
+    initializeApp: jest.fn().mockReturnValue({
+      firestore: mockFirestore,
     }),
+    credential: {
+      cert: jest.fn(),
+    },
+    firestore: mockFirestore,
   };
 });
 
-describe('Firebase Admin SDK', () => {
-  const originalEnv = process.env;
+describe('firebase-admin', () => {
+  let firebaseAdmin;
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...originalEnv };
-    // Reset apps array before each test
-    Object.defineProperty(admin, 'apps', {
-      value: [],
-      writable: true,
-    });
-    // Clear module cache for each test
     jest.resetModules();
   });
 
-  afterAll(() => {
-    process.env = originalEnv;
+  afterEach(() => {
+    jest.replaceProperty(process.env, 'NODE_ENV', originalNodeEnv);
   });
 
-  test('should be able to import firebase-admin module', () => {
-    const firebaseAdmin = require('../../../lib/firebase-admin');
-    expect(firebaseAdmin).toBeDefined();
-  });
-
-  test('should provide Firebase Admin SDK interface', () => {
-    // Set required env variables
-    process.env.FIREBASE_PROJECT_ID = 'test-project-id';
-    process.env.FIREBASE_CLIENT_EMAIL = 'test@example.com';
-    process.env.FIREBASE_PRIVATE_KEY =
-      '-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----';
+  it('should provide the Firebase Admin SDK interface', async () => {
+    // Test environment mode
+    jest.replaceProperty(process.env, 'NODE_ENV', 'test');
 
     // Import the module
-    const firebaseAdmin = require('../../../lib/firebase-admin').default;
+    firebaseAdmin = (await import('../../../lib/firebase-admin')).default;
 
-    // Verify the interface exists and is an object
+    // Basic interface checks
     expect(firebaseAdmin).toBeDefined();
     expect(typeof firebaseAdmin).toBe('object');
+    expect(firebaseAdmin.firestore).toBeDefined();
   });
 
-  test('should handle test environment', () => {
+  it('should handle initialization in test environment', async () => {
     // Set test environment
     jest.replaceProperty(process.env, 'NODE_ENV', 'test');
 
-    // Import the module in test environment
-    const firebaseAdmin = require('../../../lib/firebase-admin').default;
+    // Import the module
+    firebaseAdmin = (await import('../../../lib/firebase-admin')).default;
 
-    // Verify it loads in test environment
+    // Just verify it creates a firebase interface
     expect(firebaseAdmin).toBeDefined();
-    expect(typeof firebaseAdmin).toBe('object');
+    expect(typeof firebaseAdmin.firestore).toBe('function');
   });
 });
