@@ -92,10 +92,9 @@ function initializeWithEmulators(): admin.app.App {
     console.log(
       `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
     );
-    admin.firestore().settings({
-      host: process.env.FIRESTORE_EMULATOR_HOST,
-      ssl: false,
-    });
+
+    // The Firebase Admin SDK automatically detects and uses the FIRESTORE_EMULATOR_HOST
+    // environment variable - no explicit API call needed for v13+
   }
 
   return app;
@@ -163,13 +162,22 @@ function getInitStrategy() {
   return { strategy: 'minimal' };
 }
 
+// Store the initialized instance
+let firebaseAdminInstance: typeof admin | null = null;
+
 /**
- * Helper function to initialize Firebase Admin SDK
+ * Gets the initialized Firebase Admin SDK instance, initializing it on first call.
  */
-function initializeFirebaseAdmin() {
+// eslint-disable-next-line max-statements
+function getFirebaseAdmin() {
+  if (firebaseAdminInstance) {
+    return firebaseAdminInstance;
+  }
+
   try {
-    // Check if app is already initialized
+    // Check if already initialized (shouldn't happen with lazy init, but safe check)
     if (admin.apps.length > 0) {
+      firebaseAdminInstance = admin;
       return admin;
     }
 
@@ -180,8 +188,11 @@ function initializeFirebaseAdmin() {
     if (strategy === 'emulators') {
       initializeWithEmulators();
     } else if (strategy === 'credentials' && credentials) {
-      const { projectId, clientEmail, privateKey } = credentials;
-      initializeWithCredentials(projectId, clientEmail, privateKey);
+      initializeWithCredentials(
+        credentials.projectId,
+        credentials.clientEmail,
+        credentials.privateKey
+      );
     } else {
       initializeWithMinimalConfig();
     }
@@ -190,13 +201,22 @@ function initializeFirebaseAdmin() {
     console.log(`🔸 [Admin SDK] Current environment: ${process.env.NODE_ENV}`);
     console.log(`🔸 [Admin SDK] NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
 
-    return admin;
+    // Assign and return the initialized admin instance
+    firebaseAdminInstance = admin;
+    return firebaseAdminInstance;
   } catch (error) {
     console.error('Error initializing Firebase Admin SDK:', error);
-    return admin;
+    // Assign and return the base admin namespace even on error
+    firebaseAdminInstance = admin;
+    return firebaseAdminInstance;
   }
 }
 
-// Initialize and export the admin SDK
-const firebaseAdmin = initializeFirebaseAdmin();
-export default firebaseAdmin;
+// Export the getter function instead of the instance
+export { getFirebaseAdmin };
+
+// For compatibility, provide a default export that calls the getter
+// Note: Direct default export might still cause issues in some testing scenarios
+// Prefer using the named export `getFirebaseAdmin` where possible.
+const defaultExport = getFirebaseAdmin();
+export default defaultExport;
