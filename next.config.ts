@@ -4,106 +4,13 @@ import { loggers } from '@/lib/logger'; // Import logger
 
 // Use ESM imports instead of require
 import withBundleAnalyzer from '@next/bundle-analyzer';
-import withPWA from 'next-pwa';
 
 // Define the path to the service worker manually if needed, otherwise next-pwa handles it
 // const swDest = path.join(__dirname, 'public/sw.js');
 
-// Remove explicit type annotation, rely on inference
-const runtimeCaching = [
-  {
-    urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-    handler: 'CacheFirst',
-    options: {
-      cacheName: 'google-fonts',
-      expiration: {
-        maxEntries: 4,
-        maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
-      },
-    },
-  },
-  {
-    urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
-    handler: 'StaleWhileRevalidate',
-    options: {
-      cacheName: 'static-font-assets',
-      expiration: {
-        maxEntries: 4,
-        maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-      },
-    },
-  },
-  {
-    urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
-    handler: 'StaleWhileRevalidate',
-    options: {
-      cacheName: 'static-image-assets',
-      expiration: {
-        maxEntries: 64,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
-      },
-    },
-  },
-  {
-    urlPattern: /\.(?:js)$/i,
-    handler: 'StaleWhileRevalidate',
-    options: {
-      cacheName: 'static-js-assets',
-      expiration: {
-        maxEntries: 32,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
-      },
-    },
-  },
-  {
-    urlPattern: /\.(?:css|less)$/i,
-    handler: 'StaleWhileRevalidate',
-    options: {
-      cacheName: 'static-style-assets',
-      expiration: {
-        maxEntries: 32,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
-      },
-    },
-  },
-  {
-    urlPattern: /\.(?:json|xml|csv)$/i,
-    handler: 'NetworkFirst',
-    options: {
-      cacheName: 'static-data-assets',
-      expiration: {
-        maxEntries: 32,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
-      },
-    },
-  },
-  {
-    urlPattern: /.*/i, // Default catch-all handler
-    handler: 'NetworkFirst',
-    options: {
-      cacheName: 'others',
-      expiration: {
-        maxEntries: 32,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
-      },
-      networkTimeoutSeconds: 10,
-    },
-  },
-];
-
 // Initialize wrappers with imported functions
 const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
-});
-
-const pwa = withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  runtimeCaching,
-  // Consider adding buildExcludes if specific files cause issues
-  // buildExcludes: [/middleware-manifest.json$/],
 });
 
 const nextConfig: NextConfig = {
@@ -206,6 +113,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Apply both PWA and Bundle Analyzer configurations
+// Apply Bundle Analyzer configuration
 // Note: Make sure the wrappers handle the TS config correctly
-export default bundleAnalyzer(pwa(nextConfig));
+export default bundleAnalyzer(nextConfig);

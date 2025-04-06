@@ -88,7 +88,7 @@ async function promptUserForInputs() {
       type: 'input',
       name: 'projectShortName',
       message: 'What is your project short name (for PWA)?',
-      default: answers => answers.projectName.toLowerCase().replace(/\s+/g, ''),
+      default: answers => answers.projectName,
     },
     {
       type: 'input',

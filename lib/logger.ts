@@ -1,5 +1,4 @@
 import pino from 'pino';
-import { env } from './env';
 
 // Determine if we're in development mode
 // const isDev = process.env.NODE_ENV !== 'production'; // REMOVED: Unused variable
@@ -46,7 +45,7 @@ const baseLogger = pino({
   },
   base: {
     env: process.env.NODE_ENV,
-    app: env.NEXT_PUBLIC_PWA_APP_NAME || 'next-firebase-psql-template',
+    app: 'next-firebase-psql-template',
   },
   // Use a simple timestamp function instead of stdTimeFunctions
   timestamp: () => `,"time":"${new Date().toISOString()}"`,

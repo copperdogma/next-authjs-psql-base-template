@@ -52,12 +52,12 @@ const envSchema = z.object({
     required_error: 'GOOGLE_CLIENT_SECRET is required',
   }),
 
-  // PWA
-  NEXT_PUBLIC_PWA_APP_NAME: z.string().optional(),
-  NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string().optional(),
-  NEXT_PUBLIC_PWA_APP_DESCRIPTION: z.string({
-    required_error: 'NEXT_PUBLIC_PWA_APP_DESCRIPTION is required',
-  }),
+  // // PWA - Removed as manifest is now statically defined
+  // NEXT_PUBLIC_PWA_APP_NAME: z.string().optional(),
+  // NEXT_PUBLIC_PWA_APP_SHORT_NAME: z.string().optional(),
+  // NEXT_PUBLIC_PWA_APP_DESCRIPTION: z.string({
+  //   required_error: 'NEXT_PUBLIC_PWA_APP_DESCRIPTION is required',
+  // }),
 });
 
 // Export the type inferred from the schema
@@ -87,10 +87,10 @@ export const requiredEnvVars = [
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
 
-  // PWA
-  'NEXT_PUBLIC_PWA_APP_NAME',
-  'NEXT_PUBLIC_PWA_APP_SHORT_NAME',
-  'NEXT_PUBLIC_PWA_APP_DESCRIPTION',
+  // // PWA - Removed
+  // 'NEXT_PUBLIC_PWA_APP_NAME',
+  // 'NEXT_PUBLIC_PWA_APP_SHORT_NAME',
+  // 'NEXT_PUBLIC_PWA_APP_DESCRIPTION',
 ] as const;
 
 // Define union type for NODE_ENV

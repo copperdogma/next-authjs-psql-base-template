@@ -2,7 +2,6 @@
 import '@testing-library/jest-dom';
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_PWA_APP_NAME = 'test-app';
 process.env.NODE_ENV = 'test';
 
 // Enable experimental features for ESM

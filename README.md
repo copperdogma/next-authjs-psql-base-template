@@ -14,7 +14,6 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 - TypeScript
 - TailwindCSS
 - Material Design Components
-- Progressive Web App Support
 
 ## Technology Stack
 
