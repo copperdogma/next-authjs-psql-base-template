@@ -1,8 +1,4 @@
-/* Jest globals are automatically available */ import {
-  test,
-  expect,
-  Page,
-} from '@playwright/test';
+import { test, expect, Page } from './utils/test-base';
 
 /**
  * Helper function to check if a color is dark based on its RGB values

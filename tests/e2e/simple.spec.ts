@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-base';
 
 /**
  * Ultra-simple test file for diagnosing Playwright issues

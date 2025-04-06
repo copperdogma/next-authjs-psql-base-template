@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:3001": "cross-env PORT=3001 next dev -p 3001",
-    "dev:test": "cross-env NODE_ENV=test PORT=3777 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p 3777",
+    "dev:test": "cross-env NODE_ENV=test PORT=3777 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p 3777 > ./logs/e2e-server-run.log 2>&1",
     "build": "next build",
     "start": "next start",
     "lint": "ESLINT_USE_FLAT_CONFIG=true eslint .",
@@ -32,7 +32,7 @@
     "test:cleanup": "node scripts/cleanup-test-processes.js",
     "test:e2e:clean": "npm run test:cleanup && npm run test:e2e",
     "# E2E Testing Standard Scripts": "========================================",
-    "test:e2e": "start-server-and-test 'npm run firebase:emulators:import' http://localhost:9099 'npm run dev:test' http://localhost:3777 'npm run test:e2e:run-tests'",
+    "test:e2e": "node scripts/run-e2e-with-checks.js",
     "test:e2e:run-tests": "npm run firebase:setup-test-user && cross-env PLAYWRIGHT_TEST_BASE_URL=http://localhost:3777 playwright test",
     "test:e2e:ui": "playwright test --project=ui-tests",
     "test:e2e:auth": "playwright test --project=chromium",

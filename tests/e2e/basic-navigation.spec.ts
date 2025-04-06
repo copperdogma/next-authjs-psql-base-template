@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-base';
 
 test('basic navigation - can access the homepage', async ({ page }) => {
   console.log('🧪 Starting basic navigation test');

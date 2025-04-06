@@ -14,6 +14,8 @@ const HealthCheckRequestSchema = z.object({
  * Returns: Basic server info including status, uptime, and environment
  */
 export async function GET() {
+  // console.error('##### Test Server Log Error Triggered #####'); // Temporary error removed
+  // TODO: Add checks for database, Redis, etc.
   return NextResponse.json({
     status: 'ok',
     uptime: process.uptime(),

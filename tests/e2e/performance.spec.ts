@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-base';
 import { RequestInfo, measureRoutePerformance, getMemoryUsage } from './performance/metrics';
 
 test.describe('Performance Tests', () => {

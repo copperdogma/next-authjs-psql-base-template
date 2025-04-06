@@ -296,11 +296,20 @@ export default [
   },
 
   // Script files configuration
-  // Allows console usage in script files
+  // Allows console usage in script files and relaxes complexity for specific scripts
   {
     files: ['scripts/**/*.js', 'tests/**/*.js', 'tests/config/**/*.ts'],
     rules: {
       'no-console': 'off', // Allow console in scripts
+    },
+  },
+
+  // Override for specific script file needing more complexity
+  {
+    files: ['scripts/run-e2e-with-checks.js'],
+    rules: {
+      'max-statements': 'off', // Disable max statements check
+      'max-depth': 'off', // Disable max depth check
     },
   },
 

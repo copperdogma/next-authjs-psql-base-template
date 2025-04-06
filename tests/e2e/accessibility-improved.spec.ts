@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './utils/test-base';
 import AxeBuilder from '@axe-core/playwright';
 import { ROUTES } from '../utils/routes';
 import { waitForElementToBeVisible } from '../utils/selectors';

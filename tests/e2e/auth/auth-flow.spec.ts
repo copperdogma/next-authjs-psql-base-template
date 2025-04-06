@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../utils/test-base';
 import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
 import { ROUTES } from '../../utils/routes';
 
