@@ -39,8 +39,8 @@ describe('Database Integration Tests', () => {
     // Use test run ID for better isolation between test runs
     const createUniqueTestUser = (suffix = '') => ({
       email: `test-${testRunId}-${suffix}-${Date.now()}@example.com`,
-      name: `${TEST_USER.NAME} ${testRunId} ${suffix}`,
-      image: null,
+      name: `${TEST_USER.name} ${testRunId} ${suffix}`,
+      image: TEST_USER.photoURL,
       emailVerified: null,
     });
 

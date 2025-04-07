@@ -202,8 +202,14 @@ describe('Auth Session API', () => {
       const request = createRequestMock({ token: AUTH.INVALID_TOKEN });
       (adminAuth.verifyIdToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
 
+      // Temporarily suppress console.error for this specific test
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
       // Act
       const response = await handleSession.POST(request);
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
 
       // Assert
       expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -221,8 +227,14 @@ describe('Auth Session API', () => {
         new Error('Failed to create session')
       );
 
+      // Temporarily suppress console.error for this specific test
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
       // Act
       const response = await handleSession.POST(request);
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
 
       // Assert
       expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);

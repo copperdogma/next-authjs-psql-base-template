@@ -24,12 +24,12 @@ export const AUTH = {
 
 // User data
 export const TEST_USER = {
-  ID: 'test-user-id-' + Math.random().toString(36).substring(2, 7), // Randomized to prevent conflicts
-  EMAIL: 'test@example.com',
-  NAME: 'Test User',
-  DISPLAY_NAME: 'Test User',
-  PHOTO_URL: 'https://via.placeholder.com/150',
-  PASSWORD: 'TestPassword123!',
+  uid: 'test-user-id-' + Math.random().toString(36).substring(2, 7), // Renamed from ID, randomized
+  email: 'test@example.com', // Renamed from EMAIL
+  name: 'Test User', // Kept original NAME, might be used elsewhere
+  displayName: 'Test User', // Renamed from DISPLAY_NAME
+  photoURL: 'https://via.placeholder.com/150', // Renamed from PHOTO_URL
+  password: 'TestPassword123!', // Renamed from PASSWORD
 };
 
 // Database

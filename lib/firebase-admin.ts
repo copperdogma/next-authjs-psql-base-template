@@ -78,21 +78,29 @@ function initializeWithEmulators(): admin.app.App {
     projectId: process.env.FIREBASE_PROJECT_ID || 'test-project-id',
   });
 
-  console.log('🔸 [Admin SDK] Initialized for emulator use');
+  // Suppress logs in test environment
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('🔸 [Admin SDK] Initialized for emulator use');
+  }
 
   // Get emulator host configuration
   const authEmulatorHost = getEmulatorHost();
 
   if (authEmulatorHost) {
-    console.log(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+    // Suppress logs in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+    }
     // Auth emulator is auto-connected via environment variable
   }
 
   if (process.env.FIRESTORE_EMULATOR_HOST) {
-    console.log(
-      `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
-    );
-
+    // Suppress logs in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(
+        `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
+      );
+    }
     // The Firebase Admin SDK automatically detects and uses the FIRESTORE_EMULATOR_HOST
     // environment variable - no explicit API call needed for v13+
   }
@@ -198,8 +206,11 @@ function getFirebaseAdmin() {
     }
 
     // Log current environment for debugging
-    console.log(`🔸 [Admin SDK] Current environment: ${process.env.NODE_ENV}`);
-    console.log(`🔸 [Admin SDK] NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
+    // Suppress logs in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`🔸 [Admin SDK] Current environment: ${process.env.NODE_ENV}`);
+      console.log(`🔸 [Admin SDK] NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
+    }
 
     // Assign and return the initialized admin instance
     firebaseAdminInstance = admin;

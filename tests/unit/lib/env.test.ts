@@ -17,7 +17,13 @@ describe('env module', () => {
       // Remove a required env variable
       delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
+      // Temporarily suppress console.error for this specific test
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
       expect(() => validateEnv()).toThrow('Invalid environment variables');
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
 
     it('returns the parsed environment when all required variables are present', () => {

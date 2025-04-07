@@ -128,12 +128,18 @@ describe('test-auth.ts utilities', () => {
     });
 
     test('should handle JSON parsing errors', async () => {
+      // Temporarily suppress console.error for this specific test
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
       mockPage.evaluate.mockImplementation(() => '__playwright_test_user=invalid-json');
 
       const result = await getTestUserFromCookies(mockPage as any);
 
       expect(mockPage.evaluate).toHaveBeenCalled();
       expect(result).toBeNull();
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
   });
 });

@@ -24,13 +24,12 @@ const mockVerifyIdToken = async (token: string) => {
     throw new Error('Invalid token');
   }
 
-  // Generate a deterministic but unique UID based on the token
-  const uid = token.includes('test-uid') ? token : `test-uid-${uuidv4().slice(0, 8)}`;
-
   return {
-    uid,
-    email: TEST_USER.EMAIL || 'test@example.com',
-    name: TEST_USER.NAME || 'Test User',
+    uid: 'mock-uid-' + Math.random().toString(36).substring(7),
+    email: TEST_USER.email || 'test@example.com',
+    name: TEST_USER.name || 'Test User',
+    picture: TEST_USER.photoURL || 'https://via.placeholder.com/150',
+    firebase: { sign_in_provider: 'google.com' },
     exp: Math.floor(Date.now() / 1000) + SESSION_DURATION / 1000,
   };
 };

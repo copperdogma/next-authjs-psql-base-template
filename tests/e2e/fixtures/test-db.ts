@@ -41,8 +41,8 @@ export class TestDatabase {
               data: {
                 id: userId,
                 email: email,
-                name: `${TEST_USER.NAME} ${this.testRunId}`,
-                image: TEST_USER.PHOTO_URL,
+                name: `${TEST_USER.name} ${this.testRunId}`,
+                image: TEST_USER.photoURL,
                 emailVerified: null,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -61,8 +61,8 @@ export class TestDatabase {
           data: {
             id: userId,
             email: email,
-            name: `${TEST_USER.NAME} ${this.testRunId}`,
-            image: TEST_USER.PHOTO_URL,
+            name: `${TEST_USER.name} ${this.testRunId}`,
+            image: TEST_USER.photoURL,
             emailVerified: null,
             createdAt: new Date(),
             updatedAt: new Date(),
