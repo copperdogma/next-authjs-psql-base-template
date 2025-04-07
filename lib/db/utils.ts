@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
+import { loggers } from '@/lib/logger'; // Import logger
 
 /**
  * Error types for database operations to better handle specific failures
@@ -40,7 +41,7 @@ export async function checkDatabaseConnection(): Promise<boolean> {
     await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch (error) {
-    console.error('Database connection check failed:', error);
+    loggers.db.error({ err: error }, 'Database connection check failed');
     return false;
   }
 }
@@ -87,7 +88,13 @@ export async function withDatabaseRetry<T>(
       // Wait with exponential backoff before retry
       const delay = delayMs * Math.pow(2, attempt);
       console.warn(
-        `Database operation failed (attempt ${attempt + 1}/${retries}). Retrying in ${delay}ms...`
+        {
+          context: 'retryOperation',
+          attempt: attempt + 1,
+          maxRetries: retries,
+          err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+        },
+        `Retry attempt ${attempt + 1}/${retries} failed. Retrying in ${delay}ms...`
       );
       await new Promise(resolve => setTimeout(resolve, delay));
     }

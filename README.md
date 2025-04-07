@@ -340,3 +340,16 @@ The project uses ts-node for running TypeScript scripts directly without compila
 - `npm run test:e2e:dynamic:tsx` - Alternative using tsx for better performance
 
 For most users, the default `test:e2e:dynamic` script should be sufficient. The other variants are available for specific use cases or performance optimization.
+
+## Logging
+
+This template uses **Pino** for structured, low-overhead logging.
+
+- **Configuration**: Logging behavior is configured in `lib/logger.ts`.
+- **Log Levels**: The minimum log level is controlled by the `LOG_LEVEL` environment variable (e.g., `trace`, `debug`, `info`, `warn`, `error`, `fatal`). It defaults to `info`.
+- **Development**: Logs are automatically pretty-printed to the console using `pino-pretty` when running `npm run dev` or `npm run ai:start`.
+- **Production**: Logs are outputted as raw JSON to `stdout`, suitable for capture by deployment platforms or log collectors.
+- **Server-Side Logging**: Use the exported `logger` or create context-specific loggers (e.g., `loggers.api`, `loggers.db`) from `lib/logger.ts`.
+- **Client-Side Logging**: Import `clientLogger` from `lib/client-logger.ts` in your client components ('use client'). Logs sent via `clientLogger` (e.g., `clientLogger.warn('Something seems off')`) are sent to the `/api/log/client` endpoint and logged server-side.
+- **Request ID**: Incoming requests are automatically assigned an `x-request-id` header (visible in browser dev tools) and the corresponding `requestId` is included in server-side logs for tracing.
+- **Redaction**: Sensitive fields (passwords, tokens, etc., defined in `lib/logger.ts`) are automatically redacted from logs.

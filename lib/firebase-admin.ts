@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { logger } from '@/lib/logger';
 
 /**
  * Checks if the key is a test key that should be ignored
@@ -43,7 +44,7 @@ function parsePrivateKey(key?: string): string | undefined {
     process.env.NODE_ENV === 'test' || process.env.USE_FIREBASE_EMULATOR === 'true';
 
   if (isTestEnvironment && isTestKey(key)) {
-    console.log('🔸 [Admin SDK] Using placeholder private key for test environment');
+    logger.info('🔸 [Admin SDK] Using placeholder private key for test environment');
     return undefined;
   }
 
@@ -62,7 +63,7 @@ function getEmulatorHost(): string | undefined {
   // For local development with custom ports
   const port = process.env.PORT || process.env.NEXT_PUBLIC_PORT;
   if (port && process.env.NODE_ENV !== 'production') {
-    console.log(`🔸 [Admin SDK] Detected custom port: ${port}`);
+    logger.info(`🔸 [Admin SDK] Detected custom port: ${port}`);
     return `localhost:9099`; // Auth emulator default port
   }
 
@@ -80,7 +81,7 @@ function initializeWithEmulators(): admin.app.App {
 
   // Suppress logs in test environment
   if (process.env.NODE_ENV !== 'test') {
-    console.log('🔸 [Admin SDK] Initialized for emulator use');
+    logger.info('🔸 [Admin SDK] Initialized for emulator use');
   }
 
   // Get emulator host configuration
@@ -89,7 +90,7 @@ function initializeWithEmulators(): admin.app.App {
   if (authEmulatorHost) {
     // Suppress logs in test environment
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+      logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
     }
     // Auth emulator is auto-connected via environment variable
   }
@@ -97,12 +98,25 @@ function initializeWithEmulators(): admin.app.App {
   if (process.env.FIRESTORE_EMULATOR_HOST) {
     // Suppress logs in test environment
     if (process.env.NODE_ENV !== 'test') {
-      console.log(
+      logger.info(
         `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
       );
     }
     // The Firebase Admin SDK automatically detects and uses the FIRESTORE_EMULATOR_HOST
     // environment variable - no explicit API call needed for v13+
+  }
+
+  // Log connection status
+  if (authEmulatorHost && process.env.FIRESTORE_EMULATOR_HOST) {
+    logger.info('🔸 [Admin SDK] Initialized for emulator use');
+    logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+    logger.info(
+      `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
+    );
+  } else {
+    logger.warn(
+      '⚠️ [Admin SDK] Emulators not fully configured. Check FIREBASE_AUTH_EMULATOR_HOST and FIRESTORE_EMULATOR_HOST environment variables.'
+    );
   }
 
   return app;
@@ -126,7 +140,7 @@ function initializeWithCredentials(
     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
   });
 
-  console.log('✅ [Admin SDK] Initialized with service account credentials');
+  logger.info('✅ [Admin SDK] Initialized with service account credentials');
   return app;
 }
 
@@ -138,7 +152,7 @@ function initializeWithMinimalConfig(): admin.app.App {
     projectId: process.env.FIREBASE_PROJECT_ID || 'default-project-id',
   });
 
-  console.log('⚠️ [Admin SDK] Initialized with minimal configuration due to missing credentials');
+  logger.warn('⚠️ [Admin SDK] Initialized with minimal configuration due to missing credentials');
 
   return app;
 }
@@ -208,15 +222,24 @@ function getFirebaseAdmin() {
     // Log current environment for debugging
     // Suppress logs in test environment
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`🔸 [Admin SDK] Current environment: ${process.env.NODE_ENV}`);
-      console.log(`🔸 [Admin SDK] NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
+      logger.info(`🔸 [Admin SDK] Current environment: ${process.env.NODE_ENV}`);
+      logger.info(`🔸 [Admin SDK] NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
     }
+
+    // Log additional environment info for context
+    logger.debug(
+      {
+        nodeEnv: process.env.NODE_ENV,
+        nextauthUrl: process.env.NEXTAUTH_URL,
+      },
+      'Admin SDK Environment Context'
+    );
 
     // Assign and return the initialized admin instance
     firebaseAdminInstance = admin;
     return firebaseAdminInstance;
   } catch (error) {
-    console.error('Error initializing Firebase Admin SDK:', error);
+    logger.error({ err: error }, 'Error initializing Firebase Admin SDK');
     // Assign and return the base admin namespace even on error
     firebaseAdminInstance = admin;
     return firebaseAdminInstance;

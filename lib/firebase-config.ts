@@ -1,8 +1,8 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from '@firebase/app';
-import { getApps, getApp } from '@firebase/app';
-import { connectAuthEmulator, getAuth, Auth } from '@firebase/auth';
+import { initializeApp, getApps, getApp } from '@firebase/app';
+import { getAuth, connectAuthEmulator, Auth } from '@firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from '@firebase/firestore';
+import { logger } from '@/lib/logger'; // Import logger
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -42,11 +42,11 @@ function connectToAuthEmulator(auth: Auth): void {
   // Format: "localhost:9099"
   const [host, port] = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST.split(':');
   try {
-    console.log(`🔸 Connecting to Firebase Auth emulator at ${host}:${port}`);
+    logger.info(`🔸 Connecting to Firebase Auth emulator at ${host}:${port}`);
     connectAuthEmulator(auth, `http://${host}:${port}`, { disableWarnings: true });
     authEmulatorConnected = true;
   } catch (error) {
-    console.error('Failed to connect to Auth emulator:', error);
+    logger.error({ err: error }, 'Failed to connect to Auth emulator');
   }
 }
 
@@ -61,11 +61,11 @@ function connectToFirestoreEmulator(firestore: Firestore): void {
   // Format: "localhost:8080"
   const [host, port] = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST.split(':');
   try {
-    console.log(`🔸 Connecting to Firestore emulator at ${host}:${port}`);
+    logger.info(`🔸 Connecting to Firestore emulator at ${host}:${port}`);
     connectFirestoreEmulator(firestore, host, parseInt(port, 10));
     firestoreEmulatorConnected = true;
   } catch (error) {
-    console.error('Failed to connect to Firestore emulator:', error);
+    logger.error({ err: error }, 'Failed to connect to Firestore emulator');
   }
 }
 
@@ -82,7 +82,7 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
 
   connectToAuthEmulator(auth);
   connectToFirestoreEmulator(firestore);
-  console.log('🔸 Firebase emulator mode active');
+  logger.info('🔸 Firebase emulator mode active');
 }
 
 // Create a client-only implementation that will be properly initialized

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logger } from './logger'; // Import logger
 
 // Environment variables schema
 const envSchema = z.object({
@@ -112,7 +113,12 @@ export function validateEnv() {
 
   if (!result.success) {
     const formattedError = formatZodError(result.error);
-    console.error('❌ Invalid environment variables:\n' + formattedError);
+    logger.error(
+      {
+        validationErrors: result.error.format(),
+      },
+      `❌ Invalid environment variables:\n${formattedError}`
+    );
     throw new Error('Invalid environment variables');
   }
 

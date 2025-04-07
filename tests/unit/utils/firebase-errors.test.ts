@@ -1,5 +1,15 @@
 import { getFirebaseAuthErrorMessage } from '../../../lib/utils/firebase-errors';
 import { FirebaseError } from '@firebase/util';
+import { handleFirebaseError } from '../../../lib/utils/firebase-errors';
+import { logger } from '../../../lib/logger';
+
+// Mock the logger to spy on its methods
+jest.mock('../../../lib/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    // Add other levels if needed for testing
+  },
+}));
 
 describe('Firebase Error Utilities', () => {
   describe('getFirebaseAuthErrorMessage', () => {
@@ -150,6 +160,86 @@ describe('Firebase Error Utilities', () => {
       const error = { code: 'auth/timeout' } as unknown as Error;
       expect(getFirebaseAuthErrorMessage(error)).toBe(
         'An unexpected authentication error occurred. Please try again.'
+      );
+    });
+  });
+
+  describe('handleFirebaseError', () => {
+    beforeEach(() => {
+      // Reset mocks before each test
+      (logger.error as jest.Mock).mockClear();
+    });
+
+    test('should handle known FirebaseError codes', () => {
+      const knownError = new FirebaseError('auth/user-not-found', 'User not found');
+      const message = handleFirebaseError(knownError, 'Login');
+
+      expect(message).toBe('No user found with this email address.');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: 'Login',
+          processedMessage: 'No user found with this email address.',
+          err: expect.objectContaining({ name: 'FirebaseError', message: 'User not found' }),
+        }),
+        'Firebase Error: Login'
+      );
+    });
+
+    test('should handle unknown FirebaseError codes', () => {
+      const unknownError = new FirebaseError('auth/some-other-error', 'Something else happened');
+      const message = handleFirebaseError(unknownError, 'Auth Operation');
+
+      expect(message).toBe('Authentication error: Something else happened');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: 'Auth Operation',
+          processedMessage: 'Authentication error: Something else happened',
+          err: expect.objectContaining({
+            name: 'FirebaseError',
+            message: 'Something else happened',
+          }),
+        }),
+        'Firebase Error: Auth Operation'
+      );
+    });
+
+    test('should handle generic Error objects', () => {
+      const genericError = new Error('Network issue');
+      const message = handleFirebaseError(genericError, 'Network Request');
+
+      expect(message).toBe('Network issue');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: 'Network Request',
+          processedMessage: 'Network issue',
+          err: expect.objectContaining({ message: 'Network issue' }),
+        }),
+        'Firebase Error: Network Request'
+      );
+    });
+
+    test('should handle non-Error types', () => {
+      const nonError = { some: 'object' };
+      const message = handleFirebaseError(nonError, 'Processing');
+
+      expect(message).toBe('An unknown error occurred');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: 'Processing',
+          processedMessage: 'An unknown error occurred',
+          err: { some: 'object' },
+        }),
+        'Firebase Error: Processing'
+      );
+    });
+
+    test('should use default context if not provided', () => {
+      const genericError = new Error('Default context test');
+      handleFirebaseError(genericError);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ context: 'Firebase operation' }),
+        'Firebase Error: Firebase operation'
       );
     });
   });

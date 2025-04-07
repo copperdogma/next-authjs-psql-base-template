@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { clientLogger } from '@/lib/client-logger';
 
 // Log the error as soon as the boundary catches it
 let loggedError = false; // Prevent logging multiple times on re-renders
 
-export default function ErrorBoundary({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -16,14 +15,14 @@ export default function ErrorBoundary({
 }) {
   // Log the error immediately on the client, sending it to the server
   if (!loggedError) {
-    clientLogger.error('ErrorBoundary caught an error', {
+    clientLogger.error('GlobalErrorBoundary caught an error', {
       error: {
         message: error.message,
         name: error.name,
         stack: error.stack,
-        digest: error.digest, // Next.js specific digest for server errors
+        digest: error.digest,
       },
-      location: 'app/error.tsx',
+      location: 'app/global-error.tsx',
     });
     loggedError = true;
   }
@@ -40,24 +39,18 @@ export default function ErrorBoundary({
     <html>
       <body>
         <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-          <h2 className="text-3xl font-bold text-red-600 mb-4">Something went wrong!</h2>
+          <h2 className="text-3xl font-bold text-red-600 mb-4">Application Error</h2>
           <p className="text-gray-600 mb-8 max-w-md">
-            {error.message || 'An unexpected error occurred. We apologize for the inconvenience.'}
+            A critical error occurred in the application. Please try again.
+            {/* Avoid showing error.message directly in the global boundary for security */}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={() => reset()}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
-            >
-              Try again
-            </button>
-            <Link
-              href="/"
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded"
-            >
-              Return to home
-            </Link>
-          </div>
+          <button
+            onClick={() => reset()} // Attempt to recover by re-rendering the root route
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
+          >
+            Try again
+          </button>
+          {/* Optionally add a link to a status page or support */}
         </div>
       </body>
     </html>

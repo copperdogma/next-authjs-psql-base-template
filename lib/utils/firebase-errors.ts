@@ -1,4 +1,5 @@
 import { FirebaseError } from '@firebase/util';
+import { logger } from '@/lib/logger';
 
 type FirebaseAuthErrorCode =
   | 'auth/invalid-email'
@@ -71,13 +72,31 @@ export function getFirebaseAuthErrorMessage(error: unknown): string {
  * @param error The error object
  * @returns A user-friendly error message string
  */
-export function handleFirebaseError(context: string, error: unknown): string {
-  // Get a readable error message
-  const userMessage = getFirebaseAuthErrorMessage(error);
+export function handleFirebaseError(
+  error: unknown,
+  context: string = 'Firebase operation'
+): string {
+  let errorMessage = 'An unknown error occurred';
 
-  // Log detailed error information for debugging
-  console.error(`Firebase ${context} Error:`, error);
+  if (error instanceof FirebaseError) {
+    // Get a readable error message
+    errorMessage = getFirebaseAuthErrorMessage(error);
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+  }
 
-  // Return the user-friendly message for display
-  return userMessage;
+  // Log the detailed error using Pino
+  logger.error(
+    {
+      err:
+        error instanceof Error
+          ? { message: error.message, stack: error.stack, name: error.name }
+          : error,
+      context,
+      processedMessage: errorMessage,
+    },
+    `Firebase Error: ${context}`
+  );
+
+  return errorMessage;
 }

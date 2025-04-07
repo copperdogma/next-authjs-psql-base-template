@@ -5,6 +5,7 @@
 // Import mocks first
 import { mockPinoLogger, resetMocks } from '../../utils/mocks';
 import type pino from 'pino';
+import pinoReal from 'pino'; // Import the actual pino function
 
 // Mock pino before importing logger
 jest.mock('pino', () => {
@@ -69,8 +70,16 @@ jest.mock('pino', () => {
   };
 });
 
-// Import the logger module
-import { createLogger, getRequestId, shouldSample, createSampledLogger } from '../../../lib/logger';
+// Import only the needed logger functions
+import { createLogger, getRequestId } from '../../../lib/logger';
+
+// Mock pino instance using the real function
+const mockLogger = pinoReal({
+  enabled: false, // Prevent actual logging during tests
+});
+
+// Mock the Math.random function for predictable request IDs
+jest.spyOn(Math, 'random').mockReturnValue(0.123456789);
 
 describe('Logger', () => {
   let mockLogger: pino.Logger;
@@ -119,70 +128,21 @@ describe('Logger', () => {
     });
   });
 
-  describe('shouldSample', () => {
-    test('should return true for IDs that fall within the sampling rate', () => {
-      // Test with ID ending in '0' (0/16 = 0)
-      expect(shouldSample('test0', 0.1)).toBe(true);
-      // Test with ID ending in '1' (1/16 ≈ 0.0625)
-      expect(shouldSample('test1', 0.1)).toBe(true);
-    });
+  // REMOVE tests for shouldSample
+  // describe('shouldSample', () => {
+  //   test('should return true for IDs that fall within the sampling rate', () => { ... });
+  //   test('should return false for IDs that fall outside the sampling rate', () => { ... });
+  //   test('should use default rate of 0.1 if not specified', () => { ... });
+  // });
 
-    test('should return false for IDs that fall outside the sampling rate', () => {
-      // Test with ID ending in 'a' (10/16 ≈ 0.625)
-      expect(shouldSample('testa', 0.1)).toBe(false);
-      // Test with ID ending in 'f' (15/16 ≈ 0.9375)
-      expect(shouldSample('testf', 0.1)).toBe(false);
-    });
-
-    test('should use default rate of 0.1 if not specified', () => {
-      expect(shouldSample('test0')).toBe(true); // 0/16 = 0
-      expect(shouldSample('testa')).toBe(false); // 10/16 ≈ 0.625
-    });
-  });
-
-  describe('createSampledLogger', () => {
-    beforeEach(() => {
-      resetMocks();
-      jest.clearAllMocks();
-      mockLogger = require('pino').default();
-      (Math.random as jest.Mock).mockReturnValue(0);
-    });
-
-    test('should create a sampled logger with wrapped methods', () => {
-      const sampledLogger = createSampledLogger(mockLogger);
-      expect(sampledLogger.info).toBeDefined();
-      expect(sampledLogger.warn).toBeDefined();
-      expect(sampledLogger.error).toBeDefined();
-      expect(sampledLogger.debug).toBeDefined();
-    });
-
-    test('should only log messages that fall within the sampling rate', () => {
-      const sampledLogger = createSampledLogger(mockLogger, 0.1);
-
-      // First message should be logged (request ID ends in '0')
-      sampledLogger.info({ msg: 'test1', requestId: 'test0' });
-      expect(mockLogger.info).toHaveBeenCalledWith({ msg: 'test1', requestId: 'test0' });
-
-      // Second message should not be logged (request ID ends in 'a')
-      sampledLogger.info({ msg: 'test2', requestId: 'testa' });
-      expect(mockLogger.info).toHaveBeenCalledTimes(1);
-    });
-
-    test('should use provided requestId if available', () => {
-      const sampledLogger = createSampledLogger(mockLogger);
-
-      // Message with requestId that will be sampled
-      sampledLogger.info({ msg: 'test', requestId: 'test0' });
-      expect(Math.random).not.toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith({ msg: 'test', requestId: 'test0' });
-    });
-
-    test('should preserve the original logger methods', () => {
-      const sampledLogger = createSampledLogger(mockLogger);
-
-      // Call a non-logging method
-      sampledLogger.isLevelEnabled('info');
-      expect(mockLogger.isLevelEnabled).toHaveBeenCalledWith('info');
-    });
-  });
+  // REMOVE tests for createSampledLogger
+  // describe('createSampledLogger', () => {
+  //   let mockChildLogger: pino.Logger;
+  //   beforeEach(() => { ... });
+  //   afterEach(() => { ... });
+  //   test('should create a sampled logger with wrapped methods', () => { ... });
+  //   test('should only log messages that fall within the sampling rate', () => { ... });
+  //   test('should use provided requestId if available', () => { ... });
+  //   test('should preserve the original logger methods', () => { ... });
+  // });
 });

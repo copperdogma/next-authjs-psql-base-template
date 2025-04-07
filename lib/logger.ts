@@ -27,22 +27,14 @@ const redactFields = [
 
 // Create base logger configuration with Next.js-compatible settings
 const baseLogger = pino({
-  level: 'info',
+  level: process.env.LOG_LEVEL || 'info', // Use env var or default to info
   redact: {
     paths: redactFields,
     censor: '[REDACTED]',
     remove: true, // Completely remove secrets instead of replacing with [REDACTED]
   },
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-      // Force synchronous logging to avoid worker threads
-      sync: true,
-    },
-  },
+  // REMOVED Transport config - let output go to stdout as JSON by default
+  // transport: { ... },
   base: {
     env: process.env.NODE_ENV,
     app: 'next-firebase-psql-template',
@@ -92,42 +84,6 @@ export const loggers = {
 export const getRequestId = () => {
   return `req_${Math.random().toString(36).substring(2, 10)}`;
 };
-
-/**
- * Determines if a particular event should be logged based on sampling rate
- * @param id A unique identifier (like request ID) to use for sampling decision
- * @param rate The sampling rate between 0 and 1 (e.g., 0.1 for 10%)
- * @returns True if this event should be logged, false otherwise
- */
-export function shouldSample(id: string, rate = 0.1): boolean {
-  // Simple consistent sampling using the last character of the ID
-  const lastChar = id.charAt(id.length - 1);
-  return parseInt(lastChar, 16) / 16 < rate;
-}
-
-/**
- * Creates a sampled logger that only logs a percentage of messages
- * @param baseChildLogger The logger to wrap with sampling
- * @param rate The sampling rate (0-1)
- * @returns A logger with the same interface but that only logs some percentage of messages
- */
-export function createSampledLogger(baseChildLogger: pino.Logger, rate = 0.1) {
-  const logMethods = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
-  const handler: ProxyHandler<pino.Logger> = {
-    get(target, prop, receiver) {
-      const value = Reflect.get(target, prop, receiver);
-      if (typeof value === 'function' && logMethods.includes(prop as (typeof logMethods)[number])) {
-        return function (this: any, ...args: any[]) {
-          const obj = args[0];
-          const requestId = (typeof obj === 'object' && obj?.requestId) || getRequestId();
-          return shouldSample(requestId, rate) ? Reflect.apply(value, target, args) : undefined;
-        };
-      }
-      return value;
-    },
-  };
-  return new Proxy(baseChildLogger, handler);
-}
 
 // Export default logger
 export default logger;

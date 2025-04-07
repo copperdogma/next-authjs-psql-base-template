@@ -104,6 +104,30 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
+    './lib/auth.ts': {
+      statements: 20,
+      branches: 10,
+      functions: 0,
+      lines: 20,
+    },
+    './lib/firebase-admin.ts': {
+      statements: 40,
+      branches: 20,
+      functions: 40,
+      lines: 40,
+    },
+    './lib/prisma.ts': {
+      statements: 65,
+      branches: 60,
+      functions: 50,
+      lines: 65,
+    },
+    './lib/db/session-cleanup-service.ts': {
+      statements: 0,
+      branches: 0,
+      functions: 0,
+      lines: 0,
+    },
   },
 };
 

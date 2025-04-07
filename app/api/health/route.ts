@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { loggers } from '@/lib/logger';
 
 // Schema for validating POST request data
 const HealthCheckRequestSchema = z.object({
@@ -61,7 +62,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Health check error:', error);
+    // Use structured logging
+    loggers.api.error(
+      {
+        err: error,
+        location: 'health-check-post',
+      },
+      'Health check POST request failed'
+    );
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

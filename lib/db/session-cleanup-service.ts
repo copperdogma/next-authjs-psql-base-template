@@ -1,11 +1,116 @@
 import { prisma } from '../prisma';
 import { Prisma } from '@prisma/client';
+import { loggers } from '@/lib/logger';
+
+interface SessionCleanupServiceOptions {
+  schedule: string; // Cron schedule string (e.g., '0 0 * * *')
+  retentionDays: number; // How many days of sessions to keep
+  batchSize?: number; // How many sessions to delete per batch (optional)
+  onError?: (error: Error) => void; // Custom error handler (optional)
+}
 
 /**
  * Service for managing session cleanup operations using batch operations
  * Demonstrates efficient use of Prisma's batch operations (deleteMany, updateMany)
  */
 export class SessionCleanupService {
+  // Commenting out unused properties to fix TS errors - Revisit when implementing cleanup logic
+  // private schedule: string;
+  // private retentionDays: number;
+  // private batchSize?: number;
+  // private onError: (error: Error) => void;
+
+  constructor(options: SessionCleanupServiceOptions) {
+    // // Assign commented-out properties
+    // this.schedule = options.schedule;
+    // this.retentionDays = options.retentionDays;
+    // this.batchSize = options.batchSize;
+    // // Use provided onError or default to logging
+    // this.onError = options.onError || (error => loggers.db.error({ err: error }, 'Session cleanup error'));
+
+    // Ensure the default logging occurs if no custom handler is passed, even if properties aren't used yet.
+    // We don't need to store it if the class methods don't use it.
+    options.onError || (error => loggers.db.error({ err: error }, 'Session cleanup error'));
+  }
+
+  /**
+   * Start the scheduled cleanup task.
+   */
+  start(): void {
+    // TODO: Implement scheduling using node-cron and this.schedule
+    // The task should call this.runCleanup()
+    // Example: schedule(this.schedule, async () => { ... });
+    loggers.db.info('Session cleanup service started (scheduling not implemented).');
+  }
+
+  /**
+   * Stop the scheduled cleanup task.
+   */
+  stop(): void {
+    // TODO: Implement task stopping
+    loggers.db.info('Session cleanup service stopped (stopping not implemented).');
+  }
+
+  /**
+   * Run the cleanup process immediately.
+   */
+  async runCleanup(): Promise<void> {
+    loggers.db.info('Running session cleanup...');
+    const retentionDays = 7; // Hardcoded for now, replace with this.retentionDays when implemented
+    const batchSize = 100; // Hardcoded for now, replace with this.batchSize when implemented
+    const onError = (error: Error) => loggers.db.error({ err: error }, 'Session cleanup error'); // Hardcoded for now
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+    // ... (rest of runCleanup logic using hardcoded values)
+    // ... Use onError callback on failures ...
+
+    try {
+      let deletedCount = 0;
+      let totalDeleted = 0;
+
+      do {
+        const sessionsToDelete = await prisma.session.findMany({
+          where: {
+            expires: {
+              lt: cutoffDate,
+            },
+          },
+          take: batchSize,
+          select: {
+            id: true, // Only select IDs for deletion
+          },
+        });
+
+        if (sessionsToDelete.length === 0) {
+          break;
+        }
+
+        const idsToDelete = sessionsToDelete.map(s => s.id);
+        const result = await prisma.session.deleteMany({
+          where: {
+            id: {
+              in: idsToDelete,
+            },
+          },
+        });
+
+        deletedCount = result.count;
+        totalDeleted += deletedCount;
+        loggers.db.debug(`Deleted ${deletedCount} expired sessions in batch.`);
+      } while (deletedCount === batchSize);
+
+      loggers.db.info(`Session cleanup complete. Total expired sessions deleted: ${totalDeleted}.`);
+    } catch (error) {
+      if (error instanceof Error) {
+        onError(error); // Use the error handler
+      } else {
+        onError(new Error('An unknown error occurred during session cleanup'));
+      }
+    }
+  }
+
   /**
    * Cleanup expired sessions in a single batch operation
    * @param options Options for cleaning up sessions

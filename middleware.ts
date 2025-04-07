@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { loggers, getRequestId, createSampledLogger } from './lib/logger';
+import { loggers, getRequestId } from './lib/logger';
 import pino from 'pino';
 
-// Create a sampled logger for middleware with 10% sampling rate for high-volume paths
-const logger = createSampledLogger(loggers.middleware, 0.1);
+// USE standard middleware logger directly
+const logger = loggers.middleware;
 
 // Define public routes
 const publicRoutes = ['/', '/login', '/about', '/api/health', '/manifest.webmanifest'];

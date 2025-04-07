@@ -2,6 +2,7 @@
 
 import { Dispatch, SetStateAction } from 'react';
 import { FormFieldValue, FormErrors, FieldChange, ValidationFn } from './form-types';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * Validates form values using the provided validation function
@@ -138,6 +139,25 @@ interface SubmitHandlerConfig<T> {
   setIsSubmitting: Dispatch<SetStateAction<boolean>>;
 }
 
+// Helper function to handle form submission errors
+function handleSubmissionError<T extends Record<string, unknown>>(
+  error: unknown,
+  values: T,
+  setErrors: Dispatch<SetStateAction<FormErrors<T>>>
+) {
+  let errorMessage = 'An unexpected error occurred.';
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  }
+  setErrors(prev => ({ ...prev, form: errorMessage }));
+
+  // Log the error to the server
+  clientLogger.error('Form submission failed', {
+    error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+    formValues: values, // Be mindful of logging sensitive data here
+  });
+}
+
 /**
  * Creates a submit handler function for forms
  *
@@ -147,40 +167,33 @@ interface SubmitHandlerConfig<T> {
 export function createSubmitHandler<T extends Record<string, FormFieldValue>>(
   config: SubmitHandlerConfig<T>
 ) {
-  const { values, onSubmit, validateForm, setErrors, setTouched, setIsSubmitting } = config;
+  const { values, onSubmit, validateForm, setErrors, setIsSubmitting } = config;
 
-  return async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
 
-    // Mark all fields as touched
-    const touchedFields = Object.keys(values).reduce(
-      (acc, key) => ({ ...acc, [key]: true }),
-      {} as Record<keyof T, boolean>
-    );
-
-    setTouched(touchedFields);
-
-    // Validate the form
+    // Validate all fields before submitting
     const validationErrors = validateForm();
-    setErrors(validationErrors);
-
-    // If there are validation errors, don't submit
     if (Object.keys(validationErrors).length > 0) {
-      return;
+      setErrors(validationErrors);
+      setIsSubmitting(false); // Ensure isSubmitting is false if validation fails
+      return; // Stop submission if validation fails
     }
 
-    // Submit the form
+    // Clear any previous errors before attempting submission
+    setErrors({});
+    setIsSubmitting(true);
+
     try {
-      setIsSubmitting(true);
       await onSubmit(values);
+      // Clear form-level error on success
+      setErrors(prev => ({ ...prev, form: undefined }));
     } catch (error) {
-      console.error('Form submission error:', error);
-      setErrors(prev => ({
-        ...prev,
-        form: error instanceof Error ? error.message : 'An unexpected error occurred',
-      }));
+      handleSubmissionError(error, values, setErrors);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  return handleSubmit;
 }
