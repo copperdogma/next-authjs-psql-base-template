@@ -2,25 +2,13 @@ import { test as setup } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Page } from 'playwright';
-import firebaseAdmin from '@/lib/firebase-admin';
 
 const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
 
-// Add a type definition for the window object with firebase
+// Update Window type for modular Firebase SDK
 declare global {
   interface Window {
-    firebase?: {
-      auth?: () => {
-        signInWithCustomToken: (token: string) => Promise<{
-          user: {
-            uid: string;
-            email: string;
-            displayName: string;
-            getIdToken: () => Promise<string>;
-          };
-        }>;
-      };
-    };
+    firebase?: any; // Using 'any' for simplicity with modular SDK structure
   }
 }
 
@@ -33,95 +21,87 @@ const TEST_USER = {
 };
 
 /**
- * This setup function creates a test authentication session for Playwright tests
- * using the Firebase Admin SDK to generate a custom token. This matches how real
- * authentication works in the application.
+ * Sets up authentication using the Test API Endpoint and Modular Client-side Firebase SDK
  */
-setup('authenticate', async ({ page }) => {
-  console.log('🔒 Setting up authentication for testing...');
-
-  try {
-    // Primary approach: Use Admin SDK to create a custom token
-    const success = await setupWithAdminSdk(page);
-
-    if (success) {
-      console.log('✅ Authentication setup completed successfully');
-    } else {
-      console.log('⚠️ Failed to setup with Admin SDK - trying fallback methods');
-
-      // Fallback to direct authentication approach if Admin SDK fails
-      const directSuccess = await setupTestAuthentication(/* page */);
-
-      if (directSuccess) {
-        console.log('✅ Fallback authentication setup completed successfully');
-      } else {
-        console.log('⚠️ Direct setup also failed - trying API method');
-        // Last resort: Use API fallback
-        await setupAuthenticationViaApi(/* page */);
-      }
-    }
-  } catch (error) {
-    console.error('❌ Authentication setup failed:', error);
-
-    // Fallback: Create empty auth state
-    await createEmptyAuthState();
-    console.warn('⚠️ Created empty auth state as fallback');
-  }
-});
-
-/**
- * Sets up authentication using the Firebase Admin SDK
- *
- * This is the most reliable method as it uses the same mechanism
- * the real application uses for authentication.
- */
-async function setupWithAdminSdk(page: Page): Promise<boolean> {
-  console.log('🔑 Setting up authentication with Firebase Admin SDK...');
-
-  // Get the base URL from environment or default to localhost
+async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> {
+  console.log('🔑 Setting up authentication via Test API Endpoint + Modular Client SDK...');
   const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
+  const apiUrl = `${baseUrl}/api/test/auth/create-session`;
 
   try {
-    // First ensure the Firebase Auth emulator is running and accessible
-    console.log('🧪 Verifying Firebase Auth emulator availability...');
-
-    // Generate a custom token using the Admin SDK
-    console.log(`🔐 Generating custom token for test user: ${TEST_USER.email}`);
-    const customToken = await firebaseAdmin.auth().createCustomToken(TEST_USER.uid, {
-      email: TEST_USER.email,
-      displayName: TEST_USER.displayName,
+    // 1. Call API to get Firebase Custom Token
+    console.log(`🚀 Calling test session API at ${apiUrl}`);
+    const apiResponse = await page.request.post(apiUrl, {
+      data: {
+        userId: TEST_USER.uid,
+        email: TEST_USER.email,
+        name: TEST_USER.displayName,
+      },
+      failOnStatusCode: true,
     });
 
-    console.log('✅ Successfully generated custom token from Admin SDK');
+    const { success, customToken } = await apiResponse.json();
+    if (!success || !customToken) {
+      throw new Error('Failed to get custom token from test API');
+    }
+    console.log('✅ Successfully retrieved Firebase custom token via API.');
 
-    // Navigate to a simple page first to ensure the Firebase SDK is loaded
-    console.log('📄 Loading application to initialize Firebase SDK...');
-    // Use a non-protected route like /about or /login initially
+    // 2. Navigate to login page
+    console.log('📄 Navigating to login page...');
     await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
 
-    // Exchange the custom token for auth credentials using the Firebase SDK in the browser
+    // 3. Inject Modular Firebase SDK explicitly
+    console.log('💉 Injecting Modular Firebase SDK scripts...');
+    try {
+      await page.addScriptTag({ path: './node_modules/firebase/firebase-app.js' });
+      await page.addScriptTag({ path: './node_modules/firebase/firebase-auth.js' });
+
+      // Initialize using modular syntax
+      await page.evaluate(
+        firebaseConfig => {
+          console.log('🔥 Initializing Modular Firebase Client SDK...');
+          if (!window.firebase?.apps?.length) {
+            // Keep check simple
+            window.firebase?.initializeApp?.(firebaseConfig);
+            console.log('Firebase initialized by test setup (modular).');
+          } else {
+            console.log('Firebase already initialized.');
+          }
+        },
+        {
+          apiKey: 'emulator',
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        }
+      );
+
+      // Wait for getAuth to be available
+      await page.waitForFunction(() => window.firebase?.getAuth, null, { timeout: 10000 });
+      console.log('✅ Modular Firebase SDK initialized and getAuth found.');
+    } catch (injectionError) {
+      console.error('❌ Failed to inject or initialize Modular Firebase SDK:', injectionError);
+      throw new Error('Modular Firebase SDK injection/initialization failed');
+    }
+
+    // 4. Use Modular Client-side SDK signInWithCustomToken
+    console.log('💻 Attempting modular client-side signInWithCustomToken...');
     const signInResult = await page.evaluate(async token => {
       try {
-        // Ensure Firebase JS SDK is loaded
-        if (!window.firebase || !window.firebase.auth) {
-          console.error('Firebase JS SDK not loaded on the page.');
-          // Wait a bit longer or trigger SDK load if necessary
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Simple wait
-          if (!window.firebase || !window.firebase.auth) {
-            return { success: false, error: 'Firebase JS SDK not available' };
-          }
+        if (!window.firebase?.getAuth || !window.firebase?.signInWithCustomToken) {
+          throw new Error('Firebase modular auth functions not found');
         }
-        const auth = window.firebase.auth();
-        console.log('Attempting signInWithCustomToken...');
-        const userCredential = await auth.signInWithCustomToken(token);
-        console.log('signInWithCustomToken successful:', userCredential?.user?.uid);
+        const auth = window.firebase.getAuth();
+        const userCredential = await window.firebase.signInWithCustomToken(auth, token);
         return {
           success: true,
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
+          uid: userCredential?.user?.uid,
+          email: userCredential?.user?.email,
         };
       } catch (error) {
-        console.error('Error during signInWithCustomToken:', error);
+        console.error('Error during modular signInWithCustomToken:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : String(error),
@@ -130,32 +110,50 @@ async function setupWithAdminSdk(page: Page): Promise<boolean> {
     }, customToken);
 
     if (!signInResult.success) {
-      console.error('❌ Failed to sign in with custom token via browser SDK:', signInResult.error);
-      // Throw an error to prevent proceeding with incorrect auth state
-      throw new Error(`Firebase signInWithCustomToken failed: ${signInResult.error}`);
-    } else {
-      console.log(
-        `✅ Successfully authenticated with Firebase as ${signInResult.email} (${signInResult.uid}) via browser SDK`
-      );
+      console.error('❌ Modular client-side signInWithCustomToken failed:', signInResult.error);
+      throw new Error(`Modular client-side signInWithCustomToken failed: ${signInResult.error}`);
     }
+    console.log(`✅ Successfully signed in with modular client-side SDK as ${signInResult.email}`);
 
-    // Critical Step: Navigate to a protected route to trigger NextAuth session creation
-    console.log('🚀 Navigating to protected route (/dashboard) to trigger session creation...');
-    // Add a small delay before navigation to ensure client-side auth state is settled
-    await page.waitForTimeout(500);
-    await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' }); // Wait for network to be idle
+    // 5. Navigate to trigger NextAuth session creation
+    console.log('🚀 Navigating to protected route (/dashboard) to trigger NextAuth session...');
+    await page.waitForTimeout(1000);
+    await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' });
 
-    console.log('🔍 Verifying authentication and session state after navigating to dashboard...');
-    // Verify authentication - this should now check if the SERVER successfully created the session
-    return verifyAuthentication(page); // verifyAuthentication will save state if successful
+    // 6. Verify and Save State
+    console.log('🔍 Verifying authentication and session state...');
+    return verifyAuthentication(page);
   } catch (error) {
-    console.error('❌ Error in Admin SDK auth setup:', error);
-    await page.screenshot({ path: 'auth-setup-error.png' }); // Screenshot on error
-    // Ensure we don't proceed with a potentially broken auth state
-    await createEmptyAuthState(); // Create empty state on failure
-    return false; // Explicitly return false on error
+    console.error('❌ Error during API + Modular Client SDK auth setup:', error);
+    await page.screenshot({ path: 'auth-setup-error-modular.png' });
+    await createEmptyAuthState();
+    return false;
   }
 }
+
+/**
+ * This setup function uses the new API + Modular Client SDK method.
+ */
+setup('authenticate', async ({ page }) => {
+  console.log('🔒 Setting up authentication for testing...');
+
+  try {
+    // Primary approach: Use API Endpoint + Modular Client SDK
+    const success = await setupAuthViaApiAndModularClientSdk(page);
+
+    if (success) {
+      console.log('✅ Authentication setup completed successfully via API + Modular Client SDK');
+    } else {
+      console.error('❌ API + Modular Client SDK Authentication setup failed.');
+      await createEmptyAuthState();
+      console.warn('⚠️ Created empty auth state as fallback after setup failure');
+    }
+  } catch (error) {
+    console.error('❌ Authentication setup failed catastrophically:', error);
+    await createEmptyAuthState();
+    console.warn('⚠️ Created empty auth state as fallback after catastrophic failure');
+  }
+});
 
 /**
  * Verify authentication was successful by checking various indicators
@@ -219,27 +217,6 @@ async function verifyAuthentication(page: Page): Promise<boolean> {
     await page.screenshot({ path: 'auth-verify-error.png' });
     return false;
   }
-}
-
-/**
- * Sets up test authentication by directly modifying browser state
- * THIS IS DISABLED - Prefer using setupWithAdminSdk for realistic testing
- */
-async function setupTestAuthentication(/* page: Page */): Promise<boolean> {
-  console.warn('⚠️ setupTestAuthentication is currently disabled. Using Admin SDK method.');
-  return false; // Mark as failed/skipped
-  // ... (original code commented out or removed)
-}
-
-/**
- * Alternative approach using an API call to authenticate
- * THIS IS DISABLED - Prefer using setupWithAdminSdk for realistic testing
- */
-async function setupAuthenticationViaApi(/* page: Page */): Promise<void> {
-  console.warn('⚠️ setupAuthenticationViaApi is currently disabled. Using Admin SDK method.');
-  // throw new Error('API authentication setup is disabled'); // Prevent execution
-  return; // Do nothing
-  // ... (original code commented out or removed)
 }
 
 /**

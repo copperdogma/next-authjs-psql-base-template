@@ -265,7 +265,17 @@ export default [
     rules: {
       // Further relaxed limits for E2E tests which simulate complex user journeys
       'max-lines-per-function': ['warn', { max: 150, skipBlankLines: true, skipComments: true }],
-      'max-statements': ['warn', 30],
+      'max-statements': ['warn', 45], // Increased from 30 to 45 for E2E test complexity
+    },
+  },
+
+  // Special override for E2E setup files which require extensive initialization
+  {
+    files: ['tests/e2e/auth.setup.ts', 'tests/setup/auth.setup.ts'],
+    rules: {
+      'max-statements': ['warn', 60], // Allow up to 60 statements for auth setup files
+      complexity: ['error', 15], // Increased complexity threshold for setup files
+      'sonarjs/cognitive-complexity': ['error', 20], // Increased cognitive complexity for setup files
     },
   },
 
@@ -319,6 +329,14 @@ export default [
     files: ['lib/**/*.ts', 'tests/utils/**/*.ts', 'tests/e2e/fixtures/**/*.ts', 'types/**/*.d.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow any in utility files
+    },
+  },
+
+  // Special override for database service files
+  {
+    files: ['lib/db/session-cleanup-service.ts'],
+    rules: {
+      'max-statements': ['warn', 20], // Allow up to 20 statements for complex DB operations
     },
   },
 ];

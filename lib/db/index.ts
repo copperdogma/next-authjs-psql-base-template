@@ -10,9 +10,12 @@
 export * from './utils';
 
 // Domain-specific services
-export { UserService } from './user-service';
-export { SessionCleanupService } from './session-cleanup-service';
-
-// Query optimization utilities
-export { QueryOptimizer } from './query-optimizer';
-export { RawQueryService } from './raw-query-service';
+export * from './user-service';
+export * from './raw-query-service';
+// Export functions, not the class
+export {
+  cleanupExpiredSessions,
+  cleanupUserSessions,
+  scheduleSessionCleanup,
+} from './session-cleanup-service';
+export * from './query-optimizer';

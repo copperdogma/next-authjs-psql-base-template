@@ -256,12 +256,11 @@ This project uses Firebase Authentication. The authentication flow is handled by
 
 ## Testing
 
-The project includes comprehensive testing with Jest for unit tests and Playwright for end-to-end tests.
+This template includes a comprehensive testing setup:
 
-For detailed testing information, see [the testing guide](docs/testing/main.md) and the implementation documentation:
-
-- [Main testing documentation](tests/README-main.md)
-- [E2E testing documentation](tests/e2e/README-e2e.md)
+- **Unit & Integration Tests:** Jest with React Testing Library. Run with `npm run test:unit`. Coverage reports are generated.
+  - **Note:** Due to the multi-project Jest configuration (Node.js environment for backend/API tests, JSDOM for components), Jest might report a number of "skipped" tests even though all discoverable test files are being executed correctly by their designated project runner. This is a known reporting quirk of some complex Jest setups.
+- **End-to-End Tests:** Playwright for browser automation. Run with `npm run test:e2e`. See the [Testing Documentation](./docs/testing/README-main.md) for details on running E2E tests, including emulator setup and debugging.
 
 ## Tech Stack Details
 

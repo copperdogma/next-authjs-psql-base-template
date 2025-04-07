@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev | pino-pretty",
     "dev:3001": "cross-env PORT=3001 next dev -p 3001 | pino-pretty",
-    "dev:test": "cross-env NODE_ENV=test PORT=3777 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 next dev -p 3777 > ./logs/e2e-server-run.log 2>&1",
+    "dev:test": "cross-env NODE_ENV=test PORT=3777 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 FIRESTORE_EMULATOR_HOST=localhost:8080 ALLOW_TEST_ENDPOINTS=true next dev -p 3777 > ./logs/e2e-server-run.log 2>&1",
     "build": "next build",
     "start": "next start",
     "lint": "ESLINT_USE_FLAT_CONFIG=true eslint .",

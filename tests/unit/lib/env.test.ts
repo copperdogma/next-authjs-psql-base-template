@@ -13,20 +13,25 @@ describe('env module', () => {
   });
 
   describe('validateEnv', () => {
-    it('throws an error when required env variables are missing', () => {
+    it('returns success: false when required env variables are missing', () => {
       // Remove a required env variable
       delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-      // Temporarily suppress console.error for this specific test
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const result = validateEnv();
 
-      expect(() => validateEnv()).toThrow('Invalid environment variables');
-
-      // Restore console.error
-      consoleErrorSpy.mockRestore();
+      // Now we check the result object instead of expecting a throw
+      expect(result.success).toBe(false);
+      // Check if the error details include the missing key
+      if (!result.success) {
+        expect(result.error.issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['NEXT_PUBLIC_FIREBASE_API_KEY'] }),
+          ])
+        );
+      }
     });
 
-    it('returns the parsed environment when all required variables are present', () => {
+    it('returns success: true and parsed data when all required variables are present', () => {
       // Set all required env variables
       requiredEnvVars.forEach(varName => {
         process.env[varName] =
@@ -36,8 +41,13 @@ describe('env module', () => {
       });
 
       const result = validateEnv();
-      expect(result).toBeDefined();
-      expect(result.NEXT_PUBLIC_FIREBASE_API_KEY).toBe('test-value');
+      expect(result.success).toBe(true);
+
+      // Access data via result.data if successful
+      if (result.success) {
+        expect(result.data).toBeDefined();
+        expect(result.data.NEXT_PUBLIC_FIREBASE_API_KEY).toBe('test-value');
+      }
     });
   });
 

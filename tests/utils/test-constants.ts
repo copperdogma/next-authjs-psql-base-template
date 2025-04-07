@@ -82,3 +82,23 @@ export const ROUTES = {
   PROFILE: '/profile',
   SETTINGS: '/settings',
 };
+
+export const TEST_ENV_VARS = {
+  NODE_ENV: 'test',
+  NEXT_PUBLIC_FIREBASE_API_KEY: 'test-api-key',
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'test-auth-domain.firebaseapp.com',
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'test-project-id', // Keep this as is for general config?
+  // ... other NEXT_PUBLIC vars
+  FIREBASE_PROJECT_ID: 'next-firebase-base-template', // Align this with firebase.json
+  FIREBASE_CLIENT_EMAIL: 'test-client-email@example.com',
+  FIREBASE_PRIVATE_KEY: 'test-private-key',
+};
+
+export const TEST_CONSTANTS = {
+  APP_NAME: 'TestApp',
+  BASE_URL: 'http://localhost:3000', // Adjust port if needed for tests
+  API_URL: 'http://localhost:3000/api',
+  PROJECT_ID: 'next-firebase-base-template', // Align this with firebase.json
+  TEST_SESSION_TOKEN: 'mock-session-token-123',
+  MOCK_CSRF_TOKEN: 'mock-csrf-token-456',
+};

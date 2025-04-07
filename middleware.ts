@@ -6,19 +6,31 @@ import pino from 'pino';
 // USE standard middleware logger directly
 const logger = loggers.middleware;
 
-// Define public routes
-const publicRoutes = ['/', '/login', '/about', '/api/health', '/manifest.webmanifest'];
+// Define paths that are public (no authentication required)
+const publicPaths = [
+  '/',
+  '/login',
+  '/about',
+  '/api/health',
+  '/api/auth/**', // Default NextAuth API routes
+  '/api/log/client', // Client-side logging endpoint
+  '/api/test/**', // Exclude all test API routes
+];
 
-// Also explicitly allow the OAuth callback URLs
-const allowedCallbacks = ['/api/auth/callback', '/api/auth/callback/google'];
+// Define paths that require authentication
+const protectedPaths = ['/dashboard', '/profile', '/settings'];
 
-// Check if the current path is a public route
-const isPublicRoute = (path: string) => {
-  return (
-    publicRoutes.some(route => route === path) ||
-    allowedCallbacks.some(callbackPath => path.startsWith(callbackPath))
-  );
-};
+// Helper function to check if a path is public
+function isPublic(pathname: string): boolean {
+  return publicPaths.some(path => {
+    if (path.endsWith('/**')) {
+      // Handle wildcard matching
+      const basePath = path.slice(0, -3);
+      return pathname.startsWith(basePath);
+    }
+    return pathname === path;
+  });
+}
 
 /**
  * Determines if the request is from a Playwright test and has valid test auth
@@ -83,7 +95,7 @@ async function handlePlaywrightTestAuth(
     });
 
     // For protected routes, allow access
-    if (!isPublicRoute(pathname)) {
+    if (!isPublic(pathname)) {
       return NextResponse.next();
     }
 
@@ -125,7 +137,7 @@ async function handleStandardAuth(
   if (!isHighTrafficPath) {
     reqLogger.debug({
       msg: 'Auth status',
-      isPublicRoute: isPublicRoute(pathname),
+      isPublicRoute: isPublic(pathname),
       isAuthenticated,
       userId: token?.sub,
     });
@@ -141,7 +153,7 @@ async function handleStandardAuth(
   }
 
   // If the route is not public and the user is not authenticated, redirect to login
-  if (!isPublicRoute(pathname) && !isAuthenticated) {
+  if (!isPublic(pathname) && !isAuthenticated) {
     reqLogger.info({
       msg: 'Redirecting unauthenticated user to login',
       redirectUrl: `/login?callbackUrl=${encodeURIComponent(pathname + search)}`,
@@ -195,7 +207,7 @@ function logRequestCompletion(
     reqLogger.info({
       msg: 'Request completed',
       duration,
-      isPublicRoute: isPublicRoute(pathname),
+      isPublicRoute: isPublic(pathname),
       isAuthenticated,
     });
   }
@@ -287,5 +299,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    // Apply middleware ONLY to the paths explicitly listed here.
+    // Public paths are included to handle redirects (e.g., logged-in user visiting /login).
+    // Protected paths are included to enforce authentication.
+    ...publicPaths,
+    ...protectedPaths,
+  ],
 };

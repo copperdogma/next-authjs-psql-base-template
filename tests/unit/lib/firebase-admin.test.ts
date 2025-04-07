@@ -67,52 +67,64 @@ describe('firebase-admin', () => {
     expect(typeof firebaseAdmin.firestore).toBe('function');
   });
 
-  // Remove persistently failing test due to env mocking issues
-  /*
+  // Re-enable test for production credential initialization
   it('should initialize with credentials in production via getter', async () => {
+    // Set production environment and credentials
     jest.replaceProperty(process.env, 'NODE_ENV', 'production');
     process.env.FIREBASE_PROJECT_ID = 'prod-project';
     process.env.FIREBASE_CLIENT_EMAIL = 'prod@example.com';
-    process.env.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----prod_key-----END PRIVATE KEY-----';
+    // Use a simple, unformatted key for testing formatPrivateKey logic
+    process.env.FIREBASE_PRIVATE_KEY =
+      '-----BEGIN PRIVATE KEY-----prod_key-----END PRIVATE KEY-----';
+    // Ensure emulator is not used
+    delete process.env.USE_FIREBASE_EMULATOR;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
 
+    // Dynamically import AFTER setting env vars and resetting modules
     const adminMock = await import('firebase-admin');
     const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
     const firebaseAdmin = getFirebaseAdmin(); // Call getter
 
+    // Expect initializeApp to have been called with formatted credentials
     expect(adminMock.initializeApp).toHaveBeenCalledWith({
       credential: adminMock.credential.cert({
         projectId: 'prod-project',
         clientEmail: 'prod@example.com',
+        // Check that the key was formatted correctly
         privateKey: '-----BEGIN PRIVATE KEY-----\nprod_key\n-----END PRIVATE KEY-----',
       }),
     });
     expect(firebaseAdmin).toBeDefined();
 
+    // Clean up env vars for other tests
     delete process.env.FIREBASE_PROJECT_ID;
     delete process.env.FIREBASE_CLIENT_EMAIL;
     delete process.env.FIREBASE_PRIVATE_KEY;
   });
-  */
 
-  // Remove persistently failing test due to env mocking issues
-  /*
+  // Re-enable test for minimal config fallback
   it('should initialize with minimal config if credentials missing in production via getter', async () => {
+    // Set production env but ensure credentials and emulator flags are missing
     jest.replaceProperty(process.env, 'NODE_ENV', 'production');
     delete process.env.FIREBASE_PROJECT_ID;
     delete process.env.FIREBASE_CLIENT_EMAIL;
     delete process.env.FIREBASE_PRIVATE_KEY;
     delete process.env.USE_FIREBASE_EMULATOR;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
 
+    // Dynamically import AFTER setting env vars and resetting modules
     const adminMock = await import('firebase-admin');
     const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
     const firebaseAdmin = getFirebaseAdmin(); // Call getter
 
+    // Expect initializeApp to have been called with minimal config
     expect(adminMock.initializeApp).toHaveBeenCalledWith({
-      projectId: 'default-project-id',
+      projectId: 'default-project-id', // Check for the default ID used in minimal init
     });
     expect(firebaseAdmin).toBeDefined();
   });
-  */
 
   it('should call initializeApp only once when getter called multiple times', async () => {
     const adminMock = await import('firebase-admin');

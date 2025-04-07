@@ -3,6 +3,12 @@
  * This file defines all routes used in tests to make them more maintainable
  */
 
+// Utility functions and constants related to application routes and navigation for tests
+
+// Remove unused constants
+// const PORT = process.env.PORT || '3000';
+// const PROJECT_ID = 'next-firebase-base-template'; // Align this with firebase.json
+
 export const ROUTES = {
   // Public routes
   HOME: '/',
@@ -43,8 +49,7 @@ export const TEST_CONFIG = {
 
   // Firebase test configuration
   FIREBASE: {
-    PROJECT_ID: 'test-project-id',
-    AUTH_USER_KEY: 'firebase:authUser:test-project-id',
+    PROJECT_ID: 'next-firebase-base-template',
   },
 
   // Test data

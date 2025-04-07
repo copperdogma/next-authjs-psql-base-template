@@ -2,225 +2,164 @@ import { prisma } from '../prisma';
 import { Prisma } from '@prisma/client';
 import { loggers } from '@/lib/logger';
 
-interface SessionCleanupServiceOptions {
-  schedule: string; // Cron schedule string (e.g., '0 0 * * *')
-  retentionDays: number; // How many days of sessions to keep
-  batchSize?: number; // How many sessions to delete per batch (optional)
-  onError?: (error: Error) => void; // Custom error handler (optional)
-}
+const dbLogger = loggers.db;
 
 /**
- * Service for managing session cleanup operations using batch operations
- * Demonstrates efficient use of Prisma's batch operations (deleteMany, updateMany)
+ * Cleans up expired sessions based on provided criteria.
+ * Demonstrates efficient use of Prisma's batch operations (deleteMany).
+ *
+ * @param options Options for cleaning up sessions:
+ *   - before?: Date - Delete sessions expiring before this date (defaults to now).
+ *   - userId?: string - Only delete sessions for this user.
+ *   - olderThanDays?: number - Delete sessions older than this many days (overrides 'before').
+ * @returns Result including the count of deleted sessions.
  */
-export class SessionCleanupService {
-  // Commenting out unused properties to fix TS errors - Revisit when implementing cleanup logic
-  // private schedule: string;
-  // private retentionDays: number;
-  // private batchSize?: number;
-  // private onError: (error: Error) => void;
-
-  constructor(options: SessionCleanupServiceOptions) {
-    // // Assign commented-out properties
-    // this.schedule = options.schedule;
-    // this.retentionDays = options.retentionDays;
-    // this.batchSize = options.batchSize;
-    // // Use provided onError or default to logging
-    // this.onError = options.onError || (error => loggers.db.error({ err: error }, 'Session cleanup error'));
-
-    // Ensure the default logging occurs if no custom handler is passed, even if properties aren't used yet.
-    // We don't need to store it if the class methods don't use it.
-    options.onError || (error => loggers.db.error({ err: error }, 'Session cleanup error'));
-  }
-
-  /**
-   * Start the scheduled cleanup task.
-   */
-  start(): void {
-    // TODO: Implement scheduling using node-cron and this.schedule
-    // The task should call this.runCleanup()
-    // Example: schedule(this.schedule, async () => { ... });
-    loggers.db.info('Session cleanup service started (scheduling not implemented).');
-  }
-
-  /**
-   * Stop the scheduled cleanup task.
-   */
-  stop(): void {
-    // TODO: Implement task stopping
-    loggers.db.info('Session cleanup service stopped (stopping not implemented).');
-  }
-
-  /**
-   * Runs the cleanup process.
-   */
-  // eslint-disable-next-line max-statements
-  async runCleanup(): Promise<void> {
-    loggers.db.info('Running session cleanup...');
-    const retentionDays = 7; // Hardcoded for now, replace with this.retentionDays when implemented
-    const batchSize = 100; // Hardcoded for now, replace with this.batchSize when implemented
-    const onError = (error: Error) => loggers.db.error({ err: error }, 'Session cleanup error'); // Hardcoded for now
-
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-
-    // ... (rest of runCleanup logic using hardcoded values)
-    // ... Use onError callback on failures ...
-
-    try {
-      let deletedCount = 0;
-      let totalDeleted = 0;
-
-      do {
-        const sessionsToDelete = await prisma.session.findMany({
-          where: {
-            expires: {
-              lt: cutoffDate,
-            },
-          },
-          take: batchSize,
-          select: {
-            id: true, // Only select IDs for deletion
-          },
-        });
-
-        if (sessionsToDelete.length === 0) {
-          break;
-        }
-
-        const idsToDelete = sessionsToDelete.map(s => s.id);
-        const result = await prisma.session.deleteMany({
-          where: {
-            id: {
-              in: idsToDelete,
-            },
-          },
-        });
-
-        deletedCount = result.count;
-        totalDeleted += deletedCount;
-        loggers.db.debug(`Deleted ${deletedCount} expired sessions in batch.`);
-      } while (deletedCount === batchSize);
-
-      loggers.db.info(`Session cleanup complete. Total expired sessions deleted: ${totalDeleted}.`);
-    } catch (error) {
-      if (error instanceof Error) {
-        onError(error); // Use the error handler
-      } else {
-        onError(new Error('An unknown error occurred during session cleanup'));
-      }
-    }
-  }
-
-  /**
-   * Cleanup expired sessions in a single batch operation
-   * @param options Options for cleaning up sessions
-   * @returns Result of the cleanup operation including count of deleted sessions
-   */
-  static async cleanupExpiredSessions(options: {
+export async function cleanupExpiredSessions(
+  options: {
     before?: Date;
     userId?: string;
     olderThanDays?: number;
-  }) {
-    const { before = new Date(), userId, olderThanDays } = options;
+  } = {}
+) {
+  // Add default empty object for options
+  const { before = new Date(), userId, olderThanDays } = options;
 
-    // Calculate the cutoff date if olderThanDays is provided
-    let cutoffDate = before;
-    if (olderThanDays) {
-      cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
-    }
+  // Calculate the cutoff date if olderThanDays is provided
+  let cutoffDate = before;
+  if (olderThanDays) {
+    cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+  }
 
-    // Build where conditions for the batch operation
-    const where: Prisma.SessionWhereInput = {
-      expires: { lt: cutoffDate },
-    };
+  // Build where conditions for the batch operation
+  const where: Prisma.SessionWhereInput = {
+    expires: { lt: cutoffDate },
+  };
 
-    // Add user filter if specified
-    if (userId) {
-      where.userId = userId;
-    }
+  // Add user filter if specified
+  if (userId) {
+    where.userId = userId;
+  }
 
+  try {
     // Batch delete expired sessions with a single query
     const result = await prisma.session.deleteMany({ where });
-
+    dbLogger.info(
+      { count: result.count, criteria: { before: cutoffDate, userId } },
+      'Expired sessions cleaned successfully.'
+    );
     return {
       count: result.count,
       timestamp: new Date(),
     };
+  } catch (error) {
+    dbLogger.error(
+      { err: error, criteria: { before: cutoffDate, userId } },
+      'Failed to cleanup expired sessions'
+    );
+    // Re-throw or return an error indicator based on desired handling
+    throw error; // Re-throwing for now
   }
+}
 
-  /**
-   * Cleanup sessions for a specific user in a batch
-   * @param userId User ID to cleanup sessions for
-   * @param options Additional options
-   * @returns Result of the cleanup operation
-   */
-  static async cleanupUserSessions(
-    userId: string,
-    options: {
-      keepCurrent?: boolean; // If true, keeps the most recent session
-    } = {}
-  ) {
-    const { keepCurrent = false } = options;
+/**
+ * Cleans up all sessions for a specific user, optionally keeping the most recent one.
+ *
+ * @param userId User ID to cleanup sessions for.
+ * @param options Additional options:
+ *   - keepCurrent?: boolean - If true, keeps the most recent session (defaults to false).
+ * @returns Result including the count of deleted sessions and whether the current one was kept.
+ */
+export async function cleanupUserSessions(
+  userId: string,
+  options: {
+    keepCurrent?: boolean;
+  } = {}
+) {
+  const { keepCurrent = false } = options;
 
-    // Get the most recent session if we need to keep it
-    let currentSessionId: string | undefined;
-    if (keepCurrent) {
+  let currentSessionId: string | undefined;
+  if (keepCurrent) {
+    try {
       const currentSession = await prisma.session.findFirst({
         where: { userId },
         orderBy: { expires: 'desc' },
+        select: { id: true }, // Only need the ID
       });
-
-      if (currentSession) {
-        currentSessionId = currentSession.id;
-      }
+      currentSessionId = currentSession?.id;
+    } catch (error) {
+      dbLogger.error({ err: error, userId }, 'Failed to find current session for user');
+      // Decide whether to proceed or throw. Proceeding might delete the current session.
+      // Throwing seems safer.
+      throw error;
     }
+  }
 
-    // Build where conditions for the batch delete
-    const where: Prisma.SessionWhereInput = { userId };
+  // Build where conditions for the batch delete
+  const where: Prisma.SessionWhereInput = { userId };
 
-    // Exclude current session if needed
-    if (currentSessionId) {
-      where.id = { not: currentSessionId };
-    }
+  // Exclude current session if found and requested
+  if (currentSessionId) {
+    where.id = { not: currentSessionId };
+  }
 
+  try {
     // Batch delete all other sessions for this user
     const result = await prisma.session.deleteMany({ where });
-
+    dbLogger.info(
+      { count: result.count, userId, keptCurrent: !!currentSessionId },
+      'User sessions cleaned successfully.'
+    );
     return {
       count: result.count,
       keptCurrentSession: Boolean(currentSessionId),
       timestamp: new Date(),
     };
+  } catch (error) {
+    dbLogger.error({ err: error, userId }, 'Failed to cleanup user sessions');
+    throw error;
+  }
+}
+
+/**
+ * Schedules regular cleanup of expired sessions using setInterval.
+ *
+ * @param options Options for scheduling cleanup:
+ *   - intervalMs?: number - Interval in milliseconds (defaults to 24 hours).
+ *   - runImmediately?: boolean - Run cleanup immediately on schedule (defaults to true).
+ *   - onComplete?: (result) => void - Callback on successful cleanup.
+ *   - onError?: (error) => void - Callback on cleanup error.
+ * @returns A function to cancel the scheduled cleanup.
+ */
+export function scheduleSessionCleanup(
+  options: {
+    intervalMs?: number;
+    runImmediately?: boolean;
+    onComplete?: (result: { count: number; timestamp: Date }) => void;
+    onError?: (error: Error) => void;
+  } = {}
+) {
+  const {
+    intervalMs = 24 * 60 * 60 * 1000, // Default to daily
+    runImmediately = true,
+    onComplete = result => dbLogger.info({ result }, 'Scheduled session cleanup complete'),
+    onError = error => dbLogger.error({ err: error }, 'Scheduled session cleanup failed'),
+  } = options;
+
+  const runJob = () => {
+    cleanupExpiredSessions().then(onComplete).catch(onError);
+  };
+
+  if (runImmediately) {
+    runJob();
   }
 
-  /**
-   * Schedule regular cleanup of expired sessions
-   * Useful for serverless environments or server startup
-   * @param options Options for scheduling cleanup
-   */
-  static scheduleCleanup(
-    options: {
-      intervalMs?: number;
-      onComplete?: (result: { count: number; timestamp: Date }) => void;
-      onError?: (error: Error) => void;
-    } = {}
-  ) {
-    const {
-      intervalMs = 24 * 60 * 60 * 1000, // Default to daily
-      onComplete = () => {},
-      onError = error => console.error('Session cleanup error:', error),
-    } = options;
+  // Setup interval for regular cleanup
+  const intervalId = setInterval(runJob, intervalMs);
+  dbLogger.info({ intervalMs }, 'Session cleanup scheduled.');
 
-    // Perform initial cleanup
-    this.cleanupExpiredSessions({ before: new Date() }).then(onComplete).catch(onError);
-
-    // Setup interval for regular cleanup
-    const intervalId = setInterval(() => {
-      this.cleanupExpiredSessions({ before: new Date() }).then(onComplete).catch(onError);
-    }, intervalMs);
-
-    // Return a function to cancel the scheduled cleanup
-    return () => clearInterval(intervalId);
-  }
+  // Return a function to cancel the scheduled cleanup
+  return () => {
+    clearInterval(intervalId);
+    dbLogger.info('Session cleanup schedule cancelled.');
+  };
 }

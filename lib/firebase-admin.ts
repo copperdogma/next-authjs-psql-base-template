@@ -78,7 +78,7 @@ function initializeWithEmulators(): admin.app.App {
 
   // For test environments, use minimal configuration
   const app = admin.initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID || 'test-project-id',
+    projectId: process.env.FIREBASE_PROJECT_ID || 'next-firebase-base-template',
   });
 
   // Get emulator host configuration
