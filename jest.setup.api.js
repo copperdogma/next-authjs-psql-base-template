@@ -160,3 +160,11 @@ jest.mock('next/server', () => {
 afterEach(() => {
   jest.clearAllMocks();
 });
+
+// Ensure these are assigned before tests run
+const fetch = require('node-fetch');
+global.fetch = fetch;
+global.Request = fetch.Request;
+global.Response = fetch.Response;
+
+// Add any other Node-specific setup here

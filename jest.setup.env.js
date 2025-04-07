@@ -30,3 +30,10 @@ process.env.NEXTAUTH_URL = APP_URL;
 process.env.NEXTAUTH_SECRET = 'test-secret';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
 process.env.NODE_ENV = 'test';
+
+// Set environment variables for testing
+// Load environment variables from .env.test
+require('dotenv').config({ path: '.env.test' });
+
+// Disable Prisma Accelerate/Data Proxy features in tests - REMOVED as it didn't fix the issue
+// process.env.PRISMA_DISABLE_QUAIL = 'true';
