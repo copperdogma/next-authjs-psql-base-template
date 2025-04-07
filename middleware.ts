@@ -8,7 +8,7 @@ const logger = loggers.middleware;
 
 // Define paths that are public (no authentication required)
 const publicPaths = [
-  '/',
+  '/', // Restored for testing
   '/login',
   '/about',
   '/api/health',
@@ -20,13 +20,24 @@ const publicPaths = [
 // Define paths that require authentication
 const protectedPaths = ['/dashboard', '/profile', '/settings'];
 
+// Cache for compiled wildcard path regular expressions
+const wildcardPathRegexCache = new Map<string, RegExp>();
+
 // Helper function to check if a path is public
 function isPublic(pathname: string): boolean {
   return publicPaths.some(path => {
     if (path.endsWith('/**')) {
-      // Handle wildcard matching
-      const basePath = path.slice(0, -3);
-      return pathname.startsWith(basePath);
+      // Handle wildcard matching using cached regex
+      const basePath = path.slice(0, -3); // Remove /**
+      let regex = wildcardPathRegexCache.get(path);
+      if (!regex) {
+        // Compile and cache the regex if not already done
+        // Ensures the path starts with the base path, followed by an optional / and anything else
+        // Handles cases like /api/test matching /api/test/users but not /api/testing
+        regex = new RegExp(`^${basePath}(\/.*)?$`);
+        wildcardPathRegexCache.set(path, regex);
+      }
+      return regex.test(pathname);
     }
     return pathname === path;
   });
