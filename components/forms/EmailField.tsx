@@ -1,30 +1,38 @@
 'use client';
 
+import { memo } from 'react';
 import { EmailOutlined } from '@mui/icons-material';
-import { FormField } from './FormField';
+import { FormField, FormFieldProps } from './FormField';
 
-interface EmailFieldProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  error?: string;
-  touched?: boolean;
+// Define EmailFieldProps by extending FormFieldProps and adding specific props
+export interface EmailFieldProps extends Omit<FormFieldProps, 'type' | 'label'> {
+  label?: string; // Make label optional here too
+  autoComplete?: string; // Add specific prop
 }
 
-export default function EmailField({ value, onChange, onBlur, error, touched }: EmailFieldProps) {
+/**
+ * Specialized FormField for email inputs.
+ * Uses react-hook-form compatible props.
+ */
+const EmailField = ({
+  label = 'Email',
+  name = 'email',
+  placeholder = 'your@email.com',
+  helpText = 'Enter your valid email address',
+  ...rest // Spread the rest of the props (including register, error, touched, autoComplete)
+}: EmailFieldProps) => {
   return (
     <FormField
-      name="email"
-      label="Email"
+      // Pass down standard and custom props
+      name={name}
+      label={label}
       type="email"
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur}
-      error={error}
-      touched={touched}
-      placeholder="your@email.com"
+      placeholder={placeholder}
       startAdornment={<EmailOutlined />}
-      helpText="Enter your email address"
+      helpText={helpText}
+      {...rest} // Pass down registered props, error, touched, autoComplete etc.
     />
   );
-}
+};
+
+export default memo(EmailField);

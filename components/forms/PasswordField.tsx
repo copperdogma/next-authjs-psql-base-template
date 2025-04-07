@@ -1,35 +1,34 @@
 'use client';
 
+import { memo } from 'react';
 import { LockOutlined } from '@mui/icons-material';
-import { FormField } from './FormField';
+import { FormField, FormFieldProps } from './FormField';
 
-interface PasswordFieldProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  error?: string;
-  touched?: boolean;
+export interface PasswordFieldProps extends Omit<FormFieldProps, 'type' | 'label'> {
+  label?: string;
+  autoComplete?: string;
 }
 
-export default function PasswordField({
-  value,
-  onChange,
-  onBlur,
-  error,
-  touched,
-}: PasswordFieldProps) {
+/**
+ * Specialized FormField for password inputs.
+ * Uses react-hook-form compatible props.
+ */
+const PasswordField = ({
+  label = 'Password',
+  name = 'password',
+  helpText = 'Password must be at least 8 characters',
+  ...rest
+}: PasswordFieldProps) => {
   return (
     <FormField
-      name="password"
-      label="Password"
+      name={name}
+      label={label}
       type="password"
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur}
-      error={error}
-      touched={touched}
       startAdornment={<LockOutlined />}
-      helpText="Password must be at least 8 characters"
+      helpText={helpText}
+      {...rest}
     />
   );
-}
+};
+
+export default memo(PasswordField);

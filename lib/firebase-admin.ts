@@ -1,5 +1,10 @@
 import * as admin from 'firebase-admin';
-import { logger } from '@/lib/logger';
+import { loggers } from './logger';
+
+// Removed unused type alias
+// type FirebaseAdminApp = admin.app.App;
+
+const logger = loggers.db;
 
 /**
  * Checks if the key is a test key that should be ignored
@@ -55,42 +60,34 @@ function parsePrivateKey(key?: string): string | undefined {
  * Get the current environment's base URL for callbacks and redirects
  */
 function getEmulatorHost(): string | undefined {
-  // If explicitly set via environment variables, use those
-  if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
-    return process.env.FIREBASE_AUTH_EMULATOR_HOST;
-  }
-
-  // For local development with custom ports
-  const port = process.env.PORT || process.env.NEXT_PUBLIC_PORT;
-  if (port && process.env.NODE_ENV !== 'production') {
-    logger.info(`🔸 [Admin SDK] Detected custom port: ${port}`);
-    return `localhost:9099`; // Auth emulator default port
-  }
-
-  return undefined;
+  return process.env.FIREBASE_AUTH_EMULATOR_HOST;
 }
 
+// Cached instance
+let appInstance: admin.app.App | null = null;
+
 /**
- * Initialize with emulator configuration
+ * Initialize Firebase Admin SDK with emulator settings if available.
+ * Ensures only one instance is created.
  */
+// eslint-disable-next-line max-statements
 function initializeWithEmulators(): admin.app.App {
+  if (appInstance) {
+    return appInstance;
+  }
+
   // For test environments, use minimal configuration
   const app = admin.initializeApp({
     projectId: process.env.FIREBASE_PROJECT_ID || 'test-project-id',
   });
 
-  // Suppress logs in test environment
-  if (process.env.NODE_ENV !== 'test') {
-    logger.info('🔸 [Admin SDK] Initialized for emulator use');
-  }
-
   // Get emulator host configuration
-  const authEmulatorHost = getEmulatorHost();
+  const authEmulatorHostConfig = getEmulatorHost();
 
-  if (authEmulatorHost) {
+  if (authEmulatorHostConfig) {
     // Suppress logs in test environment
     if (process.env.NODE_ENV !== 'test') {
-      logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+      logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHostConfig}`);
     }
     // Auth emulator is auto-connected via environment variable
   }
@@ -102,42 +99,31 @@ function initializeWithEmulators(): admin.app.App {
         `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
       );
     }
-    // The Firebase Admin SDK automatically detects and uses the FIRESTORE_EMULATOR_HOST
-    // environment variable - no explicit API call needed for v13+
+    // Firestore emulator auto-connected via env var
   }
 
   // Log connection status
-  if (authEmulatorHost && process.env.FIRESTORE_EMULATOR_HOST) {
+  if (authEmulatorHostConfig && process.env.FIRESTORE_EMULATOR_HOST) {
     logger.info('🔸 [Admin SDK] Initialized for emulator use');
-    logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHost}`);
+    logger.info(`🔸 [Admin SDK] Using Auth emulator at ${authEmulatorHostConfig}`);
     logger.info(
       `🔸 [Admin SDK] Using Firestore emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`
     );
   } else {
-    logger.warn(
-      '⚠️ [Admin SDK] Emulators not fully configured. Check FIREBASE_AUTH_EMULATOR_HOST and FIRESTORE_EMULATOR_HOST environment variables.'
-    );
+    logger.info('🔸 [Admin SDK] Initialized for production use (no emulators)');
   }
 
+  appInstance = app;
   return app;
 }
 
 /**
- * Initialize with production credentials
+ * Initialize Firebase Admin SDK using service account credentials.
+ * Ensures only one instance is created.
  */
-function initializeWithCredentials(
-  projectId: string,
-  clientEmail: string,
-  privateKey: string
-): admin.app.App {
-  const serviceAccount = {
-    projectId,
-    clientEmail,
-    privateKey,
-  };
-
+function initializeWithCredentials(credentials: admin.ServiceAccount): admin.app.App {
   const app = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    credential: admin.credential.cert(credentials as admin.ServiceAccount),
   });
 
   logger.info('✅ [Admin SDK] Initialized with service account credentials');
@@ -210,11 +196,7 @@ function getFirebaseAdmin() {
     if (strategy === 'emulators') {
       initializeWithEmulators();
     } else if (strategy === 'credentials' && credentials) {
-      initializeWithCredentials(
-        credentials.projectId,
-        credentials.clientEmail,
-        credentials.privateKey
-      );
+      initializeWithCredentials(credentials as admin.ServiceAccount);
     } else {
       initializeWithMinimalConfig();
     }

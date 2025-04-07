@@ -52,8 +52,9 @@ export class SessionCleanupService {
   }
 
   /**
-   * Run the cleanup process immediately.
+   * Runs the cleanup process.
    */
+  // eslint-disable-next-line max-statements
   async runCleanup(): Promise<void> {
     loggers.db.info('Running session cleanup...');
     const retentionDays = 7; // Hardcoded for now, replace with this.retentionDays when implemented

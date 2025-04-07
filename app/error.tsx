@@ -7,13 +7,13 @@ import { clientLogger } from '@/lib/client-logger';
 // Log the error as soon as the boundary catches it
 let loggedError = false; // Prevent logging multiple times on re-renders
 
-export default function ErrorBoundary({
-  error,
-  reset,
-}: {
+interface ErrorComponentProps {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}
+
+// ErrorBoundary function - Removed the disable comment entirely
+const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   // Log the error immediately on the client, sending it to the server
   if (!loggedError) {
     clientLogger.error('ErrorBoundary caught an error', {
@@ -62,4 +62,6 @@ export default function ErrorBoundary({
       </body>
     </html>
   );
-}
+};
+
+export default ErrorBoundary;

@@ -1,27 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loggers } from '@/lib/logger'; // Use alias
+import { z } from 'zod';
 
 const clientLogger = loggers.api.child({ source: 'client' });
 
-// Define expected log entry structure (adjust as needed)
-interface ClientLogEntry {
-  level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
-  message: string;
-  context?: Record<string, unknown>; // Use unknown instead of any
-  timestamp?: string; // Optional client timestamp
-}
+// Define Zod schema for expected log entry structure
+const ClientLogSchema = z.object({
+  level: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']),
+  message: z.string().min(1, 'Log message cannot be empty'),
+  context: z.record(z.unknown()).optional(), // Record<string, unknown>
+  timestamp: z.string().datetime({ offset: true }).optional(), // ISO 8601 string
+});
+
+// Infer the type from the schema
+// type ClientLogEntry = z.infer<typeof ClientLogSchema>; // Removed unused type alias
 
 export async function POST(request: NextRequest) {
   try {
-    const logEntry = (await request.json()) as ClientLogEntry;
+    const body = await request.json();
+    const result = ClientLogSchema.safeParse(body);
 
-    // Basic validation
-    if (!logEntry || !logEntry.level || !logEntry.message) {
-      return NextResponse.json({ error: 'Invalid log entry' }, { status: 400 });
+    if (!result.success) {
+      // Log the validation error for debugging
+      loggers.api.warn(
+        {
+          validationErrors: result.error.format(),
+          location: 'client-log-api-validation',
+        },
+        'Invalid client log entry received'
+      );
+      return NextResponse.json(
+        { error: 'Invalid log entry', details: result.error.format() },
+        { status: 400 }
+      );
     }
 
+    const logEntry = result.data;
+
     // Map client level to Pino logger function
-    const logFunction = clientLogger[logEntry.level] || clientLogger.info;
+    // We know logEntry.level is valid because the schema validated it
+    const logFunction = clientLogger[logEntry.level];
 
     // Log the message with context
     logFunction(

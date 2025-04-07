@@ -1,8 +1,9 @@
 'use client';
 
 import { memo } from 'react';
-import { useForm } from '../hooks/useForm';
-import { ValidationFn, FormFieldValue } from '../hooks/form-types';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Stack } from '@mui/material';
 import EmailField from './EmailField';
 import PasswordField from './PasswordField';
@@ -10,88 +11,87 @@ import RememberMeCheckbox from './RememberMeCheckbox';
 import FormErrorAlert from './FormErrorAlert';
 import SubmitButton from './SubmitButton';
 
-// Make FormValues compatible with Record<string, FormFieldValue>
-interface FormValues extends Record<string, FormFieldValue> {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
+// Define the Zod schema for form validation
+const formSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(8, 'Password must be at least 8 characters'),
+  rememberMe: z.boolean(),
+});
 
-const initialValues: FormValues = {
-  email: '',
-  password: '',
-  rememberMe: false,
-};
+// Infer the TypeScript type from the schema
+type FormValues = z.infer<typeof formSchema>;
 
-// Form validation function
-const validate: ValidationFn<FormValues> = values => {
-  const errors: Partial<Record<keyof FormValues, string>> = {};
-
-  if (!values.email) {
-    errors.email = 'Email is required';
-  } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-    errors.email = 'Invalid email address';
-  }
-
-  if (!values.password) {
-    errors.password = 'Password is required';
-  } else if (values.password.length < 8) {
-    errors.password = 'Password must be at least 8 characters';
-  }
-
-  return errors;
-};
-
+// Define props for the ExampleForm component
 interface ExampleFormProps {
-  /**
-   * Function to handle form submission
-   * @param values The form values
-   */
-  onSubmit: (values: FormValues) => Promise<void>;
-  /**
-   * Text for the submit button
-   * @default "Submit"
-   */
+  onSubmit: SubmitHandler<FormValues>; // Use SubmitHandler from react-hook-form
   submitButtonText?: string;
+  initialValues?: Partial<FormValues>; // Allow passing initial values
 }
 
 /**
- * Example form component demonstrating form implementation with validation
- *
- * This component showcases:
- * - Form state management with custom hooks
- * - Field validation
- * - Accessibility features
- * - Material UI components
- * - The reusable FormField component
+ * Example form component demonstrating react-hook-form and Zod validation
  */
-const ExampleForm = ({ onSubmit, submitButtonText = 'Submit' }: ExampleFormProps) => {
-  const { values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit } =
-    useForm<FormValues>(initialValues, onSubmit, validate);
+// eslint-disable-next-line complexity
+const ExampleForm = ({
+  onSubmit,
+  submitButtonText = 'Submit',
+  initialValues,
+}: ExampleFormProps) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, touchedFields },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema), // Integrate Zod validation
+    defaultValues: {
+      email: initialValues?.email || '',
+      password: initialValues?.password || '',
+      rememberMe: initialValues?.rememberMe || false,
+    },
+  });
+
+  // Centralized error handling (optional, good for API errors)
+  const formError = errors.root?.message; // Access root errors if set by setError('root', ...)
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    // Use react-hook-form's handleSubmit to wrap our onSubmit
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Stack spacing={3}>
         <EmailField
-          value={values.email}
-          onChange={handleChange}
-          onBlur={() => handleBlur('email')}
-          error={errors.email}
-          touched={touched.email}
+          // Register email field with react-hook-form
+          {...register('email')}
+          // Pass error message and touched status
+          error={errors.email?.message}
+          touched={touchedFields.email}
+          // AutoComplete attribute for accessibility/UX
+          autoComplete="email"
         />
 
         <PasswordField
-          value={values.password}
-          onChange={handleChange}
-          onBlur={() => handleBlur('password')}
-          error={errors.password}
-          touched={touched.password}
+          // Register password field
+          {...register('password')}
+          error={errors.password?.message}
+          touched={touchedFields.password}
+          autoComplete="current-password"
         />
 
-        <RememberMeCheckbox checked={values.rememberMe} onChange={handleChange} />
+        <RememberMeCheckbox
+          // Register checkbox field
+          {...register('rememberMe')}
+          // Note: For complex components (like MUI Checkbox), using <Controller> might be better
+          // to handle value/onChange mapping, but direct register works for simple cases.
+          // checked={values.rememberMe} // react-hook-form handles checked state via register
+          // onChange={handleChange} // react-hook-form handles change via register
+          label="Remember Me" // Add a label for clarity
+        />
 
-        <FormErrorAlert error={errors.form || ''} />
+        {/* Display root form errors (e.g., from API response) */}
+        <FormErrorAlert error={formError || ''} />
 
+        {/* Pass submitting state to the button */}
         <SubmitButton isSubmitting={isSubmitting} text={submitButtonText} />
       </Stack>
     </form>
