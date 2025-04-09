@@ -19,7 +19,9 @@ const {
 } = require('firebase/auth');
 
 // Load environment variables from .env.test
-dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
+const envPath = path.resolve(__dirname, '../.env.test');
+console.log(`Loading environment from: ${envPath}`);
+dotenv.config({ path: envPath });
 
 // Test user information
 const TEST_USER = {
@@ -27,6 +29,14 @@ const TEST_USER = {
   password: process.env.TEST_USER_PASSWORD || 'Test123!',
   displayName: process.env.TEST_USER_DISPLAY_NAME || 'Test User',
 };
+
+// Log environment variables - important for debugging
+console.log('=== Environment Variables ===');
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
+console.log(`AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
+console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
+console.log('===========================');
 
 // Firebase configuration for connecting to emulator
 const firebaseConfig = {
@@ -96,13 +106,16 @@ function initializeFirebase() {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Connect to Auth emulator with proper options
-  connectAuthEmulator(auth, 'http://localhost:9099', {
-    disableWarnings: true,
-    apiHost: 'http://localhost:9099',
-  });
+  // Extract emulator host and port from environment variable
+  const emulatorHost = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
+  const [host, port] = emulatorHost.split(':');
+  const emulatorUrl = `http://${host}:${port}`;
 
-  console.log('Connecting to Auth emulator at http://localhost:9099...');
+  // Connect to Auth emulator with proper options
+  console.log(`Connecting to Auth emulator at ${emulatorUrl}...`);
+  connectAuthEmulator(auth, emulatorUrl, {
+    disableWarnings: true,
+  });
 
   return auth;
 }

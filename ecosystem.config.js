@@ -8,7 +8,7 @@ module.exports = {
       ignore_watch: ['node_modules', '.next', 'logs', '.git'],
       env_development: {
         NODE_ENV: 'development',
-        PORT: 0,
+        PORT: 3001,
       },
       out_file: './logs/pm2-out.log',
       error_file: './logs/pm2-err.log',

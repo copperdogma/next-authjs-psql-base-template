@@ -20,6 +20,15 @@ const TEST_USER = {
   displayName: process.env.TEST_USER_DISPLAY_NAME || 'Test User',
 };
 
+// ADDED LOGGING: Log environment setup
+console.log('🔧 E2E Auth Setup Environment Info:');
+console.log(`BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777'}`);
+console.log(`USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
+console.log(`AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
+console.log(`FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`);
+console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+
 /**
  * Sets up authentication using the Test API Endpoint and Modular Client-side Firebase SDK
  */
@@ -29,6 +38,16 @@ async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> 
   const apiUrl = `${baseUrl}/api/test/auth/create-session`;
 
   try {
+    // ADDED: Check emulator configuration via test API
+    console.log('🔍 Checking Firebase emulator configuration...');
+    const configResponse = await page.request.get(`${baseUrl}/api/test/firebase-config`);
+    if (configResponse.ok()) {
+      const config = await configResponse.json();
+      console.log('Firebase emulator config from API:', JSON.stringify(config, null, 2));
+    } else {
+      console.warn('Unable to retrieve Firebase config from API');
+    }
+
     // 1. Call API to get Firebase Custom Token
     console.log(`🚀 Calling test session API at ${apiUrl}`);
     const apiResponse = await page.request.post(apiUrl, {
@@ -56,25 +75,42 @@ async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> 
       await page.addScriptTag({ path: './node_modules/firebase/firebase-app.js' });
       await page.addScriptTag({ path: './node_modules/firebase/firebase-auth.js' });
 
-      // Initialize using modular syntax
+      // Initialize using modular syntax with EXPLICIT EMULATOR CONFIG
       await page.evaluate(
-        firebaseConfig => {
+        config => {
           console.log('🔥 Initializing Modular Firebase Client SDK...');
           if (!window.firebase?.apps?.length) {
             // Keep check simple
-            window.firebase?.initializeApp?.(firebaseConfig);
+            window.firebase?.initializeApp?.(config.firebaseConfig);
             console.log('Firebase initialized by test setup (modular).');
+
+            // EXPLICITLY CONNECT TO EMULATORS
+            if (window.firebase?.getAuth && config.authEmulatorHost) {
+              const auth = window.firebase.getAuth();
+              if (config.authEmulatorHost) {
+                console.log(
+                  `📱 Explicitly connecting to Auth emulator at ${config.authEmulatorHost}`
+                );
+                window.firebase.connectAuthEmulator(auth, `http://${config.authEmulatorHost}`, {
+                  disableWarnings: true,
+                });
+              }
+            }
           } else {
             console.log('Firebase already initialized.');
           }
         },
         {
-          apiKey: 'emulator',
-          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+          firebaseConfig: {
+            apiKey: 'test-api-key', // Use test value for emulator
+            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'localhost',
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'test-project',
+            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'test-storage',
+            messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
+            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'test-app-id',
+          },
+          authEmulatorHost: process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST,
+          firestoreEmulatorHost: process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST,
         }
       );
 
