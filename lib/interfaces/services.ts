@@ -1,6 +1,10 @@
 import { User } from '@prisma/client';
 import { Session } from 'next-auth';
 import { AuthOptions } from 'next-auth';
+import type { RawQueryService, PrismaClientService } from './database-services';
+
+// Re-export database interfaces
+export type { RawQueryService, PrismaClientService };
 
 export interface SessionService {
   /**

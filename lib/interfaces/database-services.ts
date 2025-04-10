@@ -1,15 +1,8 @@
-import { defaultRawQueryService } from '../services/raw-query-service';
-
 /**
- * Service for executing optimized raw SQL queries for complex operations
- * that would be inefficient with standard Prisma query methods.
- *
- * This is a facade for the RawQueryServiceImpl that maintains backward compatibility.
- * New code should use the implementation from lib/services/raw-query-service.ts directly.
- *
- * @deprecated Use the RawQueryServiceImpl from lib/services/raw-query-service instead
+ * Interface definitions for database-related services
  */
-export class RawQueryService {
+
+export interface RawQueryService {
   /**
    * Performs a complex aggregation using raw SQL
    * Example: Get user session counts grouped by day for analytics
@@ -17,13 +10,11 @@ export class RawQueryService {
    * @param options Query options
    * @returns Array of daily session counts
    */
-  static async getUserSessionCountsByDay(options: {
+  getUserSessionCountsByDay(options: {
     startDate?: Date;
     endDate?: Date;
     userId?: string;
-  }): Promise<{ date: string; count: number }[]> {
-    return defaultRawQueryService.getUserSessionCountsByDay(options);
-  }
+  }): Promise<{ date: string; count: number }[]>;
 
   /**
    * Performs a batch update with complex conditions
@@ -32,13 +23,11 @@ export class RawQueryService {
    * @param options Update options
    * @returns Number of updated records
    */
-  static async extendSessionExpirations(options: {
+  extendSessionExpirations(options: {
     userIds: string[];
     extensionHours: number;
     currentExpiryBefore?: Date;
-  }): Promise<number> {
-    return defaultRawQueryService.extendSessionExpirations(options);
-  }
+  }): Promise<number>;
 
   /**
    * Performs complex joins and aggregations that would be inefficient with Prisma
@@ -47,7 +36,7 @@ export class RawQueryService {
    * @param options Query options
    * @returns Array of user activity summaries
    */
-  static async getUserActivitySummary(options: {
+  getUserActivitySummary(options: {
     minSessionCount?: number;
     since?: Date;
     limit?: number;
@@ -59,9 +48,7 @@ export class RawQueryService {
       sessionCount: number;
       lastActive: string;
     }>
-  > {
-    return defaultRawQueryService.getUserActivitySummary(options);
-  }
+  >;
 
   /**
    * Executes a safe parametrized raw query
@@ -71,7 +58,17 @@ export class RawQueryService {
    * @param params Parameters to bind to the query
    * @returns Query results
    */
-  static async executeRawQuery<T = any>(sql: string, params: any[] = []): Promise<T> {
-    return defaultRawQueryService.executeRawQuery<T>(sql, params);
-  }
+  executeRawQuery<T = any>(sql: string, params: any[]): Promise<T>;
+}
+
+export interface PrismaClientService {
+  /**
+   * Executes a raw query with tagged template syntax
+   */
+  $queryRaw: any;
+
+  /**
+   * Executes a raw SQL command that doesn't return data
+   */
+  $executeRaw: any;
 }
