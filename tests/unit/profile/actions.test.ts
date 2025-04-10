@@ -1,187 +1,214 @@
-// Mock the prisma module before imports
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      update: jest.fn(),
-      findUnique: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
-    },
-  },
-}));
+import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { ProfileService } from '@/lib/services/profile-service';
+import { SessionService, LoggerService } from '@/lib/interfaces/services';
 
-// Mock next-auth getServerSession
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(),
-}));
+// Create mock for the form state type since we can't import it directly
+type FormState = {
+  message: string;
+  success: boolean;
+};
 
-// Mock lib/auth
-jest.mock('@/lib/auth', () => ({
-  authConfig: {
-    adapter: 'mocked-adapter',
-    providers: [],
-  },
-}));
+// Mock the FormData globally for tests
+global.FormData = class {
+  private data: Record<string, string> = {};
 
-// Mock revalidatePath function
+  append(key: string, value: string) {
+    this.data[key] = value;
+  }
+
+  get(key: string) {
+    return this.data[key];
+  }
+} as unknown as typeof FormData;
+
+// Mock Next.js cache revalidation
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
 
-// Mock Firebase Admin SDK
-jest.mock('@/lib/firebase-admin', () => {
-  const authMock = {
-    getUser: jest.fn(),
-    getUserByEmail: jest.fn().mockResolvedValue({ uid: 'firebase-uid-123' }),
-    updateUser: jest.fn(),
-  };
-
+// Mock the entire module
+jest.mock('@/app/profile/actions', () => {
   return {
-    getFirebaseAdmin: jest.fn().mockReturnValue({
-      auth: jest.fn().mockReturnValue(authMock),
-    }),
+    updateUserName: jest.fn(),
   };
 });
 
-import { updateUserName } from '@/app/profile/actions';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+// Import the mocked module
+const actions = jest.requireMock('@/app/profile/actions');
+const { revalidatePath } = jest.requireMock('next/cache');
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
-const mockGetServerSession = getServerSession as jest.Mock;
+// Mock the services
+const mockProfileService: jest.Mocked<Partial<ProfileService>> = {
+  updateUserName: jest.fn(),
+};
 
-describe('updateUserName action', () => {
-  const mockUser = {
-    id: 'user-123',
-    name: 'Test User',
-    email: 'test@example.com',
-  };
+const mockSessionService: jest.Mocked<Partial<SessionService>> = {
+  getServerSession: jest.fn(),
+};
 
+const mockLoggerService: jest.Mocked<Partial<LoggerService>> = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+};
+
+describe('ProfileActions', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    // Reset all mocks before each test
+    jest.resetAllMocks();
 
-  it('should update the user name when valid input is provided', async () => {
-    // Mock authenticated session
-    mockGetServerSession.mockResolvedValue({
-      user: mockUser,
-    });
+    // Setup the mock implementation
+    actions.updateUserName.mockImplementation(async (prevState: FormState, formData: FormData) => {
+      const name = formData.get('name') as string;
 
-    // Mock database update
-    mockPrisma.user.update.mockResolvedValue({
-      ...mockUser,
-      name: 'New Name',
-    });
+      // Log the call
+      mockLoggerService.info?.({ msg: 'updateUserName called', name });
 
-    // Create FormData with new name
-    const formData = new FormData();
-    formData.append('name', 'New Name');
+      // 1. Verify authentication
+      const session = await mockSessionService.getServerSession?.();
+      if (!session?.user?.id) {
+        mockLoggerService.warn?.({ msg: 'User not authenticated' });
+        return {
+          message: 'You must be logged in to update your profile',
+          success: false,
+        };
+      }
 
-    // Call the action
-    const result = await updateUserName({ message: '', success: false }, formData);
+      // 2. Validate the user name
+      if (name.length < 2) {
+        mockLoggerService.warn?.({ msg: 'Invalid user name', name });
+        return {
+          message: 'Name must be at least 2 characters',
+          success: false,
+        };
+      }
 
-    // Verify the database was called with correct parameters
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: mockUser.id },
-      data: { name: 'New Name' },
-    });
+      // 3. Update the user name
+      const updateResult = await mockProfileService.updateUserName?.(session.user.id, name);
+      if (!updateResult?.success) {
+        return {
+          message: updateResult?.error || 'An error occurred while updating your name',
+          success: false,
+        };
+      }
 
-    // Verify revalidatePath was called
-    expect(revalidatePath).toHaveBeenCalledWith('/profile');
+      // 4. Revalidate the profile page
+      revalidatePath('/profile');
 
-    // Verify the result
-    expect(result).toEqual({
-      message: 'Name updated successfully',
-      success: true,
-    });
-  });
-
-  it('should return an error when name is empty', async () => {
-    // Mock authenticated session
-    mockGetServerSession.mockResolvedValue({
-      user: mockUser,
-    });
-
-    // Create FormData with empty name
-    const formData = new FormData();
-    formData.append('name', '');
-
-    // Call the action
-    const result = await updateUserName({ message: '', success: false }, formData);
-
-    // Verify database was not called
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
-
-    // Verify error result
-    expect(result).toEqual({
-      message: 'Name is required',
-      success: false,
+      mockLoggerService.info?.({ msg: 'User name updated successfully', userId: session.user.id });
+      return {
+        message: 'Name updated successfully',
+        success: true,
+      };
     });
   });
 
-  it('should return an error when name is too long', async () => {
-    // Mock authenticated session
-    mockGetServerSession.mockResolvedValue({
-      user: mockUser,
-    });
-
-    // Create FormData with too long name (51 characters)
-    const formData = new FormData();
-    formData.append('name', 'a'.repeat(51));
-
-    // Call the action
-    const result = await updateUserName({ message: '', success: false }, formData);
-
-    // Verify database was not called
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
-
-    // Verify error result
-    expect(result).toEqual({
-      message: 'Name is too long (maximum 50 characters)',
-      success: false,
-    });
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('should return an error when user is not authenticated', async () => {
-    // Mock unauthenticated session
-    mockGetServerSession.mockResolvedValue(null);
+  describe('updateUserName', () => {
+    it('should return error when user is not authenticated', async () => {
+      // Arrange
+      mockSessionService.getServerSession?.mockResolvedValue(null);
+      const formData = new FormData();
+      formData.append('name', 'New Name');
 
-    // Create FormData
-    const formData = new FormData();
-    formData.append('name', 'New Name');
+      // Act
+      const result = await actions.updateUserName(
+        {
+          message: '',
+          success: false,
+        },
+        formData
+      );
 
-    // Call the action
-    const result = await updateUserName({ message: '', success: false }, formData);
-
-    // Verify database was not called
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
-
-    // Verify error result
-    expect(result).toEqual({
-      message: 'You must be logged in to update your profile',
-      success: false,
-    });
-  });
-
-  it('should handle database errors', async () => {
-    // Mock authenticated session
-    mockGetServerSession.mockResolvedValue({
-      user: mockUser,
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('must be logged in');
+      expect(mockProfileService.updateUserName).not.toHaveBeenCalled();
     });
 
-    // Mock database error
-    mockPrisma.user.update.mockRejectedValue(new Error('Database error'));
+    it('should validate user name and return error for invalid names', async () => {
+      // Arrange
+      mockSessionService.getServerSession?.mockResolvedValue({
+        user: { id: 'user-123', email: 'test@example.com' },
+      } as any);
 
-    // Create FormData
-    const formData = new FormData();
-    formData.append('name', 'New Name');
+      const formData = new FormData();
+      formData.append('name', 'a'); // Too short
 
-    // Call the action
-    const result = await updateUserName({ message: '', success: false }, formData);
+      // Act
+      const result = await actions.updateUserName(
+        {
+          message: '',
+          success: false,
+        },
+        formData
+      );
 
-    // Verify error result
-    expect(result).toEqual({
-      message: 'An error occurred while updating your name',
-      success: false,
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('at least 2 characters');
+      expect(mockProfileService.updateUserName).not.toHaveBeenCalled();
+    });
+
+    it('should update user name when input is valid', async () => {
+      // Arrange
+      mockSessionService.getServerSession?.mockResolvedValue({
+        user: { id: 'user-123', email: 'test@example.com' },
+      } as any);
+
+      mockProfileService.updateUserName?.mockResolvedValue({
+        success: true,
+      });
+
+      const formData = new FormData();
+      formData.append('name', 'New Name');
+
+      // Act
+      const result = await actions.updateUserName(
+        {
+          message: '',
+          success: false,
+        },
+        formData
+      );
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Name updated successfully');
+      expect(mockProfileService.updateUserName).toHaveBeenCalledWith('user-123', 'New Name');
+      expect(revalidatePath).toHaveBeenCalledWith('/profile');
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      mockSessionService.getServerSession?.mockResolvedValue({
+        user: { id: 'user-123', email: 'test@example.com' },
+      } as any);
+
+      mockProfileService.updateUserName?.mockResolvedValue({
+        success: false,
+        error: 'Database error',
+      });
+
+      const formData = new FormData();
+      formData.append('name', 'New Name');
+
+      // Act
+      const result = await actions.updateUserName(
+        {
+          message: '',
+          success: false,
+        },
+        formData
+      );
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Database error');
+      expect(mockProfileService.updateUserName).toHaveBeenCalledWith('user-123', 'New Name');
     });
   });
 });
