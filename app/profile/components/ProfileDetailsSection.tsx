@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Box, Typography, Divider, Stack, Button, TextField } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, Divider, Stack } from '@mui/material';
 import { User } from 'next-auth';
 import SignOutButton from './SignOutButton';
 import { useFormState } from 'react-dom';
 import { updateUserName } from '@/app/profile/actions';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { useSession } from 'next-auth/react';
+import NameEditSection from './NameEditSection';
+import ProfileField from './ProfileField';
 
 interface ProfileDetailsSectionProps {
   user: User;
@@ -16,115 +16,39 @@ interface ProfileDetailsSectionProps {
 
 export default function ProfileDetailsSection({ user }: ProfileDetailsSectionProps) {
   const [isEditingName, setIsEditingName] = useState(false);
+  const { update: updateSession } = useSession();
   const [state, formAction] = useFormState(updateUserName, {
     message: '',
     success: false,
   });
 
-  // Reset edit mode when form submission is successful
+  const hasUpdatedSessionRef = useRef(false);
+
   useEffect(() => {
-    if (state.success) {
+    if (state.success && !hasUpdatedSessionRef.current) {
       setIsEditingName(false);
+      hasUpdatedSessionRef.current = true;
+      updateSession({ force: true });
+    } else if (!state.success) {
+      hasUpdatedSessionRef.current = false;
     }
-  }, [state.success]);
+  }, [state.success, updateSession]);
 
   return (
     <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 calc(100% - 250px - 48px)' } }}>
       <Stack spacing={4}>
-        <Box>
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{
-              fontWeight: 500,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            Display Name
-            {!isEditingName && (
-              <Button
-                startIcon={<EditIcon />}
-                size="small"
-                onClick={() => setIsEditingName(true)}
-                sx={{ ml: 2 }}
-              >
-                Edit
-              </Button>
-            )}
-          </Typography>
-
-          {isEditingName ? (
-            <form action={formAction}>
-              <Box sx={{ mt: 1 }}>
-                <TextField
-                  name="name"
-                  defaultValue={user.name || ''}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  placeholder="Enter your name"
-                  autoFocus
-                />
-                {state.message && (
-                  <Typography
-                    variant="caption"
-                    color={state.success ? 'success.main' : 'error.main'}
-                    sx={{ display: 'block', mt: 1 }}
-                  >
-                    {state.message}
-                  </Typography>
-                )}
-                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                  <Button type="submit" variant="contained" size="small" startIcon={<SaveIcon />}>
-                    Save
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    startIcon={<CancelIcon />}
-                    onClick={() => {
-                      setIsEditingName(false);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </Box>
-              </Box>
-            </form>
-          ) : (
-            <Typography variant="h6" sx={{ mt: 1 }}>
-              {user.name || 'Not provided'}
-            </Typography>
-          )}
-        </Box>
-
+        <NameEditSection
+          user={user}
+          isEditingName={isEditingName}
+          setIsEditingName={setIsEditingName}
+          formAction={formAction}
+          state={state}
+        />
         <Divider />
-
-        <Box>
-          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
-            Email
-          </Typography>
-          <Typography variant="h6" sx={{ mt: 1 }}>
-            {user.email || 'Not provided'}
-          </Typography>
-        </Box>
-
+        <ProfileField label="Email" value={user.email} />
         <Divider />
-
-        <Box>
-          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
-            User ID
-          </Typography>
-          <Typography variant="h6" sx={{ mt: 1 }}>
-            {user.id || 'Not available'}
-          </Typography>
-        </Box>
-
+        <ProfileField label="User ID" value={user.id} />
         <Divider />
-
         <SignOutButton />
       </Stack>
     </Box>

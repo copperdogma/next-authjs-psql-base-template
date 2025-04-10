@@ -36,12 +36,13 @@ afterEach(() => {
 const CONSOLE_FAIL_TYPES = ['error', 'warn'];
 
 CONSOLE_FAIL_TYPES.forEach(type => {
+  // eslint-disable-next-line no-console
   const originalConsole = console[type]; // Store original console method
 
+  // eslint-disable-next-line no-console
   console[type] = (...args) => {
     // Allow specific warnings/errors if needed in the future by checking args[0]
     // Example: if (typeof args[0] === 'string' && args[0].includes('Specific warning to ignore')) {
-    //   // eslint-disable-next-line no-console
     //   originalConsole(...args); // Log without failing
     //   return;
     // }

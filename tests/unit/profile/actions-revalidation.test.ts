@@ -39,18 +39,38 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       update: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
     },
   },
 }));
 
 // Mock logger
 jest.mock('@/lib/logger', () => ({
+  loggers: {
+    profile: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    db: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  },
   createLogger: jest.fn().mockReturnValue({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
   }),
 }));
+
+// Mock Firebase Admin SDK
+jest.mock('@/lib/firebase-admin', () => {
+  const authMock = {
+    getUser: jest.fn(),
+    getUserByEmail: jest.fn().mockResolvedValue({ uid: 'firebase-uid-123' }),
+    updateUser: jest.fn(),
+  };
+
+  return {
+    getFirebaseAdmin: jest.fn().mockReturnValue({
+      auth: jest.fn().mockReturnValue(authMock),
+    }),
+  };
+});
 
 // Import functions and mocks
 import { updateUserName } from '@/app/profile/actions';

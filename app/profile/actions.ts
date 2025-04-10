@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { getFirebaseAdmin } from '@/lib/firebase-admin';
 
 const logger = createLogger('profile:actions');
 
@@ -106,10 +107,46 @@ async function updateUserNameInDatabase(
   name: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // 1. Update the name in the Prisma database
     await prisma.user.update({
       where: { id: userId },
       data: { name },
     });
+
+    // 2. Get the user's email to find them in Firebase
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (user?.email) {
+      try {
+        // 3. Get Firebase Admin SDK
+        const admin = getFirebaseAdmin();
+
+        // 4. Find the Firebase user by email
+        const firebaseUser = await admin.auth().getUserByEmail(user.email);
+
+        // 5. Update the Firebase user's display name
+        await admin.auth().updateUser(firebaseUser.uid, {
+          displayName: name,
+        });
+
+        logger.info({
+          msg: 'Firebase user displayName updated',
+          userId,
+          firebaseUid: firebaseUser.uid,
+        });
+      } catch (firebaseError) {
+        // Log Firebase error but don't fail the overall operation
+        logger.error({
+          msg: 'Error updating Firebase user displayName',
+          error: firebaseError instanceof Error ? firebaseError.message : String(firebaseError),
+          userId,
+        });
+        // We continue even if Firebase update fails, as the database is the source of truth
+      }
+    }
 
     logger.info({ msg: 'User name updated successfully', userId });
     return { success: true };

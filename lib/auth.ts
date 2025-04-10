@@ -4,6 +4,7 @@ import { default as NextAuth } from 'next-auth';
 import { loggers } from './logger';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
+import { JWT } from 'next-auth/jwt';
 
 const logger = loggers.auth;
 
@@ -48,6 +49,11 @@ export const authConfig: NextAuthOptions = {
     async session({ session, token }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
+
+        // Use token data for name and email if available
+        if (token.name) session.user.name = token.name;
+        if (token.email) session.user.email = token.email;
+
         logger.debug({
           msg: 'Session callback executed',
           userId: token.sub,
@@ -56,15 +62,20 @@ export const authConfig: NextAuthOptions = {
       }
       return session;
     },
-    // Persist the user ID onto the token right after signin
-    async jwt({ token, user }) {
+
+    // JWT callback - runs when a JWT is created or updated
+    async jwt({ token, user, trigger }) {
+      // Case 1: User object provided (sign-in)
       if (user) {
-        token.id = user.id;
-        logger.info({
-          msg: 'User signed in',
-          userId: user.id,
-        });
+        return updateTokenWithUserData(token, user);
       }
+
+      // Case 2: Update trigger with valid subject
+      if (trigger === 'update' && token.sub) {
+        return refreshTokenFromDatabase(token);
+      }
+
+      // Case 3: Default case - return token unchanged
       return token;
     },
   },
@@ -333,3 +344,51 @@ export const signOutWithLogging = async (...args: Parameters<typeof signOut>) =>
     throw error;
   }
 };
+
+/**
+ * Updates a JWT token with user data from sign-in
+ */
+async function updateTokenWithUserData(token: JWT, user: any): Promise<JWT> {
+  token.id = user.id;
+  token.name = user.name || undefined;
+  token.email = user.email || undefined;
+
+  logger.info({
+    msg: 'User signed in',
+    userId: user.id,
+  });
+
+  return token;
+}
+
+/**
+ * Refreshes a JWT token with the latest user data from the database
+ */
+async function refreshTokenFromDatabase(token: JWT): Promise<JWT> {
+  try {
+    // Get fresh user data from the database
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub as string },
+      select: { name: true, email: true },
+    });
+
+    if (user) {
+      // Update token with latest data
+      token.name = user.name || undefined;
+      token.email = user.email || undefined;
+
+      logger.info({
+        msg: 'JWT updated with fresh user data',
+        userId: token.sub,
+      });
+    }
+  } catch (error) {
+    logger.error({
+      msg: 'Error refreshing user data in JWT',
+      error: error instanceof Error ? error.message : String(error),
+      userId: token.sub,
+    });
+  }
+
+  return token;
+}
