@@ -5,6 +5,7 @@ import { loggers } from './logger';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 import { JWT } from 'next-auth/jwt';
+import { PrismaClient } from '@prisma/client';
 
 const logger = loggers.auth;
 
@@ -24,9 +25,11 @@ function getBaseUrl(): string {
   return `http://localhost:${port}`;
 }
 
-export const authConfig: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  providers: [
+/**
+ * Creates the provider configurations
+ */
+function createProviders() {
+  return [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
@@ -38,15 +41,16 @@ export const authConfig: NextAuthOptions = {
         },
       },
     }),
-  ],
-  // Only use custom pages when there are multiple providers or for specific scenarios
-  // We'll remove this for now to avoid the unnecessary redirect
-  // pages: {
-  //   signIn: '/login',
-  // },
-  callbacks: {
+  ];
+}
+
+/**
+ * Creates the callback functions for NextAuth
+ */
+function createCallbacks(prismaClient: PrismaClient) {
+  return {
     // Add user ID to the session
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
 
@@ -64,7 +68,7 @@ export const authConfig: NextAuthOptions = {
     },
 
     // JWT callback - runs when a JWT is created or updated
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger }: { token: any; user: any; trigger?: string }) {
       // Case 1: User object provided (sign-in)
       if (user) {
         return updateTokenWithUserData(token, user);
@@ -72,55 +76,48 @@ export const authConfig: NextAuthOptions = {
 
       // Case 2: Update trigger with valid subject
       if (trigger === 'update' && token.sub) {
-        return refreshTokenFromDatabase(token);
+        return refreshTokenFromDatabase(token, prismaClient);
       }
 
       // Case 3: Default case - return token unchanged
       return token;
     },
-  },
-  pages: {
-    signIn: '/login',
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  // If NEXTAUTH_URL is not explicitly set or it contains an environment variable placeholder,
-  // use our dynamic detection
-  ...(!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('${')
-    ? { url: getBaseUrl() }
-    : {}),
-  secret: process.env.NEXTAUTH_SECRET,
-  events: {
-    signIn: ({ user }) => {
+  };
+}
+
+/**
+ * Creates the event handlers for NextAuth
+ */
+function createEventHandlers() {
+  return {
+    signIn: ({ user }: { user: any }) => {
       logger.info({
         msg: 'User authenticated successfully',
         userId: user.id,
         email: user.email,
       });
     },
-    signOut: ({ token }) => {
+    signOut: ({ token }: { token: any }) => {
       logger.info({
         msg: 'User signed out',
         userId: token?.sub,
       });
     },
-    createUser: ({ user }) => {
+    createUser: ({ user }: { user: any }) => {
       logger.info({
         msg: 'New user created',
         userId: user.id,
         email: user.email,
       });
     },
-    linkAccount: ({ user, account }) => {
+    linkAccount: ({ user, account }: { user: any; account: any }) => {
       logger.info({
         msg: 'Account linked to user',
         userId: user.id,
         provider: account.provider,
       });
     },
-    session: ({ token }) => {
+    session: ({ token }: { token: any }) => {
       // Sessions are frequently updated so use debug level
       if (token?.sub) {
         logger.debug({
@@ -129,9 +126,40 @@ export const authConfig: NextAuthOptions = {
         });
       }
     },
-  },
-};
+  };
+}
 
+/**
+ * Creates the NextAuth configuration with dependency injection
+ * @param prismaClient PrismaClient instance to use for database operations
+ * @returns NextAuthOptions configuration
+ */
+export function createAuthConfig(prismaClient: PrismaClient = prisma): NextAuthOptions {
+  return {
+    adapter: PrismaAdapter(prismaClient),
+    providers: createProviders(),
+    callbacks: createCallbacks(prismaClient),
+    pages: {
+      signIn: '/login',
+    },
+    session: {
+      strategy: 'jwt',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    },
+    // If NEXTAUTH_URL is not explicitly set or it contains an environment variable placeholder,
+    // use our dynamic detection
+    ...(!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('${')
+      ? { url: getBaseUrl() }
+      : {}),
+    secret: process.env.NEXTAUTH_SECRET,
+    events: createEventHandlers(),
+  };
+}
+
+// Create the default auth configuration using the default prisma instance
+export const authConfig = createAuthConfig();
+
+// Export the NextAuth handlers with the default configuration
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
 /**
@@ -362,33 +390,30 @@ async function updateTokenWithUserData(token: JWT, user: any): Promise<JWT> {
 }
 
 /**
- * Refreshes a JWT token with the latest user data from the database
+ * Gets user data from database for token refresh
+ * @param token The JWT token to update
+ * @param prismaClient The PrismaClient instance to use (supports dependency injection)
+ * @returns Updated JWT token with fresh user data
  */
-async function refreshTokenFromDatabase(token: JWT): Promise<JWT> {
+async function refreshTokenFromDatabase(
+  token: JWT,
+  prismaClient: PrismaClient = prisma
+): Promise<JWT> {
   try {
-    // Get fresh user data from the database
-    const user = await prisma.user.findUnique({
-      where: { id: token.sub as string },
+    // Fetch fresh user data from database
+    const user = await prismaClient.user.findUnique({
+      where: { id: token.sub },
       select: { name: true, email: true },
     });
 
     if (user) {
-      // Update token with latest data
       token.name = user.name || undefined;
       token.email = user.email || undefined;
-
-      logger.info({
-        msg: 'JWT updated with fresh user data',
-        userId: token.sub,
-      });
     }
-  } catch (error) {
-    logger.error({
-      msg: 'Error refreshing user data in JWT',
-      error: error instanceof Error ? error.message : String(error),
-      userId: token.sub,
-    });
-  }
 
-  return token;
+    return token;
+  } catch (error) {
+    logger.error({ msg: 'Failed to refresh token from database', userId: token.sub, error });
+    return token; // Return original token on error
+  }
 }

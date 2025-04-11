@@ -44,9 +44,9 @@ const sharedConfig = {
   // Improved coverage reporting
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
-    'components/**/*.{js,jsx,ts,tsx}',
     'lib/**/*.{js,jsx,ts,tsx}',
-    'utils/**/*.{js,jsx,ts,tsx}',
+    'components/**/*.{js,jsx,ts,tsx}',
+    'middleware.ts',
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],
@@ -105,10 +105,10 @@ const customJestConfig = {
   // Set coverage thresholds to enforce code quality
   coverageThreshold: {
     global: {
-      statements: 70,
-      branches: 67,
-      functions: 70,
-      lines: 70,
+      statements: 80,
+      branches: 70,
+      functions: 80,
+      lines: 80,
     },
 
     // Add specific threshold for utils-di.ts to account for re-export statements

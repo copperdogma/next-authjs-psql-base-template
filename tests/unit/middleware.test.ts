@@ -22,15 +22,21 @@ const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
 jest.mock('../lib/logger', () => ({
   loggers: {
     middleware: {
+      child: jest.fn().mockReturnValue({
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        trace: jest.fn(),
+      }),
       info: jest.fn(),
-      warn: jest.fn(),
       error: jest.fn(),
+      warn: jest.fn(),
       debug: jest.fn(),
       trace: jest.fn(),
-      child: jest.fn().mockReturnThis(), // Allow chaining like .child().info()
     },
   },
-  getRequestId: jest.fn(() => 'test-request-id'),
+  getRequestId: jest.fn().mockReturnValue('test-request-id'),
 }));
 
 // Helper function to create a mock NextRequest
@@ -134,4 +140,188 @@ describe('Middleware Unit Tests', () => {
   // Note: Wildcard paths like /api/auth/** are difficult to test Exhaustively
   // in unit tests without more complex mocking of the underlying request handling.
   // E2E tests provide better coverage for these.
+});
+
+describe('Middleware with TokenService Dependency Injection', () => {
+  // Mock dependencies
+  const mockUserData = {
+    sub: 'user-123',
+    name: 'Test User',
+    email: 'test@example.com',
+  };
+
+  // Create mock token service
+  const mockTokenService = {
+    getToken: jest.fn(),
+  };
+
+  // Mock NextResponse
+  const mockNextResponseNext = jest.fn().mockReturnValue({
+    headers: new Headers(),
+  });
+  const mockNextResponseRedirect = jest.fn().mockReturnValue({
+    headers: new Headers(),
+  });
+
+  // Save original implementations
+  const originalNext = NextResponse.next;
+  const originalRedirect = NextResponse.redirect;
+
+  beforeAll(() => {
+    // Mock NextResponse methods
+    NextResponse.next = mockNextResponseNext;
+    NextResponse.redirect = mockNextResponseRedirect;
+  });
+
+  afterAll(() => {
+    // Restore original implementation
+    NextResponse.next = originalNext;
+    NextResponse.redirect = originalRedirect;
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should allow access to public routes without authentication', async () => {
+    // Set up token service to return null (no auth)
+    mockTokenService.getToken.mockResolvedValue(null);
+
+    // Create mock request for public route
+    const mockRequest = new NextRequest('http://localhost/', {
+      method: 'GET',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was called
+    expect(mockTokenService.getToken).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Verify NextResponse.next was called (allowing the request)
+    expect(mockNextResponseNext).toHaveBeenCalled();
+
+    // Verify NextResponse.redirect was not called
+    expect(mockNextResponseRedirect).not.toHaveBeenCalled();
+  });
+
+  it('should redirect unauthenticated users from protected routes to login', async () => {
+    // Set up token service to return null (no auth)
+    mockTokenService.getToken.mockResolvedValue(null);
+
+    // Create mock request for protected route
+    const mockRequest = new NextRequest('http://localhost/dashboard', {
+      method: 'GET',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was called
+    expect(mockTokenService.getToken).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Verify NextResponse.redirect was called with login URL
+    expect(mockNextResponseRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: '/login' })
+    );
+  });
+
+  it('should allow authenticated users to access protected routes', async () => {
+    // Set up token service to return user data (authenticated)
+    mockTokenService.getToken.mockResolvedValue(mockUserData);
+
+    // Create mock request for protected route
+    const mockRequest = new NextRequest('http://localhost/dashboard', {
+      method: 'GET',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was called
+    expect(mockTokenService.getToken).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Verify NextResponse.next was called (allowing the request)
+    expect(mockNextResponseNext).toHaveBeenCalled();
+
+    // Verify NextResponse.redirect was not called
+    expect(mockNextResponseRedirect).not.toHaveBeenCalled();
+  });
+
+  it('should redirect authenticated users from login to dashboard', async () => {
+    // Set up token service to return user data (authenticated)
+    mockTokenService.getToken.mockResolvedValue(mockUserData);
+
+    // Create mock request for login page
+    const mockRequest = new NextRequest('http://localhost/login', {
+      method: 'GET',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was called
+    expect(mockTokenService.getToken).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Verify NextResponse.redirect was called with dashboard URL
+    expect(mockNextResponseRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: '/dashboard' })
+    );
+  });
+
+  it('should skip auth processing for API routes', async () => {
+    // Create mock request for API route
+    const mockRequest = new NextRequest('http://localhost/api/auth/login', {
+      method: 'POST',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was not called
+    expect(mockTokenService.getToken).not.toHaveBeenCalled();
+
+    // Verify NextResponse.next was called (allowing the request)
+    expect(mockNextResponseNext).toHaveBeenCalled();
+  });
+
+  it('should handle errors gracefully', async () => {
+    // Set up token service to throw error
+    const mockError = new Error('Token service error');
+    mockTokenService.getToken.mockRejectedValue(mockError);
+
+    // Create mock request
+    const mockRequest = new NextRequest('http://localhost/dashboard', {
+      method: 'GET',
+    });
+
+    // Call middleware with injected token service
+    await middleware(mockRequest, mockTokenService);
+
+    // Verify token service was called
+    expect(mockTokenService.getToken).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Verify NextResponse.next was called (default fallback response)
+    expect(mockNextResponseNext).toHaveBeenCalled();
+  });
+
+  it('should use default token service if none is provided', async () => {
+    // Create a spy on getToken from next-auth/jwt
+    const getTokenSpy = jest.spyOn(require('next-auth/jwt'), 'getToken');
+    getTokenSpy.mockResolvedValue(null);
+
+    // Create mock request for public route
+    const mockRequest = new NextRequest('http://localhost/', {
+      method: 'GET',
+    });
+
+    // Call middleware without injected token service
+    await middleware(mockRequest);
+
+    // Verify the default token service was used
+    expect(getTokenSpy).toHaveBeenCalledWith({ req: mockRequest });
+
+    // Cleanup
+    getTokenSpy.mockRestore();
+  });
 });

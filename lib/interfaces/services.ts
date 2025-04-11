@@ -50,6 +50,16 @@ export interface LoggerService {
    * Log at debug level
    */
   debug: (obj: object | string, msg?: string) => void;
+
+  /**
+   * Log at trace level
+   */
+  trace?: (obj: object | string, msg?: string) => void;
+
+  /**
+   * Creates a child logger with additional context
+   */
+  child?: (bindings: Record<string, unknown>) => LoggerService;
 }
 
 export interface FirebaseAdminService {
@@ -70,5 +80,10 @@ export interface FirebaseAdminService {
      * Updates a Firebase user
      */
     updateUser: (uid: string, data: { displayName?: string }) => Promise<unknown>;
+
+    /**
+     * Creates a custom token for authentication
+     */
+    createCustomToken: (uid: string, claims?: Record<string, unknown>) => Promise<string>;
   };
 }

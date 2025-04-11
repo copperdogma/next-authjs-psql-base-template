@@ -2,67 +2,82 @@
  * @jest-environment node
  */
 
-import { jest } from '@jest/globals';
-// Import functions directly
 import {
   cleanupExpiredSessions,
   cleanupUserSessions,
   scheduleSessionCleanup,
 } from '../../../lib/db/session-cleanup-service';
-// Import prisma types etc.
-import { PrismaClient, Session } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { jest } from '@jest/globals';
 
-// Create a deep mock of the PrismaClient
-const mockPrismaClient = mockDeep<PrismaClient>();
+// Mock the entire prisma module
+jest.mock('../../../lib/prisma');
 
-// Mock the entire prisma module to export our deep mock
-jest.mock('../../../lib/prisma', () => ({
-  __esModule: true,
-  prisma: mockPrismaClient,
+// Import the mocked prisma client after mocking
+import { prisma } from '../../../lib/prisma';
+import { resetPrismaMock } from '../../../lib/__mocks__/prisma';
+
+// Mock logger
+jest.mock('../../../lib/logger', () => ({
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  })),
+  loggers: {
+    db: {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    },
+  },
 }));
 
-// Define the specific mock instance we'll interact with
-let prismaMock: DeepMockProxy<PrismaClient>;
+describe('Session Cleanup Service Functions', () => {
+  // Track original setInterval
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
 
-// Spies for timer functions - use any for simplicity
-let setIntervalSpy: any;
-let clearIntervalSpy: any;
-
-// Remove old spy definitions
-// let deleteManySpy: any;
-// let findFirstSpy: any;
-
-// Re-skip the suite due to persistent Prisma mocking issues in Jest/Node
-describe.skip('Session Cleanup Service Functions', () => {
   beforeEach(() => {
-    // Reset the deep mock before each test
-    mockReset(mockPrismaClient);
-    prismaMock = mockPrismaClient; // Assign for use in tests
+    jest.clearAllMocks();
+    resetPrismaMock();
 
-    jest.useFakeTimers();
-    setIntervalSpy = jest.spyOn(global, 'setInterval');
-    clearIntervalSpy = jest.spyOn(global, 'clearInterval');
-    // Remove old spy setup
-    // deleteManySpy = jest.spyOn(prisma.session, 'deleteMany');
-    // findFirstSpy = jest.spyOn(prisma.session, 'findFirst');
+    // Setup mocks directly
+    prisma.session.deleteMany = jest.fn().mockResolvedValue({ count: 3 });
+    prisma.session.findFirst = jest.fn().mockResolvedValue(null);
+
+    // Setup mock for setInterval
+    global.setInterval = jest.fn().mockReturnValue(123) as any;
+    global.clearInterval = jest.fn() as any;
   });
 
   afterEach(() => {
-    jest.useRealTimers();
-    // No need for jest.restoreAllMocks() if only using mockReset
+    // Reset the mocks
+    jest.resetAllMocks();
+  });
+
+  afterAll(() => {
+    // Restore original setInterval
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
   });
 
   describe('cleanupExpiredSessions', () => {
-    it('cleans up expired sessions with default parameters', async () => {
-      // Configure the deep mock method
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 5 });
+    it('should delete expired sessions', async () => {
+      // Arrange
+      const deleteResult = { count: 5 };
+      prisma.session.deleteMany = jest.fn().mockResolvedValue(deleteResult);
 
-      // Call the exported function
-      await cleanupExpiredSessions({});
+      // Act
+      const result = await cleanupExpiredSessions();
 
-      // Assert on the deep mock method
-      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
+      // Assert
+      expect(result).toEqual({
+        count: 5,
+        timestamp: expect.any(Date),
+      });
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           expires: {
             lt: expect.any(Date),
@@ -71,213 +86,139 @@ describe.skip('Session Cleanup Service Functions', () => {
       });
     });
 
-    it('cleans up expired sessions with custom date', async () => {
-      // Configure the deep mock method
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 3 });
-      const customDate = new Date('2023-01-01');
+    it('should handle errors by rethrowing them', async () => {
+      // Arrange
+      const testError = new Error('Test error');
+      prisma.session.deleteMany = jest.fn().mockRejectedValue(testError);
 
-      // Call the exported function
-      await cleanupExpiredSessions({ before: customDate });
-
-      // Assert on the deep mock method
-      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
-        where: {
-          expires: {
-            lt: customDate,
-          },
-        },
-      });
-    });
-
-    // Add test for error handling
-    it('throws and logs error on prisma failure', async () => {
-      const testError = new Error('Prisma Error');
-      prismaMock.session.deleteMany.mockRejectedValue(testError);
-      // Spy on logger if needed, or just check for throw
-      await expect(cleanupExpiredSessions({})).rejects.toThrow('Prisma Error');
-      // Optionally assert logger was called
+      // Act & Assert
+      await expect(cleanupExpiredSessions()).rejects.toThrow(testError);
     });
   });
 
   describe('cleanupUserSessions', () => {
-    it('cleans up all sessions for a user', async () => {
-      // Configure the deep mock method
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 2 });
-      const userId = 'test-user';
+    it('should delete all sessions for a user when keepCurrent is false', async () => {
+      // Arrange
+      const userId = 'user-123';
 
-      // Call the exported function
-      await cleanupUserSessions(userId);
+      // Act
+      const result = await cleanupUserSessions(userId);
 
-      // Assert on the deep mock method
-      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
+      // Assertions
+      expect(result).toEqual({
+        count: 3,
+        keptCurrentSession: false,
+        timestamp: expect.any(Date),
+      });
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId,
         },
       });
-      // Check the findFirst mock was not called
-      expect(prismaMock.session.findFirst).not.toHaveBeenCalled();
     });
 
-    it('keeps current session when specified', async () => {
-      const mockSession: Session = {
-        id: 'current-session-id',
-        sessionToken: 'mock-token',
-        userId: 'test-user',
-        expires: new Date(Date.now() + 3600 * 1000),
-      };
-      // Configure the deep mock methods
-      prismaMock.session.findFirst.mockResolvedValue(mockSession);
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 1 });
-      const userId = 'test-user';
+    it('should keep the most recent session when keepCurrent is true', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const currentSessionId = 'session-456';
 
-      // Call the exported function
-      await cleanupUserSessions(userId, { keepCurrent: true });
+      // Setup mock for findFirst to return the current session
+      prisma.session.findFirst = jest.fn().mockResolvedValue({ id: currentSessionId });
 
-      // Assert on the deep mock methods
-      expect(prismaMock.session.findFirst).toHaveBeenCalledWith({
-        where: { userId },
-        orderBy: { expires: 'desc' },
+      // Act
+      const result = await cleanupUserSessions(userId, { keepCurrent: true });
+
+      // Assertions
+      expect(result).toEqual({
+        count: 3,
+        keptCurrentSession: true,
+        timestamp: expect.any(Date),
       });
-
-      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId,
           id: {
-            not: 'current-session-id',
+            not: currentSessionId,
           },
         },
       });
     });
 
-    // Add test for findFirst error handling
-    it('throws and logs error on findFirst failure when keepCurrent=true', async () => {
-      const testError = new Error('Find Error');
-      prismaMock.session.findFirst.mockRejectedValue(testError);
-      const userId = 'test-user';
+    it('should throw an error if finding the current session fails', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const testError = new Error('Test error');
+      prisma.session.findFirst = jest.fn().mockRejectedValue(testError);
 
-      await expect(cleanupUserSessions(userId, { keepCurrent: true })).rejects.toThrow(
-        'Find Error'
-      );
-      expect(prismaMock.session.deleteMany).not.toHaveBeenCalled();
-    });
-
-    // Add test for deleteMany error handling
-    it('throws and logs error on deleteMany failure', async () => {
-      const testError = new Error('Delete Error');
-      prismaMock.session.deleteMany.mockRejectedValue(testError);
-      const userId = 'test-user';
-
-      await expect(cleanupUserSessions(userId)).rejects.toThrow('Delete Error');
+      // Act & Assert
+      await expect(cleanupUserSessions(userId, { keepCurrent: true })).rejects.toThrow(testError);
     });
   });
 
   describe('scheduleSessionCleanup', () => {
-    let cleanupExpiredSessionsSpy: any;
-
-    beforeEach(() => {
-      // Dynamically import the module *within* beforeEach to spy on its exports
-      const cleanupService = require('../../../lib/db/session-cleanup-service');
-      cleanupExpiredSessionsSpy = jest.spyOn(cleanupService, 'cleanupExpiredSessions');
-    });
-
-    afterEach(() => {
-      cleanupExpiredSessionsSpy.mockRestore();
-    });
-
-    it('sets up interval with default interval', () => {
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 0 });
-      // Call the exported function
-      scheduleSessionCleanup();
-      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 24 * 60 * 60 * 1000);
-      // Check if the spied function was called (initial run due to runImmediately=true)
-      expect(cleanupExpiredSessionsSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('sets up interval with custom interval', () => {
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 0 });
-      const customInterval = 3600000;
-      // Call the exported function
-      scheduleSessionCleanup({ intervalMs: customInterval });
-      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), customInterval);
-      expect(cleanupExpiredSessionsSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('does not run immediately if runImmediately is false', () => {
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 0 });
-      scheduleSessionCleanup({ runImmediately: false });
-      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 24 * 60 * 60 * 1000);
-      expect(cleanupExpiredSessionsSpy).not.toHaveBeenCalled(); // Should not run immediately
-    });
-
-    it('cancels the interval timer', () => {
-      prismaMock.session.deleteMany.mockResolvedValue({ count: 0 });
-      // Call the exported function
+    it('should schedule cleanup with default interval', () => {
+      // Act
       const cancelFn = scheduleSessionCleanup();
-      // Initial run happens
-      expect(cleanupExpiredSessionsSpy).toHaveBeenCalledTimes(1);
 
-      jest.advanceTimersByTime(1); // Advance time slightly
-      const intervalId = setIntervalSpy.mock.results[0]?.value;
-      expect(intervalId).toBeDefined();
+      // Assert cleanup was scheduled with the correct interval
+      expect(global.setInterval).toHaveBeenCalledWith(expect.any(Function), 24 * 60 * 60 * 1000); // Default is 24 hours
+
+      // Test cancel function
       cancelFn();
-      expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
+      expect(global.clearInterval).toHaveBeenCalledWith(123);
     });
 
-    it('calls onComplete when cleanup succeeds', async () => {
-      const onCompleteMock = jest.fn();
-      const mockResult = { count: 10, timestamp: new Date() };
-      // Configure the spy on the imported function for the initial call
-      cleanupExpiredSessionsSpy.mockResolvedValueOnce(mockResult);
+    it('should schedule cleanup with custom interval', () => {
+      // Arrange
+      const intervalMs = 1800000; // 30 minutes
 
-      // Call the exported function
-      scheduleSessionCleanup({ onComplete: onCompleteMock });
+      // Act
+      scheduleSessionCleanup({ intervalMs });
 
-      // Allow promises to resolve for the initial call
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(onCompleteMock).toHaveBeenCalledTimes(1);
-      expect(onCompleteMock).toHaveBeenCalledWith(expect.objectContaining({ count: 10 }));
-
-      // Configure the spy for the interval call
-      cleanupExpiredSessionsSpy.mockResolvedValueOnce({ count: 3 });
-      expect(setIntervalSpy).toHaveBeenCalledTimes(1);
-      const intervalCallback = setIntervalSpy.mock.calls[0][0];
-      await intervalCallback(); // Execute the callback
-
-      expect(cleanupExpiredSessionsSpy).toHaveBeenCalledTimes(2);
-      expect(onCompleteMock).toHaveBeenCalledTimes(2);
-      expect(onCompleteMock).toHaveBeenCalledWith(expect.objectContaining({ count: 3 }));
+      // Assert
+      expect(global.setInterval).toHaveBeenCalledWith(expect.any(Function), intervalMs);
     });
 
-    it('calls onError when cleanup fails', async () => {
-      const testError = new Error('Cleanup Failed');
-      const onErrorMock = jest.fn();
-      // Configure the spy to reject for the initial call
-      cleanupExpiredSessionsSpy.mockRejectedValueOnce(testError);
+    it('should run cleanup immediately by default', async () => {
+      // Arrange
+      const mockOnComplete = jest.fn();
 
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Act
+      scheduleSessionCleanup({ onComplete: mockOnComplete });
 
-      // Call the exported function
-      scheduleSessionCleanup({ onError: onErrorMock });
+      // Wait for promises to resolve
+      await new Promise(process.nextTick);
 
-      // Allow promises to resolve/reject for the initial call
-      await Promise.resolve().catch(() => {});
-      await Promise.resolve().catch(() => {});
+      // Assert - cleanupExpiredSessions should have been called
+      expect(prisma.session.deleteMany).toHaveBeenCalled();
+      expect(mockOnComplete).toHaveBeenCalled();
+    });
 
-      expect(onErrorMock).toHaveBeenCalledTimes(1);
-      expect(onErrorMock).toHaveBeenCalledWith(testError);
+    it('should not run cleanup immediately when runImmediately is false', async () => {
+      // Act
+      scheduleSessionCleanup({ runImmediately: false });
 
-      // Configure the spy to reject for the interval call
-      cleanupExpiredSessionsSpy.mockRejectedValueOnce(new Error('Interval Error'));
-      expect(setIntervalSpy).toHaveBeenCalledTimes(1);
-      const intervalCallback = setIntervalSpy.mock.calls[0][0];
-      await intervalCallback(); // Execute the callback
+      // Wait for promises to resolve
+      await new Promise(process.nextTick);
 
-      expect(cleanupExpiredSessionsSpy).toHaveBeenCalledTimes(2);
-      expect(onErrorMock).toHaveBeenCalledTimes(2);
+      // Assert - cleanupExpiredSessions should not have been called
+      expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+    });
 
-      consoleErrorSpy.mockRestore();
+    it('should handle errors during cleanup', async () => {
+      // Arrange
+      const testError = new Error('Test error');
+      prisma.session.deleteMany = jest.fn().mockRejectedValue(testError);
+      const mockOnError = jest.fn();
+
+      // Act
+      scheduleSessionCleanup({ onError: mockOnError });
+
+      // Wait for promises to resolve
+      await new Promise(process.nextTick);
+
+      // Assert - error handler should have been called
+      expect(mockOnError).toHaveBeenCalledWith(testError);
     });
   });
 });

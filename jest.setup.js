@@ -1,11 +1,64 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Mock environment variables
-process.env.NODE_ENV = 'test';
+// Mock environment variables for tests
+const DEFAULT_ENV = {
+  NODE_ENV: 'test',
+  EXPERIMENTAL_VM_MODULES: 'true',
+  NEXTAUTH_SECRET: 'test-secret-key',
+  ALLOW_TEST_ENDPOINTS: 'true',
+  FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
+  FIRESTORE_EMULATOR_HOST: 'localhost:8080',
+};
 
-// Enable experimental features for ESM
-process.env.EXPERIMENTAL_VM_MODULES = 'true';
+// Setup the default environment
+const originalEnv = { ...process.env };
+Object.keys(DEFAULT_ENV).forEach(key => {
+  process.env[key] = DEFAULT_ENV[key];
+});
+
+// Helper to reset environment between tests
+global.resetTestEnv = () => {
+  Object.keys(DEFAULT_ENV).forEach(key => {
+    process.env[key] = DEFAULT_ENV[key];
+  });
+};
+
+// Helper to mock environment variables temporarily
+global.withMockedEnv = async (mockEnv, callback) => {
+  const originalValues = {};
+
+  // Save original values
+  Object.keys(mockEnv).forEach(key => {
+    originalValues[key] = process.env[key];
+    process.env[key] = mockEnv[key];
+  });
+
+  try {
+    // Run the callback with mocked environment
+    return await callback();
+  } finally {
+    // Restore original values
+    Object.keys(mockEnv).forEach(key => {
+      if (originalValues[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = originalValues[key];
+      }
+    });
+  }
+};
+
+// Restore original environment after all tests
+afterAll(() => {
+  Object.keys(process.env).forEach(key => {
+    if (!(key in originalEnv)) {
+      delete process.env[key];
+    } else {
+      process.env[key] = originalEnv[key];
+    }
+  });
+});
 
 // Mock window.matchMedia only in jsdom environment
 if (typeof window !== 'undefined') {
@@ -27,6 +80,7 @@ if (typeof window !== 'undefined') {
 // Reset all mocks after each test
 afterEach(() => {
   jest.clearAllMocks();
+  global.resetTestEnv();
 });
 
 // Throw errors when a `console.error` or `console.warn` happens

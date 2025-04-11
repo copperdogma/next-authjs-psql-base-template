@@ -1,0 +1,42 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TASK EXECUTION PROTOCOL
+
+## PHASE 1: RESEARCH & ANALYSIS
+1. Research the feature/task using web search
+2. Analyze existing codebase for patterns and standards
+3. OUTPUT: Summary of findings and best practices identified
+
+## PHASE 2: PLANNING
+1. Create a markdown checklist of work to be completed
+2. Identify any unclear requirements or architectural decisions
+3. OUTPUT: Detailed task checklist and list of questions (if any)
+
+## PHASE 3: TEST DESIGN
+1. Following TDD principles, write failing tests first
+2. Ensure tests cover core functionality, edge cases, and error handling
+3. OUTPUT: Test implementation that fails due to missing feature
+
+## PHASE 4: IMPLEMENTATION
+1. Apply SOLID principles:
+   - Single Responsibility
+   - Open/Closed
+   - Liskov Substitution
+   - Interface Segregation
+   - Dependency Inversion
+2. Use dependency injection and appropriate design patterns
+3. Keep code clean, focused, and maintainable
+4. OUTPUT: Minimal, elegant implementation that passes tests
+
+## PHASE 5: VERIFICATION
+1. Ensure all tests pass
+2. Verify against requirements and best practices
+3. Check for security and performance considerations
+4. OUTPUT: Final implementation with passing tests
+
+IMPORTANT: Do not proceed to next phase until completing current phase's outputs.
+Ask questions when requirements are unclear before proceeding.
+The goal is exemplary code that balances best practices with minimal, elegant implementation.

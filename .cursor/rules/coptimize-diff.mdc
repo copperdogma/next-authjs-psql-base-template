@@ -11,4 +11,5 @@ Check over the changes made in the diff and do the following:
 
 1. Ensure they meet the original requirements.
 2. Make sure there's no abandoned code leftover from approaches that didn't work.
-3. Ensure all code is as efficient, minimal, and elegant as possible.
+3. Ensure we're following best practices: SOLID, DRY, TDD, YAGNI, etc.
+4. Ensure all code is as efficient, minimal, and elegant as possible.
