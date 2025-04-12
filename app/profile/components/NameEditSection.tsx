@@ -19,6 +19,53 @@ interface NameEditSectionProps {
   };
 }
 
+/**
+ * Section header with edit button
+ */
+function SectionHeader({
+  isEditingName,
+  setIsEditingName,
+}: {
+  isEditingName: boolean;
+  setIsEditingName: (isEditing: boolean) => void;
+}) {
+  return (
+    <Typography
+      variant="overline"
+      color="text.secondary"
+      sx={{
+        fontWeight: 500,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
+    >
+      Display Name
+      {!isEditingName && (
+        <Button
+          startIcon={<EditIcon />}
+          size="small"
+          onClick={() => setIsEditingName(true)}
+          sx={{ ml: 2 }}
+        >
+          Edit
+        </Button>
+      )}
+    </Typography>
+  );
+}
+
+/**
+ * Display name value when not editing
+ */
+function DisplayNameValue({ name }: { name: string | null | undefined }) {
+  return (
+    <Typography variant="h6" sx={{ mt: 1 }}>
+      {name || 'Not provided'}
+    </Typography>
+  );
+}
+
 export default function NameEditSection({
   user,
   isEditingName,
@@ -39,28 +86,7 @@ export default function NameEditSection({
 
   return (
     <Box>
-      <Typography
-        variant="overline"
-        color="text.secondary"
-        sx={{
-          fontWeight: 500,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        Display Name
-        {!isEditingName && (
-          <Button
-            startIcon={<EditIcon />}
-            size="small"
-            onClick={() => setIsEditingName(true)}
-            sx={{ ml: 2 }}
-          >
-            Edit
-          </Button>
-        )}
-      </Typography>
+      <SectionHeader isEditingName={isEditingName} setIsEditingName={setIsEditingName} />
 
       {isEditingName ? (
         <EditNameForm
@@ -70,9 +96,7 @@ export default function NameEditSection({
           onCancel={() => setIsEditingName(false)}
         />
       ) : (
-        <Typography variant="h6" sx={{ mt: 1 }}>
-          {user.name || 'Not provided'}
-        </Typography>
+        <DisplayNameValue name={user.name} />
       )}
     </Box>
   );

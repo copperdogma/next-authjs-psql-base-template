@@ -1,37 +1,12 @@
 import { NextAuthOptions } from 'next-auth';
 import Google from 'next-auth/providers/google';
-import { default as NextAuth } from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from './prisma';
+import { prisma } from '../prisma';
 import { JWT } from 'next-auth/jwt';
 import { PrismaClient } from '@prisma/client';
-import { LoggerService } from './interfaces/services';
-import { createContextLogger } from './services/logger-service';
+import { LoggerService } from '../interfaces/services';
+import { createContextLogger } from './logger-service';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  signInWithLogging,
-  signOutWithLogging,
-  createCorrelationId,
-  extractClientInfo,
-  logSignInSuccess,
-  logSignInFailure,
-  logSignInError,
-} from './auth-logging';
-import type { SignInLoggingParams, SignInFailureParams, SignInErrorParams } from './auth-logging';
-
-// Re-export functions from auth-logging.ts
-export {
-  signInWithLogging,
-  signOutWithLogging,
-  createCorrelationId,
-  extractClientInfo,
-  logSignInSuccess,
-  logSignInFailure,
-  logSignInError,
-};
-
-// Re-export types from auth-logging.ts
-export type { SignInLoggingParams, SignInFailureParams, SignInErrorParams };
 
 /**
  * Helper function to dynamically determine the base URL
@@ -99,47 +74,47 @@ export class AuthService {
   /**
    * Log a successful sign-in attempt
    */
-  public logSignInSuccess(params: { provider: string; correlationId: string }): void {
+  public logSignInSuccess(params: {
+    userId: string;
+    provider: string;
+    email?: string;
+    name?: string;
+  }): void {
     this.logger.info({
       msg: 'Sign-in attempt completed',
+      userId: params.userId,
       provider: params.provider,
-      correlationId: params.correlationId,
-      success: true,
-      duration: 100, // Mock duration for testing
+      email: params.email,
+      name: params.name,
     });
   }
 
   /**
    * Log a failed sign-in attempt
    */
-  public logSignInFailure(params: {
-    provider: string;
-    error: string;
-    correlationId: string;
-  }): void {
+  public logSignInFailure(params: { provider: string; error: string; email?: string }): void {
     this.logger.warn({
       msg: 'Sign-in attempt failed',
       provider: params.provider,
       error: params.error,
-      correlationId: params.correlationId,
-      duration: 100, // Mock duration for testing
+      email: params.email,
     });
   }
 
   /**
    * Log an error during sign-in
    */
-  public logSignInError(params: { provider: string; error: Error; correlationId: string }): void {
+  public logSignInError(params: { provider: string; error: unknown }): void {
     this.logger.error({
       msg: 'Sign-in attempt threw exception',
       provider: params.provider,
-      error: {
-        message: params.error.message,
-        name: params.error.name,
-        stack: params.error.stack,
-      },
-      correlationId: params.correlationId,
-      duration: 100, // Mock duration for testing
+      error:
+        params.error instanceof Error
+          ? {
+              message: params.error.message,
+              stack: params.error.stack,
+            }
+          : String(params.error),
     });
   }
 
@@ -328,21 +303,3 @@ export class AuthService {
     }
   }
 }
-
-/**
- * Factory function to create NextAuth configuration with dependency injection
- * This is for backward compatibility
- */
-export function createAuthConfig(
-  prismaClient: PrismaClient = prisma,
-  logger: LoggerService = createContextLogger('auth')
-): NextAuthOptions {
-  const authService = new AuthService(logger, prismaClient);
-  return authService.createAuthConfig();
-}
-
-// Create the default auth configuration for backward compatibility
-export const authConfig = createAuthConfig();
-
-// This is the default export for NextAuth
-export default NextAuth(authConfig);

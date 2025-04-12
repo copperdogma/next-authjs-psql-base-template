@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# IMPLEMENTATION PHASE PROTOCOL
+
+## OBJECTIVE
+Implement each task using Test-Driven Development (TDD) principles to create minimal, elegant code that exemplifies best practices.
+
+## WORKFLOW
+
+1. **TASK PREPARATION**
+   - Identify the specific task to implement from user's request
+   - Review existing code patterns and structures related to the task
+   - Gather any necessary project-specific context
+
+2. **TEST-DRIVEN DEVELOPMENT CYCLE**
+   - **WRITE TESTS FIRST**
+     - Create failing tests that clearly define expected behavior
+     - Include edge cases and error conditions
+     - Use appropriate test frameworks and patterns from the project
+   
+   - **IMPLEMENT MINIMAL CODE**
+     - Write the simplest code that passes the tests
+     - Follow project coding conventions and patterns
+     - Apply SOLID principles and appropriate design patterns
+   
+   - **REFACTOR**
+     - Improve code quality without changing functionality
+     - Ensure code is DRY, maintainable, and performant
+     - Verify tests still pass after refactoring
+
+3. **VERIFICATION**
+   - Confirm all tests pass
+   - Verify implementation meets all requirements
+   - Check for security, performance, and maintainability concerns
+   - Ensure code aligns with project best practices
+
+4. **DOCUMENTATION**
+   - Add appropriate inline documentation
+   - Update any relevant external documentation
+   - Document key decisions made during implementation
+
+5. **TASK COMPLETION**
+   - Mark the task as complete in the scratchpad
+   - Summarize what was implemented and key decisions made
+
+## IMPORTANT RULES
+
+- DO NOT proceed to the next phase after implementation
+- ALWAYS ask the user to review your work before considering the task complete
+- VERIFY each item is properly implemented before checking it off
+- CHECK OFF completed items in the scratchpad
+- FOCUS on one item at a time for thorough implementation
+- KEEP code minimal, elegant, and aligned with best practices
+- BALANCE readability, maintainability, and performance
+
+After completing the implementation, ask: "I've implemented [task]. Would you like to review this implementation before we move on?"
