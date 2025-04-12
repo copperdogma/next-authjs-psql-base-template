@@ -1,15 +1,6 @@
 // TODO: NextAuth adapter tests are currently disabled due to issues with Firebase/Prisma integration
 // These tests will be fixed in a future update
 
-// Define mock logger functions BEFORE any jest.mock calls
-const mockLoggerFunctions = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-  trace: jest.fn(),
-};
-
 // Apply all jest.mock calls BEFORE any imports
 jest.mock('../../../lib/env', () => ({
   getEnv: jest.fn().mockReturnValue({
@@ -18,12 +9,28 @@ jest.mock('../../../lib/env', () => ({
   }),
 }));
 
-jest.mock('../../../lib/logger', () => ({
-  createContextLogger: jest.fn(() => mockLoggerFunctions),
-  loggers: {
-    auth: mockLoggerFunctions,
-  },
-}));
+// Mock the logger with inline functions to avoid variable initialization issues
+jest.mock('../../../lib/logger', () => {
+  // Create the mock functions directly in the factory
+  return {
+    createContextLogger: jest.fn(() => ({
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      trace: jest.fn(),
+    })),
+    loggers: {
+      auth: {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        trace: jest.fn(),
+      },
+    },
+  };
+});
 
 jest.mock('@auth/prisma-adapter', () => ({
   PrismaAdapter: jest.fn().mockReturnValue({
@@ -53,8 +60,11 @@ jest.mock('../../../lib/auth', () => {
   // Import the actual module
   const originalModule = jest.requireActual('../../../lib/auth');
 
+  // Get the mock logger from our previous mock
+  const mockLogger = jest.requireMock('../../../lib/logger').loggers.auth;
+
   // Create a mock AuthService instance using our mock logger
-  const mockAuthService = new originalModule.AuthService(mockLoggerFunctions);
+  const mockAuthService = new originalModule.AuthService(mockLogger);
 
   // Return a modified version of the original module
   return {
@@ -74,11 +84,15 @@ import { PrismaClient } from '@prisma/client';
 import { LoggerService } from '../../../lib/interfaces/services';
 import { authConfig } from '../../../lib/auth';
 
+// Get references to the mock functions for verification
+const loggerMock = jest.requireMock('../../../lib/logger');
+const mockLogFunctions = loggerMock.loggers.auth;
+
 // Access and store mock function references for verification
-const mockLogInfo = mockLoggerFunctions.info as jest.Mock;
-const mockLogError = mockLoggerFunctions.error as jest.Mock;
-const mockLogWarn = mockLoggerFunctions.warn as jest.Mock;
-const mockLogDebug = mockLoggerFunctions.debug as jest.Mock;
+const mockLogInfo = mockLogFunctions.info as jest.Mock;
+const mockLogError = mockLogFunctions.error as jest.Mock;
+const mockLogWarn = mockLogFunctions.warn as jest.Mock;
+const mockLogDebug = mockLogFunctions.debug as jest.Mock;
 
 // TODO: Re-skipped due to persistent Prisma/Jest environment issues & ESM transform complexities.
 // Suite fails with Prisma initialization errors ('validator') and/or ESM syntax errors from dependencies

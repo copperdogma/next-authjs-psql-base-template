@@ -1,22 +1,33 @@
-// Define mock logger functions BEFORE any imports or jest.mock calls
-const mockLoggerFunctions = {
+// Define a factory function for creating mock logger functions
+// This avoids the variable initialization issue with jest.mock hoisting
+const getMockLoggerFunctions = () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
   trace: jest.fn(),
-};
+});
 
 // Apply all jest.mock calls BEFORE any imports
 jest.mock('@auth/prisma-adapter', () => ({
   PrismaAdapter: jest.fn().mockReturnValue({ name: 'MockPrismaAdapter' }),
 }));
 
-jest.mock('../../../lib/logger', () => ({
-  loggers: {
-    auth: mockLoggerFunctions,
-  },
-}));
+// Mock the logger with inline functions to avoid variable initialization issues
+jest.mock('../../../lib/logger', () => {
+  // Create the mock functions directly in the factory
+  return {
+    loggers: {
+      auth: {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        trace: jest.fn(),
+      },
+    },
+  };
+});
 
 jest.mock('next-auth/providers/google', () => {
   return {
@@ -29,6 +40,10 @@ jest.mock('next-auth/providers/google', () => {
 import { PrismaClient } from '@prisma/client';
 import { createAuthConfig, authConfig } from '../../../lib/auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
+
+// Get references to the mock functions for verification
+const loggerMock = jest.requireMock('../../../lib/logger');
+const mockLoggerFunctions = loggerMock.loggers.auth;
 
 // TODO: Temporarily skip this test suite due to persistent initialization issues
 // This will be fixed in a future update
