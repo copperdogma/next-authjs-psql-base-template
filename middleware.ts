@@ -358,7 +358,15 @@ export const config = {
     // Apply middleware ONLY to the paths explicitly listed here.
     // Public paths are included to handle redirects (e.g., logged-in user visiting /login).
     // Protected paths are included to enforce authentication.
-    ...publicPaths,
-    ...protectedPaths,
+    '/',
+    '/login',
+    '/about',
+    '/api/health',
+    '/api/auth/:path*',
+    '/api/log/client',
+    '/api/test/:path*',
+    '/dashboard',
+    '/profile',
+    '/settings',
   ],
 };

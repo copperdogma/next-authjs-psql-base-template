@@ -60,6 +60,11 @@ export interface LoggerService {
    * Creates a child logger with additional context
    */
   child?: (bindings: Record<string, unknown>) => LoggerService;
+
+  /**
+   * Optional context for the logger, can contain metadata like requestId
+   */
+  context?: any;
 }
 
 export interface FirebaseAdminService {

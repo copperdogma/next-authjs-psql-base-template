@@ -5,6 +5,8 @@ import { User } from 'next-auth';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { useEffect } from 'react';
+import { toast } from '@/components/ui/Toaster';
 
 interface NameEditSectionProps {
   user: User;
@@ -24,6 +26,17 @@ export default function NameEditSection({
   formAction,
   state,
 }: NameEditSectionProps) {
+  // Show toast notification when state changes
+  useEffect(() => {
+    if (state.message) {
+      if (state.success) {
+        toast.success(state.message);
+      } else {
+        toast.error(state.message);
+      }
+    }
+  }, [state.message, state.success]);
+
   return (
     <Box>
       <Typography

@@ -11,8 +11,11 @@ test.describe('Health API', () => {
     // Verify status code is 200
     expect(response.status()).toBe(200);
 
-    // Verify the response body contains the expected values
+    // Log the actual response for debugging
     const data = await response.json();
+    console.log('Health API Response:', JSON.stringify(data, null, 2));
+
+    // Verify the response body contains the expected values
     expect(data).toMatchObject({
       status: 'ok',
       timestamp: expect.any(String),

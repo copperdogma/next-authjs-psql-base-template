@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { Logger } from 'pino';
 import { prisma } from '../prisma';
-import { loggers } from '../logger';
+import { LoggerService } from '../interfaces/services';
+import { createContextLogger } from '../services/logger-service';
 
 /**
  * SessionCleanupService provides functionality for managing and cleaning up user sessions.
@@ -46,28 +46,45 @@ export interface SessionCleanupService {
 }
 
 /**
- * Helper function to initialize and configure a logger for database operations
+ * Helper function to ensure a logger with proper context for database operations.
+ * If the logger has child method, creates a child logger with db component.
+ * Otherwise returns the original logger.
  */
-function setupLogger(logger: Logger): Logger {
-  // Create a logger with component context - handle both pino logger formats
-  // In tests, the mock logger may not have child method properly implemented
-  let dbLogger = logger;
-  if (typeof logger.child === 'function') {
+function setupLogger(logger?: LoggerService): LoggerService {
+  if (!logger) {
+    // Create a default logger with DB context
+    return createContextLogger('db', {
+      transport:
+        process.env.NODE_ENV === 'production'
+          ? {
+              target: 'pino/file',
+              options: {
+                destination: process.env.LOG_FILE || 'logs/db.log',
+                mkdir: true,
+              },
+            }
+          : undefined,
+    });
+  }
+
+  // If logger has child method, create a child logger with db component
+  if (logger.child && typeof logger.child === 'function') {
     try {
-      dbLogger = logger.child({ component: 'db' });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_e) {
-      // If child fails, fall back to original logger
+      return logger.child({ component: 'db' });
+    } catch {
       console.warn('Failed to create child logger, using base logger instead');
+      return logger;
     }
   }
-  return dbLogger;
+
+  // Fall back to the original logger
+  return logger;
 }
 
 /**
  * Helper function for safely calling logger methods with fallback
  */
-function createSafeLogger(dbLogger: Logger) {
+function createSafeLogger(dbLogger: LoggerService) {
   return (
     level: 'info' | 'error' | 'warn' | 'debug',
     data: Record<string, unknown>,
@@ -256,7 +273,6 @@ function createScheduleSessionCleanup(
 
     // Setup interval for regular cleanup
     const intervalId = setInterval(runJob, intervalMs);
-
     safeLog('info', { intervalMs }, 'Session cleanup scheduled.');
 
     // Return a function to cancel the scheduled cleanup
@@ -268,35 +284,40 @@ function createScheduleSessionCleanup(
 }
 
 /**
- * Creates a SessionCleanupService instance with injected dependencies.
- * @param prisma PrismaClient instance
- * @param logger Logger instance
+ * Creates a SessionCleanupService with dependency injection
+ *
+ * @param prisma - PrismaClient instance to use for database operations
+ * @param logger - LoggerService to use for logging
  * @returns SessionCleanupService implementation
  */
 export function createSessionCleanupService(
-  prisma: PrismaClient,
-  logger: Logger
+  prismaClient: PrismaClient = prisma,
+  logger?: LoggerService
 ): SessionCleanupService {
   const dbLogger = setupLogger(logger);
   const safeLog = createSafeLogger(dbLogger);
 
-  // Create service components
-  const findCurrentSession = createFindCurrentSession(prisma, safeLog);
-  const cleanupExpiredSessions = createCleanupExpiredSessions(prisma, safeLog);
-  const cleanupUserSessions = createCleanupUserSessions(prisma, safeLog, findCurrentSession);
-  const scheduleSessionCleanup = createScheduleSessionCleanup(cleanupExpiredSessions, safeLog);
+  // Create functions with DI
+  const cleanupExpiredSessionsFn = createCleanupExpiredSessions(prismaClient, safeLog);
+  const findCurrentSessionFn = createFindCurrentSession(prismaClient, safeLog);
+  const cleanupUserSessionsFn = createCleanupUserSessions(
+    prismaClient,
+    safeLog,
+    findCurrentSessionFn
+  );
+  const scheduleSessionCleanupFn = createScheduleSessionCleanup(cleanupExpiredSessionsFn, safeLog);
 
-  // Return the service implementation
+  // Return interface implementation
   return {
-    cleanupExpiredSessions,
-    cleanupUserSessions,
-    scheduleSessionCleanup,
+    cleanupExpiredSessions: cleanupExpiredSessionsFn,
+    cleanupUserSessions: cleanupUserSessionsFn,
+    scheduleSessionCleanup: scheduleSessionCleanupFn,
   };
 }
 
-// Default service instance to maintain backward compatibility
-export const sessionCleanupService = createSessionCleanupService(prisma, loggers.db);
+// Create default instance for backward compatibility
+const defaultService = createSessionCleanupService();
 
-// Re-export the functions to maintain the current API
+// Export individual functions for backward compatibility
 export const { cleanupExpiredSessions, cleanupUserSessions, scheduleSessionCleanup } =
-  sessionCleanupService;
+  defaultService;

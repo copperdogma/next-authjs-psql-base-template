@@ -1,75 +1,156 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { loggers } from '@/lib/logger';
+import { withApiLogger, createErrorResponse } from '@/lib/services/api-logger-service';
+import { LoggerService } from '@/lib/interfaces/services';
 
 // Schema for validating POST request data
 const HealthCheckRequestSchema = z.object({
   checkDatabase: z.boolean().optional().default(false),
-  timeout: z.number().int().positive().optional(),
+  timeout: z.number().optional().default(100),
 });
 
 /**
- * Health Check API Endpoint
+ * Health Check GET Endpoint
  *
  * Used by E2E tests and monitoring tools to verify server availability
  * Returns: Basic server info including status, uptime, and environment
  */
 export async function GET() {
-  // console.error('##### Test Server Log Error Triggered #####'); // Temporary error removed
-  // TODO: Add checks for database, Redis, etc.
+  // Health check endpoint is critical and must always work
+  // Using direct implementation rather than wrapper to ensure reliability
   return NextResponse.json({
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     serverInfo: {
       environment: process.env.NODE_ENV || 'development',
-      port: process.env.PORT || process.env.TEST_PORT || '3000',
-      nextVersion: process.env.NEXT_VERSION || 'unknown',
+      port: process.env.PORT || '3000',
     },
   });
 }
 
-export async function POST(request: NextRequest) {
+/**
+ * Parses and validates the incoming request body
+ */
+async function parseAndValidateRequest(request: NextRequest, logger: LoggerService) {
+  const body = await request.json();
+  logger.debug({ body }, 'Received health check POST data');
+
+  const result = HealthCheckRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    logger.warn({ validationErrors: result.error.format() }, 'Invalid health check request format');
+
+    return {
+      isValid: false,
+      error: NextResponse.json(
+        {
+          error: 'ValidationError',
+          details: result.error.format(),
+          message: 'Invalid request format',
+        },
+        { status: 400 }
+      ),
+    };
+  }
+
+  return {
+    isValid: true,
+    data: result.data,
+  };
+}
+
+/**
+ * Performs optional database check based on request parameters
+ */
+async function performDatabaseCheck(
+  checkDatabase: boolean,
+  timeout: number,
+  logger: LoggerService
+) {
+  if (checkDatabase) {
+    logger.debug('Database check requested');
+    // In a real app, you might check database connectivity here
+    // For demo purposes, we're just adding a mock delay
+    await new Promise(resolve => setTimeout(resolve, timeout));
+  }
+}
+
+/**
+ * Creates a success response with health information
+ */
+function createSuccessResponse(checkDatabase: boolean, timeout: number) {
+  return NextResponse.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    databaseChecked: checkDatabase,
+    timeout,
+  });
+}
+
+/**
+ * Handles errors with appropriate logging and response
+ */
+function handleError(error: unknown, request: NextRequest, logger: LoggerService) {
+  logger.error({ error }, 'Health check POST request processing failed');
+
+  if (request.headers.has('x-request-id')) {
+    return createErrorResponse(error, request.headers.get('x-request-id') || 'unknown');
+  }
+
+  return NextResponse.json(
+    {
+      error: 'InternalServerError',
+      message: error instanceof Error ? error.message : String(error),
+    },
+    { status: 500 }
+  );
+}
+
+/**
+ * Health Check POST Endpoint
+ *
+ * Validates request data and performs optional database check
+ */
+export const POST = withApiLogger(async (request: NextRequest, logger: LoggerService) => {
   try {
-    const body = await request.json();
+    // Parse and validate the request
+    const validationResult = await parseAndValidateRequest(request, logger).catch(() => ({
+      isValid: false,
+      error: null,
+    }));
 
-    // Validate the request against our schema
-    const result = HealthCheckRequestSchema.safeParse(body);
+    if (!validationResult.isValid) {
+      return (
+        validationResult.error ||
+        NextResponse.json(
+          { error: 'ValidationError', message: 'Failed to parse request' },
+          { status: 400 }
+        )
+      );
+    }
 
-    if (!result.success) {
+    // TypeScript needs help understanding the shape of validationResult when isValid is true
+    const data = 'data' in validationResult ? validationResult.data : null;
+
+    if (!data) {
       return NextResponse.json(
-        { error: 'Invalid request format', details: result.error.format() },
+        { error: 'ValidationError', message: 'Missing validation data' },
         { status: 400 }
       );
     }
 
-    const { checkDatabase } = result.data;
+    const { checkDatabase, timeout } = data;
 
-    // Example of conditional health check based on request
-    if (checkDatabase) {
-      // In a real app, you might check database connectivity here
-      // For demo purposes, we're just adding a mock delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    // Example of using the validated data
-    const response = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      databaseChecked: checkDatabase,
-      environment: process.env.NODE_ENV || 'development',
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    // Use structured logging
-    loggers.api.error(
-      {
-        err: error,
-        location: 'health-check-post',
-      },
-      'Health check POST request failed'
+    // Perform database check if requested
+    await performDatabaseCheck(checkDatabase, timeout, logger).catch(error =>
+      logger.warn({ error }, 'Database check failed but continuing')
     );
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+
+    // Return success response
+    return createSuccessResponse(checkDatabase, timeout);
+  } catch (error) {
+    return handleError(error, request, logger);
   }
-}
+});

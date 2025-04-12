@@ -4,7 +4,7 @@ import pino from 'pino';
 // const isDev = process.env.NODE_ENV !== 'production'; // REMOVED: Unused variable
 
 // Define fields that should be redacted from logs
-const redactFields = [
+export const redactFields = [
   'password',
   'passwordConfirm',
   'authorization',

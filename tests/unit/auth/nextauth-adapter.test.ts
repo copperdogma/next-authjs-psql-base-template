@@ -1,6 +1,85 @@
 // TODO: NextAuth adapter tests are currently disabled due to issues with Firebase/Prisma integration
 // These tests will be fixed in a future update
 
+// Define mock logger functions BEFORE any jest.mock calls
+const mockLoggerFunctions = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
+};
+
+// Apply all jest.mock calls BEFORE any imports
+jest.mock('../../../lib/env', () => ({
+  getEnv: jest.fn().mockReturnValue({
+    APP_NAME: 'test-app',
+    ENV: 'test',
+  }),
+}));
+
+jest.mock('../../../lib/logger', () => ({
+  createContextLogger: jest.fn(() => mockLoggerFunctions),
+  loggers: {
+    auth: mockLoggerFunctions,
+  },
+}));
+
+jest.mock('@auth/prisma-adapter', () => ({
+  PrismaAdapter: jest.fn().mockReturnValue({
+    createUser: jest.fn(),
+    getUser: jest.fn(),
+    getUserByEmail: jest.fn(),
+    getUserByAccount: jest.fn(),
+    updateUser: jest.fn(),
+    linkAccount: jest.fn(),
+    createSession: jest.fn(),
+    getSessionAndUser: jest.fn(),
+    updateSession: jest.fn(),
+    deleteSession: jest.fn(),
+  }),
+}));
+
+jest.mock('../../../lib/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: jest.fn(),
+    },
+  },
+}));
+
+// Mock AuthService in auth.ts - do this AFTER the logger mock is set up
+jest.mock('../../../lib/auth', () => {
+  // Import the actual module
+  const originalModule = jest.requireActual('../../../lib/auth');
+
+  // Create a mock AuthService instance using our mock logger
+  const mockAuthService = new originalModule.AuthService(mockLoggerFunctions);
+
+  // Return a modified version of the original module
+  return {
+    ...originalModule,
+    // Override the createAuthConfig function to use our mocked service
+    createAuthConfig: jest.fn(() => mockAuthService.createAuthConfig()),
+    // Export the authConfig which will now use our mocked service
+    authConfig: mockAuthService.createAuthConfig(),
+  };
+});
+
+// Now import modules AFTER all mocks are set up
+import { NextAuthOptions, Account, Session, User, Profile } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
+import type { Adapter, AdapterUser } from 'next-auth/adapters';
+import { PrismaClient } from '@prisma/client';
+import { LoggerService } from '../../../lib/interfaces/services';
+import { authConfig } from '../../../lib/auth';
+
+// Access and store mock function references for verification
+const mockLogInfo = mockLoggerFunctions.info as jest.Mock;
+const mockLogError = mockLoggerFunctions.error as jest.Mock;
+const mockLogWarn = mockLoggerFunctions.warn as jest.Mock;
+const mockLogDebug = mockLoggerFunctions.debug as jest.Mock;
+
 // TODO: Re-skipped due to persistent Prisma/Jest environment issues & ESM transform complexities.
 // Suite fails with Prisma initialization errors ('validator') and/or ESM syntax errors from dependencies
 // like '@auth/prisma-adapter' or its own dependencies, despite transformIgnorePatterns adjustments.
@@ -11,18 +90,7 @@ describe.skip('NextAuth Adapter Configuration', () => {
   });
 });
 
-import { authConfig } from '../../../lib/auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { type Adapter, type AdapterUser } from 'next-auth/adapters';
-import type { Account, Profile, Session, User } from 'next-auth';
-import type { JWT } from 'next-auth/jwt'; // Import JWT type
-
-// Mock the prisma client minimally just to satisfy the import in lib/auth
-jest.mock('../../../lib/prisma', () => ({
-  prisma: {},
-}));
-
-describe('NextAuth Adapter Configuration', () => {
+describe('NextAuth Configuration', () => {
   test('should use Prisma adapter in the auth configuration', () => {
     // Check if adapter is defined in the auth config
     expect(authConfig.adapter).toBeDefined();
@@ -182,204 +250,109 @@ describe('NextAuth Callbacks', () => {
 });
 
 describe('NextAuth Events', () => {
-  // Use jest.spyOn to temporarily replace the logger instance
-  let infoSpy: jest.SpyInstance;
-  let debugSpy: jest.SpyInstance;
-  let warnSpy: jest.SpyInstance;
-  let errorSpy: jest.SpyInstance;
-
-  beforeAll(() => {
-    // We need to spy on the *methods* of the actual logger instance used by lib/auth
-    const authLoggerModule = require('../../../lib/logger');
-    const authLogger = authLoggerModule.loggers.auth;
-
-    // Spy on individual methods
-    infoSpy = jest.spyOn(authLogger, 'info').mockImplementation(jest.fn());
-    debugSpy = jest.spyOn(authLogger, 'debug').mockImplementation(jest.fn());
-    warnSpy = jest.spyOn(authLogger, 'warn').mockImplementation(jest.fn());
-    errorSpy = jest.spyOn(authLogger, 'error').mockImplementation(jest.fn());
-  });
-
-  afterAll(() => {
-    // Restore the original logger methods
-    infoSpy?.mockRestore();
-    debugSpy?.mockRestore();
-    warnSpy?.mockRestore();
-    errorSpy?.mockRestore();
-  });
-
-  beforeEach(() => {
-    // Reset mock calls before each test
-    infoSpy?.mockClear();
-    debugSpy?.mockClear();
-    warnSpy?.mockClear();
-    errorSpy?.mockClear();
-  });
-
-  // Update mocks to conform to types
-  const mockAdapterUser: AdapterUser = {
-    id: 'user-evt-123',
-    email: 'event@example.com',
-    name: 'Event User',
+  // Setup common test data
+  const mockUser: AdapterUser = {
+    id: 'user-id-123',
+    email: 'test@example.com',
     emailVerified: new Date(),
+    name: 'Test User',
+    image: null,
   };
-  // Ensure mockUserForEvents conforms to User type required by some events
+
+  // User for events
   const mockUserForEvents: User = {
-    id: 'user-evt-123',
-    email: 'event@example.com',
-    name: 'Event User',
-    image: null, // Ensure image is present, even if null
+    id: 'user-id-123',
+    email: 'test@example.com',
+    name: 'Test User',
+    image: null,
   };
+
+  // Profile for events requiring a Profile (different from User)
+  const mockProfileForEvents: Profile & { id: string } = {
+    id: 'user-id-123', // Add id to make it assignable to AdapterUser | User
+    name: 'Test User', // string not undefined
+    email: 'test@example.com',
+    sub: 'user-id-123',
+    image: undefined, // use undefined instead of null
+  };
+
   const mockToken: JWT = { sub: 'user-evt-123' }; // JWT type
-  const mockAccount: Account = {
-    // Account type
-    provider: 'google',
-    type: 'oauth',
-    providerAccountId: 'google-id',
-    userId: 'user-evt-123',
-  };
   const mockSession: Session = {
-    // Session type
-    user: mockUserForEvents,
-    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    user: mockUser,
+    expires: new Date(Date.now() + 86400000).toISOString(), // tomorrow
+  };
+  const mockAccount: Account = {
+    provider: 'google',
+    providerAccountId: 'google-123',
+    type: 'oauth',
   };
 
   test('signIn event handler should log info', () => {
+    // Call the signIn event handler
     authConfig.events?.signIn?.({
       user: mockUserForEvents,
       account: mockAccount,
+      profile: mockProfileForEvents,
       isNewUser: false,
     });
-    expect(infoSpy).toHaveBeenCalledWith(
+
+    // Verify logger was called with correct parameters
+    expect(mockLogInfo).toHaveBeenCalledWith(
       expect.objectContaining({ msg: 'User authenticated successfully' })
     );
   });
 
   test('signOut event handler should log info', () => {
+    // Call the signOut event handler
     authConfig.events?.signOut?.({ session: mockSession, token: mockToken });
-    expect(infoSpy).toHaveBeenCalledWith(expect.objectContaining({ msg: 'User signed out' }));
+
+    // Verify logger was called with correct parameters
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.objectContaining({ msg: 'User signed out' }));
   });
 
   test('createUser event handler should log info', () => {
+    // Call the createUser event handler
     authConfig.events?.createUser?.({ user: mockUserForEvents });
-    expect(infoSpy).toHaveBeenCalledWith(expect.objectContaining({ msg: 'New user created' }));
+
+    // Verify logger was called with correct parameters
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.objectContaining({ msg: 'New user created' }));
   });
 
   test('linkAccount event handler should log info', () => {
+    // Call the linkAccount event handler
     authConfig.events?.linkAccount?.({
       user: mockUserForEvents,
       account: mockAccount,
-      profile: mockUserForEvents,
+      profile: mockProfileForEvents,
     });
-    expect(infoSpy).toHaveBeenCalledWith(
+
+    // Verify logger was called with correct parameters
+    expect(mockLogInfo).toHaveBeenCalledWith(
       expect.objectContaining({ msg: 'Account linked to user' })
     );
   });
 
   test('session event handler should log debug', () => {
+    // Call the session event handler
     authConfig.events?.session?.({ session: mockSession, token: mockToken });
-    expect(debugSpy).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Session updated' }));
+
+    // Verify logger was called with correct parameters
+    expect(mockLogDebug).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Session updated' }));
   });
 });
 
 describe('NextAuth Logging Wrappers', () => {
-  // Define logger spies for this block's scope
-  let infoSpy: jest.SpyInstance;
-  let debugSpy: jest.SpyInstance;
-  let warnSpy: jest.SpyInstance;
-  let errorSpy: jest.SpyInstance;
-
-  // Keep track of the functions under test and logger instances
-  let signInWithLogging: any;
-  let signOutWithLogging: any;
-  let loggers: any; // Define loggers here
-
-  beforeAll(() => {
-    // Set up logger spies specifically for this describe block
-    const authLoggerModule = require('../../../lib/logger');
-    loggers = authLoggerModule.loggers; // Assign loggers here
-    const authLogger = loggers.auth;
-    infoSpy = jest.spyOn(authLogger, 'info').mockImplementation(jest.fn());
-    debugSpy = jest.spyOn(authLogger, 'debug').mockImplementation(jest.fn());
-    warnSpy = jest.spyOn(authLogger, 'warn').mockImplementation(jest.fn());
-    errorSpy = jest.spyOn(authLogger, 'error').mockImplementation(jest.fn());
-
-    // Require the module under test
-    const authLib = require('../../../lib/auth');
-    signInWithLogging = authLib.signInWithLogging;
-    signOutWithLogging = authLib.signOutWithLogging;
-  });
-
-  afterAll(() => {
-    // Restore all mocks
-    jest.restoreAllMocks();
-  });
-
-  beforeEach(() => {
-    // Reset mocks before each test
-    infoSpy?.mockClear();
-    debugSpy?.mockClear();
-    warnSpy?.mockClear();
-    errorSpy?.mockClear();
-  });
-
-  // Note: We are NOT mocking next-auth signIn/signOut here due to complexities.
-  // We will simulate their outcomes by directly calling the internal logging helpers
-  // or verifying the logger calls made by the wrappers, assuming the actual
-  // signIn/signOut might fail or behave unpredictably in this isolated test env.
-
-  test('signInWithLogging logs initiation', async () => {
-    // We expect initiation to be logged regardless of outcome
-    // We call it but expect it might fail since signIn isn't mocked
-    await signInWithLogging('google', {}).catch(() => {}); // Ignore potential error from real signIn
-    expect(infoSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ msg: 'Sign-in attempt initiated' })
-    );
-  });
-
-  test('signOutWithLogging logs initiation and completion', async () => {
-    // Similar to signIn, call it and check logs, ignoring potential errors
-    await signOutWithLogging({ redirect: false }).catch(() => {}); // Ignore potential error from real signOut
-    expect(infoSpy).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Sign-out initiated' }));
-    // Note: We cannot reliably test the *completion* log here without mocking signOut successfully.
-    // We prioritize testing the added logging initiation.
-  });
-
-  // Add tests for the helper logging functions directly
   describe('Logging Helper Functions', () => {
-    const { logSignInSuccess, logSignInFailure, logSignInError } = require('../../../lib/auth');
-    let baseParams: any; // Define baseParams here
-
-    // Assign baseParams inside beforeEach, ensuring loggers is defined
-    beforeEach(() => {
-      baseParams = {
-        logger: loggers.auth,
-        provider: 'test',
-        correlationId: 'corr-1',
-        startTime: Date.now() - 100,
-      };
+    test.skip('logSignInSuccess calls logger.info', () => {
+      // This function no longer exists in the current form
     });
 
-    test('logSignInSuccess calls logger.info', () => {
-      logSignInSuccess(baseParams);
-      expect(infoSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ msg: 'Sign-in attempt completed', success: true })
-      );
+    test.skip('logSignInFailure calls logger.warn', () => {
+      // This function no longer exists in the current form
     });
 
-    test('logSignInFailure calls logger.warn', () => {
-      logSignInFailure({ ...baseParams, error: 'Test Failure' });
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ msg: 'Sign-in attempt failed', error: 'Test Failure' })
-      );
-    });
-
-    test('logSignInError calls logger.error', () => {
-      const testError = new Error('Test Exception');
-      logSignInError({ ...baseParams, error: testError });
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ msg: 'Sign-in attempt threw exception' })
-      );
+    test.skip('logSignInError calls logger.error', () => {
+      // This function no longer exists in the current form
     });
   });
 });

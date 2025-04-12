@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   createTestLogin,
   validateTestEnvironment,
-} from '../../../../app/api/auth/test-login/route';
+} from '../../../../app/api/auth/test-login/service';
 import { FirebaseAdminService, LoggerService } from '../../../../lib/interfaces/services';
 
 // Just mock the route module without exposing internal variables
@@ -101,7 +101,35 @@ describe('Test Login Route with Dependency Injection', () => {
           );
 
           expect(mockNextResponseJson).toHaveBeenCalledWith(
-            { error: 'Test authentication is only available in test environment' },
+            {
+              error: 'ForbiddenError',
+              message: 'Test authentication is only available in test environment',
+            },
+            { status: 403 }
+          );
+        }
+      );
+    });
+
+    it('should handle when NODE_ENV is undefined', async () => {
+      await global.withMockedEnv(
+        {
+          NODE_ENV: undefined,
+          ALLOW_TEST_AUTH: undefined,
+        },
+        async () => {
+          validateTestEnvironment(mockLogger);
+
+          expect(mockLogger.info).toHaveBeenCalledWith(
+            { environment: 'undefined' },
+            'Test authentication attempted in non-test environment'
+          );
+
+          expect(mockNextResponseJson).toHaveBeenCalledWith(
+            {
+              error: 'ForbiddenError',
+              message: 'Test authentication is only available in test environment',
+            },
             { status: 403 }
           );
         }
@@ -143,7 +171,10 @@ describe('Test Login Route with Dependency Injection', () => {
 
         // Verify correct response
         expect(mockNextResponseJson).toHaveBeenCalledWith(
-          { error: 'Test authentication is only available in test environment' },
+          {
+            error: 'ForbiddenError',
+            message: 'Test authentication is only available in test environment',
+          },
           { status: 403 }
         );
       }
@@ -200,6 +231,64 @@ describe('Test Login Route with Dependency Injection', () => {
     });
   });
 
+  it('should use default email when email is not provided in form data', async () => {
+    // Create handler
+    const handler = createTestLogin(mockFirebaseAuthService, mockLogger);
+
+    // Create empty form data without email
+    const formData = new FormData();
+
+    // Create mock request
+    const mockRequest = new NextRequest('http://localhost/api/auth/test-login', {
+      method: 'POST',
+    });
+    mockRequest.formData = jest.fn().mockResolvedValue(formData);
+
+    // Call handler
+    await handler(mockRequest);
+
+    // Verify Firebase service was called with default email
+    expect(mockFirebaseAuthService.auth().createCustomToken).toHaveBeenCalledWith('test-user-id', {
+      email: 'test@example.com', // Default email
+      testAuth: true,
+    });
+  });
+
+  it('should set secure cookie in production environment', async () => {
+    await global.withMockedEnv(
+      {
+        NODE_ENV: 'production',
+        ALLOW_TEST_AUTH: 'true', // Allow testing in production for this test
+      },
+      async () => {
+        // Create handler
+        const handler = createTestLogin(mockFirebaseAuthService, mockLogger);
+
+        // Create mock form data
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+
+        // Create mock request
+        const mockRequest = new NextRequest('http://localhost/api/auth/test-login', {
+          method: 'POST',
+        });
+        mockRequest.formData = jest.fn().mockResolvedValue(formData);
+
+        // Call handler
+        await handler(mockRequest);
+
+        // Verify cookie was set with secure=true in production
+        const response = mockNextResponseJson.mock.results[0].value;
+        expect(response.cookies.set).toHaveBeenCalledWith('firebase-auth-test', mockCustomToken, {
+          httpOnly: true,
+          secure: true, // Should be true in production
+          maxAge: 60 * 60,
+          path: '/',
+        });
+      }
+    );
+  });
+
   it('should handle errors gracefully', async () => {
     // Create mock error
     const mockError = new Error('Firebase auth error');
@@ -227,13 +316,100 @@ describe('Test Login Route with Dependency Injection', () => {
 
     // Verify logger was called with error
     expect(mockLogger.error).toHaveBeenCalledWith(
-      { error: 'Firebase auth error' },
+      {
+        error: {
+          message: 'Firebase auth error',
+          name: 'Error',
+        },
+      },
       'Error in test login'
     );
 
     // Verify error response
     expect(mockNextResponseJson).toHaveBeenCalledWith(
-      { error: 'Failed to authenticate test user', details: 'Firebase auth error' },
+      {
+        error: 'Error',
+        message: 'Firebase auth error',
+        requestId: 'unknown',
+      },
+      { status: 500 }
+    );
+  });
+
+  it('should handle non-Error objects in error handling', async () => {
+    // Create a non-Error object error
+    const nonErrorObject = 'String error message';
+
+    // Create mock auth service that throws a non-Error
+    const errorFirebaseAuthService: FirebaseAdminService = {
+      auth: jest.fn().mockReturnValue({
+        createCustomToken: jest.fn().mockRejectedValue(nonErrorObject),
+        getUserByEmail: jest.fn(),
+        updateUser: jest.fn(),
+      }),
+    };
+
+    // Create handler
+    const handler = createTestLogin(errorFirebaseAuthService, mockLogger);
+
+    // Create mock request
+    const mockRequest = new NextRequest('http://localhost/api/auth/test-login', {
+      method: 'POST',
+    });
+    mockRequest.formData = jest.fn().mockResolvedValue(new FormData());
+
+    // Call handler
+    await handler(mockRequest);
+
+    // Verify logger was called with string error
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      { error: 'String error message' },
+      'Error in test login'
+    );
+
+    // Verify error response with new format
+    expect(mockNextResponseJson).toHaveBeenCalledWith(
+      {
+        error: 'UnknownError',
+        message: 'String error message',
+        requestId: 'unknown',
+      },
+      { status: 500 }
+    );
+  });
+
+  it('should handle errors in formData extraction', async () => {
+    // Create handler
+    const handler = createTestLogin(mockFirebaseAuthService, mockLogger);
+
+    // Create mock request with formData that throws
+    const mockRequest = new NextRequest('http://localhost/api/auth/test-login', {
+      method: 'POST',
+    });
+    const formDataError = new Error('Invalid form data');
+    mockRequest.formData = jest.fn().mockRejectedValue(formDataError);
+
+    // Call handler
+    await handler(mockRequest);
+
+    // Verify logger was called with error
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      {
+        error: {
+          message: 'Invalid form data',
+          name: 'Error',
+        },
+      },
+      'Error in test login'
+    );
+
+    // Verify error response
+    expect(mockNextResponseJson).toHaveBeenCalledWith(
+      {
+        error: 'Error',
+        message: 'Invalid form data',
+        requestId: 'unknown',
+      },
       { status: 500 }
     );
   });
