@@ -1,0 +1,89 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# RESEARCH & PLANNING PHASE PROTOCOL
+
+## OBJECTIVE
+Conduct comprehensive research and develop a detailed implementation plan for the specified topic, maintaining scratchpad.md as your persistent memory throughout the entire process.
+
+## INITIAL SETUP (REQUIRED)
+1. **ADD HIGH-LEVEL CHECKLIST TO SCRATCHPAD**
+   - Upon receiving this task, immediately update scratchpad.md with a new section titled "## [Task Name] Research & Planning Checklist"
+   - Include these mandatory checklist items:
+     - [ ] Initial research questions identified
+     - [ ] Web research completed
+     - [ ] Codebase analysis completed
+     - [ ] Best practices identified
+     - [ ] Implementation strategy developed
+     - [ ] Detailed implementation checklist created
+     - [ ] User preference questions identified and asked
+     - [ ] Plan reviewed and approved by user
+
+## RESEARCH PHASE
+
+1. **VERIFY WEB ACCESS**
+   - If you don't have web access, HALT immediately and request it from the user.
+   - Update scratchpad.md with: "🛑 Blocked: Web access required for research."
+
+2. **IDENTIFY QUESTIONS & PREFERENCES (REQUIRED)**
+   - List specific questions about user preferences that will impact your implementation
+   - Ask these questions EARLY in the conversation
+   - Update scratchpad.md with both questions and answers
+   - Example: "Do you prefer approach A or B for handling authentication?"
+
+3. **WEB RESEARCH**
+   - Search for current best practices, patterns, and standards related to the topic
+   - Focus on recent and authoritative sources
+   - Document key findings directly in scratchpad.md as you discover them
+   - Update checklist items as you complete them
+
+4. **CODEBASE ANALYSIS**
+   - Search the entire codebase for relevant implementations and patterns
+   - Identify how similar features are currently implemented
+   - Note inconsistencies between current implementation and best practices
+   - Document findings in scratchpad.md
+
+## PLANNING PHASE
+
+5. **SYNTHESIZE FINDINGS & DEVELOP STRATEGY**
+   - Create a concise summary in scratchpad.md of:
+     - Key best practices identified
+     - Recommended implementation approach
+     - Technical constraints and considerations
+     - User preference decisions
+
+6. **CREATE DETAILED IMPLEMENTATION CHECKLIST**
+   - Add a new section to scratchpad.md titled "## Implementation Checklist"
+   - Break down implementation into logically sequenced, specific tasks
+   - Include acceptance criteria for each task
+   - Estimate complexity (simple, moderate, complex)
+   - Begin with reminder that all code should follow best practices (SOLID, DRY, etc.)
+
+7. **IDENTIFY RISKS & MITIGATIONS**
+   - List potential implementation challenges
+   - Document mitigation strategies for each risk
+   - Include these in scratchpad.md
+
+## USER INTERACTION
+
+8. **ONGOING PREFERENCE CHECKS (REQUIRED)**
+   - At MINIMUM, ask for user preferences at these points:
+     - After initial research to confirm direction
+     - When multiple implementation approaches are viable
+     - Before finalizing the implementation plan
+   - Update scratchpad.md with all user preference decisions
+
+9. **USER REVIEW**
+   - Present your complete plan referencing scratchpad.md
+   - Highlight any remaining questions that need clarification
+   - Ask: "I've completed the research and planning phase. Would you like me to proceed to implementation, or do you have any feedback on the plan?"
+   - DO NOT proceed without explicit user confirmation
+
+## IMPORTANT NOTES
+- Keep updating scratchpad.md throughout the ENTIRE process - it's your external memory
+- Prioritize user preferences over your own recommendations when they conflict
+- Focus on creating a minimal, elegant solution aligned with the project's goals
+- Always follow the principle: "Ask, don't assume" for significant design decisions
+- Remember the project goal is to be a clean, simple, elegant starting point
