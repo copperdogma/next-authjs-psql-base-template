@@ -1,209 +1,167 @@
-import { request } from '@playwright/test';
+import { exec } from 'child_process';
+import path from 'path';
+import dotenv from 'dotenv';
 import axios from 'axios';
+// Firebase v9+ modular imports - Use @firebase/ scoped packages
+import { initializeApp } from '@firebase/app';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  connectAuthEmulator,
+  signInWithEmailAndPassword,
+  updateProfile,
+  AuthErrorCodes,
+} from '@firebase/auth';
 
-/**
- * Configuration for test environment
- */
-interface TestConfig {
-  baseUrl: string;
-  port: string;
-  healthURL: string;
-  projectId: string;
-  authEmulatorUrl: string;
-  firestoreEmulatorUrl: string;
-  firestoreClearUrl: string;
-  authClearUrl: string;
+// Load .env.test for emulator hosts and test user credentials
+dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
+
+// Configuration constants
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
+const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'Test123!';
+const TEST_USER_DISPLAY_NAME = process.env.TEST_USER_DISPLAY_NAME || 'Test User';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'next-firebase-base-template';
+const AUTH_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
+const FIRESTORE_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+
+const AUTH_EMULATOR_URL = `http://${AUTH_EMULATOR_HOST}`;
+const FIRESTORE_EMULATOR_URL = `http://${FIRESTORE_EMULATOR_HOST}`;
+const AUTH_CLEAR_URL = `${AUTH_EMULATOR_URL}/emulator/v1/projects/${FIREBASE_PROJECT_ID}/accounts`;
+const FIRESTORE_CLEAR_URL = `${FIRESTORE_EMULATOR_URL}/emulator/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+
+// Firebase config for SDK client (uses fake key as it's for emulator)
+const firebaseClientConfig = {
+  apiKey: 'fake-api-key',
+  authDomain: AUTH_EMULATOR_HOST, // Use emulator host
+  projectId: FIREBASE_PROJECT_ID,
+};
+
+// Utility to wait for a port to be open
+function waitForPort(port: number, host: string, timeout = 60000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const check = () => {
+      const socket = require('net').createConnection(port, host);
+      socket.on('connect', () => {
+        socket.end();
+        console.log(`✅ Port ${host}:${port} is open.`);
+        resolve();
+      });
+      socket.on('error', (err: NodeJS.ErrnoException) => {
+        if (Date.now() - startTime > timeout) {
+          reject(new Error(`Timeout waiting for port ${host}:${port}: ${err.message}`));
+        } else {
+          console.log(`⏳ Waiting for port ${host}:${port}... (${err.code})`);
+          setTimeout(check, 1000);
+        }
+      });
+    };
+    check();
+  });
 }
 
-/**
- * Initialize test configuration from environment variables
- */
-function initTestConfig(): TestConfig {
-  // Get environment configuration
-  const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-  const port = process.env.TEST_PORT || '3777';
-  const healthURL = `${baseUrl}/api/health`;
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'next-firebase-base-template';
-
-  // Emulator URLs and endpoints
-  const authEmulatorUrl = 'http://localhost:9099';
-  const firestoreEmulatorUrl = 'http://localhost:8080';
-  const firestoreClearUrl = `${firestoreEmulatorUrl}/emulator/v1/projects/${projectId}/databases/(default)/documents`;
-  const authClearUrl = `${authEmulatorUrl}/emulator/v1/projects/${projectId}/accounts`;
-
-  return {
-    baseUrl,
-    port,
-    healthURL,
-    projectId,
-    authEmulatorUrl,
-    firestoreEmulatorUrl,
-    firestoreClearUrl,
-    authClearUrl,
-  };
-}
-
-/**
- * Display test environment information
- */
-function logEnvironment(config: TestConfig): void {
-  console.log('┌─────────────────────────────────────────────────┐');
-  console.log('│            🔍 E2E TEST ENVIRONMENT              │');
-  console.log('├─────────────────────────────────────────────────┤');
-  console.log(`│ Base URL:      ${config.baseUrl.padEnd(35)} │`);
-  console.log(`│ Port:          ${config.port.padEnd(35)} │`);
-  console.log(`│ Health Check:  ${config.healthURL.padEnd(35)} │`);
-  console.log(`│ Auth Emulator: ${config.authEmulatorUrl.padEnd(35)} │`);
-  console.log(`│ NODE_ENV:      ${(process.env.NODE_ENV || 'not set').padEnd(35)} │`);
-  console.log('└─────────────────────────────────────────────────┘');
-}
-
-/**
- * Clear Firestore emulator data
- */
-async function clearFirestoreData(url: string): Promise<void> {
-  console.log(`Clearing Firestore data at ${url}...`);
-  try {
-    const response = await axios.delete(url);
-    console.log(`✅ Firestore data cleared. Status: ${response.status}`);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`⚠️ Failed to clear Firestore data: ${errorMessage}`);
-    console.warn('This is not critical if you are not using Firestore in your tests');
-  }
-}
-
-/**
- * Clear Auth emulator data
- */
-async function clearAuthData(url: string): Promise<void> {
-  console.log(`Clearing Auth data at ${url}...`);
-  try {
-    const response = await axios.delete(url);
-    console.log(`✅ Auth data cleared. Status: ${response.status}`);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`⚠️ Failed to clear Auth data: ${errorMessage}`);
-    console.warn('This may cause tests to fail if they depend on specific auth states');
-  }
-}
-
-/**
- * Clear all Firebase emulator data
- */
-async function clearEmulatorData(config: TestConfig): Promise<void> {
+// Clear emulator data
+async function clearEmulatorData() {
   console.log('🧹 Clearing Firebase emulator data...');
   try {
-    await clearFirestoreData(config.firestoreClearUrl);
-    await clearAuthData(config.authClearUrl);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`⚠️ Error clearing emulator data: ${errorMessage}`);
-    // Non-fatal error - continue with the tests
+    await axios.delete(AUTH_CLEAR_URL);
+    console.log('✅ Auth emulator data cleared.');
+  } catch (error: any) {
+    console.warn(`⚠️ Could not clear Auth emulator: ${error.message}`);
+  }
+  try {
+    await axios.delete(FIRESTORE_CLEAR_URL);
+    console.log('✅ Firestore emulator data cleared.');
+  } catch (error: any) {
+    console.warn(`⚠️ Could not clear Firestore emulator: ${error.message}`);
   }
 }
 
-/**
- * Perform a single health check attempt
- */
-async function attemptHealthCheck(
-  context: any,
-  url: string,
-  attempt: number,
-  maxAttempts: number
-): Promise<boolean> {
+// Create or verify test user
+async function setupTestUser() {
+  console.log(`👤 Setting up test user: ${TEST_USER_EMAIL}...`);
+  const app = initializeApp(firebaseClientConfig);
+  const auth = getAuth(app);
+  connectAuthEmulator(auth, AUTH_EMULATOR_URL, { disableWarnings: true });
+
   try {
-    const response = await context.get(url, {
-      timeout: 10000, // 10 seconds timeout per attempt
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      TEST_USER_EMAIL,
+      TEST_USER_PASSWORD
+    );
+    await updateProfile(userCredential.user, {
+      displayName: TEST_USER_DISPLAY_NAME,
+    });
+    console.log(`✅ Test user created successfully: ${userCredential.user.uid}`);
+  } catch (error: any) {
+    if (error.code === AuthErrorCodes.EMAIL_EXISTS) {
+      console.log('ℹ️ Test user already exists. Verifying...');
+      try {
+        await signInWithEmailAndPassword(auth, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+        console.log('✅ Existing test user verified.');
+      } catch (signInError: any) {
+        console.error(`❌ Failed to verify existing user: ${signInError.message}`);
+        throw signInError;
+      }
+    } else {
+      console.error(`❌ Failed to create test user: ${error.message}`);
+      throw error;
+    }
+  }
+}
+
+// Global setup function
+async function globalSetup() {
+  console.log('--- E2E Global Setup ---');
+
+  try {
+    await clearEmulatorData();
+
+    console.log('🔥 Starting Firebase emulators...');
+    const emulatorProcess = exec('npm run firebase:emulators:import', (error, _, stderr) => {
+      if (error) {
+        console.error(`Emulator Error: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.error(`Emulator Stderr: ${stderr}`);
+      }
     });
 
-    // Check if the response is OK (status 200-299)
-    if (!response.ok()) {
-      console.log(
-        `❌ Health check attempt ${attempt}/${maxAttempts} failed with status ${response.status()}`
-      );
-      return false;
-    }
+    emulatorProcess.stdout?.pipe(process.stdout);
+    emulatorProcess.stderr?.pipe(process.stderr);
 
-    // Parse response body as JSON
-    const body = await response.json();
+    console.log('⏳ Waiting for emulators to be ready...');
+    const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1]);
+    const firestorePort = parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1]);
+    const authHost = AUTH_EMULATOR_HOST.split(':')[0];
+    const firestoreHost = FIRESTORE_EMULATOR_HOST.split(':')[0];
 
-    // Validate health check response
-    if (body.status !== 'ok') {
-      console.log(
-        `❌ Health check attempt ${attempt}/${maxAttempts} returned non-ok status: ${JSON.stringify(body)}`
-      );
-      return false;
-    }
+    await Promise.all([
+      waitForPort(authPort, authHost, 90000),
+      waitForPort(firestorePort, firestoreHost, 90000),
+    ]);
+    console.log('✅ Firebase Emulators are ready.');
 
-    // Health check successful
-    console.log('✅ Application health check passed! Server is ready for testing.');
-    return true;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.log(`❌ Health check attempt ${attempt}/${maxAttempts} failed: ${errorMessage}`);
-    return false;
-  }
-}
+    // Add a brief delay to ensure services are fully initialized
+    console.log('⏳ Short delay for service initialization...');
+    await new Promise(resolve => setTimeout(resolve, 3000)); // 3-second delay
 
-/**
- * Verify application health with retries
- */
-async function verifyAppHealth(context: any, config: TestConfig): Promise<boolean> {
-  console.log(`🔄 Checking application health endpoint at ${config.healthURL}...`);
-  let healthCheckSuccess = false;
-  let attempts = 0;
-  const maxAttempts = 5;
-  const retryDelay = 5000; // 5 seconds between retries
+    await setupTestUser();
 
-  while (!healthCheckSuccess && attempts < maxAttempts) {
-    attempts++;
-
-    healthCheckSuccess = await attemptHealthCheck(context, config.healthURL, attempts, maxAttempts);
-
-    if (!healthCheckSuccess && attempts < maxAttempts) {
-      // Wait before retrying
-      console.log(`⏳ Waiting ${retryDelay / 1000} seconds before retry...`);
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-    }
-  }
-
-  if (!healthCheckSuccess) {
-    throw new Error(`Health check failed after ${maxAttempts} attempts`);
-  }
-
-  return true;
-}
-
-/**
- * Global setup for E2E tests
- * Runs before all tests to ensure the application is ready
- * Also handles clearing Firebase emulator data for clean test runs
- */
-async function globalSetup() {
-  // Initialize configuration
-  const config = initTestConfig();
-
-  // Display environment info
-  logEnvironment(config);
-
-  // Create a new request context with appropriate timeout
-  const context = await request.newContext({
-    timeout: 30000, // 30 seconds timeout for requests
-  });
-
-  try {
-    // Clear Firebase emulator data
-    await clearEmulatorData(config);
-
-    // Verify application health
-    await verifyAppHealth(context, config);
-
-    console.log('✅ All system checks passed! Ready to run tests.');
-  } finally {
-    // Properly dispose of the request context
-    await context.dispose();
+    console.log('--- E2E Global Setup Complete ---');
+  } catch (error: any) {
+    console.error('❌ E2E GLOBAL SETUP FAILED:');
+    console.error(error.message);
+    process.exit(1);
   }
 }
 
 export default globalSetup;
+
+// Cleanup function can be added here if needed (e.g., stopping emulators)
+// async function globalTeardown() {
+//   console.log('--- E2E Global Teardown ---');
+//   // Add cleanup logic here, e.g., stop emulator process if started directly
+// }

@@ -60,6 +60,9 @@ const sharedConfig = {
     '/scripts/',
     '/public/',
   ],
+
+  // Increase max listeners to suppress warning during parallel test runs
+  maxWorkers: '50%', // Adjust based on your system resources if needed
 };
 
 // Custom Jest configuration with multiple projects
