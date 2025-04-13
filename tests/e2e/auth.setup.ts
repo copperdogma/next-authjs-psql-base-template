@@ -2,6 +2,7 @@ import { test as setup } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Page } from 'playwright';
+import { loginTestUser } from './utils/test-base'; // Import the new helper
 
 const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
 
@@ -30,163 +31,60 @@ console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 
 /**
- * Sets up authentication using the Test API Endpoint and Modular Client-side Firebase SDK
+ * Sets up authentication using the new loginTestUser helper.
  */
-async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> {
-  console.log('🔑 Setting up authentication via Test API Endpoint + Modular Client SDK...');
+async function setupAuthViaCookieInjection(page: Page): Promise<boolean> {
+  console.log('🔑 Setting up authentication via Cookie Injection...');
   const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-  const apiUrl = `${baseUrl}/api/test/auth/create-session`;
 
   try {
-    // ADDED: Check emulator configuration via test API
-    console.log('🔍 Checking Firebase emulator configuration...');
-    const configResponse = await page.request.get(`${baseUrl}/api/test/firebase-config`);
-    if (configResponse.ok()) {
-      const config = await configResponse.json();
-      console.log('Firebase emulator config from API:', JSON.stringify(config, null, 2));
-    } else {
-      console.warn('Unable to retrieve Firebase config from API');
-    }
+    // 1. Log in the user by setting the cookie
+    await loginTestUser(page, TEST_USER.uid);
+    console.log(`✅ Cookie injected for user: ${TEST_USER.uid}`);
 
-    // 1. Call API to get Firebase Custom Token
-    console.log(`🚀 Calling test session API at ${apiUrl}`);
-    const apiResponse = await page.request.post(apiUrl, {
-      data: {
-        userId: TEST_USER.uid,
-        email: TEST_USER.email,
-        name: TEST_USER.displayName,
-      },
-      failOnStatusCode: true,
-    });
-
-    const { success, customToken } = await apiResponse.json();
-    if (!success || !customToken) {
-      throw new Error('Failed to get custom token from test API');
-    }
-    console.log('✅ Successfully retrieved Firebase custom token via API.');
-
-    // 2. Navigate to login page
-    console.log('📄 Navigating to login page...');
-    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-
-    // 3. Inject Modular Firebase SDK explicitly
-    console.log('💉 Injecting Modular Firebase SDK scripts...');
-    try {
-      await page.addScriptTag({ path: './node_modules/firebase/firebase-app.js' });
-      await page.addScriptTag({ path: './node_modules/firebase/firebase-auth.js' });
-
-      // Initialize using modular syntax with EXPLICIT EMULATOR CONFIG
-      await page.evaluate(
-        config => {
-          console.log('🔥 Initializing Modular Firebase Client SDK...');
-          if (!window.firebase?.apps?.length) {
-            // Keep check simple
-            window.firebase?.initializeApp?.(config.firebaseConfig);
-            console.log('Firebase initialized by test setup (modular).');
-
-            // EXPLICITLY CONNECT TO EMULATORS
-            if (window.firebase?.getAuth && config.authEmulatorHost) {
-              const auth = window.firebase.getAuth();
-              if (config.authEmulatorHost) {
-                console.log(
-                  `📱 Explicitly connecting to Auth emulator at ${config.authEmulatorHost}`
-                );
-                window.firebase.connectAuthEmulator(auth, `http://${config.authEmulatorHost}`, {
-                  disableWarnings: true,
-                });
-              }
-            }
-          } else {
-            console.log('Firebase already initialized.');
-          }
-        },
-        {
-          firebaseConfig: {
-            apiKey: 'test-api-key', // Use test value for emulator
-            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'localhost',
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'test-project',
-            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'test-storage',
-            messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'test-app-id',
-          },
-          authEmulatorHost: process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST,
-          firestoreEmulatorHost: process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST,
-        }
-      );
-
-      // Wait for getAuth to be available
-      await page.waitForFunction(() => window.firebase?.getAuth, null, { timeout: 10000 });
-      console.log('✅ Modular Firebase SDK initialized and getAuth found.');
-    } catch (injectionError) {
-      console.error('❌ Failed to inject or initialize Modular Firebase SDK:', injectionError);
-      throw new Error('Modular Firebase SDK injection/initialization failed');
-    }
-
-    // 4. Use Modular Client-side SDK signInWithCustomToken
-    console.log('💻 Attempting modular client-side signInWithCustomToken...');
-    const signInResult = await page.evaluate(async token => {
-      try {
-        if (!window.firebase?.getAuth || !window.firebase?.signInWithCustomToken) {
-          throw new Error('Firebase modular auth functions not found');
-        }
-        const auth = window.firebase.getAuth();
-        const userCredential = await window.firebase.signInWithCustomToken(auth, token);
-        return {
-          success: true,
-          uid: userCredential?.user?.uid,
-          email: userCredential?.user?.email,
-        };
-      } catch (error) {
-        console.error('Error during modular signInWithCustomToken:', error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    }, customToken);
-
-    if (!signInResult.success) {
-      console.error('❌ Modular client-side signInWithCustomToken failed:', signInResult.error);
-      throw new Error(`Modular client-side signInWithCustomToken failed: ${signInResult.error}`);
-    }
-    console.log(`✅ Successfully signed in with modular client-side SDK as ${signInResult.email}`);
-
-    // 5. Navigate to trigger NextAuth session creation
-    console.log('🚀 Navigating to protected route (/dashboard) to trigger NextAuth session...');
-    await page.waitForTimeout(1000);
+    // 2. Navigate to a protected page to verify session is picked up
+    console.log('🚀 Navigating to protected route (/dashboard) to verify session...');
+    // Ensure navigation happens *after* cookie is set
     await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' });
 
-    // 6. Verify and Save State
+    // 3. Verify and Save State
     console.log('🔍 Verifying authentication and session state...');
     return verifyAuthentication(page);
   } catch (error) {
-    console.error('❌ Error during API + Modular Client SDK auth setup:', error);
-    await page.screenshot({ path: 'auth-setup-error-modular.png' });
-    await createEmptyAuthState();
+    console.error('❌ Error during Cookie Injection auth setup:', error);
+    await page.screenshot({ path: 'auth-setup-error-cookie-injection.png' });
+    await createEmptyAuthState(); // Ensure we create empty state on failure
     return false;
   }
 }
 
 /**
- * This setup function uses the new API + Modular Client SDK method.
+ * Sets up authentication using the Test API Endpoint and Modular Client-side Firebase SDK
+ */
+// async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> {
+// ... REMOVED OLD FUNCTION ...
+// }
+
+/**
+ * This setup function now uses the cookie injection method.
  */
 setup('authenticate', async ({ page }) => {
   console.log('🔒 Setting up authentication for testing...');
 
   try {
-    // Primary approach: Use API Endpoint + Modular Client SDK
-    const success = await setupAuthViaApiAndModularClientSdk(page);
+    // Use the new Cookie Injection method
+    const success = await setupAuthViaCookieInjection(page);
 
     if (success) {
-      console.log('✅ Authentication setup completed successfully via API + Modular Client SDK');
+      console.log('✅ Authentication setup completed successfully via Cookie Injection');
     } else {
-      console.error('❌ API + Modular Client SDK Authentication setup failed.');
-      await createEmptyAuthState();
+      console.error('❌ Cookie Injection Authentication setup failed.');
+      await createEmptyAuthState(); // Ensure we fall back to empty state
       console.warn('⚠️ Created empty auth state as fallback after setup failure');
     }
   } catch (error) {
     console.error('❌ Authentication setup failed catastrophically:', error);
-    await createEmptyAuthState();
+    await createEmptyAuthState(); // Ensure we fall back to empty state
     console.warn('⚠️ Created empty auth state as fallback after catastrophic failure');
   }
 });

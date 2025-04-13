@@ -65,28 +65,6 @@ function isPublic(pathname: string): boolean {
 }
 
 /**
- * Checks if we're in a Playwright test environment via headers
- */
-function getPlaywrightTestContext(request: NextRequest) {
-  // Check for E2E test header
-  const isE2eTest = request.headers.get('x-playwright-test') === 'true';
-
-  // Check for auth test header
-  const hasAuthTestHeader = request.headers.has('x-playwright-auth');
-  const authTestUserId = request.headers.get('x-playwright-auth');
-
-  // Check for specific test skip header
-  const skipAuth = request.headers.get('x-playwright-skip-auth') === 'true';
-
-  return {
-    isE2eTest,
-    hasAuthTestHeader,
-    authTestUserId,
-    skipAuth,
-  };
-}
-
-/**
  * Handle routes that should be skipped for auth processing
  */
 function handleSkippableRoutes(pathname: string, reqLogger: pino.Logger): NextResponse | null {
@@ -99,47 +77,6 @@ function handleSkippableRoutes(pathname: string, reqLogger: pino.Logger): NextRe
   // Skip static files and other non-page routes
   if (pathname.startsWith('/_next/') || pathname.includes('.') || pathname === '/favicon.ico') {
     reqLogger.debug({ msg: 'Skipping static asset' });
-    return NextResponse.next();
-  }
-
-  return null;
-}
-
-/**
- * Handle Playwright test authentication
- */
-async function handlePlaywrightTestAuth(
-  request: NextRequest,
-  pathname: string,
-  reqLogger: pino.Logger
-): Promise<NextResponse | null> {
-  const { isE2eTest, hasAuthTestHeader, authTestUserId, skipAuth } =
-    getPlaywrightTestContext(request);
-
-  // Check if this is a test request
-  if (!isE2eTest) {
-    return null;
-  }
-
-  reqLogger.debug({ msg: 'Processing E2E test request' });
-
-  // Skip auth for test routes if requested
-  if (skipAuth) {
-    reqLogger.debug({ msg: 'Skipping auth for E2E test by request' });
-    return NextResponse.next();
-  }
-
-  // Handle test auth token
-  if (hasAuthTestHeader && authTestUserId) {
-    reqLogger.debug({ msg: 'Using E2E test auth', userId: authTestUserId });
-
-    if (pathname === '/login') {
-      // Redirect from login to dashboard for "authenticated" test users
-      reqLogger.debug({ msg: 'Redirecting test user from login to dashboard' });
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    // Allow access to protected routes
     return NextResponse.next();
   }
 
@@ -264,22 +201,8 @@ async function processAuthentication(
   startTime: number,
   tokenService: TokenService = defaultTokenService
 ): Promise<{ isAuthenticated: boolean; response: NextResponse | null }> {
-  const { pathname, reqLogger } = context;
-
-  // Check for routes that should skip auth
-  const skipResponse = handleSkippableRoutes(pathname, reqLogger);
-  if (skipResponse) {
-    return { isAuthenticated: false, response: skipResponse };
-  }
-
-  // Check for Playwright test auth
-  const testAuthResponse = await handlePlaywrightTestAuth(request, pathname, reqLogger);
-  if (testAuthResponse) {
-    return { isAuthenticated: false, response: testAuthResponse };
-  }
-
-  // Handle standard auth flow
-  const authResponse = await handleStandardAuth(request, context, tokenService);
+  // Standard authentication
+  const standardAuthResponse = await handleStandardAuth(request, context, tokenService);
 
   // Determine if user is authenticated
   const token = await tokenService.getToken({ req: request });
@@ -288,7 +211,7 @@ async function processAuthentication(
   // Log request completion
   logRequestCompletion(context, startTime, isAuthenticated);
 
-  return { isAuthenticated, response: authResponse };
+  return { isAuthenticated, response: standardAuthResponse };
 }
 
 /**
@@ -300,19 +223,29 @@ async function processRequest(
   startTime: number,
   tokenService: TokenService = defaultTokenService
 ): Promise<NextResponse> {
-  // Process authentication
-  const { response } = await processAuthentication(request, context, startTime, tokenService);
+  const { pathname, reqLogger } = context;
 
-  // If auth processing returned a response, use it
-  if (response) {
-    return response;
+  // Handle skippable routes first (API, static assets)
+  const skipResponse = handleSkippableRoutes(pathname, reqLogger);
+  if (skipResponse) {
+    logRequestCompletion(context, startTime, false); // Log completion for skipped routes
+    return skipResponse;
   }
 
-  // Set custom headers for tracking
-  const nextResponse = NextResponse.next();
-  nextResponse.headers.set('x-request-id', getRequestId());
+  // Process authentication
+  const { isAuthenticated, response: authResponse } = await processAuthentication(
+    request,
+    context,
+    startTime,
+    tokenService
+  );
 
-  return nextResponse;
+  // Log completion (after auth)
+  logRequestCompletion(context, startTime, isAuthenticated);
+
+  // Return the response determined by auth logic
+  // If auth logic didn't return a specific response (e.g., allowed access), it means NextResponse.next() was intended.
+  return authResponse || NextResponse.next();
 }
 
 /**
@@ -348,7 +281,7 @@ export async function middleware(request: NextRequest) {
     return await processRequest(request, context, startTime, defaultTokenService);
   } catch (error) {
     // Handle errors
-    reqLogger.error({ error, msg: 'Middleware error' });
+    logger.error({ error, requestId, path: pathname, msg: 'Middleware error' });
     return NextResponse.next();
   }
 }
