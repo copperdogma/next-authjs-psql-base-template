@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FirebaseAdminService, LoggerService } from '@/lib/interfaces/services';
 import { encode } from 'next-auth/jwt';
+import { createDiagnosticService } from './services/diagnostic-service';
+import { createResponseService } from './services/response-service';
 
 // Ensure this endpoint is only available in test environments
 const SECURE_COOKIE = process.env.NODE_ENV === 'production';
@@ -239,21 +241,8 @@ export function createTokenService(
   const nextAuthTokenService = createNextAuthTokenService(logger);
   const sessionCookieService = createSessionCookieService(logger);
 
-  /**
-   * Handles errors during token creation
-   */
-  function handleTokenError(error: unknown): { success: false; error: string } {
-    logger.error({
-      msg: 'Error creating tokens',
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+  // Error handling helper
+  const tokenErrorHandler = createTokenErrorHandler(logger);
 
   /**
    * Creates a NextAuth session token and sets the cookie
@@ -264,11 +253,9 @@ export function createTokenService(
     name?: string
   ): Promise<{ success: boolean; response?: NextResponse; error?: string }> {
     try {
-      // 1. Create Firebase custom token
       const customToken = await firebaseTokenService.createFirebaseToken(userId, email);
-
-      // 2. Create NextAuth token
       const token = await nextAuthTokenService.createNextAuthToken(userId, email, name);
+
       if (!token) {
         return {
           success: false,
@@ -279,7 +266,6 @@ export function createTokenService(
         };
       }
 
-      // 3. Set cookie in response and return
       const response = sessionCookieService.createSessionResponse(
         userId,
         email,
@@ -288,7 +274,7 @@ export function createTokenService(
       );
       return { success: true, response };
     } catch (error) {
-      return handleTokenError(error);
+      return tokenErrorHandler(error);
     }
   }
 
@@ -301,44 +287,20 @@ export function createTokenService(
 }
 
 /**
- * Service for handling errors and responses
+ * Creates a helper for handling token errors
  */
-export function createResponseService(logger: LoggerService) {
-  /**
-   * Creates a default validation error response
-   */
-  function createValidationErrorResponse(message = 'Invalid request body'): NextResponse {
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
-  }
-
-  /**
-   * Creates a default emulator error response
-   */
-  function createEmulatorErrorResponse(): NextResponse {
-    return NextResponse.json(
-      { success: false, error: 'Firebase emulator not detected' },
-      { status: 403 }
-    );
-  }
-
-  /**
-   * Creates an error response
-   */
-  function createErrorResponse(error: unknown): NextResponse {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+function createTokenErrorHandler(logger: LoggerService) {
+  return function handleTokenError(error: unknown): { success: false; error: string } {
     logger.error({
-      msg: 'Error processing session request',
-      error: errorMessage,
+      msg: 'Error creating tokens',
+      error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
-  }
-
-  return {
-    createValidationErrorResponse,
-    createEmulatorErrorResponse,
-    createErrorResponse,
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   };
 }
 
@@ -387,32 +349,6 @@ export function createSessionValidationService(
   }
 
   return { validateAndExtractSessionData };
-}
-
-/**
- * Service for diagnostic logging
- */
-export function createDiagnosticService(logger: LoggerService) {
-  /**
-   * Logs the environment state for debugging
-   */
-  function logEnvironmentState(): void {
-    logger.info({
-      envVars: {
-        AUTH_EMULATOR_HOST: process.env.AUTH_EMULATOR_HOST || 'not set',
-        FIRESTORE_EMULATOR_HOST: process.env.FIRESTORE_EMULATOR_HOST || 'not set',
-        USE_FIREBASE_EMULATOR: process.env.USE_FIREBASE_EMULATOR || 'not set',
-        NODE_ENV: process.env.NODE_ENV || 'not set',
-        NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
-        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? '[SECRET SET]' : 'not set',
-        TEST_EMAIL: process.env.TEST_USER_EMAIL ? '[EMAIL SET]' : 'not set',
-        TEST_PASSWORD: process.env.TEST_USER_PASSWORD ? '[PASSWORD SET]' : 'not set',
-      },
-      msg: 'Auth service environment state',
-    });
-  }
-
-  return { logEnvironmentState };
 }
 
 /**
