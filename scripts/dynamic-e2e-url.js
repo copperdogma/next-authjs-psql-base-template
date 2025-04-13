@@ -29,7 +29,11 @@ const isDebug = args.includes('--debug');
 const isHeaded = args.includes('--headed');
 
 // Build the arguments for the e2e-runner script
-const runnerArgs = ['scripts/e2e-runner.js', '--use-existing-server', `--base-url=${baseUrl}`];
+const runnerArgs = [
+  'scripts/run-e2e-with-checks.js',
+  '--use-existing-server',
+  `--base-url=${baseUrl}`,
+];
 
 // Add optional arguments
 if (useFirebase) runnerArgs.push('--with-firebase');

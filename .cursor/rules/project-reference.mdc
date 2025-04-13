@@ -45,7 +45,7 @@ alwaysApply: true
 │   │   └── utils/       # Utility function tests
 │   └── config/          # Test configuration
 ├── scripts/              # Helper scripts
-│   └── e2e-runner.js    # E2E test orchestration script
+│   └── run-e2e-with-checks.js    # E2E test orchestration script
 ```
 
 ## Component Architecture

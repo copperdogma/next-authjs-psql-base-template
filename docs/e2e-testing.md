@@ -28,48 +28,45 @@ Our E2E testing follows industry best practices for testing Next.js applications
 
 ```bash
 # Most reliable way to run E2E tests
-npm run test:e2e:reliable
+npm run test:e2e
 
-# Run a specific test with the reliable runner
-npm run test:e2e:reliable tests/e2e/basic-navigation.spec.ts
+# Run a specific test with the runner
+npm run test:e2e tests/e2e/basic-navigation.spec.ts
 
 # Run tests with debugging enabled
-npm run test:e2e:reliable:debug
+npm run test:e2e:debug
 
 # Run tests in headed mode (visible browser)
-npm run test:e2e:reliable:headed
+npm run test:e2e:headed
 
-# Reliable tests with Firebase Authentication Emulator
-npm run test:e2e:reliable:auth
+# Tests with Firebase Authentication
+npm run test:e2e:auth
 
-# Reliable auth tests with debugging enabled
-npm run test:e2e:reliable:auth:debug
+# Auth tests with debugging enabled
+npm run test:e2e:auth:debug
 
-# Reliable auth tests in headed mode
-npm run test:e2e:reliable:auth:headed
+# Auth tests in headed mode
+npm run test:e2e:auth:headed
 
 # Run tests against an existing server (don't start a new one)
-npm run test:e2e:reliable:against-existing
+npm run test:e2e:against-existing
 
 # Run tests against a custom URL
-npm run test:e2e:reliable:custom-url
-# or specify a custom URL directly
-node scripts/e2e-runner.js --use-existing-server --base-url=http://localhost:8000
+npm run test:e2e:custom-url
+# or specify a custom URL directly with the original runner
+cross-env PLAYWRIGHT_TEST_BASE_URL=http://localhost:8000 playwright test
 
 # Complete flow: Start emulators, setup test user, and run all tests
-npm run test:e2e:with-emulators
+npm run test:e2e:with-emulator
 
 # Just run the tests (if emulators are already running)
-npm run test:e2e
+npm run test:e2e:run-tests
 
 # Run only UI tests (no authentication required)
 npm run test:e2e:ui
 
-# Run only tests that require authentication
-npm run test:e2e:auth
-
-# Run tests with debug UI
-npm run test:e2e:debug
+# View the HTML test report
+npm run test:e2e:report
 ```
 
 ### Additional Commands
@@ -77,9 +74,6 @@ npm run test:e2e:debug
 ```bash
 # Set up a test user in the Auth emulator
 npm run firebase:setup-test-user
-
-# View the HTML test report
-npm run test:e2e:report
 
 # Run tests in CI environment (headless, with retries)
 npm run test:e2e:ci
@@ -112,9 +106,10 @@ The testing framework is configured in several key files:
    - Sets up authentication for tests requiring auth
    - Saves authenticated state to `tests/.auth/user.json`
 
-5. **scripts/e2e-runner.js**:
+5. **scripts/run-e2e-with-checks.js**:
    - Orchestrates the test execution process
    - Manages server and emulator startup/shutdown
+   - Scans server logs for errors after tests complete
    - Handles port conflicts automatically
 
 ## Reliable Testing Approach
@@ -145,19 +140,32 @@ We provide a robust testing approach to avoid common issues:
    - Supports testing against custom URLs with `--base-url` parameter
    - Verifies server connectivity before running tests, even with existing servers
 
-5. **Firebase Emulator Integration**:
+5. **Enhanced Parameter Handling**:
 
-   - Automatically starts Firebase emulators when using `--with-firebase` flag
+   - The `run-e2e-with-checks.js` script accepts Playwright parameters
+   - Supports direct passing of arguments like `--debug`, `--headed`, and `--project=chromium`
+   - Can also accept specific test file paths for targeted testing
+   - Uses format: `npm run test:e2e -- --debug tests/e2e/my-test.spec.ts`
+
+6. **Log Analysis**:
+
+   - Scans server logs for errors after tests complete
+   - Distinguishes between test failures and server errors
+   - Properly reports both types of issues for better debugging
+
+7. **Firebase Emulator Integration**:
+
+   - Automatically starts Firebase emulators when needed
    - Sets up a test user for authentication tests
    - Properly configures environment variables for emulator connections
    - Cleans up emulator processes after tests complete
 
-6. **Standardized Configuration**:
+8. **Standardized Configuration**:
 
    - All settings are centralized in `.env.test`
    - Tests use consistent timeouts and navigation settings
 
-7. **Improved Error Handling**:
+9. **Improved Error Handling**:
    - Detailed logs of server activity and test execution
    - Human and AI-readable error messages with troubleshooting steps
    - Screenshots captured on test failures
@@ -199,12 +207,12 @@ Our system supports multiple authentication testing approaches:
 
 1. **Basic Tests (No Auth)**:
 
-   - Use `npm run test:e2e:reliable`
+   - Use `npm run test:e2e`
    - Good for testing UI components, navigation, and public pages
 
 2. **Firebase Emulator Auth Tests**:
 
-   - Use `npm run test:e2e:reliable:auth`
+   - Use `npm run test:e2e:auth`
    - Automatically starts Firebase Auth emulator
    - Sets up a test user with credentials from `.env.test`
    - Allows testing real login flows and protected routes
@@ -297,11 +305,11 @@ When tests fail, you have several debugging options:
 2. **Screenshots**: Look in `tests/e2e/screenshots/` for automatic screenshots
 3. **Trace Viewer**: Use the trace viewer to replay tests step by step
 4. **Debug Mode**:
-   - For basic tests: `npm run test:e2e:reliable:debug`
-   - For auth tests: `npm run test:e2e:reliable:auth:debug`
+   - For basic tests: `npm run test:e2e:debug`
+   - For auth tests: `npm run test:e2e:auth:debug`
 5. **Headed Mode**:
-   - For basic tests: `npm run test:e2e:reliable:headed`
-   - For auth tests: `npm run test:e2e:reliable:auth:headed`
+   - For basic tests: `npm run test:e2e:headed`
+   - For auth tests: `npm run test:e2e:auth:headed`
 
 ## Troubleshooting
 
@@ -312,7 +320,7 @@ When tests fail, you have several debugging options:
 | "auth/unauthorized-domain"   | Make sure your emulator is properly configured in firebase.json and .env.test                             |
 | Test timeouts                | Try increasing the timeouts in .env.test (TIMEOUT_TEST, TIMEOUT_SERVER)                                   |
 | Emulator data not persisting | Run `npm run firebase:emulators:export` to save state                                                     |
-| Tests hanging/stalling       | Use the `npm run test:e2e:reliable` script which has proper timeouts and cleanup                          |
+| Tests hanging/stalling       | Use the `npm run test:e2e` script which has proper timeouts and cleanup                                   |
 | Firebase connection issues   | Check that emulator ports match in both `.env.test` and `firebase.json`                                   |
 | "auth/email-already-in-use"  | This is normal when the test user already exists, the script verifies it works                            |
 | "Server health check failed" | Ensure your server is running and accessible at the expected URL. Check console for detailed diagnostics. |
@@ -328,7 +336,7 @@ When tests fail, you have several debugging options:
 3. **Isolation**: Each test should be independent and not rely on state from other tests
 4. **Minimize Flakiness**: Use proper waiting mechanisms and avoid timing-dependent assertions
 5. **Mock External Services**: Always use Firebase emulators instead of production services
-6. **Use the Reliable Runner**: The e2e-runner.js script handles many common issues automatically
+6. **Use the Reliable Runner**: The run-e2e-with-checks.js script handles many common issues automatically
 7. **Avoid Hardcoded URLs**: Never use hardcoded URLs like `http://localhost:3000` - always use relative paths or environment variables
 8. **Consistent State Management**: Use Playwright's `storageState` for authentication rather than custom cookie management
 9. **Choose the Right Selectors**: Prefer user-facing attributes (text, role, label) over CSS selectors
@@ -355,7 +363,7 @@ Our E2E testing framework includes authentication tests, but there are some know
 To run authentication tests with Firebase emulators:
 
 ```sh
-npm run test:e2e:reliable:auth tests/e2e/auth-basic.spec.ts
+npm run test:e2e:auth tests/e2e/auth-basic.spec.ts
 ```
 
 When auth tests fail, check:
@@ -383,13 +391,13 @@ You can run tests against a server that's already running:
 
 ```bash
 # Test against the default URL (http://localhost:3336)
-npm run test:e2e:reliable:against-existing
+npm run test:e2e:against-existing
 
 # Test against a custom URL
-npm run test:e2e:reliable:custom-url
+npm run test:e2e:custom-url
 
 # Or specify a custom URL directly
-node scripts/e2e-runner.js --use-existing-server --base-url=http://localhost:8000
+cross-env PLAYWRIGHT_TEST_BASE_URL=http://localhost:8000 playwright test
 ```
 
 This is useful for:
@@ -421,3 +429,36 @@ Test results and artifacts are stored in organized directories:
 - **Test Results**: `tests/config/test-results/`
 
 These files are automatically generated during test runs and can be useful for debugging failures.
+
+## Tips for Stable Tests
+
+1. **Use Realistic Timeouts**:
+
+   - Set appropriate timeouts in the test files (`test.setTimeout(30000)`)
+   - Use `page.waitForTimeout()` sparingly for stabilization issues
+
+2. **Stable Selectors**:
+
+   - Use data-testid attributes for primary element selection
+   - Prefer role-based selectors (getByRole) over text or CSS selectors
+
+3. **Better Assertions**:
+
+   - Use `toBeVisible()` over `toHaveCount(1)` for element presence
+   - Use `toHaveText()` with regex for flexible text matching
+
+4. **Handle Authentication Properly**:
+
+   - Use the auth.setup.ts file to pre-authenticate
+   - Reuse auth state with `storageState` configuration
+
+5. **Environment Variables**:
+
+   - Use `.env.test` for all test-specific configuration
+   - Make sure environment variables are correctly set in CI
+
+6. **Use the Reliable Runner**: The run-e2e-with-checks.js script handles many common issues automatically:
+
+   - Logs scanning for server errors
+   - Proper cleanup of resources
+   - Coordinated startup of emulators and servers

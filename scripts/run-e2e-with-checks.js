@@ -13,6 +13,39 @@ const errorPatterns = [
   /Traceback/i,
 ]; // Add more patterns as needed
 
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const playwrightArgs = [];
+  const specificTestFiles = [];
+
+  // Extract any arguments after '--' as direct Playwright arguments
+  const doubleHyphenIndex = args.indexOf('--');
+  if (doubleHyphenIndex !== -1) {
+    playwrightArgs.push(...args.slice(doubleHyphenIndex + 1));
+  }
+
+  // Process remaining arguments
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--') break; // Stop at the separator
+
+    // Handle special flags
+    if (arg === '--debug') {
+      playwrightArgs.push('--debug');
+    } else if (arg === '--headed') {
+      playwrightArgs.push('--headed');
+    } else if (arg.startsWith('--project=')) {
+      playwrightArgs.push(arg);
+    } else if (!arg.startsWith('--')) {
+      // Assume it's a test file path
+      specificTestFiles.push(arg);
+    }
+  }
+
+  return { playwrightArgs, specificTestFiles };
+}
+
 function scanLogForErrors(filePath) {
   console.log(`\\nScanning server log for errors: ${filePath}`);
   try {
@@ -44,6 +77,9 @@ function scanLogForErrors(filePath) {
 }
 
 function runE2ETests() {
+  // Parse arguments
+  const { playwrightArgs, specificTestFiles } = parseArgs();
+
   // 1. Delete the old log file
   try {
     if (fs.existsSync(logFilePath)) {
@@ -56,9 +92,18 @@ function runE2ETests() {
     // Decide if this is fatal - maybe not, the redirect will overwrite
   }
 
-  // 2. Run the original start-server-and-test command
-  const testCommand =
-    "start-server-and-test 'npm run firebase:emulators:import' http://localhost:9099 'npm run dev:test' http://localhost:3777 'npm run test:e2e:run-tests'";
+  // Construct the test command with appropriate arguments
+  let testRunCommand =
+    'npm run firebase:setup-test-user && cross-env PLAYWRIGHT_TEST_BASE_URL=http://localhost:3777 playwright test';
+  if (playwrightArgs.length > 0) {
+    testRunCommand += ` ${playwrightArgs.join(' ')}`;
+  }
+  if (specificTestFiles.length > 0) {
+    testRunCommand += ` ${specificTestFiles.join(' ')}`;
+  }
+
+  // 2. Run the start-server-and-test command
+  const testCommand = `start-server-and-test 'npm run firebase:emulators:import' http://localhost:9099 'npm run dev:test' http://localhost:3777 '${testRunCommand}'`;
   let playwrightPassed = true;
 
   console.log(`\\nStarting E2E tests with command:\\n${testCommand}\\n`);
