@@ -1,4 +1,4 @@
-import { classNames, cn, cleanDbData } from '../../../lib/utils';
+import { classNames, cleanDbData } from '../../../lib/utils';
 
 describe('classNames and cn function', () => {
   test('merges string class names correctly', () => {
@@ -66,10 +66,8 @@ describe('classNames and cn function', () => {
 
     // Act
     const result1 = classNames(...args);
-    const result2 = cn(...args);
 
     // Assert
-    expect(result1).toBe(result2);
     expect(result1).toBe('foo bar');
   });
 });

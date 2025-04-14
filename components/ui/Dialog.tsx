@@ -2,7 +2,6 @@
 
 import { Dialog as MuiDialog, DialogProps as MuiDialogProps } from '@mui/material';
 import { ReactNode, memo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 import DialogHeader from './DialogHeader';
 import DialogBody from './DialogBody';
 import DialogFooter from './DialogFooter';
@@ -21,6 +20,7 @@ const Dialog = ({
   showCloseButton = true,
   onClose,
   children,
+  PaperProps,
   ...props
 }: DialogProps) => {
   // Use useCallback to prevent unnecessary re-renders
@@ -36,8 +36,11 @@ const Dialog = ({
       aria-describedby="dialog-description"
       PaperProps={{
         elevation: 24,
-        className: cn('overflow-hidden', props.PaperProps?.className),
-        ...(props.PaperProps || {}),
+        sx: {
+          overflow: 'hidden',
+          ...(PaperProps?.sx || {}),
+        },
+        ...PaperProps,
       }}
     >
       <DialogHeader title={title} showCloseButton={showCloseButton} onClose={handleClose} />

@@ -8,9 +8,9 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  useTheme,
 } from '@mui/material';
 import { forwardRef, ReactNode, memo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 
 export interface MenuItemProps extends MuiMenuItemProps {
   icon?: ReactNode;
@@ -22,30 +22,46 @@ export interface MenuItemProps extends MuiMenuItemProps {
 
 export const MenuItem = memo(
   forwardRef<HTMLLIElement, MenuItemProps>(
-    (
-      { children, icon, primary, secondary, danger, disabled = false, className = '', ...props },
-      ref
-    ) => {
+    ({ children, icon, primary, secondary, danger, disabled = false, sx, ...props }, ref) => {
+      const theme = useTheme();
+      const dangerColor = theme.palette.error.main;
+      const dangerHoverBg = theme.palette.error.light; // Adjust alpha/opacity if needed for hover bg
+
       return (
         <MuiMenuItem
           {...props}
           ref={ref}
           disabled={disabled}
-          className={cn(
-            'flex items-center gap-2 transition-colors duration-150',
-            danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20' : '',
-            disabled ? 'opacity-50 cursor-not-allowed' : '',
-            className
-          )}
+          // Combine incoming sx with default styles
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2, // theme.spacing(2) assuming 8px base
+            transition: theme.transitions.create('background-color', {
+              duration: theme.transitions.duration.shortest, // 150ms
+            }),
+            ...(danger && {
+              color: dangerColor,
+              '&:hover': {
+                backgroundColor: dangerHoverBg,
+              },
+              // Apply danger color to icon and text if they exist
+              '& .MuiListItemIcon-root': { color: dangerColor },
+              '& .MuiListItemText-primary': { color: dangerColor },
+            }),
+            ...(disabled && {
+              opacity: 0.5,
+              cursor: 'not-allowed',
+            }),
+            ...(sx || {}), // Apply incoming sx prop last
+          }}
         >
-          {icon && <ListItemIcon className={cn(danger ? 'text-red-600' : '')}>{icon}</ListItemIcon>}
+          {icon && <ListItemIcon>{icon}</ListItemIcon>}
           {primary || secondary ? (
             <ListItemText
               primary={primary}
               secondary={secondary}
-              primaryTypographyProps={{
-                className: cn(danger ? 'text-red-600' : ''),
-              }}
+              // Danger color applied via parent sx
             />
           ) : (
             children
@@ -58,7 +74,7 @@ export const MenuItem = memo(
 
 MenuItem.displayName = 'MenuItem';
 
-export const MenuDivider = () => <Divider className="my-1" />;
+export const MenuDivider = () => <Divider sx={{ my: 1 }} />;
 
 export interface MenuProps extends MuiMenuProps {
   children: ReactNode;
@@ -66,24 +82,24 @@ export interface MenuProps extends MuiMenuProps {
 }
 
 const Menu = forwardRef<HTMLDivElement, MenuProps>(
-  ({ children, className = '', width, ...props }, ref) => {
+  ({ children, width, PaperProps, ...props }, ref) => {
+    const theme = useTheme();
     // Don't use CSS transitions during initial mount
     const TransitionProps = useCallback(
       () => ({
         timeout: {
           appear: 0,
-          enter: 225,
-          exit: 195,
+          enter: theme.transitions.duration.enteringScreen, // 225ms
+          exit: theme.transitions.duration.leavingScreen, // 195ms
         },
       }),
-      []
+      [theme]
     );
 
     return (
       <MuiMenu
         {...props}
         ref={ref}
-        className={cn(className)}
         TransitionProps={TransitionProps()}
         anchorOrigin={{
           vertical: 'bottom',
@@ -96,17 +112,17 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
           ...props.transformOrigin,
         }}
         PaperProps={{
-          ...props.PaperProps,
-          className: cn(
-            'rounded-lg shadow-md border border-gray-200 dark:border-gray-800 bg-background',
-            props.PaperProps?.className
-          ),
+          ...PaperProps,
           elevation: 8,
           sx: {
+            borderRadius: theme.shape.borderRadius * 1.5, // rounded-lg equivalent (adjust multiplier)
+            boxShadow: theme.shadows[3], // shadow-md equivalent
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
             width: width || 'auto',
             minWidth: 180,
             maxHeight: 'calc(100% - 96px)',
-            ...(props.PaperProps?.sx || {}),
+            ...(PaperProps?.sx || {}),
           },
         }}
       >

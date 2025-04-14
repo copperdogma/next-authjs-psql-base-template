@@ -1,16 +1,23 @@
 'use client';
 
-import { DialogContent } from '@mui/material';
+import { DialogContent, DialogContentProps } from '@mui/material';
 import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 
-interface DialogBodyProps {
+interface DialogBodyProps extends DialogContentProps {
   children: ReactNode;
 }
 
-export default function DialogBody({ children }: DialogBodyProps) {
+export default function DialogBody({ children, sx, ...props }: DialogBodyProps) {
   return (
-    <DialogContent id="dialog-description" className={cn('px-6 py-4')}>
+    <DialogContent
+      id="dialog-description"
+      {...props}
+      sx={{
+        px: 3,
+        py: 2,
+        ...(sx || {}),
+      }}
+    >
       {children}
     </DialogContent>
   );

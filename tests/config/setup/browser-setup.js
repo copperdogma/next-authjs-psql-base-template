@@ -26,30 +26,6 @@ window.matchMedia =
     };
   };
 
-// Mock Tailwind CSS classes
-// This allows Jest to recognize classes like 'hidden' for visibility testing
-document.documentElement.classList.add('js-test-env');
-
-// Override the getComputedStyle method to handle Tailwind's 'hidden' class
-const originalGetComputedStyle = window.getComputedStyle;
-window.getComputedStyle = function (element) {
-  const computedStyle = originalGetComputedStyle(element);
-
-  // Special handling for the 'hidden' class
-  if (element.classList && element.classList.contains('hidden')) {
-    const styleOverrides = {
-      display: 'none',
-      getPropertyValue: function (prop) {
-        return prop === 'display' ? 'none' : computedStyle.getPropertyValue(prop);
-      },
-    };
-
-    return Object.assign({}, computedStyle, styleOverrides);
-  }
-
-  return computedStyle;
-};
-
 // Add mock for fetch required by NextAuth
 global.fetch = jest.fn(() =>
   Promise.resolve({

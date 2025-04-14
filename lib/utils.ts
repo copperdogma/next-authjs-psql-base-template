@@ -30,9 +30,6 @@ export function classNames(
     .join(' ');
 }
 
-// Export the classNames function as cn for backward compatibility
-export const cn = classNames;
-
 // This function can be modified to exclude specific fields from the db data when needed
 export function cleanDbData<T extends Record<string, any>>(data: T): Omit<T, 'password'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -1,21 +1,30 @@
 'use client';
 
-import { DialogActions } from '@mui/material';
+import { DialogActions, DialogActionsProps } from '@mui/material';
 import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 
-interface DialogFooterProps {
-  actions: ReactNode;
+interface DialogFooterProps extends DialogActionsProps {
+  actions?: ReactNode;
 }
 
-export default function DialogFooter({ actions }: DialogFooterProps) {
-  if (!actions) return null;
+export default function DialogFooter({ actions, children, sx, ...props }: DialogFooterProps) {
+  const content = actions || children;
+  if (!content) return null;
 
   return (
     <DialogActions
-      className={cn('px-6 py-4 flex gap-2 border-t border-gray-100 dark:border-gray-800')}
+      {...props}
+      sx={{
+        px: 3,
+        py: 2,
+        display: 'flex',
+        gap: 1,
+        borderTop: 1,
+        borderColor: 'divider',
+        ...(sx || {}),
+      }}
     >
-      {actions}
+      {content}
     </DialogActions>
   );
 }

@@ -1,9 +1,8 @@
 'use client';
 
-import { DialogTitle, IconButton } from '@mui/material';
+import { DialogTitle, IconButton, Typography } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 
 interface DialogHeaderProps {
   title?: ReactNode;
@@ -15,18 +14,38 @@ export default function DialogHeader({ title, showCloseButton, onClose }: Dialog
   if (!title && !showCloseButton) return null;
 
   return (
-    <DialogTitle id="dialog-title" className={cn('flex items-center justify-between py-4 px-6')}>
-      <div className={cn('text-xl font-semibold')}>{title}</div>
+    <DialogTitle
+      id="dialog-title"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        py: 2,
+        px: 3,
+        position: 'relative',
+      }}
+    >
+      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+        {title}
+      </Typography>
       {showCloseButton && onClose && (
         <IconButton
           aria-label="close dialog"
           onClick={onClose}
           size="small"
-          className={cn(
-            'absolute right-3 top-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100',
-            'dark:hover:bg-gray-800 dark:hover:text-gray-300 rounded-full transition-colors'
-          )}
           edge="end"
+          sx={{
+            position: 'absolute',
+            right: theme => theme.spacing(1.5),
+            top: theme => theme.spacing(1.5),
+            color: 'text.secondary',
+            transition: theme => theme.transitions.create(['color', 'background-color']),
+            '&:hover': {
+              color: 'text.primary',
+              backgroundColor: theme =>
+                theme.palette.mode === 'dark' ? 'action.hover' : 'rgba(0, 0, 0, 0.04)',
+            },
+          }}
         >
           <CloseIcon fontSize="small" />
         </IconButton>

@@ -12,45 +12,15 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 - Redis Caching
 - Comprehensive Testing Setup
 - TypeScript
-- TailwindCSS
-- Material Design Components
+- Material Design Components (MUI)
 
 ## Technology Stack
 
-- **Frontend**: Next.js, React, TailwindCSS
+- **Frontend**: Next.js, React, Material UI (MUI)
 - **Backend**: Node.js/TypeScript
 - **Auth**: Firebase Authentication
 - **Data**: PostgreSQL, Redis (caching)
 - **Deployment**: fly.io
-
-## Utility Functions
-
-### `cn()`: Class Name Utility
-
-The template includes a powerful utility function for managing Tailwind CSS classes:
-
-```typescript
-import { cn } from '@/lib/utils';
-
-// Basic usage
-<div className={cn('text-red-500', 'bg-blue-500')} />
-
-// With conditional classes
-<div className={cn(
-  'px-4 py-2',
-  { 'bg-blue-500': isPrimary, 'bg-gray-500': !isPrimary }
-)} />
-
-// With component variants
-<Button className={cn(buttonVariants({ variant, size }), className)} />
-```
-
-This utility combines:
-
-- **clsx**: For conditional class handling (objects, arrays, etc.)
-- **tailwind-merge**: For resolving Tailwind CSS conflicts (later classes override earlier ones)
-
-Use `cn()` whenever applying Tailwind CSS classes in your components to ensure proper class merging and conflict resolution.
 
 ## Installation
 
@@ -100,7 +70,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 │   │   ├── auth/           # Authentication endpoints
 │   │   │   └── session/    # Session management endpoints
 │   │   └── health/         # Health check endpoint
-│   ├── globals.css         # Global styles with Tailwind imports
+│   ├── globals.css         # Global styles
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Home page
 ├── components/             # Reusable components
@@ -268,7 +238,7 @@ This template includes a comprehensive testing setup:
 - **Authentication**: Firebase Auth
 - **Database**: PostgreSQL
 - **Caching**: Redis (optional)
-- **UI**: React with Tailwind CSS
+- **UI**: React with Material UI (MUI)
 - **Testing**: Jest with React Testing Library
 - **Type Checking**: TypeScript
 - **Linting**: ESLint

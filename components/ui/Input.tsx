@@ -1,47 +1,57 @@
 'use client';
 
-import { InputHTMLAttributes, forwardRef, memo } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import { forwardRef, memo } from 'react';
+import { Input as MuiInput, InputProps as MuiInputProps, styled } from '@mui/material';
 
-const inputVariants = cva(
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-  {
-    variants: {
-      variant: {
-        default: '',
-        outline: 'border-2',
-        ghost: 'border-none',
-      },
-      inputSize: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 px-3',
-        lg: 'h-12 px-6',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      inputSize: 'default',
-    },
-  }
-);
+// Define interface extending MUI InputProps
+export interface InputProps extends MuiInputProps {
+  // Add custom variant props if needed, otherwise rely on MUI variants (filled, outlined, standard)
+}
 
-export interface InputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants> {}
+// Use MUI styled API to create styled input
+const StyledInput = styled(MuiInput)<InputProps>(({ theme, size }) => ({
+  // Base styles (approximating CVA defaults)
+  width: '100%',
+  borderRadius: theme.shape.borderRadius,
+  border: `1px solid ${theme.palette.divider}`, // default border
+  backgroundColor: theme.palette.background.paper,
+  fontSize: theme.typography.pxToRem(14), // text-sm
+  paddingLeft: theme.spacing(1.5), // px-3 approx
+  paddingRight: theme.spacing(1.5),
+  // height and vertical padding based on size prop ('small' or 'medium')
+  height: size === 'small' ? '32px' : '40px', // Default to medium height
+  paddingTop: size === 'small' ? theme.spacing(1) : theme.spacing(1.25), // Default to medium padding
+  paddingBottom: size === 'small' ? theme.spacing(1) : theme.spacing(1.25), // Default to medium padding
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, inputSize, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(inputVariants({ variant, inputSize }), className)}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
+  // Ring effect on focus (using outline for better accessibility)
+  '&.Mui-focused': {
+    outline: `2px solid ${theme.palette.primary.main}`,
+    outlineOffset: '2px',
+    borderColor: 'transparent', // Hide default border on focus
+  },
+  '&.Mui-disabled': {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  // Placeholder styles
+  '& ::placeholder': {
+    color: theme.palette.text.secondary,
+  },
+  // File input styles (MUI handles this differently, usually with a Button)
+  // These might need a different approach if file input is used
+}));
+
+// ForwardRef component using the styled input
+const Input = forwardRef<HTMLInputElement, InputProps>(({ type, ...props }, ref) => {
+  return (
+    <StyledInput
+      type={type}
+      ref={ref}
+      disableUnderline // Use this if you want to remove the default MUI underline
+      {...props}
+    />
+  );
+});
 Input.displayName = 'Input';
 
 // Memoize the Input component to prevent unnecessary re-renders

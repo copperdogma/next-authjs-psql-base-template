@@ -6,10 +6,10 @@ import {
   SnackbarProps as MuiSnackbarProps,
   AlertProps,
   IconButton,
+  Typography,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { forwardRef, memo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 
 export interface SnackbarProps extends Omit<MuiSnackbarProps, 'children'> {
   message?: string;
@@ -53,7 +53,11 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
           onClose={showCloseButton ? handleClose : undefined}
           severity={severity}
           variant={variant}
-          className={cn('w-full shadow-md rounded-lg')}
+          sx={{
+            width: '100%',
+            boxShadow: 3,
+            borderRadius: 1,
+          }}
           elevation={elevation}
           action={
             showCloseButton && (
@@ -63,8 +67,14 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
             )
           }
         >
-          {title && <div className={cn('font-medium mb-0.5')}>{title}</div>}
-          <div>{message}</div>
+          {title && (
+            <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'medium', mb: 0.5 }}>
+              {title}
+            </Typography>
+          )}
+          <Typography variant="body2" component="div">
+            {message}
+          </Typography>
         </MuiAlert>
       </MuiSnackbar>
     );
@@ -73,5 +83,4 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
 
 Snackbar.displayName = 'Snackbar';
 
-// Memoize to prevent unnecessary re-renders
 export default memo(Snackbar);

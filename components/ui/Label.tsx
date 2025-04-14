@@ -1,31 +1,28 @@
 'use client';
 
-import { LabelHTMLAttributes, forwardRef } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import { forwardRef } from 'react';
+import { InputLabel as MuiInputLabel, InputLabelProps as MuiInputLabelProps } from '@mui/material';
 
-const labelVariants = cva(
-  'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
-  {
-    variants: {
-      variant: {
-        default: '',
-        error: 'text-destructive',
-        success: 'text-success',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+export interface LabelProps extends Omit<MuiInputLabelProps, 'variant'> {
+  variant?: 'default' | 'error' | 'success';
+}
 
-export interface LabelProps
-  extends LabelHTMLAttributes<HTMLLabelElement>,
-    VariantProps<typeof labelVariants> {}
+const Label = forwardRef<HTMLLabelElement, LabelProps>(({ variant, sx, ...props }, ref) => {
+  const color = variant === 'error' ? 'error' : variant === 'success' ? 'success' : 'inherit';
 
-const Label = forwardRef<HTMLLabelElement, LabelProps>(({ className, variant, ...props }, ref) => {
-  return <label ref={ref} className={cn(labelVariants({ variant }), className)} {...props} />;
+  return (
+    <MuiInputLabel
+      ref={ref}
+      sx={{
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        lineHeight: '1',
+        color: `${color}.main`,
+        ...(sx || {}),
+      }}
+      {...props}
+    />
+  );
 });
 Label.displayName = 'Label';
 
