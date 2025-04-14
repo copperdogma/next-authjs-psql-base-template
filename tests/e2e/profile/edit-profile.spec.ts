@@ -1,20 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { FirebaseAuthUtils, TEST_USER } from '@/tests/e2e/fixtures/auth-fixtures';
+import { TEST_USER } from '@/tests/e2e/fixtures/auth-fixtures';
 
+// Use the authenticated state from auth.setup.ts
 test.describe('Profile Name Editing', () => {
-  test.beforeEach(async ({ page }) => {
-    // Authenticate using the FirebaseAuthUtils class
-    await FirebaseAuthUtils.mockSignedInUser(page);
-    await page.goto('/profile');
-  });
-
   test.skip('should allow editing user name', async ({ page }) => {
-    // SKIPPED: Test is skipped due to ongoing Playwright authentication issues.
-    // This test will be re-enabled once Firebase auth mocking is working reliably.
-    // Current issue: Unable to navigate to profile page with proper authentication state.
+    // SKIPPED: Test consistently fails due to inability to reliably load
+    // the authenticated /profile route using stored auth state during direct navigation.
+    // The page redirects or fails to load authenticated content.
 
-    // Verify initial profile state
-    await expect(page).toHaveTitle(/Your Profile/);
+    // Navigate to profile AFTER global auth setup which provides the session
+    await page.goto('/profile');
+
+    // Verify initial profile state - Title check might be flaky if redirects happen
+    // Let's wait for a specific profile element instead
+    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 15000 });
 
     // Click the edit button
     const editButton = page.getByRole('button', { name: 'Edit' });
@@ -47,9 +46,14 @@ test.describe('Profile Name Editing', () => {
   });
 
   test.skip('should validate name during editing', async ({ page }) => {
-    // SKIPPED: Test is skipped due to ongoing Playwright authentication issues.
-    // This test will be re-enabled once Firebase auth mocking is working reliably.
-    // Current issue: Unable to locate and click the Edit button due to auth state problems.
+    // SKIPPED: Test consistently fails due to inability to reliably load
+    // the authenticated /profile route using stored auth state during direct navigation.
+
+    // Navigate to profile AFTER global auth setup
+    await page.goto('/profile');
+
+    // Wait for a key authenticated element
+    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 15000 });
 
     // Click the edit button
     const editButton = page.getByRole('button', { name: 'Edit' });
@@ -78,9 +82,14 @@ test.describe('Profile Name Editing', () => {
   });
 
   test.skip('should cancel editing without saving changes', async ({ page }) => {
-    // SKIPPED: Test is skipped due to ongoing Playwright authentication issues.
-    // This test will be re-enabled once Firebase auth mocking is working reliably.
-    // Current issue: Unable to find user name text due to authentication state problems.
+    // SKIPPED: Test consistently fails due to inability to reliably load
+    // the authenticated /profile route using stored auth state during direct navigation.
+
+    // Navigate to profile AFTER global auth setup
+    await page.goto('/profile');
+
+    // Wait for a key authenticated element
+    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 15000 });
 
     // Get the current name before editing
     const currentNameEl = page.getByText(TEST_USER.displayName);

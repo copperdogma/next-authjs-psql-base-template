@@ -73,7 +73,18 @@ const config: PlaywrightTestConfig = defineConfig({
     // UI tests that don't require authentication
     {
       name: 'ui-tests',
-      testMatch: /.*simple-test\.spec\.ts|.*navigation\.spec\.ts/,
+      // Match basic navigation, simple tests, public access, specific non-auth flows
+      testMatch: [
+        /navigation-improved\.spec\.ts/,
+        /simple\.spec\.ts/,
+        /public-access\.spec\.ts/,
+        /theme-toggle\.spec\.ts/,
+        /accessibility-improved\.spec\.ts/, // Assuming this doesn't strictly need auth
+        /basic\.spec\.ts/,
+        /ultra-basic\.spec\.ts/,
+      ],
+      // Explicitly ignore tests known to require auth state
+      testIgnore: [/auth\/.*\.spec\.ts/, /profile\/.*\.spec\.ts/, /dashboard\.spec\.ts/],
       use: {
         ...devices['Desktop Chrome'],
       },
@@ -82,12 +93,23 @@ const config: PlaywrightTestConfig = defineConfig({
     // Authenticated tests in Chromium
     {
       name: 'chromium',
+      // Explicitly ignore the setup file itself and tests covered by 'ui-tests'
+      testIgnore: [
+        /.*\.setup\.ts/,
+        /navigation-improved\.spec\.ts/,
+        /simple\.spec\.ts/,
+        /public-access\.spec\.ts/,
+        /theme-toggle\.spec\.ts/,
+        /accessibility-improved\.spec\.ts/,
+        /basic\.spec\.ts/,
+        /ultra-basic\.spec\.ts/,
+      ],
       use: {
         ...devices['Desktop Chrome'],
         storageState: STORAGE_STATE,
       },
       dependencies: ['setup'],
-      testIgnore: /.*simple-test\.spec\.ts|.*navigation\.spec\.ts/,
+      // testIgnore: /.*simple-test\.spec\.ts|.*navigation\.spec\.ts/, // Remove old ignore
     },
 
     // API tests - no browser needed

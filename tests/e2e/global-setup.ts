@@ -115,6 +115,23 @@ async function setupTestUser() {
 async function globalSetup() {
   console.log('--- E2E Global Setup ---');
 
+  // Log key configuration details for debugging
+  console.log('🔧 Configuration Details:');
+  console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`  TEST_USER_EMAIL: ${TEST_USER_EMAIL}`);
+  console.log(`  FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}`);
+  console.log(
+    `  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`
+  );
+  console.log(
+    `  NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`
+  );
+  console.log(
+    `  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
+  );
+  console.log(`  PLAYWRIGHT_TEST_BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL}`);
+  console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`); // Although we removed the endpoint, log if the var is set
+
   try {
     await clearEmulatorData();
 
