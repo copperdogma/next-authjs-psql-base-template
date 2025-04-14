@@ -2,11 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { SessionService, LoggerService } from '@/lib/interfaces/services';
-import { defaultSessionService } from '@/lib/services/session-service';
-import { createLoggerService } from '@/lib/services/logger-service';
+import * as pino from 'pino';
+import { SessionService, defaultSessionService } from '@/lib/services/session-service';
+import { logger as rootLogger } from '@/lib/logger';
 import { authConfig } from '@/lib/auth';
 import { ProfileService, defaultProfileService } from '@/lib/services/profile-service';
+
+const actionsLogger = rootLogger.child({ service: 'profile-actions' });
 
 // Define the form state type for the profile form
 export type FormState = {
@@ -22,7 +24,7 @@ class ProfileActionsImpl {
   constructor(
     private readonly sessionService: SessionService = defaultSessionService,
     private readonly profileService: ProfileService = defaultProfileService,
-    private readonly logger: LoggerService = createLoggerService('profile:actions')
+    private readonly logger: pino.Logger = actionsLogger
   ) {}
 
   // Define validation schema for user name

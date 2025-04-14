@@ -18,7 +18,7 @@ alwaysApply: true
 │   ├── auth/             # Authentication components
 │   │   ├── SignInButton.tsx  # Sign-in/sign-out button
 │   │   └── UserProfile.tsx   # User profile display
-│   ├── ui/               # Base UI components
+│   ├── ui/               # Base UI components (MUI based)
 │   │   ├── Button.tsx    # Button with variants
 │   │   ├── Card.tsx      # Card with subcomponents
 │   │   ├── DateTimePicker.tsx # Date/time selection
@@ -75,8 +75,7 @@ alwaysApply: true
 ### Implementation Details
 - All components use 'use client' directive
 - TypeScript for type safety
-- Material UI for styling
-- Material Design components with custom theming
+- Material Design components (MUI) with custom theming
 - Proper ref forwarding
 - Accessibility features
 - Dark mode support via CSS variables
@@ -172,20 +171,16 @@ REDIS_URL=
 - Next.js 15.2.2
 - React 19
 - TypeScript 5
-- Material UI
+- Material Design components (MUI)
 - Firebase Auth
   - Sign-in provider (Google, Email/Password)
-  - Custom session management
-  - Protected routes
 - Firebase Firestore
 - Playwright for E2E testing
 - Jest for unit testing
 - PostgreSQL (pending)
 - Redis (pending)
-- Material Design components
 
 ## Configuration Files
-- `postcss.config.mjs` - PostCSS configuration with Material UI
 - `next.config.ts` - Next.js configuration
 - `tsconfig.json` - TypeScript settings
 - `.env.example` - Environment variables template
@@ -202,44 +197,24 @@ REDIS_URL=
 ## CSS Architecture
 ```css
 /* Global CSS Structure */
-
-/*
-  Base global styles are primarily managed by MUI's CssBaseline component,
-  which provides CSS resets and basic HTML element styling.
-  See `app/providers/ThemeRegistry.tsx` where CssBaseline is applied.
-*/
-
-/*
-  Global CSS variables can be defined here if needed, but prefer
-  defining theme tokens within the MUI theme configuration
-  (see `lib/theme/`).
-*/
 :root {
-  /* Example global variables (light mode defaults) */
-  --background: #ffffff;
+  --background: #ffffff;    // Light mode variables
   --foreground: #171717;
-  --transition-fast: 150ms;
-  --transition-normal: 300ms;
 }
 
-/*
-  Dark mode variables are typically handled by the MUI theme's
-  palette configuration based on the selected mode (light/dark).
-  However, CSS variables can be used for overrides if necessary.
-*/
+@theme inline {             // Theme configuration
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* Example dark mode overrides using CSS variables */
-    /* --background: #121212; */
-    /* --foreground: #ffffff; */
+  :root {                  // Dark mode variables
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
-
-/*
-  Minimal global overrides or utility classes can be added to
-  `app/globals.css`. Avoid large global stylesheets; prefer
-  component-level styling using MUI's `sx` prop or `styled()` API.
-*/
 ```
 
 ## Testing Architecture

@@ -1,16 +1,19 @@
-import { UserService, FirebaseAdminService, LoggerService } from '../interfaces/services';
-import { defaultUserService } from './user-service';
-import { defaultFirebaseAdminService } from './firebase-admin-service';
-import { createLoggerService } from './logger-service';
+import * as pino from 'pino';
+import { UserService } from './user-service';
+import { FirebaseAdminService } from './firebase-admin-service';
+import { logger as rootLogger } from '../logger';
+
+// Create a logger specific to this service
+const serviceLogger = rootLogger.child({ service: 'profile' });
 
 /**
  * ProfileService handles profile-related operations
  */
 export class ProfileService {
   constructor(
-    private readonly userService: UserService = defaultUserService,
-    private readonly firebaseAdminService: FirebaseAdminService = defaultFirebaseAdminService,
-    private readonly logger: LoggerService = createLoggerService('profile:service')
+    private readonly userService: UserService,
+    private readonly firebaseAdminService: FirebaseAdminService,
+    private readonly logger: pino.Logger = serviceLogger
   ) {}
 
   /**
@@ -66,5 +69,13 @@ export class ProfileService {
   }
 }
 
-// Create default instance
-export const defaultProfileService = new ProfileService();
+// Create default instance with dependencies
+// Note: Assumes defaultUserService and defaultFirebaseAdminService exist and are correctly typed
+import { defaultUserService } from './user-service';
+import { defaultFirebaseAdminService } from './firebase-admin-service';
+
+export const defaultProfileService = new ProfileService(
+  defaultUserService,
+  defaultFirebaseAdminService
+  // logger will use its default value (serviceLogger)
+);

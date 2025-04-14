@@ -1,18 +1,20 @@
 import * as admin from 'firebase-admin';
-import { FirebaseAdminService, LoggerService } from '../interfaces/services';
+import * as pino from 'pino';
 import { getFirebaseAdmin } from '../firebase-admin';
-import { createContextLogger } from './logger-service';
+import { logger as rootLogger } from '../logger';
+
+const serviceLogger = rootLogger.child({ service: 'firebase-admin' });
 
 /**
  * Implementation of FirebaseAdminService using Firebase Admin SDK
  */
-export class DefaultFirebaseAdminService implements FirebaseAdminService {
-  private readonly logger: LoggerService;
+export class FirebaseAdminService {
+  private readonly logger: pino.Logger;
   // Cache the admin instance for better testability
   private readonly firebaseAdmin: typeof admin;
 
-  constructor(logger?: LoggerService) {
-    this.logger = logger || createContextLogger('firebase-admin');
+  constructor(logger: pino.Logger = serviceLogger) {
+    this.logger = logger;
     this.logger.debug('FirebaseAdminService initialized');
     // Get Firebase Admin instance at construction time for better testability
     this.firebaseAdmin = getFirebaseAdmin();
@@ -22,7 +24,7 @@ export class DefaultFirebaseAdminService implements FirebaseAdminService {
    * Gets the Firebase Admin Auth instance
    */
   auth() {
-    this.logger.debug('Getting Firebase Admin Auth instance');
+    this.logger.trace('Getting Firebase Admin Auth instance');
     // Use the cached admin instance to get auth
     return this.firebaseAdmin.auth();
   }
@@ -31,7 +33,7 @@ export class DefaultFirebaseAdminService implements FirebaseAdminService {
    * Gets a user by email using Firebase Auth
    */
   async getUserByEmail(email: string) {
-    this.logger.debug({ email }, 'Getting user by email');
+    this.logger.trace({ email }, 'Getting user by email');
     return this.auth().getUserByEmail(email);
   }
 
@@ -53,4 +55,4 @@ export class DefaultFirebaseAdminService implements FirebaseAdminService {
 }
 
 // Create default instance
-export const defaultFirebaseAdminService = new DefaultFirebaseAdminService();
+export const defaultFirebaseAdminService = new FirebaseAdminService();
