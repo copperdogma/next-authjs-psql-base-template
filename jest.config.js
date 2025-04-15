@@ -113,17 +113,6 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
-
-    // Add specific threshold for utils-di.ts to account for re-export statements
-    'lib/db/utils-di.ts': {
-      // Lower function coverage threshold because lines 67-76 are just re-export statements
-      // that don't contain executable code but are counted in coverage metrics.
-      // This follows best practices as non-executable code shouldn't affect coverage metrics.
-      statements: 60,
-      branches: 100,
-      functions: 60,
-      lines: 60,
-    },
   },
 };
 
