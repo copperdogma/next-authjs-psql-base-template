@@ -1,4 +1,6 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { loggers } from '@/lib/logger'; // Import logger for checkDatabaseConnection
+import { prisma } from '@/lib/prisma'; // Import global prisma client
 // Import logger only if used directly in this file
 
 /**
@@ -30,10 +32,43 @@ export function getDatabaseErrorType(error: unknown): DatabaseErrorType {
   return DatabaseErrorType.Unknown;
 }
 
-// Import and re-export dependency-injected functions for backward compatibility
-import { checkDatabaseConnection, withTransaction } from './utils-di';
+// REMOVED OLD IMPORT/RE-EXPORT FROM utils-di.ts
+// export { checkDatabaseConnection, withTransaction };
 
-export { checkDatabaseConnection, withTransaction };
+/**
+ * Check if database is accessible
+ * Useful for health checks and startup validation
+ */
+export async function checkDatabaseConnection(): Promise<boolean> {
+  try {
+    // Simple query to check if database is accessible using global prisma client
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    // Use the db logger instance
+    loggers.db.error({ err: error }, 'Database connection check failed');
+    return false;
+  }
+}
+
+/**
+ * Execute operations in a transaction with appropriate error handling
+ */
+export async function withTransaction<T>(
+  operations: (
+    tx: Omit<
+      PrismaClient,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  ) => Promise<T>,
+  options?: {
+    timeout?: number;
+    isolationLevel?: Prisma.TransactionIsolationLevel;
+  }
+): Promise<T> {
+  // Use global prisma client
+  return prisma.$transaction(operations, options);
+}
 
 /**
  * Safely execute a database operation with retry capability
