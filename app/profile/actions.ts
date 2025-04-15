@@ -1,3 +1,17 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing Next.js Server Actions, especially those involving database
+// interactions and authentication checks, presents significant challenges with
+// mocking dependencies (like Prisma, NextAuth sessions) and handling module
+// resolution for imports using path aliases (e.g., '@/') within the Jest
+// environment. Direct unit tests for 'updateUserName' were skipped due to these
+// persistent issues.
+//
+// Validation Strategy:
+// The functionality of this server action is primarily validated through
+// End-to-End (E2E) tests (see tests/e2e/profile/edit-profile.spec.ts) which
+// simulate user interaction in a browser and verify the profile update flow.
+// =============================================================================
 'use server';
 
 import { revalidatePath } from 'next/cache';

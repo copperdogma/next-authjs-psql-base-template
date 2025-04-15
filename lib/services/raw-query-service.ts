@@ -111,15 +111,15 @@ export class RawQueryServiceImpl implements RawQueryService {
    * Performs a batch update with complex conditions
    * Example: Update all expired sessions for specific users
    *
-   * @param options Update options
+   * @param options Session extension options
    * @returns Number of updated records
    */
   async extendSessionExpirations(options: {
     userIds: string[];
-    extensionHours: number;
+    extensionHours?: number;
     currentExpiryBefore?: Date;
   }): Promise<number> {
-    const { userIds, extensionHours, currentExpiryBefore } = options;
+    const { userIds, extensionHours = 24, currentExpiryBefore } = options;
 
     this.logger.debug({
       msg: 'Extending session expirations',

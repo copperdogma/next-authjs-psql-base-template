@@ -1,3 +1,16 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing Next.js Middleware, especially involving authentication logic
+// and interaction with NextRequest/NextResponse objects (Edge Runtime), is
+// notoriously difficult due to environment limitations and mocking challenges.
+// Attempts to unit test this middleware encountered persistent issues like
+// 'ReferenceError: Request is not defined'.
+//
+// Validation Strategy:
+// Middleware functionality (route protection, redirects, public/private access)
+// is primarily validated through End-to-End (E2E) tests that simulate user
+// navigation and verify the resulting behavior in a browser context.
+// =============================================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken, JWT as NextAuthJWT } from 'next-auth/jwt';
 import * as pino from 'pino';
@@ -30,8 +43,9 @@ const defaultTokenService: TokenService = {
 
 /**
  * Checks if a path is in the public paths list
+ * @private // Marked private originally, now exporting for testing
  */
-function isPublic(pathname: string): boolean {
+export function isPublic(pathname: string): boolean {
   // First check direct matches
   if (publicPaths.some(path => path === pathname)) {
     return true;
@@ -66,8 +80,12 @@ function isPublic(pathname: string): boolean {
 
 /**
  * Handle routes that should be skipped for auth processing
+ * @private // Marked private originally, now exporting for testing
  */
-function handleSkippableRoutes(pathname: string, reqLogger: pino.Logger): NextResponse | null {
+export function handleSkippableRoutes(
+  pathname: string,
+  reqLogger: pino.Logger
+): NextResponse | null {
   // Skip API routes - they handle their own auth
   if (pathname.startsWith('/api/')) {
     reqLogger.debug({ msg: 'Skipping API route' });

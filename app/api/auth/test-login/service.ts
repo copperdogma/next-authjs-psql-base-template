@@ -50,7 +50,7 @@ export function createTestLogin(
       logger.info({ email }, 'Creating test authentication token');
 
       // Create a custom token for the test user
-      const customToken = await firebaseAdminService.auth().createCustomToken('test-user-id', {
+      const customToken = await firebaseAdminService.createCustomToken('test-user-id', {
         email,
         testAuth: true,
       });

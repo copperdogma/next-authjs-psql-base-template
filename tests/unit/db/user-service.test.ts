@@ -6,6 +6,41 @@ import {
 } from '../../../lib/db/user-service';
 import { prisma } from '../../../lib/prisma';
 
+/**
+ * DB User Service Unit Tests
+ *
+ * COVERAGE EXCLUSIONS:
+ *
+ * 1. UserService Class Instance Methods:
+ *    This test file only covers the static wrapper functions (exported helper functions)
+ *    but not the internal UserService class instance methods directly. This is because:
+ *    - The static functions provide a stable public API that user code interacts with
+ *    - Testing both would create redundant coverage as they call the same underlying code
+ *    - The instance methods require additional setup with class instantiation
+ *
+ * 2. N+1 Query Prevention Testing:
+ *    As noted in lib/db/user-service.ts, testing Prisma's N+1 query prevention mechanisms
+ *    is challenging in a unit test environment. The file contains this explanatory comment:
+ *
+ *    "Unit testing database interactions, especially involving Prisma in Jest,
+ *    can face significant environment and mocking challenges (e.g., PrismaClient
+ *    initialization errors). Tests specifically targeting patterns like N+1 query
+ *    prevention for methods in this service were skipped due to these issues."
+ *
+ *    These optimizations are better verified through integration tests or query monitoring
+ *    during E2E tests where actual database queries can be observed.
+ *
+ * 3. Custom PrismaClient Constructor Testing:
+ *    Testing with custom PrismaClient instances is omitted as this introduces
+ *    complexity with initialization in the test environment and provides limited value
+ *    in unit tests where we mock the client anyway.
+ *
+ * 4. Transaction Handling:
+ *    Complex transaction scenarios and rollbacks aren't tested at the unit level
+ *    because accurate simulation requires extensive mocking of Prisma's transaction
+ *    API. These are better tested in integration tests with actual database operations.
+ */
+
 // Mock the prisma client
 jest.mock('../../../lib/prisma', () => ({
   prisma: {

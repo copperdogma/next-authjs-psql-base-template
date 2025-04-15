@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useActionState } from 'react';
 import { Box, Divider, Stack } from '@mui/material';
 import { User } from 'next-auth';
 import SignOutButton from './SignOutButton';
-import { useFormState } from 'react-dom';
 import { updateUserName } from '@/app/profile/actions';
 import { useSession } from 'next-auth/react';
 import NameEditSection from './NameEditSection';
@@ -17,7 +16,7 @@ interface ProfileDetailsSectionProps {
 export default function ProfileDetailsSection({ user }: ProfileDetailsSectionProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const { update: updateSession } = useSession();
-  const [state, formAction] = useFormState(updateUserName, {
+  const [state, formAction] = useActionState(updateUserName, {
     message: '',
     success: false,
   });

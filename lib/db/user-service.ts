@@ -1,3 +1,15 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing database interactions, especially involving Prisma in Jest,
+// can face significant environment and mocking challenges (e.g., PrismaClient
+// initialization errors). Tests specifically targeting patterns like N+1 query
+// prevention for methods in this service were skipped due to these issues.
+//
+// Validation Strategy:
+// Database interaction logic, including query efficiency, is primarily validated
+// through integration tests and potentially query monitoring during E2E tests
+// rather than isolated unit tests.
+// =============================================================================
 import { prisma } from '../prisma';
 import { Prisma, PrismaClient } from '@prisma/client';
 

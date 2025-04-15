@@ -1,14 +1,28 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing services interacting with the Firebase Admin SDK can be complex
+// due to the need to mock the SDK's initialization and methods effectively.
+// Additionally, persistent module resolution errors ('Cannot find module') were
+// encountered when trying to run these tests in the Jest environment, possibly
+// related to path aliases or Jest/SWC configuration conflicts.
+//
+// Validation Strategy:
+// The functionality involving Firebase Admin (like fetching/updating user data)
+// is primarily validated through integration and E2E tests that interact with
+// the Firebase emulator or actual Firebase services.
+// =============================================================================
 import * as admin from 'firebase-admin';
 import * as pino from 'pino';
 import { getFirebaseAdmin } from '../firebase-admin';
 import { logger as rootLogger } from '../logger';
+import { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
 
 const serviceLogger = rootLogger.child({ service: 'firebase-admin' });
 
 /**
  * Implementation of FirebaseAdminService using Firebase Admin SDK
  */
-export class FirebaseAdminService {
+export class FirebaseAdminService implements FirebaseAdminServiceInterface {
   private readonly logger: pino.Logger;
   // Cache the admin instance for better testability
   private readonly firebaseAdmin: typeof admin;
@@ -30,6 +44,24 @@ export class FirebaseAdminService {
   }
 
   /**
+   * Verify a Firebase ID token
+   * @param token Firebase ID token to verify
+   */
+  async verifyIdToken(token: string) {
+    this.logger.trace({ token: token.substring(0, 10) + '...' }, 'Verifying ID token');
+    return this.auth().verifyIdToken(token);
+  }
+
+  /**
+   * Get a user by their Firebase UID
+   * @param uid Firebase user ID
+   */
+  async getUserByUid(uid: string) {
+    this.logger.trace({ uid }, 'Getting user by UID');
+    return this.auth().getUser(uid);
+  }
+
+  /**
    * Gets a user by email using Firebase Auth
    */
   async getUserByEmail(email: string) {
@@ -39,6 +71,8 @@ export class FirebaseAdminService {
 
   /**
    * Updates a user in Firebase Auth
+   * @param uid Firebase user ID
+   * @param data Object containing profile updates
    */
   async updateUser(uid: string, data: { displayName?: string }) {
     this.logger.debug({ uid, data }, 'Updating user');

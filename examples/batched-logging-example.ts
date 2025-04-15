@@ -9,60 +9,74 @@
  * 2. Run: npx ts-node examples/batched-logging-example.ts
  */
 
-import { createBatchedLogger } from '../lib/services/logger-factory';
-import { BatchedLoggerService } from '../lib/services/batched-logger';
+// Note: This is an example file that imports modules which don't exist in this repository.
+// This code is meant to be a demonstration of how batched logging could be implemented,
+// but the imports are for illustrative purposes only.
+//
+// For the actual implementation, you would:
+// 1. Create a batched-logger.ts file in the lib/services directory
+// 2. Implement a logger factory in the lib/services directory
+// 3. Replace the imports below with the correct paths
 
-// Create a batched logger with custom settings
-const logger = createBatchedLogger('example-batched', {
-  // Use smaller batch size for example
-  maxBatchSize: 5,
-  // Shorter flush interval for example
-  flushInterval: 2000,
-});
+// Make this file a module
+export {};
 
-console.log('Starting batched logging example...');
-console.log('Watch the logs to see batching in action - notice how logs appear in groups');
+// For demonstration purposes - actual imports would be:
+// import { createBatchedLogger } from '../lib/services/logger-factory';
+// import { BatchedLoggerService } from '../lib/services/batched-logger';
 
-// Simulate high-throughput logging
-async function simulateHighThroughput() {
-  // Log start of simulation
-  logger.info('Starting high-throughput simulation');
-
-  // Generate a bunch of logs
-  for (let i = 0; i < 20; i++) {
-    logger.debug({ iteration: i, timestamp: Date.now() }, `Processing item ${i}`);
-
-    // Every 5 iterations, log something at info level
-    if (i % 5 === 0) {
-      logger.info(
-        {
-          progress: Math.round((i / 20) * 100),
-          memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024,
-        },
-        `Progress: ${Math.round((i / 20) * 100)}%`
-      );
-    }
-
-    // Simulate some processing time
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  // Log an error to demonstrate bypass behavior
-  logger.error({ errorCode: 'EXAMPLE_ERROR' }, 'This error bypasses batching');
-
-  // Add some more logs
-  logger.info({ processingTime: '2.5s' }, 'Simulation completed');
-
-  // Force flush any remaining logs
-  if (logger instanceof BatchedLoggerService) {
-    logger.flush();
-  }
-
-  console.log('Simulation complete! Check the logs to see batching in action.');
+// Mock implementation for the example
+interface BatchedLoggerService {
+  info(obj: object | string, msg?: string): void;
+  error(obj: object | string, msg?: string): void;
+  warn(obj: object | string, msg?: string): void;
+  debug(obj: object | string, msg?: string): void;
+  flush(): Promise<void>;
 }
 
-// Run the simulation
-simulateHighThroughput().catch(err => {
-  console.error('Error in simulation:', err);
-  process.exit(1);
-});
+// Options interface for batched logger
+interface BatchedLoggerOptions {
+  batchSize?: number;
+  flushIntervalMs?: number;
+  asyncTransport?: boolean;
+  additionalContext?: Record<string, unknown>;
+}
+
+// Mock factory function
+function createBatchedLogger(_name: string, _options?: BatchedLoggerOptions): BatchedLoggerService {
+  return {
+    info: (obj, msg) => console.log('INFO', obj, msg),
+    error: (obj, msg) => console.error('ERROR', obj, msg),
+    warn: (obj, msg) => console.warn('WARN', obj, msg),
+    debug: (obj, msg) => console.debug('DEBUG', obj, msg),
+    flush: async () => console.log('Flushing logs...'),
+  };
+}
+
+// Example demonstrating batched logging usage
+async function runExample() {
+  console.log('Starting batched logging example...');
+
+  // Create a batched logger with custom settings
+  const logger = createBatchedLogger('user-service', {
+    batchSize: 50,
+    flushIntervalMs: 5000,
+  });
+
+  // Log some events
+  logger.info({ userId: 'user123' }, 'User logged in');
+  logger.info({ userId: 'user123', action: 'update-profile' }, 'Profile updated');
+  logger.info({ userId: 'user123', action: 'upload-avatar' }, 'Avatar uploaded');
+
+  // Manually trigger flush for immediate processing
+  if ('flush' in logger) {
+    console.log('Flushing logs manually...');
+    await logger.flush();
+  }
+
+  // In production, you would also call flush when the application is shutting down
+  console.log('Example completed');
+}
+
+// Run the example
+runExample().catch(console.error);

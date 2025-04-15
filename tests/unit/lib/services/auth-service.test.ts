@@ -160,7 +160,7 @@ describe('AuthService with Dependency Injection', () => {
       // Verify Prisma was called correctly
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-456' },
-        select: { name: true, email: true },
+        select: { name: true, email: true, image: true },
       });
     });
 

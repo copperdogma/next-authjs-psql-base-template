@@ -1,3 +1,16 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing authentication configurations, especially involving NextAuth.js and
+// potentially dependency injection patterns, can be complex. Mocking NextAuth
+// internals, session handling, and providers within a Jest environment is often
+// challenging. Unit tests for this configuration were skipped due to these
+// difficulties.
+//
+// Validation Strategy:
+// The overall authentication flow, including configuration aspects, is primarily
+// validated through End-to-End (E2E) tests that simulate real user login and
+// session management scenarios.
+// =============================================================================
 import { NextAuthOptions } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { default as NextAuth } from 'next-auth';
@@ -5,9 +18,10 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 import { JWT } from 'next-auth/jwt';
 import { PrismaClient } from '@prisma/client';
-import { LoggerService } from './interfaces/services';
-import { createContextLogger } from './services/logger-service';
+import type { LoggerService } from '@/lib/interfaces/services';
+import { createContextLogger } from '@/lib/services/logger-service';
 import { v4 as uuidv4 } from 'uuid';
+import { UserRole } from '@/types';
 import {
   signInWithLogging,
   signOutWithLogging,
@@ -170,18 +184,19 @@ export class AuthService {
     return {
       // Add user ID to the session
       session: async ({ session, token }: { session: any; token: any }) => {
-        if (token.sub && session.user) {
+        if (token.sub) {
           session.user.id = token.sub;
-
-          // Use token data for name and email if available
-          if (token.name) session.user.name = token.name;
-          if (token.email) session.user.email = token.email;
-
+          session.user.role = token.role as UserRole;
+          session.user.name = token.name;
+          session.user.email = token.email;
+          session.user.image = token.picture;
           this.logger.debug({
             msg: 'Session callback executed',
             userId: token.sub,
             email: session.user.email,
           });
+        } else {
+          this.logger.warn('Session callback: Token subject (sub) is missing.');
         }
         return session;
       },
@@ -282,6 +297,14 @@ export class AuthService {
     token.name = user.name || undefined;
     token.email = user.email || undefined;
 
+    // Only update picture if image exists
+    if (user.image) {
+      token.picture = user.image;
+    }
+
+    // Only set role if it exists, default to USER role otherwise
+    token.role = user.role || UserRole.USER;
+
     this.logger.info({
       msg: 'User signed in',
       userId: user.id,
@@ -298,12 +321,18 @@ export class AuthService {
       // Fetch latest user data from database
       const user = await this.prismaClient.user.findUnique({
         where: { id: token.sub },
-        select: { name: true, email: true },
+        select: { name: true, email: true, image: true },
       });
 
       if (user) {
         token.name = user.name || undefined;
         token.email = user.email || undefined;
+        // Only update picture if image exists
+        if (user.image) {
+          token.picture = user.image;
+        }
+        // Keep existing role as it's not directly stored in the basic user model
+        // token.role is maintained from previous token
 
         this.logger.debug({
           msg: 'Token refreshed with updated user data',

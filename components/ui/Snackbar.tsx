@@ -22,6 +22,27 @@ export interface SnackbarProps extends Omit<MuiSnackbarProps, 'children'> {
   elevation?: number;
 }
 
+// Extract the Alert content to a separate component
+const AlertContent = ({ title, message }: { title?: string; message?: string }) => (
+  <>
+    {title && (
+      <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'medium', mb: 0.5 }}>
+        {title}
+      </Typography>
+    )}
+    <Typography variant="body2" component="div">
+      {message}
+    </Typography>
+  </>
+);
+
+// Extract the close button to a separate component
+const CloseButton = ({ onClose }: { onClose: () => void }) => (
+  <IconButton size="small" aria-label="close" color="inherit" onClick={onClose}>
+    <CloseIcon fontSize="small" />
+  </IconButton>
+);
+
 const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
   (
     {
@@ -53,28 +74,11 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
           onClose={showCloseButton ? handleClose : undefined}
           severity={severity}
           variant={variant}
-          sx={{
-            width: '100%',
-            boxShadow: 3,
-            borderRadius: 1,
-          }}
+          sx={{ width: '100%', boxShadow: 3, borderRadius: 1 }}
           elevation={elevation}
-          action={
-            showCloseButton && (
-              <IconButton size="small" aria-label="close" color="inherit" onClick={handleClose}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            )
-          }
+          action={showCloseButton ? <CloseButton onClose={handleClose} /> : undefined}
         >
-          {title && (
-            <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'medium', mb: 0.5 }}>
-              {title}
-            </Typography>
-          )}
-          <Typography variant="body2" component="div">
-            {message}
-          </Typography>
+          <AlertContent title={title} message={message} />
         </MuiAlert>
       </MuiSnackbar>
     );

@@ -111,11 +111,7 @@ async function setupTestUser() {
   }
 }
 
-// Global setup function
-async function globalSetup() {
-  console.log('--- E2E Global Setup ---');
-
-  // Log key configuration details for debugging
+function logConfigDetails() {
   console.log('🔧 Configuration Details:');
   console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
   console.log(`  TEST_USER_EMAIL: ${TEST_USER_EMAIL}`);
@@ -130,43 +126,45 @@ async function globalSetup() {
     `  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
   );
   console.log(`  PLAYWRIGHT_TEST_BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL}`);
-  console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`); // Although we removed the endpoint, log if the var is set
+  console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`);
+}
 
+async function startAndWaitForEmulators() {
+  console.log('🔥 Starting Firebase emulators...');
+  const emulatorProcess = exec('npm run firebase:emulators:import', (error, _, stderr) => {
+    if (error) {
+      console.error(`Emulator Error: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`Emulator Stderr: ${stderr}`);
+    }
+  });
+  emulatorProcess.stdout?.pipe(process.stdout);
+  emulatorProcess.stderr?.pipe(process.stderr);
+  console.log('⏳ Waiting for emulators to be ready...');
+  const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1]);
+  const firestorePort = parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1]);
+  const authHost = AUTH_EMULATOR_HOST.split(':')[0];
+  const firestoreHost = FIRESTORE_EMULATOR_HOST.split(':')[0];
+  await Promise.all([
+    waitForPort(authPort, authHost, 90000),
+    waitForPort(firestorePort, firestoreHost, 90000),
+  ]);
+  console.log('✅ Firebase Emulators are ready.');
+  // Add a brief delay to ensure services are fully initialized
+  console.log('⏳ Short delay for service initialization...');
+  await new Promise(resolve => setTimeout(resolve, 3000)); // 3-second delay
+}
+
+// Global setup function
+async function globalSetup() {
+  console.log('--- E2E Global Setup ---');
+  logConfigDetails();
   try {
     await clearEmulatorData();
-
-    console.log('🔥 Starting Firebase emulators...');
-    const emulatorProcess = exec('npm run firebase:emulators:import', (error, _, stderr) => {
-      if (error) {
-        console.error(`Emulator Error: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Emulator Stderr: ${stderr}`);
-      }
-    });
-
-    emulatorProcess.stdout?.pipe(process.stdout);
-    emulatorProcess.stderr?.pipe(process.stderr);
-
-    console.log('⏳ Waiting for emulators to be ready...');
-    const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1]);
-    const firestorePort = parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1]);
-    const authHost = AUTH_EMULATOR_HOST.split(':')[0];
-    const firestoreHost = FIRESTORE_EMULATOR_HOST.split(':')[0];
-
-    await Promise.all([
-      waitForPort(authPort, authHost, 90000),
-      waitForPort(firestorePort, firestoreHost, 90000),
-    ]);
-    console.log('✅ Firebase Emulators are ready.');
-
-    // Add a brief delay to ensure services are fully initialized
-    console.log('⏳ Short delay for service initialization...');
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 3-second delay
-
+    await startAndWaitForEmulators();
     await setupTestUser();
-
     console.log('--- E2E Global Setup Complete ---');
   } catch (error: any) {
     console.error('❌ E2E GLOBAL SETUP FAILED:');

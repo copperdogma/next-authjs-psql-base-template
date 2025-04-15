@@ -29,14 +29,15 @@ export class RawQueryService {
    * Performs a batch update with complex conditions
    * Example: Update all expired sessions for specific users
    *
-   * @param options Update options
+   * @param options Options for session extension
    * @returns Number of updated records
    */
   static async extendSessionExpirations(options: {
     userIds: string[];
-    extensionHours: number;
+    extensionHours?: number;
     currentExpiryBefore?: Date;
   }): Promise<number> {
+    // Forward the call to the service implementation
     return defaultRawQueryService.extendSessionExpirations(options);
   }
 

@@ -316,14 +316,22 @@ function logRequestStart(logger: LoggerService, req: NextRequest): void {
 function handleApiError(error: unknown, logger: LoggerService): NextResponse {
   // Try to log error
   try {
-    logRequestCompletion(logger, undefined, error);
+    // Cast logger to required type to avoid TypeScript error
+    logRequestCompletion(
+      logger as LoggerService & { context?: ApiRequestContext },
+      undefined,
+      error
+    );
   } catch (logErr) {
     console.error('Failed to log API request error', logErr);
   }
 
   // Try to return standardized error response
   try {
-    return createErrorResponse(error, logger.context?.requestId || 'unknown');
+    // Use a safer way to access the requestId
+    const requestId =
+      typeof logger.context?.requestId === 'string' ? logger.context.requestId : 'unknown';
+    return createErrorResponse(error, requestId);
   } catch (responseErr) {
     // Last resort fallback
     console.error('Failed to create error response', responseErr);
@@ -346,9 +354,14 @@ function logSuccessfulRequest<T extends NextResponse | Response>(
 ): void {
   try {
     if (response && typeof response === 'object' && 'status' in response) {
-      logRequestCompletion(logger, response as unknown as Response);
+      // Cast logger to required type to avoid TypeScript error
+      logRequestCompletion(
+        logger as LoggerService & { context?: ApiRequestContext },
+        response as unknown as Response
+      );
     } else {
-      logRequestCompletion(logger);
+      // Cast logger to required type to avoid TypeScript error
+      logRequestCompletion(logger as LoggerService & { context?: ApiRequestContext });
     }
   } catch (logErr) {
     console.warn('Failed to log API request completion', logErr);

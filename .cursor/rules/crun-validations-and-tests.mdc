@@ -1,0 +1,6 @@
+---
+description: For creating a milestone when wrapping up a large amount of work
+globs: 
+alwaysApply: false
+---
+Run all validation, unit, and e2e tests and report back, giving triaged recommendations for any warnings or errors.

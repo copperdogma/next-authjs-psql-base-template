@@ -66,6 +66,26 @@ describe('UserService', () => {
       expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
+    it('should return null and log when user is not found', async () => {
+      mockPrismaUserDelegate.findUnique.mockResolvedValue(null);
+
+      const user = await userService.findUserById(userId);
+
+      expect(user).toBeNull();
+      expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'Finding user by ID'
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ userId, found: false }),
+        'User found by ID'
+      );
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
     it('should log error if prisma call fails', async () => {
       const dbError = new Error('DB lookup failed');
       mockPrismaUserDelegate.findUnique.mockRejectedValue(dbError);
@@ -106,6 +126,26 @@ describe('UserService', () => {
       );
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.objectContaining({ email, found: true }),
+        'User found by email'
+      );
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should return null and log when user is not found by email', async () => {
+      mockPrismaUserDelegate.findUnique.mockResolvedValue(null);
+
+      const user = await userService.findUserByEmail(email);
+
+      expect(user).toBeNull();
+      expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
+        where: { email: email },
+      });
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ email }),
+        'Finding user by email'
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ email, found: false }),
         'User found by email'
       );
       expect(mockLogger.error).not.toHaveBeenCalled();
@@ -156,6 +196,31 @@ describe('UserService', () => {
         'User name updated successfully'
       );
       expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should handle error when updating a non-existent user', async () => {
+      const nonExistentError = new Error('Record to update not found.');
+      mockPrismaUserDelegate.update.mockRejectedValue(nonExistentError);
+
+      await expect(userService.updateUserName('non-existent-id', name)).rejects.toThrow(
+        nonExistentError
+      );
+
+      expect(mockPrismaUserDelegate.update).toHaveBeenCalledWith({
+        where: { id: 'non-existent-id' },
+        data: { name },
+      });
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'non-existent-id',
+          error: nonExistentError.message,
+        }),
+        'Error updating user name'
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'non-existent-id' }),
+        'Updating user name'
+      );
     });
 
     it('should log error if update fails', async () => {

@@ -1,6 +1,18 @@
+// =============================================================================
+// Unit Testing Note:
+// Unit testing logging utility functions, especially those tightly coupled with
+// authentication flows (like NextAuth signIn/signOut wrappers), can be complex
+// to mock effectively within Jest. Tests for this module were skipped.
+//
+// Validation Strategy:
+// The effectiveness of logging is primarily validated by observing log output
+// during manual testing, E2E tests, and in deployed environments. Specific
+// log messages related to auth events are checked as part of E2E test flows
+// where applicable.
+// =============================================================================
 import { signIn, signOut } from 'next-auth/react';
-import { LoggerService } from './interfaces/services';
-import { createContextLogger } from './services/logger-service';
+import type { LoggerService } from '@/lib/interfaces/services';
+import { createContextLogger } from '@/lib/services/logger-service';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

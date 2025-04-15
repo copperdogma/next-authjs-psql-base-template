@@ -64,7 +64,7 @@ describe('RawQueryService', () => {
   });
 
   describe('extendSessionExpirations', () => {
-    it('returns 0 when userIds is empty', async () => {
+    it('skips execution when userIds is empty', async () => {
       const result = await RawQueryService.extendSessionExpirations({
         userIds: [],
         extensionHours: 24,
@@ -283,7 +283,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
 
   describe('extendSessionExpirations', () => {
     it('uses injected PrismaClient for executeRaw operations', async () => {
-      // Mock execute result
+      // Mock successful execution
       mockPrismaClient.$executeRaw.mockResolvedValue(2);
 
       // Create service with mocked dependencies
@@ -309,11 +309,10 @@ describe('RawQueryServiceImpl (DI version)', () => {
       expect(result).toBe(2);
     });
 
-    // Test to cover error branch in extendSessionExpirations (line 106)
+    // Test to cover error branch
     it('handles errors properly in extendSessionExpirations', async () => {
       // Mock an execution error
-      const executeError = new Error('Failed to update sessions');
-      mockPrismaClient.$executeRaw.mockRejectedValue(executeError);
+      mockPrismaClient.$executeRaw.mockRejectedValue(new Error('Failed to update sessions'));
 
       // Create service with mocked dependencies
       const service = new RawQueryServiceImpl(mockPrismaClient as any, mockLoggerService);
@@ -335,7 +334,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
       );
     });
 
-    // Test to cover buildSessionExpirationWhereClause with null expiryBefore (line 156)
+    // Test to cover buildSessionExpirationWhereClause with null expiryBefore
     it('builds where clause without expiryBefore when not provided', async () => {
       // Mock execute result
       mockPrismaClient.$executeRaw.mockResolvedValue(3);
@@ -362,7 +361,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
       expect(callArgs).not.toContain('expiresAt" <=');
     });
 
-    // Test to cover buildSessionExpirationWhereClause with expiryBefore (line 156)
+    // Test to cover buildSessionExpirationWhereClause with expiryBefore
     it('builds where clause with expiryBefore when provided', async () => {
       // Mock execute result
       mockPrismaClient.$executeRaw.mockResolvedValue(1);

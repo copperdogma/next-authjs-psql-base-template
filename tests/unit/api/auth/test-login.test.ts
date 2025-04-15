@@ -18,11 +18,11 @@ describe('Test Login Route with Dependency Injection', () => {
   const mockCustomToken = 'mock-firebase-token-123';
 
   const mockFirebaseAuthService: FirebaseAdminService = {
-    auth: jest.fn().mockReturnValue({
-      createCustomToken: jest.fn().mockResolvedValue(mockCustomToken),
-      getUserByEmail: jest.fn(),
-      updateUser: jest.fn(),
-    }),
+    auth: jest.fn(),
+    createCustomToken: jest.fn().mockResolvedValue(mockCustomToken),
+    getUserByUid: jest.fn(),
+    verifyIdToken: jest.fn(),
+    updateUser: jest.fn(),
   };
 
   const mockLogger: LoggerService = {
@@ -199,8 +199,7 @@ describe('Test Login Route with Dependency Injection', () => {
     await handler(mockRequest);
 
     // Verify Firebase service was called correctly
-    expect(mockFirebaseAuthService.auth).toHaveBeenCalled();
-    expect(mockFirebaseAuthService.auth().createCustomToken).toHaveBeenCalledWith('test-user-id', {
+    expect(mockFirebaseAuthService.createCustomToken).toHaveBeenCalledWith('test-user-id', {
       email: 'test@example.com',
       testAuth: true,
     });
@@ -248,7 +247,7 @@ describe('Test Login Route with Dependency Injection', () => {
     await handler(mockRequest);
 
     // Verify Firebase service was called with default email
-    expect(mockFirebaseAuthService.auth().createCustomToken).toHaveBeenCalledWith('test-user-id', {
+    expect(mockFirebaseAuthService.createCustomToken).toHaveBeenCalledWith('test-user-id', {
       email: 'test@example.com', // Default email
       testAuth: true,
     });
@@ -295,11 +294,11 @@ describe('Test Login Route with Dependency Injection', () => {
 
     // Create mock auth service that throws
     const errorFirebaseAuthService: FirebaseAdminService = {
-      auth: jest.fn().mockReturnValue({
-        createCustomToken: jest.fn().mockRejectedValue(mockError),
-        getUserByEmail: jest.fn(),
-        updateUser: jest.fn(),
-      }),
+      auth: jest.fn(),
+      createCustomToken: jest.fn().mockRejectedValue(mockError),
+      getUserByUid: jest.fn(),
+      verifyIdToken: jest.fn(),
+      updateUser: jest.fn(),
     };
 
     // Create handler
@@ -342,11 +341,11 @@ describe('Test Login Route with Dependency Injection', () => {
 
     // Create mock auth service that throws a non-Error
     const errorFirebaseAuthService: FirebaseAdminService = {
-      auth: jest.fn().mockReturnValue({
-        createCustomToken: jest.fn().mockRejectedValue(nonErrorObject),
-        getUserByEmail: jest.fn(),
-        updateUser: jest.fn(),
-      }),
+      auth: jest.fn(),
+      createCustomToken: jest.fn().mockRejectedValue(nonErrorObject),
+      getUserByUid: jest.fn(),
+      verifyIdToken: jest.fn(),
+      updateUser: jest.fn(),
     };
 
     // Create handler
