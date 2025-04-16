@@ -1,183 +1,270 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment node
  */
 
 import { jest } from '@jest/globals';
 
-const mockFirestore = jest.fn().mockReturnValue({
-  collection: jest.fn().mockReturnValue({
-    doc: jest.fn().mockReturnValue({
-      set: jest.fn(),
-      get: jest.fn(),
-    }),
-  }),
-  useEmulator: jest.fn(),
-  settings: jest.fn(),
+// We'll use these variables to hold our mocks
+let mockApps: any[] = [];
+let mockInitializeAppCalls: any[] = [];
+let mockCredentialCertCalls: any[] = [];
+
+// Mock initialize app function that records calls
+const mockInitializeApp = jest.fn().mockImplementation(config => {
+  mockInitializeAppCalls.push(config);
+  const mockApp = { name: 'mockApp', options: config };
+  mockApps.push(mockApp);
+  return mockApp;
 });
 
-// Define a type for the mocked app, or use 'any' if complex
-interface MockApp {
-  firestore: typeof mockFirestore;
-}
+// Mock credential cert function that records calls
+const mockCredentialCert = jest.fn().mockImplementation((serviceAccount: any) => {
+  mockCredentialCertCalls.push(serviceAccount);
+  return { type: 'cert', ...serviceAccount };
+});
 
-const mockAdmin = {
-  apps: [] as MockApp[], // Explicitly type the apps array
-  initializeApp: jest.fn().mockImplementation(config => {
-    const app: MockApp = { firestore: mockFirestore };
-    // Simulate adding the app to the list upon initialization
-    mockAdmin.apps.push(app);
-    return app;
-  }),
-  credential: {
-    cert: jest.fn(),
-  },
-  firestore: mockFirestore,
+const mockAuth = jest.fn().mockImplementation(() => {
+  return {
+    verifyIdToken: jest.fn(),
+    getUser: jest.fn(),
+    getUserByEmail: jest.fn(),
+    updateUser: jest.fn(),
+    createCustomToken: jest.fn(),
+  };
+});
+
+// Set up the mock before all tests
+jest.mock('firebase-admin', () => {
+  return {
+    initializeApp: mockInitializeApp,
+    get apps() {
+      return mockApps;
+    },
+    credential: {
+      cert: mockCredentialCert,
+    },
+    auth: mockAuth,
+  };
+});
+
+// Mock the logger
+const mockLogger = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
+  child: jest.fn().mockReturnThis(),
 };
 
-jest.mock('firebase-admin', () => mockAdmin);
+jest.mock('../../../lib/logger', () => ({
+  logger: mockLogger,
+}));
 
-describe('firebase-admin', () => {
-  const originalNodeEnv = process.env.NODE_ENV;
+describe('initializeFirebaseAdminApp', () => {
+  // Store original env variables
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    // Reset mocks and the apps array before each test
-    mockAdmin.apps.length = 0; // Clear the apps array
+    // Reset mocks and environment variables before each test
     jest.clearAllMocks();
-    jest.resetModules(); // Important to force re-import and reset lazy instance
+    mockApps = []; // Reset the apps array
+    mockInitializeAppCalls = []; // Reset recorded calls
+    mockCredentialCertCalls = []; // Reset recorded calls
+    process.env = { ...originalEnv }; // Restore original env
+
+    // Reset the module registry to ensure fresh imports in each test
+    jest.resetModules();
   });
 
-  afterEach(() => {
-    jest.replaceProperty(process.env, 'NODE_ENV', originalNodeEnv);
+  afterAll(() => {
+    // Restore original environment after all tests
+    process.env = originalEnv;
   });
 
-  it('should provide the Firebase Admin SDK interface via getter', async () => {
-    jest.replaceProperty(process.env, 'NODE_ENV', 'test');
-    const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-    const firebaseAdmin = getFirebaseAdmin(); // Call getter
-    expect(firebaseAdmin).toBeDefined();
-    expect(typeof firebaseAdmin).toBe('object');
-    expect(firebaseAdmin.firestore).toBeDefined();
-  });
-
-  it('should handle initialization in test environment via getter', async () => {
-    jest.replaceProperty(process.env, 'NODE_ENV', 'test');
-    const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-    const firebaseAdmin = getFirebaseAdmin(); // Call getter
-    expect(firebaseAdmin).toBeDefined();
-    expect(typeof firebaseAdmin.firestore).toBe('function');
-  });
-
-  // Re-enable test for production credential initialization
-  it('should initialize with credentials in production via getter', async () => {
-    // Set production environment and credentials
-    jest.replaceProperty(process.env, 'NODE_ENV', 'production');
+  it('should initialize with credentials when not using emulators', async () => {
+    // Setup environment - making sure all emulator flags are disabled
     process.env.FIREBASE_PROJECT_ID = 'prod-project';
     process.env.FIREBASE_CLIENT_EMAIL = 'prod@example.com';
-    // Use a simple, unformatted key for testing formatPrivateKey logic
     process.env.FIREBASE_PRIVATE_KEY =
-      '-----BEGIN PRIVATE KEY-----prod_key-----END PRIVATE KEY-----';
-    // Ensure emulator is not used
+      '-----BEGIN PRIVATE KEY-----\\nprod_key\\n-----END PRIVATE KEY-----';
     delete process.env.USE_FIREBASE_EMULATOR;
     delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
     delete process.env.FIRESTORE_EMULATOR_HOST;
 
-    // Dynamically import AFTER setting env vars and resetting modules
-    const adminMock = await import('firebase-admin');
-    const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-    const firebaseAdmin = getFirebaseAdmin(); // Call getter
+    // Import the module
+    const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
 
-    // Expect initializeApp to have been called with formatted credentials
-    expect(adminMock.initializeApp).toHaveBeenCalledWith({
-      credential: adminMock.credential.cert({
-        projectId: 'prod-project',
-        clientEmail: 'prod@example.com',
-        // Check that the key was formatted correctly
-        privateKey: '-----BEGIN PRIVATE KEY-----\nprod_key\n-----END PRIVATE KEY-----',
+    // Call the function
+    const app = initializeFirebaseAdminApp();
+
+    // Verify the credential cert was called with correct args
+    expect(mockCredentialCert).toHaveBeenCalled();
+    expect(mockCredentialCertCalls.length).toBe(1);
+    expect(mockCredentialCertCalls[0]).toHaveProperty('projectId', 'prod-project');
+    expect(mockCredentialCertCalls[0]).toHaveProperty('clientEmail', 'prod@example.com');
+    expect(mockCredentialCertCalls[0]).toHaveProperty(
+      'privateKey',
+      '-----BEGIN PRIVATE KEY-----\nprod_key\n-----END PRIVATE KEY-----'
+    );
+
+    // Verify initialize app was called with credential
+    expect(mockInitializeApp).toHaveBeenCalled();
+    expect(mockInitializeAppCalls.length).toBe(1);
+    expect(mockInitializeAppCalls[0]).toHaveProperty('credential');
+  });
+
+  it('should reuse existing app if already initialized', async () => {
+    // Setup existing app
+    const existingApp = { name: 'existingApp', options: {} };
+    mockApps.push(existingApp);
+
+    // Import and test
+    const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+    const app1 = initializeFirebaseAdminApp();
+    const app2 = initializeFirebaseAdminApp();
+
+    // Verify expectations
+    expect(mockInitializeApp).not.toHaveBeenCalled();
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      '🔸 [Admin SDK] Reusing existing Firebase Admin App instance.'
+    );
+    expect(app1).toBe(existingApp);
+    expect(app2).toBe(existingApp);
+  });
+
+  it('should initialize for emulator use if USE_FIREBASE_EMULATOR is true', async () => {
+    // Setup
+    process.env.USE_FIREBASE_EMULATOR = 'true';
+    process.env.FIREBASE_PROJECT_ID = 'emulator-project';
+
+    // Import and test
+    const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+    const app = initializeFirebaseAdminApp();
+
+    // Verify expectations
+    expect(mockInitializeApp).toHaveBeenCalledWith({
+      projectId: 'emulator-project',
+    });
+
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      { projectId: 'emulator-project' },
+      '✅ [Admin SDK] Initialized for Firebase Emulators.'
+    );
+
+    // Verify credential cert was NOT called since we're in emulator mode
+    expect(mockCredentialCert).not.toHaveBeenCalled();
+  });
+
+  it('should initialize for emulator use if FIREBASE_AUTH_EMULATOR_HOST is set', async () => {
+    // Setup
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+    delete process.env.FIREBASE_PROJECT_ID;
+
+    // Import and test
+    const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+    const app = initializeFirebaseAdminApp();
+
+    // Verify expectations
+    expect(mockInitializeApp).toHaveBeenCalledWith({
+      projectId: 'next-firebase-base-template-emulator',
+    });
+
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      { projectId: 'next-firebase-base-template-emulator' },
+      '✅ [Admin SDK] Initialized for Firebase Emulators.'
+    );
+
+    // Verify credential cert was NOT called since we're in emulator mode
+    expect(mockCredentialCert).not.toHaveBeenCalled();
+  });
+
+  it('should throw error and log if credentials are missing in non-emulator environment', async () => {
+    // Setup - remove all env vars
+    delete process.env.FIREBASE_PROJECT_ID;
+    delete process.env.FIREBASE_CLIENT_EMAIL;
+    delete process.env.FIREBASE_PRIVATE_KEY;
+    delete process.env.USE_FIREBASE_EMULATOR;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+
+    // Expect error
+    let error: Error | null = null;
+
+    try {
+      // Import and run
+      const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+      initializeFirebaseAdminApp();
+    } catch (e) {
+      error = e as Error;
+    }
+
+    // Check error was thrown
+    expect(error).not.toBeNull();
+    expect(error!.message).toBe(
+      'Missing Firebase Admin SDK credentials. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.'
+    );
+
+    // Verify logging
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      {
+        projectId: false,
+        clientEmail: false,
+        privateKey: false,
+      },
+      '❌ [Admin SDK] Missing required Firebase Admin credentials in environment variables.'
+    );
+  });
+
+  it('should handle private key formatting (no newlines)', async () => {
+    // Setup environment - making sure all emulator flags are disabled
+    process.env.FIREBASE_PROJECT_ID = 'format-project';
+    process.env.FIREBASE_CLIENT_EMAIL = 'format@example.com';
+    process.env.FIREBASE_PRIVATE_KEY =
+      '-----BEGIN PRIVATE KEY-----no_newlines-----END PRIVATE KEY-----';
+    delete process.env.USE_FIREBASE_EMULATOR;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+
+    // Import and test
+    const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+
+    // Call the function
+    initializeFirebaseAdminApp();
+
+    // Verify private key formatting
+    expect(mockCredentialCert).toHaveBeenCalled();
+    expect(mockCredentialCertCalls.length).toBe(1);
+    expect(mockCredentialCertCalls[0]).toHaveProperty(
+      'privateKey',
+      '-----BEGIN PRIVATE KEY-----\nno_newlines\n-----END PRIVATE KEY-----'
+    );
+  });
+
+  it('should throw error if initializeApp fails with credentials', async () => {
+    // Setup
+    process.env.FIREBASE_PROJECT_ID = 'fail-project';
+    process.env.FIREBASE_CLIENT_EMAIL = 'fail@example.com';
+    process.env.FIREBASE_PRIVATE_KEY = 'valid_key';
+
+    // Setup error
+    const initError = new Error('Firebase init failed');
+    mockInitializeApp.mockImplementationOnce(() => {
+      throw initError;
+    });
+
+    // Import and test
+    await expect(async () => {
+      const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
+      return initializeFirebaseAdminApp();
+    }).rejects.toThrow(initError);
+
+    // Verify logging
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        err: initError.message,
       }),
-    });
-    expect(firebaseAdmin).toBeDefined();
-
-    // Clean up env vars for other tests
-    delete process.env.FIREBASE_PROJECT_ID;
-    delete process.env.FIREBASE_CLIENT_EMAIL;
-    delete process.env.FIREBASE_PRIVATE_KEY;
-  });
-
-  // Re-enable test for minimal config fallback
-  it('should initialize with minimal config if credentials missing in production via getter', async () => {
-    // Set production env but ensure credentials and emulator flags are missing
-    jest.replaceProperty(process.env, 'NODE_ENV', 'production');
-    delete process.env.FIREBASE_PROJECT_ID;
-    delete process.env.FIREBASE_CLIENT_EMAIL;
-    delete process.env.FIREBASE_PRIVATE_KEY;
-    delete process.env.USE_FIREBASE_EMULATOR;
-    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
-    delete process.env.FIRESTORE_EMULATOR_HOST;
-
-    // Dynamically import AFTER setting env vars and resetting modules
-    const adminMock = await import('firebase-admin');
-    const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-    const firebaseAdmin = getFirebaseAdmin(); // Call getter
-
-    // Expect initializeApp to have been called with minimal config
-    expect(adminMock.initializeApp).toHaveBeenCalledWith({
-      projectId: 'default-project-id', // Check for the default ID used in minimal init
-    });
-    expect(firebaseAdmin).toBeDefined();
-  });
-
-  it('should call initializeApp only once when getter called multiple times', async () => {
-    const adminMock = await import('firebase-admin');
-    jest.replaceProperty(process.env, 'NODE_ENV', 'test');
-    const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-
-    getFirebaseAdmin(); // First call
-    getFirebaseAdmin(); // Second call
-
-    expect(adminMock.initializeApp).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('getFirebaseAdmin Error Handling', () => {
-  it('should catch and log error during initialization', async () => {
-    const error = new Error('Initialization failed');
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    await jest.isolateModules(async () => {
-      // Configure the mock specifically for this isolated context
-      jest.doMock('firebase-admin', () => ({
-        // Use a simplified mock structure focused on making initializeApp throw
-        apps: [],
-        initializeApp: jest.fn().mockImplementationOnce(() => {
-          throw error;
-        }),
-        credential: { cert: jest.fn() }, // Add necessary mocked properties
-        firestore: jest.fn(), // Add necessary mocked properties
-      }));
-
-      // Import within the isolated context AFTER the mock is configured
-      const { getFirebaseAdmin } = await import('../../../lib/firebase-admin');
-      const adminNamespace = await import('firebase-admin'); // Get the specifically mocked namespace
-
-      const firebaseAdmin = getFirebaseAdmin(); // Call the function that should trigger the error
-
-      // NOTE: The following assertions are commented out due to persistent issues
-      // with reliably mocking the environment and error conditions within Jest
-      // for this specific module's initialization logic. The core functionality
-      // is tested indirectly, but these specific error path assertions fail.
-
-      // Check if the error was logged (This assertion fails due to mocking issues)
-      // expect(consoleErrorSpy).toHaveBeenCalledWith(
-      //   'Error initializing Firebase Admin SDK:',
-      //   error
-      // );
-      // Check that it returns the base (mocked) admin namespace even on error (This assertion fails due to mocking issues)
-      // expect(firebaseAdmin).toBe(adminNamespace);
-
-      // Clean up module mocks specific to this isolated context
-      jest.unmock('firebase-admin');
-    });
-
-    consoleErrorSpy.mockRestore();
+      '❌ [Admin SDK] Failed to initialize Firebase Admin SDK.'
+    );
   });
 });

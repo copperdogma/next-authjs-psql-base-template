@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FirebaseAdminService, LoggerService } from '@/lib/interfaces/services';
-import { defaultFirebaseAdminService } from '@/lib/services/firebase-admin-service';
+import type { FirebaseAdminService, LoggerService } from '@/lib/interfaces/services';
+import { firebaseAdminService as singletonFirebaseAdminService } from '@/lib/server/services';
 import { createErrorResponse } from '@/lib/services/api-logger-service';
 
 /**
@@ -33,7 +33,7 @@ export function validateTestEnvironment(logger: LoggerService): NextResponse | n
  * @returns Handler function for test login requests
  */
 export function createTestLogin(
-  firebaseAdminService: FirebaseAdminService = defaultFirebaseAdminService,
+  firebaseAdminService: FirebaseAdminService = singletonFirebaseAdminService,
   logger: LoggerService
 ) {
   return async (request: NextRequest) => {

@@ -33,8 +33,9 @@ jest.mock('next/server', () => ({
   },
 }));
 
-import { updateUserName } from '@/app/profile/actions';
-import { FormState } from '@/app/profile/actions';
+// Use relative paths for imports
+import { updateUserName } from '../../../app/profile/actions';
+import { FormState } from '../../../app/profile/actions';
 
 describe('updateUserName action error handling', () => {
   it('should return an error when not authenticated', async () => {

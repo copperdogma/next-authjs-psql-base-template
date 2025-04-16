@@ -68,14 +68,3 @@ export class ProfileService {
     }
   }
 }
-
-// Create default instance with dependencies
-// Note: Assumes defaultUserService and defaultFirebaseAdminService exist and are correctly typed
-import { defaultUserService } from './user-service';
-import { defaultFirebaseAdminService } from './firebase-admin-service';
-
-export const defaultProfileService = new ProfileService(
-  defaultUserService,
-  defaultFirebaseAdminService
-  // logger will use its default value (serviceLogger)
-);

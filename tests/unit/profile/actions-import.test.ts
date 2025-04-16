@@ -1,4 +1,13 @@
-// Test file for updated import pattern in updateUserName action
+// Test file for profile actions using jest.spyOn
+
+// Import next-auth functions we'll mock
+import { getServerSession } from 'next-auth';
+// Import the real services module
+import { profileService } from '../../../lib/server/services';
+// Import revalidatePath
+import { revalidatePath } from 'next/cache';
+// Import the function we're testing
+import { updateUserName } from '../../../app/profile/actions';
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
@@ -18,37 +27,10 @@ jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
 
-// Mock prisma
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      update: jest.fn(),
-      findUnique: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
-    },
-  },
-}));
+describe('updateUserName action with jest.spyOn pattern', () => {
+  // Create a spy on the profileService.updateUserName method
+  const mockUpdateUserName = jest.spyOn(profileService, 'updateUserName');
 
-// Mock Firebase Admin SDK
-jest.mock('@/lib/firebase-admin', () => {
-  const authMock = {
-    getUser: jest.fn(),
-    getUserByEmail: jest.fn().mockResolvedValue({ uid: 'firebase-uid-123' }),
-    updateUser: jest.fn(),
-  };
-
-  return {
-    getFirebaseAdmin: jest.fn().mockReturnValue({
-      auth: jest.fn().mockReturnValue(authMock),
-    }),
-  };
-});
-
-// Import functions and mocks
-import { updateUserName } from '@/app/profile/actions';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
-
-describe('updateUserName action with updated import pattern', () => {
   const mockUser = {
     id: 'user-123',
     name: 'Test User',
@@ -57,19 +39,18 @@ describe('updateUserName action with updated import pattern', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear the spy
+    mockUpdateUserName.mockClear();
   });
 
-  it('should use getServerSession correctly', async () => {
+  it('should update user name when authenticated', async () => {
     // Mock auth session
     (getServerSession as jest.Mock).mockResolvedValue({
       user: mockUser,
     });
 
-    // Mock database update
-    (prisma.user.update as jest.Mock).mockResolvedValue({
-      ...mockUser,
-      name: 'New Name',
-    });
+    // Mock the profile service method using the spy
+    mockUpdateUserName.mockResolvedValue({ success: true });
 
     // Create FormData with name
     const formData = new FormData();
@@ -81,16 +62,40 @@ describe('updateUserName action with updated import pattern', () => {
     // Verify getServerSession was called
     expect(getServerSession).toHaveBeenCalled();
 
-    // Verify database was updated
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: mockUser.id },
-      data: { name: 'New Name' },
-    });
+    // Verify profileService.updateUserName was called with correct parameters
+    expect(mockUpdateUserName).toHaveBeenCalledWith(mockUser.id, 'New Name');
+
+    // Verify revalidatePath was called
+    expect(revalidatePath).toHaveBeenCalledWith('/profile');
 
     // Verify successful result
     expect(result).toEqual({
       message: 'Name updated successfully',
       success: true,
+    });
+  });
+
+  it('should return error when user is not authenticated', async () => {
+    // Mock auth session - user not logged in
+    (getServerSession as jest.Mock).mockResolvedValue(null);
+
+    // Create FormData with name
+    const formData = new FormData();
+    formData.append('name', 'New Name');
+
+    // Call the action
+    const result = await updateUserName({ message: '', success: false }, formData);
+
+    // Verify getServerSession was called
+    expect(getServerSession).toHaveBeenCalled();
+
+    // Verify profileService.updateUserName was NOT called
+    expect(mockUpdateUserName).not.toHaveBeenCalled();
+
+    // Verify result has error
+    expect(result).toEqual({
+      message: 'You must be logged in to update your profile',
+      success: false,
     });
   });
 });

@@ -31,8 +31,16 @@ const sharedConfig = {
     '/node_modules/(?!(@firebase|firebase|@clerk|@radix-ui|@hookform|next|@mui|@emotion|@babel/runtime|next-auth|jose|openid-client|@panva/hkdf|uuid|preact|preact-render-to-string|@auth/prisma-adapter|@prisma/client)/)',
   ],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
+    // Explicitly map top-level directories under @/
+    '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^@/app/(.*)$': '<rootDir>/app/$1',
+    '^@/components/(.*)$': '<rootDir>/components/$1',
+
+    // Keep the CSS mock
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
+
+    // Fallback for any other @/ path (might not be needed if above are exhaustive)
+    '^@/(.*)$': '<rootDir>/$1',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFiles: ['<rootDir>/jest.setup.env.js'],

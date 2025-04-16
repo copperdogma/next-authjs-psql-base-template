@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LoggerService } from '@/lib/interfaces/services';
-import { defaultFirebaseAdminService } from '@/lib/services/firebase-admin-service';
+import { firebaseAdminService } from '@/lib/server/services';
 import { withApiLogger } from '@/lib/services/api-logger-service';
 import { createTestLogin, validateTestEnvironment } from './service';
 
@@ -102,7 +102,7 @@ export const GET = withApiLogger(async (_request: NextRequest, logger: LoggerSer
  * Test authentication handler
  */
 export const POST = withApiLogger(async (request: NextRequest, logger: LoggerService) => {
-  // Use the createTestLogin function with dependency injection
-  const testLoginHandler = createTestLogin(defaultFirebaseAdminService, logger);
+  // Use the createTestLogin function, injecting the singleton firebaseAdminService
+  const testLoginHandler = createTestLogin(firebaseAdminService, logger);
   return testLoginHandler(request);
 });

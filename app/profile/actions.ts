@@ -20,7 +20,8 @@ import * as pino from 'pino';
 import { SessionService, defaultSessionService } from '@/lib/services/session-service';
 import { logger as rootLogger } from '@/lib/logger';
 import { authConfig } from '@/lib/auth';
-import { ProfileService, defaultProfileService } from '@/lib/services/profile-service';
+import { ProfileService } from '@/lib/services/profile-service';
+import { profileService as singletonProfileService } from '@/lib/server/services';
 
 const actionsLogger = rootLogger.child({ service: 'profile-actions' });
 
@@ -37,7 +38,7 @@ export type FormState = {
 class ProfileActionsImpl {
   constructor(
     private readonly sessionService: SessionService = defaultSessionService,
-    private readonly profileService: ProfileService = defaultProfileService,
+    private readonly profileService: ProfileService = singletonProfileService,
     private readonly logger: pino.Logger = actionsLogger
   ) {}
 
