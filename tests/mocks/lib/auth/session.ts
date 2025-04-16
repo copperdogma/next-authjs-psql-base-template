@@ -41,7 +41,9 @@ export async function createSessionCookie(
 /**
  * Mock function for verifying session
  */
-export async function verifySessionCookie(sessionCookie: string) {
+export async function verifySessionCookie(
+  sessionCookie: string
+): Promise<{ uid: string; email: string }> {
   // In the real implementation, this would call Firebase Admin to verify the session
   if (!sessionCookie || sessionCookie === 'invalid') {
     throw new Error('Invalid session cookie');

@@ -108,7 +108,7 @@ function formatZodError(error: z.ZodError) {
 }
 
 // Validate environment variables
-export function validateEnv() {
+export function validateEnv(): z.SafeParseReturnType<Env, Env> {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {

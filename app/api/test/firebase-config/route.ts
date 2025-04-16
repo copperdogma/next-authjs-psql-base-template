@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
  * Test API route that exposes Firebase configuration for debugging E2E tests
  * Only enabled when ALLOW_TEST_ENDPOINTS is set to true
  */
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   // Only allow this endpoint in test environments
   if (process.env.ALLOW_TEST_ENDPOINTS !== 'true') {
     return NextResponse.json(

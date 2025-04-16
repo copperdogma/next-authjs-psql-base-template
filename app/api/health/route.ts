@@ -15,7 +15,7 @@ const HealthCheckRequestSchema = z.object({
  * Used by E2E tests and monitoring tools to verify server availability
  * Returns: Basic server info including status, uptime, and environment
  */
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   // Health check endpoint is critical and must always work
   // Using direct implementation rather than wrapper to ensure reliability
   return NextResponse.json({
@@ -32,7 +32,13 @@ export async function GET() {
 /**
  * Parses and validates the incoming request body
  */
-async function parseAndValidateRequest(request: NextRequest, logger: LoggerService) {
+async function parseAndValidateRequest(
+  request: NextRequest,
+  logger: LoggerService
+): Promise<
+  | { isValid: false; error: NextResponse }
+  | { isValid: true; data: z.infer<typeof HealthCheckRequestSchema> }
+> {
   const body = await request.json();
   logger.debug({ body }, 'Received health check POST data');
 
@@ -67,7 +73,7 @@ async function performDatabaseCheck(
   checkDatabase: boolean,
   timeout: number,
   logger: LoggerService
-) {
+): Promise<void> {
   if (checkDatabase) {
     logger.debug('Database check requested');
     // In a real app, you might check database connectivity here
@@ -79,7 +85,7 @@ async function performDatabaseCheck(
 /**
  * Creates a success response with health information
  */
-function createSuccessResponse(checkDatabase: boolean, timeout: number) {
+function createSuccessResponse(checkDatabase: boolean, timeout: number): NextResponse {
   return NextResponse.json({
     status: 'ok',
     uptime: process.uptime(),
@@ -92,7 +98,7 @@ function createSuccessResponse(checkDatabase: boolean, timeout: number) {
 /**
  * Handles errors with appropriate logging and response
  */
-function handleError(error: unknown, request: NextRequest, logger: LoggerService) {
+function handleError(error: unknown, request: NextRequest, logger: LoggerService): NextResponse {
   logger.error({ error }, 'Health check POST request processing failed');
 
   if (request.headers.has('x-request-id')) {
@@ -113,44 +119,46 @@ function handleError(error: unknown, request: NextRequest, logger: LoggerService
  *
  * Validates request data and performs optional database check
  */
-export const POST = withApiLogger(async (request: NextRequest, logger: LoggerService) => {
-  try {
-    // Parse and validate the request
-    const validationResult = await parseAndValidateRequest(request, logger).catch(() => ({
-      isValid: false,
-      error: null,
-    }));
+export const POST = withApiLogger(
+  async (request: NextRequest, logger: LoggerService): Promise<NextResponse> => {
+    try {
+      // Parse and validate the request
+      const validationResult = await parseAndValidateRequest(request, logger).catch(() => ({
+        isValid: false,
+        error: null,
+      }));
 
-    if (!validationResult.isValid) {
-      return (
-        validationResult.error ||
-        NextResponse.json(
-          { error: 'ValidationError', message: 'Failed to parse request' },
+      if (!validationResult.isValid) {
+        return (
+          validationResult.error ||
+          NextResponse.json(
+            { error: 'ValidationError', message: 'Failed to parse request' },
+            { status: 400 }
+          )
+        );
+      }
+
+      // TypeScript needs help understanding the shape of validationResult when isValid is true
+      const data = 'data' in validationResult ? validationResult.data : null;
+
+      if (!data) {
+        return NextResponse.json(
+          { error: 'ValidationError', message: 'Missing validation data' },
           { status: 400 }
-        )
+        );
+      }
+
+      const { checkDatabase, timeout } = data;
+
+      // Perform database check if requested
+      await performDatabaseCheck(checkDatabase, timeout, logger).catch(error =>
+        logger.warn({ error }, 'Database check failed but continuing')
       );
+
+      // Return success response
+      return createSuccessResponse(checkDatabase, timeout);
+    } catch (error) {
+      return handleError(error, request, logger);
     }
-
-    // TypeScript needs help understanding the shape of validationResult when isValid is true
-    const data = 'data' in validationResult ? validationResult.data : null;
-
-    if (!data) {
-      return NextResponse.json(
-        { error: 'ValidationError', message: 'Missing validation data' },
-        { status: 400 }
-      );
-    }
-
-    const { checkDatabase, timeout } = data;
-
-    // Perform database check if requested
-    await performDatabaseCheck(checkDatabase, timeout, logger).catch(error =>
-      logger.warn({ error }, 'Database check failed but continuing')
-    );
-
-    // Return success response
-    return createSuccessResponse(checkDatabase, timeout);
-  } catch (error) {
-    return handleError(error, request, logger);
   }
-});
+);

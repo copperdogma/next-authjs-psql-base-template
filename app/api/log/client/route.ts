@@ -15,7 +15,7 @@ const ClientLogSchema = z.object({
 // Infer the type from the schema
 // type ClientLogEntry = z.infer<typeof ClientLogSchema>; // Removed unused type alias
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const result = ClientLogSchema.safeParse(body);

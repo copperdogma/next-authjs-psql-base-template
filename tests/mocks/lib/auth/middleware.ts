@@ -43,7 +43,9 @@ export const DEFAULT_AUTH_MIDDLEWARE_OPTIONS: AuthMiddlewareOptions = {
 /**
  * Creates a middleware function for handling authentication
  */
-export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
+export function createAuthMiddleware(
+  options: AuthMiddlewareOptions = {}
+): (req: NextRequest) => Promise<NextResponse> {
   const {
     protectedRoutes = DEFAULT_AUTH_MIDDLEWARE_OPTIONS.protectedRoutes,
     publicRoutes = DEFAULT_AUTH_MIDDLEWARE_OPTIONS.publicRoutes,

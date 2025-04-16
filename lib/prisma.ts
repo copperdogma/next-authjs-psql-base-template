@@ -44,7 +44,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
  * Disconnect from the database.
  * Use this function during application shutdown or for cleanup in tests.
  */
-export async function disconnectPrisma() {
+export async function disconnectPrisma(): Promise<void> {
   if (globalForPrisma.prisma) {
     await globalForPrisma.prisma.$disconnect();
   }

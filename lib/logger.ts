@@ -59,7 +59,7 @@ export const logger = baseLogger;
  * @param data Additional data to include with every log entry (use unknown for type safety)
  * @returns A child logger instance
  */
-export function createLogger(context: string, data: Record<string, unknown> = {}) {
+export function createLogger(context: string, data: Record<string, unknown> = {}): pino.Logger {
   return logger.child({
     context,
     ...data,

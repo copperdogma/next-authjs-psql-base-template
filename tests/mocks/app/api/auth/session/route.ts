@@ -43,7 +43,7 @@ const mockCreateSessionCookie = async (token: string, options: { expiresIn: numb
   return `mock-session-cookie-${uuidv4().slice(0, 8)}-exp-${expiresAt}`;
 };
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const { token } = await request.json();
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(): Promise<NextResponse> {
   try {
     // Clear the session cookie
     const response = NextResponse.json({ status: 'success' });

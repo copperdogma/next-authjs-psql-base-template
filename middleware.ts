@@ -267,9 +267,9 @@ async function processRequest(
 }
 
 /**
- * Main middleware function with dependency injection
+ * Main middleware function executed for each request
  */
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
   const requestId = getRequestId();
 

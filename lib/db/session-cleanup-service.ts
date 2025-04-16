@@ -26,13 +26,18 @@ const dbLogger = loggers.db;
  *   - olderThanDays?: number - Delete sessions older than this many days (overrides 'before').
  * @returns Result including the count of deleted sessions.
  */
+interface CleanupResult {
+  count: number;
+  timestamp: Date;
+}
+
 export async function cleanupExpiredSessions(
   options: {
     before?: Date;
     userId?: string;
     olderThanDays?: number;
   } = {}
-) {
+): Promise<CleanupResult> {
   // Add default empty object for options
   const { before = new Date(), userId, olderThanDays } = options;
 
@@ -81,12 +86,18 @@ export async function cleanupExpiredSessions(
  *   - keepCurrent?: boolean - If true, keeps the most recent session (defaults to false).
  * @returns Result including the count of deleted sessions and whether the current one was kept.
  */
+interface UserCleanupResult {
+  count: number;
+  keptCurrentSession: boolean;
+  timestamp: Date;
+}
+
 export async function cleanupUserSessions(
   userId: string,
   options: {
     keepCurrent?: boolean;
   } = {}
-) {
+): Promise<UserCleanupResult> {
   const { keepCurrent = false } = options;
 
   let currentSessionId: string | undefined;
@@ -146,10 +157,10 @@ export function scheduleSessionCleanup(
   options: {
     intervalMs?: number;
     runImmediately?: boolean;
-    onComplete?: (result: { count: number; timestamp: Date }) => void;
+    onComplete?: (result: CleanupResult) => void;
     onError?: (error: Error) => void;
   } = {}
-) {
+): () => void {
   const {
     intervalMs = 24 * 60 * 60 * 1000, // Default to daily
     runImmediately = true,

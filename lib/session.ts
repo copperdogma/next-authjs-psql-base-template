@@ -18,7 +18,7 @@
  *
  * @returns The user session or null if not authenticated
  */
-export async function getSession() {
+export async function getSession(): Promise<null> {
   // TODO: Implement this function when re-enabling server-side session validation
   return null;
 }

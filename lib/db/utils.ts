@@ -164,6 +164,12 @@ export function buildPartialMatchFilter(field: string, searchTerm: string): any 
  * @param options Pagination options
  * @returns Prisma pagination configuration
  */
+interface PaginationConfig {
+  skip: number;
+  take: number;
+  orderBy: { [key: string]: 'asc' | 'desc' };
+}
+
 export function getPaginationConfig(
   options: {
     page?: number;
@@ -171,7 +177,7 @@ export function getPaginationConfig(
     orderBy?: string;
     orderDirection?: 'asc' | 'desc';
   } = {}
-) {
+): PaginationConfig {
   const { page = 1, pageSize = 20, orderBy = 'createdAt', orderDirection = 'desc' } = options;
 
   const skip = (page - 1) * pageSize;
