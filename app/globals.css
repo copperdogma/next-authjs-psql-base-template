@@ -50,36 +50,16 @@ body.dark {
   color: #212121;
 }
 
-/* Direct MUI component overrides for dark theme */
-html.dark .MuiPaper-root,
-html.dark .MuiCard-root,
-html.dark .MuiAlert-root,
-html.dark .MuiDialog-paper {
-  background-color: #1e1e1e !important;
-  color: #ffffff !important;
-}
-
-/* MuiBox components in dark mode */
-html.dark .MuiBox-root {
-  background-color: #121212 !important;
-  color: #ffffff !important;
-}
-
-/* Box components inside Paper should match Paper background */
-html.dark .MuiPaper-root .MuiBox-root {
-  background-color: #1e1e1e !important;
-}
-
-/* Special case for the 404 page and other paper components */
-html.dark .theme-aware-paper {
-  background-color: #1e1e1e !important;
-  color: #ffffff !important;
-}
-
-html.light .theme-aware-paper {
-  background-color: #ffffff !important;
-  color: #212121 !important;
-}
+/* Removed MUI component-specific overrides now handled in the theme:
+   - html.dark .MuiPaper-root
+   - html.dark .MuiCard-root
+   - html.dark .MuiAlert-root
+   - html.dark .MuiDialog-paper
+   - html.dark .MuiBox-root
+   - html.dark .MuiPaper-root .MuiBox-root
+   - html.dark .theme-aware-paper
+   - html.light .theme-aware-paper
+*/
 
 /* Prevent transitions during theme change to avoid flashing */
 .prevent-transition *,

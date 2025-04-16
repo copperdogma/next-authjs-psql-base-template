@@ -1,5 +1,5 @@
 import '@/app/globals.css';
-import { Inter } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import { Metadata } from 'next';
 import { Toaster } from '@/components/ui/Toaster';
 import { ThemeProvider } from 'next-themes';
@@ -8,7 +8,11 @@ import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import { logger } from '@/lib/logger';
 
-const inter = Inter({ subsets: ['latin'] });
+const roboto = Roboto({
+  weight: ['300', '400', '500', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Next.js + NextAuth + PostgreSQL',
@@ -60,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={inter.className}>
+      <body className={roboto.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
