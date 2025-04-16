@@ -2,6 +2,8 @@
  * Interface definitions for database-related services
  */
 
+// Import the specific types from Prisma client runtime - Removed as types were not exported
+
 export interface RawQueryService {
   /**
    * Performs a complex aggregation using raw SQL
@@ -58,17 +60,27 @@ export interface RawQueryService {
    * @param params Parameters to bind to the query
    * @returns Query results
    */
-  executeRawQuery<T = any>(sql: string, params: any[]): Promise<T>;
+  executeRawQuery<T = unknown>(sql: string, params: unknown[]): Promise<T>;
 }
+
+// Define placeholder types for Prisma raw functions if specific types aren't exported
+type PrismaQueryRawFunction = <T = unknown>(
+  query: TemplateStringsArray | string,
+  ...values: unknown[]
+) => Promise<T>;
+type PrismaExecuteRawFunction = (
+  query: TemplateStringsArray | string,
+  ...values: unknown[]
+) => Promise<number>;
 
 export interface PrismaClientService {
   /**
    * Executes a raw query with tagged template syntax
    */
-  $queryRaw: any;
+  $queryRaw: PrismaQueryRawFunction;
 
   /**
    * Executes a raw SQL command that doesn't return data
    */
-  $executeRaw: any;
+  $executeRaw: PrismaExecuteRawFunction;
 }

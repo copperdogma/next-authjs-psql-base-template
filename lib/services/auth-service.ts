@@ -1,4 +1,4 @@
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, Session, User, Account } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '../prisma';
@@ -7,6 +7,12 @@ import { PrismaClient } from '@prisma/client';
 import { LoggerService } from '../interfaces/services';
 import { createContextLogger } from './logger-service';
 import { v4 as uuidv4 } from 'uuid';
+import { UserRole } from '@/types';
+
+// Define the interface needed for options
+interface ClientInfoOptions {
+  callbackUrl?: string;
+}
 
 /**
  * Helper function to dynamically determine the base URL
@@ -55,7 +61,10 @@ export class AuthService {
   /**
    * Extract client information for logging
    */
-  public extractClientInfo(options: any, isServerSide: boolean): Record<string, string> {
+  public extractClientInfo(
+    options: ClientInfoOptions | undefined,
+    isServerSide: boolean
+  ): Record<string, string> {
     const clientInfo: Record<string, string> = {
       source: options?.callbackUrl || '/',
       timestamp: new Date().toISOString(),
@@ -141,39 +150,37 @@ export class AuthService {
    * Creates the callback functions for NextAuth
    */
   private createCallbacks() {
-    // Use arrow functions to preserve 'this' context
     return {
-      // Add user ID to the session
-      session: async ({ session, token }: { session: any; token: any }) => {
-        if (token.sub && session.user) {
-          session.user.id = token.sub;
-
-          // Use token data for name and email if available
-          if (token.name) session.user.name = token.name;
-          if (token.email) session.user.email = token.email;
+      session: async ({ session, token }: { session: Session; token: JWT }) => {
+        if (token.sub) {
+          if (!session.user) {
+            session.user = { id: token.sub, role: token.role || UserRole.USER };
+          } else {
+            session.user.id = token.sub;
+            session.user.role = token.role || UserRole.USER;
+          }
+          session.user.name = token.name ?? null;
+          session.user.email = token.email ?? null;
+          session.user.image = token.picture ?? null;
 
           this.logger.debug({
             msg: 'Session callback executed',
             userId: token.sub,
             email: session.user.email,
           });
+        } else {
+          this.logger.warn('Session callback: Token subject (sub) is missing.');
         }
         return session;
       },
 
-      // JWT callback - runs when a JWT is created or updated
-      jwt: async ({ token, user, trigger }: { token: any; user: any; trigger?: string }) => {
-        // Case 1: User object provided (sign-in)
+      jwt: async ({ token, user, trigger }: { token: JWT; user: User; trigger?: string }) => {
         if (user) {
           return this.updateTokenWithUserData(token, user);
         }
-
-        // Case 2: Update trigger with valid subject
         if (trigger === 'update' && token.sub) {
           return this.refreshTokenFromDatabase(token);
         }
-
-        // Case 3: Default case - return token unchanged
         return token;
       },
     };
@@ -184,41 +191,38 @@ export class AuthService {
    */
   private createEventHandlers() {
     return {
-      signIn: ({ user }: { user: any }) => {
+      signIn: ({ user }: { user: User }) => {
         this.logger.info({
           msg: 'User authenticated successfully',
           userId: user.id,
           email: user.email,
         });
       },
-      signOut: ({ token }: { token: any }) => {
+      signOut: ({ token }: { token: JWT }) => {
         this.logger.info({
           msg: 'User signed out',
           userId: token?.sub,
         });
       },
-      createUser: ({ user }: { user: any }) => {
+      createUser: ({ user }: { user: User }) => {
         this.logger.info({
           msg: 'New user created',
           userId: user.id,
           email: user.email,
         });
       },
-      linkAccount: ({ user, account }: { user: any; account: any }) => {
+      linkAccount: ({ user, account }: { user: User; account: Account }) => {
         this.logger.info({
           msg: 'Account linked to user',
           userId: user.id,
           provider: account.provider,
         });
       },
-      session: ({ token }: { token: any }) => {
-        // Sessions are frequently updated so use debug level
-        if (token?.sub) {
-          this.logger.debug({
-            msg: 'Session updated',
-            userId: token.sub,
-          });
-        }
+      session: ({ token }: { token: JWT }) => {
+        this.logger.debug({
+          msg: 'Session updated',
+          userId: token.sub,
+        });
       },
     };
   }
@@ -229,9 +233,11 @@ export class AuthService {
    */
   public createAuthConfig(): NextAuthOptions {
     return {
-      adapter: PrismaAdapter(this.prismaClient),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: Resolve Adapter type conflict - Cast needed due to mismatch between augmented NextAuth types and PrismaAdapter expectations.
+      adapter: PrismaAdapter(this.prismaClient) as any,
       providers: this.createProviders(),
       callbacks: this.createCallbacks(),
+      events: this.createEventHandlers(),
       pages: {
         signIn: '/login',
       },
@@ -239,29 +245,30 @@ export class AuthService {
         strategy: 'jwt',
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
-      // If NEXTAUTH_URL is not explicitly set or it contains an environment variable placeholder,
-      // use our dynamic detection
       ...(!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('${')
         ? { url: getBaseUrl() }
         : {}),
       secret: process.env.NEXTAUTH_SECRET,
-      events: this.createEventHandlers(),
+      debug: process.env.NODE_ENV === 'development',
     };
   }
 
   /**
    * Updates a JWT token with user data from sign-in
    */
-  private async updateTokenWithUserData(token: JWT, user: any): Promise<JWT> {
-    token.id = user.id;
-    token.name = user.name || undefined;
-    token.email = user.email || undefined;
+  private async updateTokenWithUserData(token: JWT, user: User): Promise<JWT> {
+    token.sub = user.id;
+    token.email = user.email ?? undefined;
+    token.name = user.name ?? undefined;
+    token.picture = user.image ?? undefined;
 
-    this.logger.info({
-      msg: 'User signed in',
-      userId: user.id,
+    const dbUser = await this.prismaClient.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
     });
 
+    token.role = (dbUser?.role as UserRole | undefined) ?? UserRole.USER;
+    this.logger.debug({ msg: 'JWT updated with user data', userId: user.id, role: token.role });
     return token;
   }
 
@@ -269,37 +276,27 @@ export class AuthService {
    * Gets user data from database for token refresh
    */
   private async refreshTokenFromDatabase(token: JWT): Promise<JWT> {
-    try {
-      // Fetch latest user data from database
-      const user = await this.prismaClient.user.findUnique({
-        where: { id: token.sub },
-        select: { name: true, email: true },
-      });
-
-      if (user) {
-        token.name = user.name || undefined;
-        token.email = user.email || undefined;
-
-        this.logger.debug({
-          msg: 'Token refreshed with updated user data',
-          userId: token.sub,
-        });
-      } else {
-        this.logger.warn({
-          msg: 'User not found during token refresh',
-          userId: token.sub,
-        });
-      }
-
-      return token;
-    } catch (error) {
-      this.logger.error({
-        msg: 'Failed to refresh token from database',
-        userId: token.sub,
-        error,
-      });
-
+    if (!token.sub) {
+      this.logger.error('Cannot refresh token without user ID (sub)');
       return token;
     }
+
+    const dbUser = await this.prismaClient.user.findUnique({
+      where: { id: token.sub },
+      select: { name: true, email: true, image: true, role: true },
+    });
+
+    if (!dbUser) {
+      this.logger.error({ msg: 'Cannot refresh token: User not found in DB', userId: token.sub });
+      return { ...token, error: 'UserNotFound' };
+    }
+
+    token.name = dbUser.name ?? undefined;
+    token.email = dbUser.email ?? undefined;
+    token.picture = dbUser.image ?? undefined;
+    token.role = (dbUser.role as UserRole | undefined) ?? UserRole.USER;
+
+    this.logger.debug({ msg: 'JWT refreshed from database', userId: token.sub });
+    return token;
   }
 }

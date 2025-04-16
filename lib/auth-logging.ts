@@ -16,6 +16,13 @@ import { createContextLogger } from '@/lib/services/logger-service';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * Minimal interface for options passed to extractClientInfo
+ */
+interface ClientInfoOptions {
+  callbackUrl?: string;
+}
+
+/**
  * Logging parameters for sign-in operations
  */
 export interface SignInLoggingParams {
@@ -49,7 +56,10 @@ export function createCorrelationId(prefix: string = 'auth'): string {
 /**
  * Extract client information for logging
  */
-export function extractClientInfo(options: any, isServerSide: boolean): Record<string, string> {
+export function extractClientInfo(
+  options: ClientInfoOptions | undefined,
+  isServerSide: boolean
+): Record<string, string> {
   const clientInfo: Record<string, string> = {};
 
   if (options?.callbackUrl) {

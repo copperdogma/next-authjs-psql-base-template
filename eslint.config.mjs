@@ -196,7 +196,7 @@ export default [
 
       // TypeScript-specific rules for better type safety
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }], // Catch unused variables
-      '@typescript-eslint/no-explicit-any': 'warn', // Encourage proper typing
+      '@typescript-eslint/no-explicit-any': 'error', // Enforce proper typing
       '@typescript-eslint/explicit-function-return-type': 'off', // TypeScript can infer return types
       '@typescript-eslint/explicit-module-boundary-types': 'off', // TypeScript can infer exported types
       '@typescript-eslint/ban-ts-comment': 'warn', // Discourage @ts-ignore
@@ -324,11 +324,25 @@ export default [
   },
 
   // Utility files configuration
-  // Relaxes certain rules in utility files
+  // Relaxes certain rules in specific utility files where 'any' might be necessary
+  // for type flexibility (like generic utilities, test fixtures, database access)
   {
-    files: ['lib/**/*.ts', 'tests/utils/**/*.ts', 'tests/e2e/fixtures/**/*.ts', 'types/**/*.d.ts'],
+    files: [
+      // Test utilities and fixtures
+      'tests/utils/**/*.ts',
+      'tests/e2e/fixtures/**/*.ts',
+      'types/**/*.d.ts',
+
+      // Specific lib utility files that need type flexibility
+      'lib/db/utils.ts',
+      'lib/db/raw-query-service.ts',
+      'lib/services/raw-query-service.ts',
+      'lib/__mocks__/**/*.ts',
+      'lib/theme/**/*.ts',
+      'tests/e2e/**/*.ts',
+    ],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off', // Allow any in utility files
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any where necessary for flexibility
     },
   },
 

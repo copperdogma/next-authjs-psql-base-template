@@ -5,7 +5,7 @@ type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 interface ClientLogEntry {
   level: LogLevel;
   message: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -47,7 +47,7 @@ function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
 function createLogEntry(
   level: LogLevel,
   message: string,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ): ClientLogEntry {
   return {
     level,
@@ -59,23 +59,23 @@ function createLogEntry(
 
 // The exported logger object for client components
 export const clientLogger = {
-  trace: (message: string, context?: Record<string, any>) => {
+  trace: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('trace', message, context));
   },
-  debug: (message: string, context?: Record<string, any>) => {
+  debug: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('debug', message, context));
   },
-  info: (message: string, context?: Record<string, any>) => {
+  info: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('info', message, context));
   },
-  warn: (message: string, context?: Record<string, any>) => {
+  warn: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('warn', message, context));
   },
   // Use sendBeacon for errors and fatal by default for higher chance of delivery
-  error: (message: string, context?: Record<string, any>) => {
+  error: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('error', message, context), true);
   },
-  fatal: (message: string, context?: Record<string, any>) => {
+  fatal: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('fatal', message, context), true);
   },
 };

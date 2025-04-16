@@ -3,6 +3,7 @@ import { RenderResult, render, RenderOptions as RTLRenderOptions } from '@testin
 import { SessionProvider } from 'next-auth/react';
 import { Session } from 'next-auth';
 import { TestRenderResult, MockUser, MockIdTokenResult } from './test-types';
+import { UserRole } from '@/types';
 
 const defaultMockUser = {
   uid: 'test-uid',
@@ -56,18 +57,26 @@ export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => {
 };
 
 type SessionWithUser = Session & {
-  user: MockUser & { id: string };
+  user: MockUser & { id: string; role: UserRole };
   expires: string;
 };
 
 export const SessionFixtures = {
   notAuthenticated: null as null,
   authenticated: (userOverrides: Partial<MockUser> = {}): SessionWithUser => ({
-    user: { ...createMockUser(userOverrides), id: 'test-id' },
+    user: {
+      ...createMockUser(userOverrides),
+      id: 'test-id',
+      role: UserRole.USER,
+    },
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   }),
   expired: {
-    user: { ...createMockUser(), id: 'test-id' },
+    user: {
+      ...createMockUser(),
+      id: 'test-id',
+      role: UserRole.USER,
+    },
     expires: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   } as SessionWithUser,
 };

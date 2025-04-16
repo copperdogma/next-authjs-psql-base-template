@@ -31,8 +31,8 @@ export function classNames(
 }
 
 // This function can be modified to exclude specific fields from the db data when needed
-export function cleanDbData<T extends Record<string, any>>(data: T): Omit<T, 'password'> {
+export function cleanDbData<T extends Record<string, unknown>>(data: T): Omit<T, 'password'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...rest } = data;
-  return rest;
+  const { password, ...rest } = data as Record<string, unknown>;
+  return rest as Omit<T, 'password'>;
 }

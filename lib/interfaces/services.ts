@@ -1,6 +1,7 @@
 /**
  * Common service interfaces for application-wide use
  */
+// Removed firebase-admin import attempts
 
 /**
  * Interface for logger services, supporting standard log levels and context
@@ -54,20 +55,20 @@ export interface FirebaseAdminService {
    * Verify a Firebase ID token
    * @param token Firebase ID token to verify
    */
-  verifyIdToken(token: string): Promise<any>;
+  verifyIdToken(token: string): Promise<unknown>;
 
   /**
    * Get a user by their Firebase UID
    * @param uid Firebase user ID
    */
-  getUserByUid(uid: string): Promise<any>;
+  getUserByUid(uid: string): Promise<unknown>;
 
   /**
    * Update a user's profile in Firebase Auth
    * @param uid Firebase user ID
    * @param updates Object containing profile updates
    */
-  updateUser(uid: string, updates: any): Promise<any>;
+  updateUser(uid: string, updates: Record<string, unknown>): Promise<unknown>;
 
   /**
    * Creates a custom token for authentication
@@ -86,7 +87,7 @@ export interface RawQueryService {
    * @param sql SQL query string
    * @param params Query parameters
    */
-  executeRawQuery(sql: string, params?: any[]): Promise<any>;
+  executeRawQuery<T = unknown>(sql: string, params?: unknown[]): Promise<T>;
 
   /**
    * Extend session expirations for specified users

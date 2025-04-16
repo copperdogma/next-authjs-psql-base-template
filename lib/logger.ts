@@ -56,10 +56,10 @@ export const logger = baseLogger;
 /**
  * Create a child logger with a specific context
  * @param context The context for this logger (e.g., 'auth', 'api', 'db')
- * @param data Additional data to include with every log entry
+ * @param data Additional data to include with every log entry (use unknown for type safety)
  * @returns A child logger instance
  */
-export function createLogger(context: string, data: Record<string, any> = {}) {
+export function createLogger(context: string, data: Record<string, unknown> = {}) {
   return logger.child({
     context,
     ...data,

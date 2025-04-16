@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 /**
  * Global PrismaClient instance with optimized connection settings.
@@ -7,8 +7,8 @@ import { PrismaClient } from '@prisma/client';
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 // Configuration based on environment
-const getPrismaConfig = () => {
-  const config: any = {};
+const getPrismaConfig = (): Prisma.PrismaClientOptions => {
+  const config: Prisma.PrismaClientOptions = {};
 
   // Only log errors in production, more verbose in development
   if (process.env.NODE_ENV === 'production') {
