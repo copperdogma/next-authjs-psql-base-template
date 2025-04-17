@@ -17,11 +17,10 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import * as pino from 'pino';
-import { SessionService, defaultSessionService } from '@/lib/services/session-service';
 import { logger as rootLogger } from '@/lib/logger';
-import { authConfig } from '@/lib/auth';
 import { ProfileService } from '@/lib/services/profile-service';
 import { profileService as singletonProfileService } from '@/lib/server/services';
+import { auth } from '@/lib/auth';
 
 const actionsLogger = rootLogger.child({ service: 'profile-actions' });
 
@@ -37,7 +36,6 @@ export type FormState = {
  */
 class ProfileActionsImpl {
   constructor(
-    private readonly sessionService: SessionService = defaultSessionService,
     private readonly profileService: ProfileService = singletonProfileService,
     private readonly logger: pino.Logger = actionsLogger
   ) {}
@@ -108,14 +106,14 @@ class ProfileActionsImpl {
     error?: string;
   }> {
     try {
-      const session = await this.sessionService.getServerSession(authConfig);
+      const session = await auth();
 
-      if (!session?.user?.email) {
-        this.logger.warn({ msg: 'User not authenticated' });
+      if (!session?.user?.id) {
+        this.logger.warn({ msg: 'User not authenticated in verifyAuthentication' });
         return { isAuthenticated: false, error: 'You must be logged in to update your profile' };
       }
 
-      return { isAuthenticated: true, userId: session.user.id as string };
+      return { isAuthenticated: true, userId: session.user.id };
     } catch (error) {
       this.logger.error({
         msg: 'Error verifying authentication',

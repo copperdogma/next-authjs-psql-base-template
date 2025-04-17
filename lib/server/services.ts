@@ -10,8 +10,6 @@ import { PrismaClient } from '@prisma/client';
 import { prisma } from '../prisma';
 import { UserService } from '../services/user-service';
 import { ProfileService } from '../services/profile-service';
-import { SessionService } from '../services/session-service';
-import { authConfig } from '../auth';
 
 // Initialize Firebase Admin App
 // This might throw if credentials are missing, preventing server startup
@@ -34,12 +32,6 @@ export const profileService = new ProfileService(
   userService,
   firebaseAdminService, // Inject Firebase Admin Service
   logger.child({ service: 'profile' })
-);
-
-// Session Service
-export const sessionService = new SessionService(
-  authConfig, // Pass the imported authConfig
-  logger.child({ service: 'session' })
 );
 
 // Logger for this setup file itself

@@ -1,4 +1,3 @@
-import { encode } from 'next-auth/jwt';
 import { v4 as uuidv4 } from 'uuid';
 
 // Default test user information
@@ -30,6 +29,9 @@ export async function generateTestSessionToken(
   name: string = defaultTestUserName,
   expiresOffsetSeconds: number = 3600 // 1 hour default expiry
 ): Promise<string> {
+  // Dynamically import encode as it's an ES Module
+  const { encode } = await import('next-auth/jwt');
+
   const now = Math.floor(Date.now() / 1000); // Current time in seconds
   const expires = now + expiresOffsetSeconds; // Expiration time
 
@@ -48,6 +50,7 @@ export async function generateTestSessionToken(
     const token = await encode({
       token: tokenPayload,
       secret: secret as string,
+      salt: secret as string,
       maxAge: expiresOffsetSeconds,
     });
     return token;

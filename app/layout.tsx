@@ -7,6 +7,7 @@ import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import { logger } from '@/lib/logger';
+import { auth } from '@/lib/auth';
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -58,7 +59,9 @@ logger.info({
   nodeEnv: process.env.NODE_ENV,
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -72,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
           storageKey="theme-preference"
         >
-          <SessionProviderWrapper>
+          <SessionProviderWrapper session={session}>
             <ThemeRegistry>
               <BaseLayout>{children}</BaseLayout>
               <Toaster />

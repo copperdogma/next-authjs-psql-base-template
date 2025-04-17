@@ -11,356 +11,398 @@
 // validated through End-to-End (E2E) tests that simulate real user login and
 // session management scenarios.
 // =============================================================================
-import { NextAuthOptions, Session, User, Account } from 'next-auth';
-import type { Adapter } from 'next-auth/adapters';
+import type { NextAuthConfig, Session, User, Account, Profile } from 'next-auth';
+import type { AdapterSession, AdapterUser } from 'next-auth/adapters';
+import type { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
-import { default as NextAuth } from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
-import { JWT } from 'next-auth/jwt';
-import { PrismaClient } from '@prisma/client';
 import type { LoggerService } from '@/lib/interfaces/services';
 import { createContextLogger } from '@/lib/services/logger-service';
-import { v4 as uuidv4 } from 'uuid';
-import {
-  signInWithLogging,
-  signOutWithLogging,
-  createCorrelationId,
-  logSignInSuccess,
-  logSignInFailure,
-  logSignInError,
-} from './auth-logging';
-import type { SignInLoggingParams, SignInFailureParams, SignInErrorParams } from './auth-logging';
+import { createCorrelationId } from './auth-logging';
 import { UserRole } from '@/types';
+import NextAuth from 'next-auth'; // Import NextAuth function itself
 
-// Define the interface needed for options
-interface ClientInfoOptions {
-  callbackUrl?: string;
+// Define a type alias for the User object expected by callbacks/authorize, extending Auth.js User
+type AuthUser = User & { role?: UserRole };
+
+// Instantiate logger
+const logger: LoggerService = createContextLogger('auth');
+
+// Type for the arguments object for findOrCreateUserAndAccount
+interface FindOrCreateUserParams {
+  email: string;
+  profileData: { id: string; name?: string | null; email: string; image?: string | null };
+  providerAccountId: string;
+  provider: string;
+  correlationId: string;
 }
 
-// Re-export functions from auth-logging.ts
-export {
-  signInWithLogging,
-  signOutWithLogging,
-  createCorrelationId,
-  logSignInSuccess,
-  logSignInFailure,
-  logSignInError,
-};
-
-// Re-export types from auth-logging.ts
-export type { SignInLoggingParams, SignInFailureParams, SignInErrorParams };
-
-/**
- * Helper function to dynamically determine the base URL
- * This handles cases where the port might change between environments
- */
-function getBaseUrl(): string {
-  // In the browser, use window.location
-  if (typeof window !== 'undefined') {
-    const { protocol, host } = window.location;
-    return `${protocol}//${host}`;
-  }
-
-  // In server context, use environment variables with fallbacks
-  const port = process.env.PORT || process.env.NEXT_PUBLIC_PORT || 3000;
-  return `http://localhost:${port}`;
+// Type for the arguments object for handleJwtSignIn
+interface HandleJwtSignInParams {
+  token: JWT;
+  user: User | AdapterUser;
+  account: Account;
+  profile: Profile;
+  correlationId: string;
 }
 
-/**
- * Auth service class with dependency injection support
- */
-export class AuthService {
-  private logger: LoggerService;
-  private prismaClient: PrismaClient;
-
-  /**
-   * Creates a new AuthService instance
-   *
-   * @param logger - Logger service to use
-   * @param prismaClient - PrismaClient instance to use
-   */
-  constructor(
-    logger: LoggerService = createContextLogger('auth'),
-    prismaClient: PrismaClient = prisma
-  ) {
-    this.logger = logger;
-    this.prismaClient = prismaClient;
-  }
-
-  /**
-   * Creates a correlation ID for tracking authentication flows
-   */
-  public createCorrelationId(prefix: string = 'auth'): string {
-    return `${prefix}_${uuidv4().substring(0, 8)}`;
-  }
-
-  /**
-   * Extract client information for logging
-   */
-  public extractClientInfo(
-    options: ClientInfoOptions | undefined,
-    isServerSide: boolean
-  ): Record<string, string> {
-    const clientInfo: Record<string, string> = {
-      source: options?.callbackUrl || '/',
-      timestamp: new Date().toISOString(),
-    };
-
-    if (!isServerSide && typeof window !== 'undefined') {
-      clientInfo.userAgent = window.navigator.userAgent;
-      clientInfo.referrer = document.referrer || '';
-    } else if (isServerSide) {
-      clientInfo.userAgent = 'server';
-    }
-
-    return clientInfo;
-  }
-
-  /**
-   * Log a successful sign-in attempt
-   */
-  public logSignInSuccess(params: { provider: string; correlationId: string }): void {
-    this.logger.info({
-      msg: 'Sign-in attempt completed',
-      provider: params.provider,
-      correlationId: params.correlationId,
-      success: true,
-      duration: 100, // Mock duration for testing
+// Helper to find or create an account link for an existing user
+async function findOrCreateAccountLink(
+  userId: string,
+  provider: string,
+  providerAccountId: string,
+  correlationId: string
+): Promise<void> {
+  logger.debug({ msg: 'Checking account link', userId, provider, correlationId });
+  const accountLink = await prisma.account.findUnique({
+    where: { provider_providerAccountId: { provider, providerAccountId } },
+  });
+  if (!accountLink) {
+    logger.info({
+      msg: 'Creating new account link for existing user',
+      userId,
+      provider,
+      correlationId,
+    });
+    await prisma.account.create({
+      data: {
+        userId,
+        provider,
+        providerAccountId,
+        type: 'oauth',
+      },
     });
   }
+}
 
-  /**
-   * Log a failed sign-in attempt
-   */
-  public logSignInFailure(params: {
-    provider: string;
-    error: string;
-    correlationId: string;
-  }): void {
-    this.logger.warn({
-      msg: 'Sign-in attempt failed',
-      provider: params.provider,
-      error: params.error,
-      correlationId: params.correlationId,
-      duration: 100, // Mock duration for testing
-    });
-  }
-
-  /**
-   * Log an error during sign-in
-   */
-  public logSignInError(params: { provider: string; error: Error; correlationId: string }): void {
-    this.logger.error({
-      msg: 'Sign-in attempt threw exception',
-      provider: params.provider,
-      error: {
-        message: params.error.message,
-        name: params.error.name,
-        stack: params.error.stack,
-      },
-      correlationId: params.correlationId,
-      duration: 100, // Mock duration for testing
-    });
-  }
-
-  /**
-   * Creates the provider configurations
-   */
-  private createProviders() {
-    return [
-      Google({
-        clientId: process.env.GOOGLE_CLIENT_ID || '',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-        authorization: {
-          params: {
-            prompt: 'consent',
-            access_type: 'offline',
-            response_type: 'code',
-          },
-        },
-      }),
-    ];
-  }
-
-  /**
-   * Creates the callback functions for NextAuth
-   */
-  private createCallbacks() {
-    return {
-      session: async ({ session, token }: { session: Session; token: JWT }) => {
-        if (token.sub) {
-          if (!session.user) {
-            session.user = { id: token.sub, role: token.role ?? UserRole.USER };
-          } else {
-            session.user.id = token.sub;
-            session.user.role = token.role ?? UserRole.USER;
-          }
-          // Assign potentially null values carefully
-          session.user.name = token.name ?? null;
-          session.user.email = token.email ?? null;
-          session.user.image = token.picture ?? null;
-
-          this.logger.debug({
-            msg: 'Session callback executed',
-            userId: token.sub,
-            email: session.user.email,
-          });
-        } else {
-          this.logger.warn('Session callback: Token subject (sub) is missing.');
-        }
-        return session;
-      },
-
-      jwt: async ({ token, user, trigger }: { token: JWT; user: User; trigger?: string }) => {
-        // Case 1: User object provided (sign-in)
-        if (user) {
-          return this.updateTokenWithUserData(token, user);
-        }
-
-        // Case 2: Update trigger with valid subject
-        if (trigger === 'update' && token.sub) {
-          return this.refreshTokenFromDatabase(token);
-        }
-
-        // Case 3: Default case - return token unchanged
-        return token;
-      },
-    };
-  }
-
-  /**
-   * Creates the event handlers for NextAuth
-   */
-  private createEventHandlers() {
-    return {
-      signIn: ({ user }: { user: User }) => {
-        this.logger.info({
-          msg: 'User authenticated successfully',
-          userId: user.id,
-          email: user.email,
-        });
-      },
-      signOut: ({ token }: { token: JWT }) => {
-        this.logger.info({
-          msg: 'User signed out',
-          userId: token?.sub,
-        });
-      },
-      createUser: ({ user }: { user: User }) => {
-        this.logger.info({
-          msg: 'New user created',
-          userId: user.id,
-          email: user.email,
-        });
-      },
-      linkAccount: ({ user, account }: { user: User; account: Account }) => {
-        this.logger.info({
-          msg: 'Account linked to user',
-          userId: user.id,
-          provider: account.provider,
-        });
-      },
-      session: ({ token }: { token: JWT }) => {
-        this.logger.info({
-          msg: 'User session active',
-          userId: token?.sub,
-        });
-      },
-    };
-  }
-
-  /**
-   * Creates the NextAuth configuration
-   * @returns NextAuthOptions configuration
-   */
-  public createAuthConfig(): NextAuthOptions {
-    return {
-      adapter: PrismaAdapter(this.prismaClient) as unknown as Adapter,
-      providers: this.createProviders(),
-      callbacks: this.createCallbacks(),
-      pages: {
-        signIn: '/login',
-      },
-      session: {
-        strategy: 'jwt',
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-      },
-      // If NEXTAUTH_URL is not explicitly set or it contains an environment variable placeholder,
-      // use our dynamic detection
-      ...(!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('${')
-        ? { url: getBaseUrl() }
-        : {}),
-      secret: process.env.NEXTAUTH_SECRET,
-      events: this.createEventHandlers(),
-      debug: process.env.NODE_ENV === 'development',
-    };
-  }
-
-  /**
-   * Updates a JWT token with user data from sign-in
-   */
-  private async updateTokenWithUserData(token: JWT, user: User): Promise<JWT> {
-    token.sub = user.id;
-    token.email = user.email ?? undefined;
-    token.name = user.name ?? undefined;
-    token.picture = user.image ?? undefined;
-
-    const dbUser = await this.prismaClient.user.findUnique({
-      where: { id: user.id },
-      select: { role: true },
-    });
-
-    // Explicitly cast dbUser.role to UserRole and provide a default value
-    token.role = (dbUser?.role as UserRole) ?? UserRole.USER;
-    this.logger.debug({ msg: 'JWT updated with user data', userId: user.id, role: token.role });
-    return token;
-  }
-
-  /**
-   * Gets user data from database for token refresh
-   */
-  private async refreshTokenFromDatabase(token: JWT): Promise<JWT> {
-    if (!token.sub) {
-      this.logger.error('Cannot refresh token without user ID (sub)');
-      return token;
-    }
-
-    const dbUser = await this.prismaClient.user.findUnique({
-      where: { id: token.sub },
-      select: { name: true, email: true, image: true, role: true },
-    });
+// Refactored Helper function to find or create a user and link their account
+async function findOrCreateUserAndAccount(
+  params: FindOrCreateUserParams
+): Promise<AuthUser | null> {
+  const { email, profileData, providerAccountId, provider, correlationId } = params;
+  try {
+    let dbUser = await prisma.user.findUnique({ where: { email } });
 
     if (!dbUser) {
-      this.logger.error({ msg: 'Cannot refresh token: User not found in DB', userId: token.sub });
-      return { ...token, error: 'UserNotFound' };
+      logger.info({ msg: 'Creating new user', email, provider, correlationId });
+      dbUser = await prisma.user.create({
+        data: {
+          id: profileData.id,
+          email: email,
+          name: profileData.name,
+          image: profileData.image,
+          role: 'USER',
+        },
+      });
+      // Directly create account link for new user
+      await prisma.account.create({
+        data: { userId: dbUser.id, provider, providerAccountId, type: 'oauth' },
+      });
+      logger.info({ msg: 'New user and account created', userId: dbUser.id, correlationId });
+    } else {
+      // User exists, use helper to ensure account link exists
+      await findOrCreateAccountLink(dbUser.id, provider, providerAccountId, correlationId);
     }
-
-    token.name = dbUser.name ?? undefined;
-    token.email = dbUser.email ?? undefined;
-    token.picture = dbUser.image ?? undefined;
-    // Explicitly cast dbUser.role to UserRole and provide a default value
-    token.role = (dbUser.role as UserRole) ?? UserRole.USER;
-
-    this.logger.debug({ msg: 'JWT refreshed from database', userId: token.sub });
-    return token;
+    return {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      image: dbUser.image,
+      role: dbUser.role as UserRole,
+    };
+  } catch (error) {
+    logger.error({
+      msg: 'Error in findOrCreateUserAndAccount',
+      email,
+      provider,
+      error:
+        error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+      correlationId,
+    });
+    return null;
   }
 }
 
-/**
- * Factory function to create NextAuth configuration with dependency injection
- * This is for backward compatibility
- */
-export function createAuthConfig(
-  prismaClient: PrismaClient = prisma,
-  logger: LoggerService = createContextLogger('auth')
-): NextAuthOptions {
-  const authService = new AuthService(logger, prismaClient);
-  return authService.createAuthConfig();
+// Helper to validate signIn inputs and extract key info
+// eslint-disable-next-line complexity
+function validateSignInInputs(
+  user: User | AdapterUser | null | undefined,
+  account: Account | null | undefined,
+  profile: Profile | null | undefined,
+  correlationId: string
+): { isValid: boolean; userId?: string; userEmail?: string } {
+  if (!user?.id || !account?.provider || !account?.providerAccountId || !profile) {
+    logger.error({ msg: 'signIn trigger missing required data', correlationId });
+    return { isValid: false };
+  }
+  const userId = profile.sub ?? user.id;
+  const userEmail = profile.email ?? user.email;
+  if (!userEmail || !userId) {
+    logger.error({ msg: 'Missing email or ID during sign-in', userId, userEmail, correlationId });
+    return { isValid: false };
+  }
+  return { isValid: true, userId, userEmail };
 }
 
-// Create the default auth configuration for backward compatibility
-export const authConfig = createAuthConfig();
+// Helper to build the final JWT
+function buildNewJwt(token: JWT, dbUser: AuthUser): JWT {
+  return {
+    ...token,
+    sub: dbUser.id,
+    role: dbUser.role,
+    email: dbUser.email,
+    name: dbUser.name,
+    picture: dbUser.image,
+  };
+}
 
-// This is the default export for NextAuth
-export default NextAuth(authConfig);
+// Refactored Helper function for JWT signIn trigger
+async function handleJwtSignIn(params: HandleJwtSignInParams): Promise<JWT> {
+  const { token, user, account, profile, correlationId } = params;
+
+  const validation = validateSignInInputs(user, account, profile, correlationId);
+  if (!validation.isValid || !validation.userId || !validation.userEmail) {
+    return {}; // Return empty token if validation fails
+  }
+
+  // Re-check account for type safety before accessing properties
+  if (!account) {
+    logger.error({ msg: 'Account object unexpectedly missing after validation', correlationId });
+    return {};
+  }
+
+  const { userId, userEmail } = validation;
+
+  logger.info({
+    msg: 'Initial sign-in detected',
+    userId,
+    provider: account.provider,
+    correlationId,
+  }); // Use checked account
+
+  // Re-check profile and user for type safety before accessing properties
+  if (!profile || !user) {
+    logger.error({
+      msg: 'Profile or User object unexpectedly missing after validation',
+      correlationId,
+    });
+    return {};
+  }
+
+  // Prepare data and find/create user
+  const profileDataForDb = {
+    id: userId,
+    email: userEmail,
+    name: profile.name ?? user.name,
+    image: profile.picture ?? user.image,
+  }; // Use checked profile/user
+  const dbUser = await findOrCreateUserAndAccount({
+    email: userEmail,
+    profileData: profileDataForDb,
+    providerAccountId: account.providerAccountId, // Use checked account
+    provider: account.provider, // Use checked account
+    correlationId,
+  });
+
+  // Handle failure to find/create user
+  if (!dbUser) {
+    logger.error({
+      msg: 'Failed find/create user during sign-in',
+      email: userEmail,
+      correlationId,
+    });
+    return {}; // Return empty token on error
+  }
+
+  // Successfully found/created user, update token
+  const newToken = buildNewJwt(token, dbUser);
+  logger.info({
+    msg: 'Token updated after sign-in',
+    userId: newToken.sub,
+    role: newToken.role,
+    correlationId,
+  });
+  return newToken;
+}
+
+// --- Helper function for JWT update trigger ---
+async function handleJwtUpdate(token: JWT, correlationId: string): Promise<JWT> {
+  logger.info({ msg: 'Session update trigger detected', userId: token.sub, correlationId });
+  if (!token.sub) {
+    logger.warn({ msg: 'Update trigger received but no token.sub found', correlationId });
+    return token; // Return original token
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: token.sub } });
+  if (dbUser) {
+    const updatedToken: JWT = {
+      ...token,
+      role: dbUser.role as UserRole,
+      email: dbUser.email,
+      name: dbUser.name,
+      picture: dbUser.image,
+    };
+    logger.info({
+      msg: 'Token updated from DB on update trigger',
+      userId: updatedToken.sub,
+      role: updatedToken.role,
+      correlationId,
+    });
+    return updatedToken;
+  } else {
+    logger.warn({
+      msg: 'User not found in DB during token update',
+      userId: token.sub,
+      correlationId,
+    });
+    return token; // Return original token if user not found
+  }
+}
+
+export const authConfig: NextAuthConfig = {
+  // adapter: PrismaAdapter(prisma) as Adapter, // Keep adapter commented out
+  session: {
+    // Use JWT strategy
+    strategy: 'jwt',
+  },
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    }),
+    // Keep Credentials commented out
+  ],
+  callbacks: {
+    async jwt({ token, user, account, profile, trigger }) {
+      const correlationId = createCorrelationId('jwtCb');
+      logger.debug({
+        msg: 'JWT callback',
+        trigger,
+        hasUser: !!user,
+        hasAccount: !!account,
+        correlationId,
+      });
+
+      // --- Main logic: Call appropriate helper based on trigger ---
+      if (trigger === 'signIn' && user && account && profile) {
+        // Pass the necessary arguments as a single object
+        return await handleJwtSignIn({ token, user, account, profile, correlationId });
+      } else if (trigger === 'update') {
+        return await handleJwtUpdate(token, correlationId);
+      }
+
+      // Default: return the token unchanged for other triggers
+      logger.debug({
+        msg: 'JWT callback: unhandled trigger or no relevant data, returning token as is',
+        trigger,
+        correlationId,
+      });
+      return token;
+    },
+
+    // Restore session callback for JWT strategy
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
+      const correlationId = createCorrelationId('sessionCb');
+      logger.debug({
+        msg: 'Session callback invoked (JWT strategy)',
+        userId: token?.sub,
+        correlationId,
+      });
+      // Assign properties from token to session.user
+      if (token?.sub && session.user) {
+        session.user.id = token.sub;
+        // Cast session.user to include the role property we expect
+        const sessionUser = session.user as AuthUser;
+        sessionUser.role = token.role as UserRole; // Assign role from token
+        sessionUser.email = token.email as string; // Assign email from token
+        sessionUser.name = token.name as string; // Assign name from token
+        sessionUser.image = token.picture as string; // Assign image from token
+        logger.debug({
+          msg: 'Session populated from token',
+          userId: session.user.id,
+          role: sessionUser.role,
+          correlationId,
+        });
+      } else {
+        logger.warn({
+          msg: 'Session callback invoked without token.sub or session.user',
+          correlationId,
+        });
+      }
+      return session;
+    },
+  },
+  events: {
+    // Keep events, adapter handles user/account creation now
+    async signIn({ user, account, isNewUser }) {
+      const correlationId = createCorrelationId('signInEvent');
+      logger.info({
+        msg: 'signIn event (JWT strategy)',
+        userId: user.id,
+        email: user.email,
+        provider: account?.provider,
+        isNewUser: isNewUser ?? 'unknown',
+        correlationId,
+      });
+    },
+    async signOut(
+      message: { session: AdapterSession | null | undefined | void } | { token: JWT | null }
+    ) {
+      const correlationId = createCorrelationId('signOutEvent');
+      let userId: string | undefined = undefined;
+      let sessionIdentifier: string | undefined = undefined;
+
+      if ('token' in message && message.token) {
+        userId = message.token.sub;
+        sessionIdentifier = message.token.jti ?? message.token.sub;
+      }
+      logger.info({
+        msg: 'signOut event triggered (JWT strategy)',
+        sessionIdentifier,
+        userId,
+        correlationId,
+      });
+    },
+    async createUser(message: { user: User }) {
+      const correlationId = createCorrelationId('createUserEvent');
+      logger.info({
+        msg: 'createUser event triggered',
+        userId: message.user.id,
+        email: message.user.email,
+        correlationId,
+      });
+    },
+    async updateUser(message: { user: User }) {
+      const correlationId = createCorrelationId('updateUserEvent');
+      logger.info({ msg: 'updateUser event triggered', userId: message.user.id, correlationId });
+    },
+    async linkAccount(message: { user: User; account: Account }) {
+      const correlationId = createCorrelationId('linkAccountEvent');
+      logger.info({
+        msg: 'linkAccount event triggered',
+        userId: message.user.id,
+        provider: message.account.provider,
+        correlationId,
+      });
+    },
+    async session(message: { session: Session | unknown }) {
+      const correlationId = createCorrelationId('sessionEvent');
+      const sessionId =
+        typeof message.session === 'object' && message.session && 'id' in message.session
+          ? (message.session as { id: string }).id
+          : undefined;
+      logger.debug({ msg: 'session event triggered', sessionId, correlationId });
+    },
+  },
+  pages: {
+    signIn: '/login', // Default sign-in page
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Recommended for self-hosted, set to false if behind untrusted proxy
+};
+
+// Initialize NextAuth with the config and export the results
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+
+// Exporting the logger creation function directly if needed elsewhere
+export { createContextLogger };

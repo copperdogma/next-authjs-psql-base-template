@@ -21,12 +21,3 @@ declare module 'next-auth' {
     role: UserRole;
   }
 }
-
-declare module 'next-auth/jwt' {
-  /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
-  interface JWT {
-    /** OpenID ID Token */
-    idToken?: string;
-    role?: UserRole; // Add role to the JWT type
-  }
-}

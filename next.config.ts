@@ -16,11 +16,6 @@ const bundleAnalyzer = withBundleAnalyzer({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Force SWC transforms despite Babel config (potentially removable)
-  // experimental: {
-  //   forceSwcTransforms: true,
-  // },
-
   // Mark pino and pino-pretty as external packages to prevent bundling issues
   // This is generally the preferred way for server-only packages
   serverExternalPackages: ['pino', 'pino-pretty', 'jose'],

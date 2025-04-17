@@ -1,6 +1,7 @@
 'use client';
 
 import { SessionProvider, useSession } from 'next-auth/react';
+import { Session } from 'next-auth'; // Import Session type
 import { useEffect, useState } from 'react';
 import { loggers } from '@/lib/logger'; // Assuming logger setup
 import SessionErrorHandler from './SessionErrorHandler';
@@ -30,11 +31,18 @@ function SessionLogic() {
   return null;
 }
 
-export default function SessionProviderWrapper({ children }: { children: React.ReactNode }) {
+// Define props type to include optional session
+interface SessionProviderWrapperProps {
+  children: React.ReactNode;
+  session?: Session | null; // Make session prop optional
+}
+
+export default function SessionProviderWrapper({ children, session }: SessionProviderWrapperProps) {
   const [sessionError, setSessionError] = useState<Error | null>(null);
 
   return (
-    <SessionProvider>
+    // Pass the session prop to the underlying SessionProvider
+    <SessionProvider session={session}>
       <SessionLogic />
       <SessionErrorHandler sessionError={sessionError} setSessionError={setSessionError} />
       {sessionError ? <SessionErrorDisplay error={sessionError} /> : children}

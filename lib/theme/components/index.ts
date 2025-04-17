@@ -6,6 +6,30 @@ import { getScrollbarStyles } from './scrollbar';
 import { getCardAndPaperOverrides, getAppBarOverrides, getCardContentOverrides } from './surfaces';
 import { getButtonOverrides, getFormComponentOverrides } from './inputs';
 
+// Helper for MuiAlert overrides
+const getAlertOverrides = (mode: PaletteMode): Components<Theme>['MuiAlert'] => ({
+  styleOverrides: {
+    root: ({ theme }) => ({
+      ...(mode === 'dark' && {
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+      }),
+    }),
+  },
+});
+
+// Helper for MuiDialog overrides
+const getDialogOverrides = (mode: PaletteMode): Components<Theme>['MuiDialog'] => ({
+  styleOverrides: {
+    paper: ({ theme }) => ({
+      ...(mode === 'dark' && {
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+      }),
+    }),
+  },
+});
+
 /**
  * Get component overrides for the theme
  */
@@ -48,26 +72,8 @@ export const getComponentOverrides = (mode: PaletteMode): Components<Theme> => (
       }),
     },
   },
-  MuiAlert: {
-    styleOverrides: {
-      root: ({ theme }) => ({
-        ...(mode === 'dark' && {
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-        }),
-      }),
-    },
-  },
-  MuiDialog: {
-    styleOverrides: {
-      paper: ({ theme }) => ({
-        ...(mode === 'dark' && {
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-        }),
-      }),
-    },
-  },
+  MuiAlert: getAlertOverrides(mode),
+  MuiDialog: getDialogOverrides(mode),
   // NOTE: Do NOT add a global override for MuiBox. Use sx or styled() for specific Box instances.
   ...getCardContentOverrides(),
   ...getFormComponentOverrides(mode),
