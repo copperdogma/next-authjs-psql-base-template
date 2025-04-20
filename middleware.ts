@@ -11,12 +11,14 @@
 // is primarily validated through End-to-End (E2E) tests that simulate user
 // navigation and verify the resulting behavior in a browser context.
 // =============================================================================
-import { auth } from '@/lib/auth'; // Import auth function directly
-import { logger } from '@/lib/logger';
+// import { auth } from '@/lib/auth'; // CANNOT IMPORT THIS HERE (Prisma Adapter)
+// import { logger } from '@/lib/logger'; // Still commented out due to previous build issues
 import { NextRequest, NextResponse } from 'next/server';
-import { Session } from 'next-auth'; // Keep Session type import
+// import { Session } from 'next-auth'; // No longer needed
 
-// Middleware configuration (matchers)
+console.log('[Middleware] Loading... (No auth() call)'); // Log when middleware module is loaded
+
+// Middleware configuration (matchers) - USE ADJUSTED MATCHER THAT WORKED
 export const config = {
   matcher: [
     /*
@@ -25,42 +27,56 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - .*\..* (files with extensions, e.g., .png, .jpg)
+     * - Also exclude files with extensions (e.g., .png)
+     * Trying '*' instead of '+' and explicitly adding '/'
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\..*).+)',
-    // Explicitly include root path if needed, e.g., for protected root
-    // '/,'
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'", // Changed .+ to .*
+    '/', // Explicitly match the root path
   ],
 };
 
 // Define public paths (adjust as necessary)
-const publicPaths = ['/auth/login', '/auth/error'];
+const publicPaths = ['/login', '/auth/error', '/'];
+
+// Determine potential session cookie names
+const secureCookie = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
+const sessionCookieName = secureCookie
+  ? '__Secure-next-auth.session-token'
+  : 'next-auth.session-token';
+
+console.log(`[Middleware] Expecting session cookie: ${sessionCookieName}`);
 
 // Define the middleware logic directly as the default export
-export default async function middleware(req: NextRequest) {
+export default function middleware(req: NextRequest) {
+  // Changed to sync function
   const { pathname } = req.nextUrl;
-  logger.debug({ msg: 'Middleware executing', pathname, method: req.method });
+
+  // Log every request entering the middleware
+  console.log(`[Middleware] Request received for: ${pathname}`);
 
   // Check if the path is public
   const isPublic = publicPaths.some(path => pathname.startsWith(path));
 
-  // Get session by calling the exported auth() function
-  const session: Session | null = await auth();
-
-  logger.debug({ msg: 'Middleware path check', pathname, isPublic, hasSession: !!session });
+  // Check for the presence of the session cookie
+  const hasSessionCookie = req.cookies.has(sessionCookieName);
+  console.log(`[Middleware] Cookie check: ${sessionCookieName} present? ${hasSessionCookie}`);
 
   if (isPublic) {
-    logger.debug({ msg: 'Public path, allowing access', pathname });
+    console.log('[Middleware] Public path, allowing access');
     return NextResponse.next(); // Allow access to public paths
   }
 
-  if (!session) {
-    logger.info({ msg: 'No session, redirecting to login', pathname });
+  // If it's not a public path AND the session cookie is missing, redirect to login
+  if (!hasSessionCookie) {
+    console.log('[Middleware] Protected path without session cookie, redirecting to login');
     const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
-    return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, req.url));
+    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
   }
 
-  // If authenticated and not a public path, allow access
-  logger.debug({ msg: 'Authenticated user, allowing access', pathname, userId: session.user?.id });
+  // If it's not public but has a session cookie, allow access
+  // (Actual session validity checked later by page/component)
+  console.log(
+    '[Middleware] Protected path with session cookie, allowing access (validation happens later)'
+  );
   return NextResponse.next();
 }

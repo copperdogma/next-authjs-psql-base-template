@@ -39,7 +39,12 @@ test.describe('Authentication Cycle', () => {
       console.log('✅ Initial authentication check passed - user is logged in.');
     } catch (error) {
       console.error('Initial authentication check failed - user is not logged in!');
-      await page.screenshot({ path: 'login-cycle-failed-initial-auth.png' });
+      await test.step('Verify initial authentication failed', async () => {
+        await expect(page.locator('text=Sign in failed')).toBeVisible();
+        await page.screenshot({
+          path: 'tests/e2e/screenshots/login-cycle-failed-initial-auth.png',
+        });
+      });
       test.skip(
         true,
         'User was not logged in at the start - this test requires authenticated user'
@@ -61,7 +66,11 @@ test.describe('Authentication Cycle', () => {
     // If not redirected to login, this might be dev mode
     if (!currentUrl.includes('/login')) {
       console.log('Not redirected to login after logout - may be development mode');
-      await page.screenshot({ path: 'login-cycle-no-redirect.png' });
+      await test.step('Verify no redirect occurred', async () => {
+        // Should still be on the login page or an error page
+        expect(page.url()).toContain('/login');
+        await page.screenshot({ path: 'tests/e2e/screenshots/login-cycle-no-redirect.png' });
+      });
 
       // Still check if we can find any login buttons
       const loginButtons = await page

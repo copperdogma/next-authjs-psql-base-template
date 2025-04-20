@@ -161,11 +161,31 @@ test.describe('Navigation and Layout', () => {
       // Wait for the page to load with proper waiting
       await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
 
+      // **** ADDED: Wait for the session API call after navigating, especially for login ****
+      if (route === ROUTES.LOGIN) {
+        try {
+          await page.waitForResponse(
+            response => response.url().includes('/api/auth/session') && response.status() === 200,
+            { timeout: 15000 } // Generous timeout for the API call
+          );
+          console.log(
+            `[Test Log] Successfully waited for /api/auth/session after navigating to ${route}`
+          );
+        } catch (error) {
+          console.warn(
+            `[Test Warn] Timed out waiting for /api/auth/session after navigating to ${route}. This might indicate an issue or a slow response.`
+          );
+          // Log error but proceed to allow the main assertion to potentially fail more informatively
+          console.error(error);
+        }
+      }
+
       // Verify the URL matches the expected route
       const currentUrl = page.url();
       expect(currentUrl, `URL should match route: ${route}`).toContain(route);
 
       // Verify key page elements are present
+      // Revert back to waiting for the generic main content area
       const mainContent = await waitForElementToBeVisible(page, 'LAYOUT.MAIN_CONTENT');
       await expect(mainContent, `Main content should be visible for route: ${route}`).toBeVisible();
 

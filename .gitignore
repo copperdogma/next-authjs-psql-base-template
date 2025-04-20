@@ -24,6 +24,7 @@ auth-verification-failed.png
 
 # Playwright test artifacts
 /tests/e2e/screenshots/
+/tests/e2e/test-results/
 **/test-results/*/trace.zip
 **/test-results/*/video.webm
 /tests/.auth/
@@ -91,9 +92,15 @@ next-env.d.ts
 /analyze/
 
 # Test screenshots
-tests/e2e/screenshots/
+# Removed duplicate: tests/e2e/screenshots/
 
 # Add firestore-debug.log to ignored files
 firestore-debug.log
-firestore-debug.log
-tests/e2e/auth.setup.json
+# Removed duplicate: firestore-debug.log
+# Removed duplicate: tests/e2e/auth.setup.json
+
+# Firebase Admin SDK Credentials
+serviceAccountKey.json
+
+# Secrets folder
+/secrets/

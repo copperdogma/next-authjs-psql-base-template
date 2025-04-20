@@ -94,7 +94,7 @@ async function setThemeAndCaptureState(page: Page, themeOption: string, stepName
   await page.click(`[data-testid="${themeOption}"]`);
   await page.waitForTimeout(800); // Wait for transitions
 
-  await page.screenshot({ path: `screenshots/theme-toggle-${stepName}.png` });
+  await page.screenshot({ path: `tests/e2e/screenshots/theme-toggle-${stepName}.png` });
 
   const tooltip = await getTooltipContent(page);
   const theme = await getAppliedTheme(page);
@@ -115,7 +115,7 @@ async function captureState(page: Page, stepName: string) {
   await page.waitForTimeout(500); // Wait for transitions
 
   // Take screenshot
-  await page.screenshot({ path: `screenshots/theme-toggle-${stepName}.png` });
+  await page.screenshot({ path: `tests/e2e/screenshots/theme-toggle-${stepName}.png` });
 
   // Get tooltip content
   const tooltipText = await getTooltipContent(page);
@@ -152,7 +152,7 @@ test('theme toggle should cycle through themes correctly', async ({ page }) => {
   await page.waitForSelector('[data-testid="theme-toggle"]');
 
   // Step 1: Take initial screenshot and check tooltip
-  await page.screenshot({ path: 'screenshots/theme-toggle-initial.png' });
+  await page.screenshot({ path: 'tests/e2e/screenshots/theme-toggle-initial.png' });
   const initialTooltip = await getTooltipContent(page);
   const initialTheme = await getAppliedTheme(page);
   const initialIcon = await getCurrentIcon(page);

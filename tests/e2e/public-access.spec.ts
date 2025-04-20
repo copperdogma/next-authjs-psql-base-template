@@ -33,7 +33,7 @@ test.describe('Public Route Accessibility', () => {
       if (!url.includes('/login')) {
         console.log('Not redirected to login - possibly in development mode');
         await page.screenshot({
-          path: `protected-page-no-redirect-${pagePath.replace(/\//g, '-')}.png`,
+          path: `tests/e2e/screenshots/protected-page-no-redirect-${pagePath.replace(/\//g, '-')}.png`,
         });
 
         // Skip rather than fail

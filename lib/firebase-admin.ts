@@ -56,8 +56,37 @@ const isUsingEmulator = (): boolean => {
  * @returns The initialized Firebase Admin App
  */
 const initializeEmulator = (): admin.app.App => {
+  // Prioritize FIREBASE_PROJECT_ID env var if set, otherwise use default emulator ID
   const projectId = process.env.FIREBASE_PROJECT_ID || 'next-firebase-base-template-emulator';
+
+  // Set the emulator host environment variable explicitly IF not already set
+  // This helps ensure the SDK connects locally, even if the env var isn't inherited perfectly
+  if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    process.env.FIREBASE_AUTH_EMULATOR_HOST =
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
+    serviceLogger.warn(
+      'FIREBASE_AUTH_EMULATOR_HOST was not set, setting explicitly for Admin SDK.'
+    );
+  }
+  if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    process.env.FIRESTORE_EMULATOR_HOST =
+      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+    serviceLogger.warn('FIRESTORE_EMULATOR_HOST was not set, setting explicitly for Admin SDK.');
+  }
+
+  serviceLogger.info(
+    {
+      projectId,
+      authHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
+      firestoreHost: process.env.FIRESTORE_EMULATOR_HOST,
+    },
+    'Initializing Admin SDK for Emulators...'
+  );
+
+  // Initialize with just the projectId. The SDK should automatically
+  // pick up the FIREBASE_AUTH_EMULATOR_HOST/FIRESTORE_EMULATOR_HOST environment variables.
   const app = admin.initializeApp({ projectId });
+
   serviceLogger.info({ projectId }, '✅ [Admin SDK] Initialized for Firebase Emulators.');
   return app;
 };

@@ -6,8 +6,7 @@ import { ThemeProvider } from 'next-themes';
 import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
-import { logger } from '@/lib/logger';
-import { auth } from '@/lib/auth';
+import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -52,22 +51,15 @@ const themeScript = `
 })()
 `;
 
-// Log application initialization at the server level
-logger.info({
-  msg: 'Application initializing',
-  timestamp: new Date().toISOString(),
-  nodeEnv: process.env.NODE_ENV,
-});
-
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-
+// Note: RootLayout is now a standard React component, not async
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={roboto.className}>
+        <FirebaseClientInitializer />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -75,7 +67,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           disableTransitionOnChange
           storageKey="theme-preference"
         >
-          <SessionProviderWrapper session={session}>
+          {/* Pass no session prop, let client SessionProvider handle it */}
+          <SessionProviderWrapper>
             <ThemeRegistry>
               <BaseLayout>{children}</BaseLayout>
               <Toaster />

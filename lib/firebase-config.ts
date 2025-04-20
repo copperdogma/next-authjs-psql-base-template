@@ -76,6 +76,10 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
   const shouldUseEmulator =
     process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
 
+  console.log(
+    `[firebase-config.ts] Inside setupEmulators: shouldUseEmulator = ${shouldUseEmulator}, NEXT_PUBLIC_USE_FIREBASE_EMULATOR = ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
+  );
+
   if (!shouldUseEmulator) {
     return;
   }
@@ -87,15 +91,31 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
 
 // Create a client-only implementation that will be properly initialized
 if (typeof window !== 'undefined') {
+  // Original logging
+  console.log('[firebase-config.ts] File loaded (client-side check)');
+  console.log(
+    `[firebase-config.ts] Client-side init: NEXT_PUBLIC_USE_FIREBASE_EMULATOR = ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
+  );
+
   // Only initialize Firebase on the client side
   firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+  // Log NODE_ENV on the client
+  console.log(`[firebase-config.ts] Client-side NODE_ENV: ${process.env.NODE_ENV}`);
 
   // Initialize auth and firestore
   auth = getAuth(firebaseApp);
   firestore = getFirestore(firebaseApp);
 
-  // Connect to emulators if needed
+  // Connect to emulators if needed (Restored original logic)
   setupEmulators(auth, firestore);
+
+  // Expose auth instance globally FOR TESTING ONLY (Restored original logic)
+  if (process.env.NODE_ENV === 'test') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__firebaseAuthInstance__ = auth;
+    logger.info('🧪 Exposed Firebase Auth instance to window for testing.');
+  }
 } else {
   // Provide placeholders for SSR context that won't be used
   firebaseApp = undefined;

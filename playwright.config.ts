@@ -45,15 +45,17 @@ if (!fs.existsSync(STORAGE_STATE)) {
 
 const config: PlaywrightTestConfig = defineConfig({
   testDir: './tests/e2e',
+  outputDir: './tests/e2e/test-results',
   timeout: TIMEOUT_TEST,
   expect: { timeout: 15000 }, // Reasonable expectation timeout
   fullyParallel: true, // Set to true to enable parallel test execution
   forbidOnly: !!process.env.CI,
   retries: TEST_RETRIES,
-  workers: process.env.CI ? 2 : undefined, // Limit workers on CI, use auto-detection locally
+  workers: 1, // Force serial execution
   reporter: [['list'], ['html', { open: 'never' }]],
   // Comment out globalSetup as it causes ESM issues
   // globalSetup: './tests/e2e/global-setup.ts',
+  globalSetup: require.resolve('./tests/e2e/global-setup.ts'), // Use require.resolve for compatibility
 
   use: {
     baseURL: BASE_URL,
@@ -71,8 +73,16 @@ const config: PlaywrightTestConfig = defineConfig({
     //   name: 'setup',
     //   testMatch: /.*\.setup\.ts/,
     // },
+    {
+      name: 'setup',
+      testMatch: /setup\/auth\.setup\.ts/, // Point to the specific setup file
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
 
     // UI tests that don't require authentication
+
     {
       name: 'ui-tests',
       // Match basic navigation, simple tests, public access, specific non-auth flows
@@ -93,27 +103,33 @@ const config: PlaywrightTestConfig = defineConfig({
     },
 
     // Authenticated tests in Chromium
-    // Comment out chromium project
-    // {
-    //   name: 'chromium',
-    //   // Explicitly ignore the setup file itself and tests covered by 'ui-tests'
-    //   testIgnore: [
-    //     /.*\.setup\.ts/,
-    //     /navigation-improved\.spec\.ts/,
-    //     /simple\.spec\.ts/,
-    //     /public-access\.spec\.ts/,
-    //     /theme-toggle\.spec\.ts/,
-    //     /accessibility-improved\.spec\.ts/,
-    //     /basic\.spec\.ts/,
-    //     /ultra-basic\.spec\.ts/,
-    //   ],
-    //   use: {
-    //     ...devices['Desktop Chrome'],
-    //     storageState: STORAGE_STATE,
-    //   },
-    //   dependencies: ['setup'],
-    //   // testIgnore: /.*simple-test\.spec\.ts|.*navigation\.spec\.ts/, // Remove old ignore
-    // },
+
+    {
+      name: 'chromium',
+      // Define tests that *require* authentication
+      testMatch: [
+        /auth\/.*\.spec\.ts/,
+        /profile\/.*\.spec\.ts/,
+        /dashboard\.spec\.ts/,
+        // Add other auth-dependent test files/patterns here
+      ],
+      // You might still want to explicitly ignore the non-auth tests if patterns overlap
+      testIgnore: [
+        /.*\.setup\.ts/, // Always ignore setup
+        /navigation-improved\.spec\.ts/,
+        /simple\.spec\.ts/,
+        /public-access\.spec\.ts/,
+        /theme-toggle\.spec\.ts/,
+        /accessibility-improved\.spec\.ts/,
+        /basic\.spec\.ts/,
+        /ultra-basic\.spec\.ts/,
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: STORAGE_STATE, // Use the state saved by the 'setup' project
+      },
+      dependencies: ['setup'], // Ensure setup runs first
+    },
 
     // API tests - no browser needed
     // Comment out api project
@@ -138,11 +154,15 @@ const config: PlaywrightTestConfig = defineConfig({
   ],
 
   // Built-in webServer configuration - manages Next.js server for tests
+
   webServer: {
-    command: `npm run dev:test`,
+    // Use kill-port first, then firebase emulators:exec to start emulators AND the server
+    // This ensures ports are clear and emulators are ready before the server starts responding
+    command: `npx kill-port 8080 9099 || true && firebase emulators:exec --only auth,firestore --project next-firebase-base-template \"npm run dev:test\"`,
     url: BASE_URL,
+    timeout: TIMEOUT_SERVER, // Keep a generous timeout for emulators + server
     reuseExistingServer: !process.env.CI,
-    timeout: TIMEOUT_SERVER,
+    // Let stdout/stderr pass through for better debugging if needed
     stdout: 'pipe',
     stderr: 'pipe',
   },

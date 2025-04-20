@@ -21,7 +21,7 @@ export function createAccountOperations(prisma: PrismaClient) {
           token_type: data.token_type,
           scope: data.scope,
           id_token: data.id_token,
-          session_state: data.session_state,
+          session_state: typeof data.session_state === 'string' ? data.session_state : null,
         },
       });
       return data;

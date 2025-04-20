@@ -52,7 +52,7 @@ async function setupAuthViaCookieInjection(page: Page): Promise<boolean> {
     return verifyAuthentication(page);
   } catch (error) {
     console.error('❌ Error during Cookie Injection auth setup:', error);
-    await page.screenshot({ path: 'auth-setup-error-cookie-injection.png' });
+    await page.screenshot({ path: 'tests/e2e/screenshots/auth-setup-error-cookie-injection.png' });
     await createEmptyAuthState(); // Ensure we create empty state on failure
     return false;
   }
@@ -102,7 +102,8 @@ async function verifyAuthentication(page: Page): Promise<boolean> {
     // 1. Check if we are still on the login page (immediate failure)
     if (page.url().includes('/login')) {
       console.error('❌ Authentication verification failed - Still on login page');
-      await page.screenshot({ path: 'auth-verify-fail-on-login.png' });
+      await page.screenshot({ path: 'tests/e2e/screenshots/auth-verify-fail-on-login.png' });
+      await createEmptyAuthState();
       return false;
     }
 
@@ -124,8 +125,9 @@ async function verifyAuthentication(page: Page): Promise<boolean> {
 
       if (!sessionCookie) {
         console.warn('⚠️ Dashboard content found, but NextAuth session cookie is missing!');
-        await page.screenshot({ path: 'auth-verify-warn-no-cookie.png' });
-        // Decide if this is acceptable for the test - for now, let's allow it but warn.
+        await page.screenshot({ path: 'tests/e2e/screenshots/auth-verify-warn-no-cookie.png' });
+        await createEmptyAuthState();
+        return false;
       } else {
         console.log(`✅ Found NextAuth session cookie: ${sessionCookie.name}`);
       }
@@ -138,17 +140,21 @@ async function verifyAuthentication(page: Page): Promise<boolean> {
       console.error(
         `❌ Authentication verification failed - Dashboard element "${dashboardHeadingSelector}" not found within ${verificationTimeout}ms.`
       );
-      await page.screenshot({ path: 'auth-verify-fail-no-dashboard-content.png' });
+      await page.screenshot({
+        path: 'tests/e2e/screenshots/auth-verify-fail-no-dashboard-content.png',
+      });
       console.log(`Current page URL: ${page.url()}`);
       console.log(`Current page title: ${await page.title()}`);
       // Log cookies for debugging
       const cookies = await page.context().cookies();
       console.log('Cookies at verification failure:', JSON.stringify(cookies, null, 2));
+      await createEmptyAuthState();
       return false;
     }
   } catch (error) {
     console.error('❌ Error during authentication verification:', error);
-    await page.screenshot({ path: 'auth-verify-error.png' });
+    await page.screenshot({ path: 'tests/e2e/screenshots/auth-verify-error.png' });
+    await createEmptyAuthState(); // Ensure we create empty state on failure
     return false;
   }
 }
