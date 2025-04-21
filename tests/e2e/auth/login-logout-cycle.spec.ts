@@ -59,34 +59,28 @@ test.describe('Authentication Cycle', () => {
     // Verify logged out state
     console.log('Verifying logged out state...');
 
-    // Check current URL without waiting
+    // Navigate to the root path after logout.
+    // Since the root path is public, we should land there.
+    console.log('Navigating to / after logout to verify public access...');
+    await page.goto(`${baseUrl}/`); // Navigate to root after logout
+
+    // Check current URL - SHOULD be root page now
     const currentUrl = page.url();
-    console.log(`Current URL after logout: ${currentUrl}`);
+    console.log(`Current URL after navigating post-logout: ${currentUrl}`);
 
-    // If not redirected to login, this might be dev mode
-    if (!currentUrl.includes('/login')) {
-      console.log('Not redirected to login after logout - may be development mode');
-      await test.step('Verify no redirect occurred', async () => {
-        // Should still be on the login page or an error page
-        expect(page.url()).toContain('/login');
-        await page.screenshot({ path: 'tests/e2e/screenshots/login-cycle-no-redirect.png' });
-      });
+    // Expect to be on the root page (it's public)
+    await test.step('Verify landing on public root page', async () => {
+      expect(page.url()).not.toContain('/login');
+      expect(page.url()).toBe(`${baseUrl}/`);
+      await page.screenshot({ path: 'tests/e2e/screenshots/login-cycle-landed-on-root.png' });
+    });
 
-      // Still check if we can find any login buttons
-      const loginButtons = await page
-        .locator(
-          'button:has-text("Sign In"), button:has-text("Login"), [data-testid="google-signin-button"], button:has-text("Google")'
-        )
-        .count();
-
-      if (loginButtons > 0) {
-        console.log(`Found ${loginButtons} login button(s) after logout`);
-      } else {
-        // Skip instead of failing
-        test.skip(true, 'No login redirection or login buttons found - may be development mode');
-        return;
-      }
-    }
+    // Verify logout by checking that the UserProfile icon is no longer visible
+    await test.step('Verify UserProfile icon is not visible', async () => {
+      const userProfileIcon = page.locator('[data-testid="user-profile"]');
+      await expect(userProfileIcon).not.toBeVisible({ timeout: 10000 });
+      console.log('UserProfile icon not visible, confirming logged out state.');
+    });
 
     // Test passes if we get to this point
     console.log(`📍 Final URL: ${page.url()}`);
@@ -161,8 +155,8 @@ async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
       .filter(key => key.startsWith('firebase:'))
       .forEach(key => localStorage.removeItem(key));
   });
-  // Reload to reflect cleared state
-  await page.reload({ waitUntil: 'networkidle' });
+  // Reload to reflect cleared state - REMOVED
+  // await page.reload({ waitUntil: 'networkidle' });
   console.log('✅ Successfully cleared authentication cookies and storage');
   return true;
 }

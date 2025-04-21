@@ -29,19 +29,7 @@ test.describe('Public Route Accessibility', () => {
       const url = page.url();
       console.log(`Current URL after navigation to ${pagePath}: ${url}`);
 
-      // If we're not redirected to login in this environment, skip the test
-      if (!url.includes('/login')) {
-        console.log('Not redirected to login - possibly in development mode');
-        await page.screenshot({
-          path: `tests/e2e/screenshots/protected-page-no-redirect-${pagePath.replace(/\//g, '-')}.png`,
-        });
-
-        // Skip rather than fail
-        test.skip(true, 'No redirection to login in this environment - likely development mode');
-        return;
-      }
-
-      // If we're redirected to login, verify callback
+      // Expect redirection to login page
       expect(url).toContain('/login');
 
       // Verify callback URL is present - but be more lenient

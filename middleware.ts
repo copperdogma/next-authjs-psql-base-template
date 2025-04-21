@@ -28,23 +28,32 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - Also exclude files with extensions (e.g., .png)
-     * Trying '*' instead of '+' and explicitly adding '/'
+     * Trying '*' instead of '+'
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'", // Changed .+ to .*
-    '/', // Explicitly match the root path
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)', // Changed .+ to .* AND removed trailing single quote
   ],
 };
 
 // Define public paths (adjust as necessary)
-const publicPaths = ['/login', '/auth/error', '/'];
+const publicPaths = ['/', '/login', '/auth/error', '/about'];
 
-// Determine potential session cookie names
-const secureCookie = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
-const sessionCookieName = secureCookie
-  ? '__Secure-next-auth.session-token'
-  : 'next-auth.session-token';
+// Determine potential session cookie names more robustly
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isSecure = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
 
-console.log(`[Middleware] Expecting session cookie: ${sessionCookieName}`);
+// Use __Host- prefix in production for better security if possible (HTTPS)
+// Use __Secure- prefix for non-dev HTTPS
+// Use standard name for HTTP (dev or otherwise)
+const sessionCookieName =
+  !isDevelopment && isSecure
+    ? '__Host-authjs.session-token' // Production HTTPS
+    : isSecure
+      ? '__Secure-authjs.session-token' // Non-production HTTPS
+      : 'authjs.session-token'; // HTTP (Dev or other) - Corrected prefix
+
+console.log(
+  `[Middleware] NODE_ENV: ${process.env.NODE_ENV}, NEXTAUTH_URL: ${process.env.NEXTAUTH_URL}, Expecting cookie: ${sessionCookieName}`
+);
 
 // Define the middleware logic directly as the default export
 export default function middleware(req: NextRequest) {
@@ -54,8 +63,8 @@ export default function middleware(req: NextRequest) {
   // Log every request entering the middleware
   console.log(`[Middleware] Request received for: ${pathname}`);
 
-  // Check if the path is public
-  const isPublic = publicPaths.some(path => pathname.startsWith(path));
+  // Check if the path is an *exact* match for a public path
+  const isPublic = publicPaths.includes(pathname);
 
   // Check for the presence of the session cookie
   const hasSessionCookie = req.cookies.has(sessionCookieName);

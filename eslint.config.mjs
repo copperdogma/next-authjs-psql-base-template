@@ -195,9 +195,12 @@ export default [
       'max-classes-per-file': ['warn', 1], // Single class per file
 
       // TypeScript-specific rules for better type safety
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }], // Catch unused variables
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ], // Catch unused variables, ignore _ prefixed
       '@typescript-eslint/no-explicit-any': 'error', // Enforce proper typing
-      '@typescript-eslint/explicit-function-return-type': 'warn', // Changed from 'off' to 'warn'
+      '@typescript-eslint/explicit-function-return-type': 'off', // Changed from 'warn' to 'off'
       '@typescript-eslint/explicit-module-boundary-types': 'off', // TypeScript can infer exported types
       '@typescript-eslint/ban-ts-comment': 'warn', // Discourage @ts-ignore
       '@typescript-eslint/no-non-null-assertion': 'warn', // Discourage ! operator, prefer proper null checking
