@@ -17,6 +17,10 @@ export default function MainContent({ children }: MainContentProps) {
         flex: 1,
         outline: 'none', // Remove focus outline when skipped to
         p: { xs: 2, sm: 3 }, // Add responsive padding for better spacing
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
       {children}

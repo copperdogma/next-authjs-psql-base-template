@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import CircularProgress from '@mui/material/CircularProgress';
+import { Box, Card, CardContent, CardHeader, Container, Typography, Stack } from '@mui/material';
 
 export default function Login() {
   const router = useRouter();
@@ -27,11 +28,11 @@ export default function Login() {
   // Show loading state while session status is resolving
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-24">
-        <h1 className="mb-8 text-4xl font-bold text-foreground">Welcome</h1>
-        <p className="mb-8 text-xl text-foreground">Sign in to access your account</p>
-        <CircularProgress />
-      </div>
+      <Container component="main" maxWidth="xs">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
@@ -41,17 +42,35 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="mb-8 text-4xl font-bold text-foreground">Welcome</h1>
-      <p className="mb-8 text-xl text-foreground">Sign in to access your account</p>
-      <Button
-        onClick={() => handleSignIn('google')}
-        variant="contained"
-        startIcon={<GoogleIcon />}
-        data-testid="google-signin-button"
-      >
-        Sign in with Google
-      </Button>
-    </div>
+    <Container component="main" maxWidth="xs">
+      <Card sx={{ width: '100%', p: 2 }}>
+        <CardHeader
+          title={
+            <Typography variant="h4" component="h1" align="center" gutterBottom>
+              Welcome
+            </Typography>
+          }
+          subheader={
+            <Typography variant="body1" align="center" color="text.secondary">
+              Sign in to access your account
+            </Typography>
+          }
+          sx={{ pb: 0 }}
+        />
+        <CardContent>
+          <Stack spacing={2} alignItems="center">
+            <Button
+              onClick={() => handleSignIn('google')}
+              variant="contained"
+              startIcon={<GoogleIcon />}
+              data-testid="google-signin-button"
+              fullWidth
+            >
+              Sign in with Google
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }
