@@ -7,6 +7,7 @@ import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
+import { auth } from '@/lib/auth';
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -51,8 +52,11 @@ const themeScript = `
 })()
 `;
 
-// Note: RootLayout is now a standard React component, not async
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// RootLayout needs to be async to fetch the session server-side
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetch the session on the server
+  const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -67,8 +71,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
           storageKey="theme-preference"
         >
-          {/* Pass no session prop, let client SessionProvider handle it */}
-          <SessionProviderWrapper>
+          {/* Pass the server-fetched session to the provider */}
+          <SessionProviderWrapper session={session}>
             <ThemeRegistry>
               <BaseLayout>{children}</BaseLayout>
               <Toaster />

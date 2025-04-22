@@ -19,8 +19,8 @@ export default function MainContent({ children }: MainContentProps) {
         p: { xs: 2, sm: 3 }, // Add responsive padding for better spacing
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        // alignItems: 'center', // Removed to allow content to stretch
+        // justifyContent: 'center', // Removed to allow content to flow from top
       }}
     >
       {children}

@@ -8,15 +8,21 @@ import { jwtDecode } from 'jwt-decode';
 import { createContextLogger } from '@/lib/services/logger-service';
 // import { v4 as uuidv4, validate as validateUUID } from 'uuid'; // Unused
 // import * as admin from 'firebase-admin'; // Unused
-import { randomUUID } from 'crypto';
+// import { randomUUID } from 'crypto'; // Unused
 import { User } from '@prisma/client'; // Import User type
 // Import the auth namespace for types
 import { auth } from 'firebase-admin';
+// --- REVERT: Remove JWT related imports ---
+// import { encode, type JWTEncodeParams } from 'next-auth/jwt';
+// import { UserRole } from '@/types';
+// import crypto from 'crypto';
 
 // Initialize logger with a unique name for this route
+const endpointPath = '/api/test/auth/create-session'; // Define endpoint path for logging
 const routeLogger = createContextLogger('api-test-create-session');
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14; // 14 days in seconds (Auth.js default)
+// --- REVERT: Remove unused constant ---
+// const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14; // 14 days in seconds (Auth.js default)
 
 // Type for the decoded Firebase custom token payload
 interface DecodedFirebaseToken {
@@ -102,53 +108,19 @@ async function findOrCreatePrismaUser(uid: string, adminAuth: auth.Auth): Promis
   return _createPrismaUser(uid, firebaseUserInfo);
 }
 
-// Helper function to create the session in Prisma
-async function createPrismaSession(userId: string): Promise<string> {
-  const sessionToken = randomUUID();
-  const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
-
-  routeLogger.info({ userId }, `[API ${endpointPath}] Creating session in DB...`);
-  try {
-    await prisma.session.create({
-      data: {
-        sessionToken: sessionToken,
-        userId: userId,
-        expires: expires,
-      },
-    });
-    routeLogger.info(
-      { userId, sessionToken },
-      `[API ${endpointPath}] Session created successfully.`
-    );
-    return sessionToken;
-  } catch (error) {
-    routeLogger.error(
-      { err: error, userId },
-      `[API ${endpointPath}] Failed to create session in DB.`
-    );
-    throw error; // Let the main handler catch this
-  }
+// --- REVERT: Remove JWT encoding function ---
+/*
+async function createAndEncodeJwt(user: User): Promise<string> {
+  // ... removed ...
 }
+*/
 
-// Helper function to set the session cookie
-function setSessionCookie(response: NextResponse, sessionToken: string): void {
-  const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
-  const cookieName =
-    process.env.NODE_ENV === 'production'
-      ? '__Secure-next-auth.session-token'
-      : 'next-auth.session-token';
-
-  response.cookies.set({
-    name: cookieName,
-    value: sessionToken,
-    expires: expires,
-    httpOnly: true,
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-  routeLogger.info({ cookieName }, `[API ${endpointPath}] Session cookie set.`);
+// --- REVERT: Remove cookie setting function ---
+/*
+function setJwtCookie(response: NextResponse, encodedJwt: string): void {
+  // ... removed ...
 }
+*/
 
 // Helper to validate and extract token from request
 async function _validateAndExtractToken(req: NextRequest): Promise<string> {
@@ -160,102 +132,86 @@ async function _validateAndExtractToken(req: NextRequest): Promise<string> {
   return customToken;
 }
 
-// Helper to build the success response
-function _buildSuccessResponse(user: User, sessionToken: string): NextResponse {
+// --- REVERT: Simplify success response ---
+// Don't need JWT anymore here.
+function _buildSuccessResponse(user: User): NextResponse {
   const response = NextResponse.json(
-    { success: true, uid: user.id, sessionToken: sessionToken },
+    { success: true, uid: user.id }, // Just return success and UID
     { status: 200 }
   );
-  setSessionCookie(response, sessionToken);
-  routeLogger.info(`[API ${endpointPath}] Request processed successfully.`);
+  // No need to set cookie here anymore
   return response;
 }
 
-// Helper to build an error response
+// --- REVERT: Keep original error response helper ---
 function _buildErrorResponse(error: unknown): NextResponse {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  routeLogger.error(
-    { err: error },
-    `[API ${endpointPath}] Error processing request: ${errorMessage}`
-  );
+  let errorMessage = 'An unknown error occurred';
+  let statusCode = 500;
 
-  // Tailor status code based on error type
-  if (
-    errorMessage.startsWith('Invalid customToken') ||
-    errorMessage.startsWith('Missing or invalid customToken')
-  ) {
-    return NextResponse.json({ message: errorMessage }, { status: 401 });
+  if (error instanceof Error) {
+    errorMessage = error.message;
+    // Customize status code based on error type if needed
+    if (errorMessage.startsWith('Invalid customToken') || errorMessage.startsWith('Missing or invalid')) {
+      statusCode = 400;
+    }
+    // Add more specific error checks if necessary
   }
-  // Add more specific error handling if needed (e.g., database errors)
 
-  return NextResponse.json({ message: `Internal Server Error: ${errorMessage}` }, { status: 500 });
+  routeLogger.error(
+    { error: errorMessage, status: statusCode },
+    `[API ${endpointPath}] Error processing request.`
+  );
+  return NextResponse.json({ success: false, error: errorMessage }, { status: statusCode });
 }
 
-/**
- * Processes the main logic for creating a session after initial checks.
- * @param req - The NextRequest object.
- * @param adminAuth - Initialized Firebase Admin Auth instance.
- * @returns NextResponse with success or error details.
- */
+// Main processing function
+// --- REVERT: Simplify processing function --- (No JWT needed)
 async function _processSessionCreationRequest(
   req: NextRequest,
   adminAuth: auth.Auth
 ): Promise<NextResponse> {
   try {
-    // 1. Validate and Get Token
     const customToken = await _validateAndExtractToken(req);
-
-    // 2. Decode Token & Find/Create User
     const decodedToken = decodeCustomToken(customToken);
     const user = await findOrCreatePrismaUser(decodedToken.uid, adminAuth);
 
-    // 3. Create Session
-    const sessionToken = await createPrismaSession(user.id);
-
-    // 4. Build and Send Success Response
-    return _buildSuccessResponse(user, sessionToken);
-  } catch (error: unknown) {
-    // 5. Build and Send Error Response
+    // No JWT creation or cookie setting needed here for the reverted logic
+    routeLogger.info(
+      { userId: user.id },
+      `[API ${endpointPath}] Request processed successfully (no JWT/cookie set).`
+    );
+    return _buildSuccessResponse(user);
+  } catch (error) {
     return _buildErrorResponse(error);
   }
 }
 
-const endpointPath = '/api/test/auth/create-session';
-
-/**
- * POST handler for creating a session from a Firebase Custom Token during E2E tests.
- * Accepts a customToken, decodes it to get UID, finds/creates user, creates session.
- * THIS ROUTE SHOULD ONLY BE ACTIVE IN THE TEST ENVIRONMENT.
- */
+// Main POST handler
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Added return type
   routeLogger.info(`[API ${endpointPath}] Received POST request`);
 
-  // Environment Check
-  if (process.env.ALLOW_TEST_ENDPOINTS !== 'true') {
-    routeLogger.warn(`[API ${endpointPath}] Attempted access outside allowed environment.`);
-    return new NextResponse('Not Found', { status: 404 });
+  // Allow this endpoint only in non-production environments for security
+  if (process.env.NODE_ENV === 'production') {
+    routeLogger.warn(`[API ${endpointPath}] Attempted access in production environment. Denied.`);
+    return NextResponse.json({ error: 'Not allowed in production' }, { status: 403 });
   }
+
+  // Check if test endpoints are explicitly allowed (additional safeguard)
+  if (process.env.ALLOW_TEST_ENDPOINTS !== 'true') {
+    routeLogger.warn(`[API ${endpointPath}] Test endpoint access is disabled (ALLOW_TEST_ENDPOINTS not true).`);
+    return NextResponse.json({ error: 'Test endpoints disabled' }, { status: 403 });
+  }
+
   routeLogger.info(`[API ${endpointPath}] Test endpoint allowed.`);
 
-  // Admin SDK Initialization
-  let adminAuth: auth.Auth;
   try {
+    // Correctly get the auth service from the initialized app
     const adminApp = initializeFirebaseAdminApp();
-    adminAuth = adminApp.auth();
+    const adminAuth = adminApp.auth();
     routeLogger.info(`[API ${endpointPath}] Firebase Admin SDK initialized.`);
-  } catch (initError: unknown) {
-    const errorMessage = initError instanceof Error ? initError.message : String(initError);
-    routeLogger.error(
-      { err: initError },
-      `[API ${endpointPath}] Failed Admin SDK init: ${errorMessage}`
-    );
-    return NextResponse.json(
-      { message: `Internal Server Error - Admin SDK init failed: ${errorMessage}` },
-      { status: 500 }
-    );
+    return await _processSessionCreationRequest(req, adminAuth);
+  } catch (error) {
+    routeLogger.error({ error }, `[API ${endpointPath}] Unhandled error during initialization or processing.`);
+    return _buildErrorResponse(error);
   }
-
-  // Process the request using the helper function
-  return _processSessionCreationRequest(req, adminAuth);
 }
