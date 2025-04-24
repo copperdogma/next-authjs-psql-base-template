@@ -11,7 +11,7 @@ import { updateUserName } from '../../../app/profile/actions';
 // Remove mock for next-auth
 
 // Mock lib/auth - define mock function inside the factory
-jest.mock('@/lib/auth', () => {
+jest.mock('@/lib/auth-node', () => {
   const mockAuth = jest.fn();
   return {
     auth: mockAuth,
@@ -32,7 +32,7 @@ jest.mock('next/cache', () => ({
 }));
 
 // Import the mock accessor
-const { __getMockAuth } = require('@/lib/auth');
+const { __getMockAuth } = require('@/lib/auth-node');
 
 describe('updateUserName action with jest.spyOn pattern', () => {
   // Create a spy on the profileService.updateUserName method

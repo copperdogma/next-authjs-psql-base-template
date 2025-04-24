@@ -1,7 +1,7 @@
 // Test file to reproduce the auth error in updateUserName action
 
 // Mock lib/auth - define mock function inside the factory
-jest.mock('@/lib/auth', () => {
+jest.mock('@/lib/auth-node', () => {
   const mockAuth = jest.fn();
   return {
     auth: mockAuth,
@@ -41,7 +41,7 @@ jest.mock('next/server', () => ({
 import { updateUserName } from '../../../app/profile/actions';
 import { FormState } from '../../../app/profile/actions';
 // Import the mock accessor
-const { __getMockAuth } = require('@/lib/auth');
+const { __getMockAuth } = require('@/lib/auth-node');
 
 describe('updateUserName action error handling', () => {
   it('should return an error when not authenticated', async () => {

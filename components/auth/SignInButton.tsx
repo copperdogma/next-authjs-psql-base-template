@@ -39,6 +39,7 @@ export default function SignInButton() {
 
         await signIn('google', {
           callbackUrl: `${currentOrigin}/dashboard`,
+          prompt: 'select_account',
         });
       }
     } catch (error) {

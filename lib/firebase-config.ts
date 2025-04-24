@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from '@firebase/app';
-import { getAuth, connectAuthEmulator, Auth } from '@firebase/auth';
+import { getAuth, connectAuthEmulator, Auth, signInWithEmailAndPassword } from '@firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from '@firebase/firestore';
 import { logger } from '@/lib/logger'; // Import logger
 
@@ -111,10 +111,19 @@ if (typeof window !== 'undefined') {
   setupEmulators(auth, firestore);
 
   // Expose auth instance globally FOR TESTING ONLY (Restored original logic)
-  if (process.env.NODE_ENV === 'test') {
+  // Use the dedicated E2E environment variable instead of NODE_ENV for client-side check
+  if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true') {
+    console.log('[firebase-config.ts] E2E test env detected, attempting to expose auth instance...');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__firebaseAuthInstance__ = auth;
-    logger.info('🧪 Exposed Firebase Auth instance to window for testing.');
+    // Expose the sign-in function as well
+    console.log('[firebase-config.ts] Exposing signInWithEmailAndPassword function...');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__signInWithEmailAndPassword__ = signInWithEmailAndPassword;
+    logger.info('🧪 Exposed Firebase Auth instance and sign-in function to window for testing.');
+  } else {
+    // Optional: Log if not in E2E test env
+    console.log('[firebase-config.ts] NODE_ENV is NOT test, skipping auth instance exposure.');
   }
 } else {
   // Provide placeholders for SSR context that won't be used

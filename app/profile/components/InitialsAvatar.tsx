@@ -9,6 +9,7 @@ interface InitialsAvatarProps {
 export default function InitialsAvatar({ initials }: InitialsAvatarProps) {
   return (
     <Avatar
+      id="profile-initials-avatar"
       sx={{
         width: 180,
         height: 180,

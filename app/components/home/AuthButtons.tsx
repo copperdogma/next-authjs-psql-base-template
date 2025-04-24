@@ -13,7 +13,10 @@ export default function AuthButtons() {
 
   // Handle sign in with Google
   const handleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' });
+    signIn('google', { 
+      callbackUrl: '/dashboard', 
+      prompt: 'select_account' // Force account selection every time
+    });
   };
 
   if (data) {

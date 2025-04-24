@@ -43,6 +43,7 @@ function SectionHeader({
       Display Name
       {!isEditingName && (
         <Button
+          id="profile-details-edit-button"
           startIcon={<EditIcon />}
           size="small"
           onClick={() => setIsEditingName(true)}
@@ -114,7 +115,7 @@ interface EditNameFormProps {
 
 function EditNameForm({ defaultValue, formAction, state, onCancel }: EditNameFormProps) {
   return (
-    <form action={formAction}>
+    <form action={formAction} data-edit-name="true">
       <Box sx={{ mt: 1 }}>
         <TextField
           name="name"

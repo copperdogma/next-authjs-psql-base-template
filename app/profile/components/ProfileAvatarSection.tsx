@@ -20,7 +20,7 @@ export default function ProfileAvatarSection({ user }: ProfileAvatarSectionProps
     >
       <Box sx={{ textAlign: 'center' }}>
         <UserAvatar user={user} />
-        <Typography variant="h6" gutterBottom>
+        <Typography id="profile-display-name" variant="h6" gutterBottom>
           {user.name || 'User'}
         </Typography>
         <Typography variant="body2" color="text.secondary">

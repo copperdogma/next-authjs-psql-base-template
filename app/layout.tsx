@@ -7,7 +7,10 @@ import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth-edge';
+import { loggers } from '@/lib/logger';
+
+const logger = loggers.auth;
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -56,6 +59,14 @@ const themeScript = `
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Fetch the session on the server
   const session = await auth();
+  
+  // Add logging to debug session state
+  logger.info({
+    msg: '[RootLayout] Fetched session from auth()',
+    hasSession: !!session,
+    userId: session?.user?.id,
+    userName: session?.user?.name,
+  });
 
   return (
     <html lang="en" suppressHydrationWarning>

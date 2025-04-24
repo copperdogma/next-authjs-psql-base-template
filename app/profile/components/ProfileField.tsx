@@ -16,7 +16,7 @@ export default function ProfileField({ label, value }: ProfileFieldProps) {
       <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 500 }}>
         {label}
       </Typography>
-      <Typography variant="h6" sx={{ mt: 1 }}>
+      <Typography id={`profile-field-${label.toLowerCase()}-value`} variant="h6" sx={{ mt: 1 }}>
         {displayValue || 'Not provided'}
       </Typography>
     </Box>

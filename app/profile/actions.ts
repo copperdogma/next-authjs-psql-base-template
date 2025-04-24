@@ -20,7 +20,7 @@ import * as pino from 'pino';
 import { logger as rootLogger } from '@/lib/logger';
 import { ProfileService } from '@/lib/services/profile-service';
 import { profileService as singletonProfileService } from '@/lib/server/services';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth-node';
 
 const actionsLogger = rootLogger.child({ service: 'profile-actions' });
 
@@ -38,7 +38,7 @@ class ProfileActionsImpl {
   constructor(
     private readonly profileService: ProfileService = singletonProfileService,
     private readonly logger: pino.Logger = actionsLogger
-  ) {}
+  ) { }
 
   // Define validation schema for user name
   private userNameSchema = z.object({
@@ -106,10 +106,22 @@ class ProfileActionsImpl {
     error?: string;
   }> {
     try {
+      this.logger.debug({ msg: 'verifyAuthentication - Checking auth session' });
       const session = await auth();
 
+      this.logger.debug({
+        msg: 'verifyAuthentication - Auth result',
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+      });
+
       if (!session?.user?.id) {
-        this.logger.warn({ msg: 'User not authenticated in verifyAuthentication' });
+        this.logger.warn({
+          msg: 'User not authenticated in verifyAuthentication',
+          sessionExists: !!session,
+          userExists: !!session?.user
+        });
         return { isAuthenticated: false, error: 'You must be logged in to update your profile' };
       }
 
@@ -118,6 +130,7 @@ class ProfileActionsImpl {
       this.logger.error({
         msg: 'Error verifying authentication',
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
       return { isAuthenticated: false, error: 'Authentication error' };
     }

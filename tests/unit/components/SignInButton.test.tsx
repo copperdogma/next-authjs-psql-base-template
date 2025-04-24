@@ -91,7 +91,10 @@ describe('SignInButton Component', () => {
 
     // Verify the correct function was called
     expect(signIn).toHaveBeenCalledTimes(1);
-    expect(signIn).toHaveBeenCalledWith('google', { callbackUrl: `${mockOrigin}/dashboard` });
+    expect(signIn).toHaveBeenCalledWith('google', { 
+      callbackUrl: `${mockOrigin}/dashboard`,
+      prompt: 'select_account'
+    });
   });
 
   test('calls sign out function when clicked in signed in state', async () => {

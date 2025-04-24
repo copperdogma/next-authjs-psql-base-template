@@ -18,6 +18,7 @@
 /playwright-report
 /test-results
 /tests/reports
+/tests/test-results
 /.swc
 page-content.html
 auth-verification-failed.png

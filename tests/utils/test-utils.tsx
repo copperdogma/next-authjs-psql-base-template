@@ -16,10 +16,7 @@ type CustomRenderOptions = RenderOptions & {
   wrapper?: (props: WrapperProps) => ReactElement;
 };
 
-type SessionWithUser = Session & {
-  user: MockUser & { id: string };
-  expires: string;
-};
+type SessionWithUser = Session;
 
 export const withSessionProvider = (
   ui: ReactElement,

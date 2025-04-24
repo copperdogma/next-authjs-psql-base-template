@@ -11,6 +11,7 @@ interface AvatarImageProps {
 export default function AvatarImage({ src, alt }: AvatarImageProps) {
   return (
     <Box
+      id="profile-image-avatar"
       sx={{
         width: 180,
         height: 180,

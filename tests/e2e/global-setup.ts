@@ -2,9 +2,7 @@ console.log('--- Loading tests/e2e/global-setup.ts ---'); // Add top-level log
 
 import path from 'path';
 import dotenv from 'dotenv';
-import axios from 'axios'; // Restore axios import
 import * as admin from 'firebase-admin'; // Import Firebase Admin SDK
-import fs from 'fs/promises'; // Use promises version of fs
 import { PrismaClient } from '@prisma/client'; // Import Prisma Client
 
 // Load .env.test for emulator hosts and test user credentials
@@ -39,7 +37,7 @@ try {
     // No credentials needed when emulator host env vars are set
   });
   console.log('✅ Firebase Admin SDK initialized.');
-  console.timeLog('[globalSetup:adminInit]'); // Log time after successful init
+  // console.timeLog('[globalSetup:adminInit]'); // Remove potential cause of warning
 } catch (error: any) {
   // Check if it's because it's already initialized (common in some setups)
   if (error.code === 'app/duplicate-app') {
@@ -55,33 +53,20 @@ const adminAuth = adminApp.auth(); // Get auth instance from the app
 
 // Configuration constants
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
-const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'Test123!'; // Restore
-const TEST_USER_DISPLAY_NAME = process.env.TEST_USER_DISPLAY_NAME || 'Test User'; // Restore
-const AUTH_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099'; // Restore
-const FIRESTORE_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080'; // Restore
+const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'Test123!';
+const TEST_USER_DISPLAY_NAME = process.env.TEST_USER_DISPLAY_NAME || 'Test User';
+const AUTH_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
+const FIRESTORE_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS; // Get path from env
 
-const AUTH_EMULATOR_URL = `http://${AUTH_EMULATOR_HOST}`; // Restore
-const FIRESTORE_EMULATOR_URL = `http://${FIRESTORE_EMULATOR_HOST}`; // Restore
-
-// Path for saving the user UID
-const USER_UID_PATH = path.resolve(__dirname, '../.auth/user-uid.txt'); // <<< CHANGED PATH
-// Path for saving the custom token
-const CUSTOM_TOKEN_PATH = path.resolve(__dirname, '../.auth/custom-token.txt'); // <<< ADDED PATH
+const AUTH_EMULATOR_URL = `http://${AUTH_EMULATOR_HOST}`;
+const FIRESTORE_EMULATOR_URL = `http://${FIRESTORE_EMULATOR_HOST}`;
 
 // Utility to wait for a port to be open
-/*
-function waitForPort(port: number, host: string, timeout = 60000): Promise<void> {
-  console.log(`[waitForPort] Starting check for ${host}:${port}`);
-  console.time(`[waitForPort] ${host}:${port}`); // Start timer for this port
-// ... (rest of waitForPort function) ...
-    check();
-  });
-}
-*/
 function waitForPort(port: number, host: string, timeout = 90000): Promise<void> {
   console.log(`[waitForPort] Starting check for ${host}:${port}`);
-  console.time(`[waitForPort] ${host}:${port}`); // Start timer for this port
+  const timerLabel = `[waitForPort] ${host}:${port}`;
+  console.time(timerLabel);
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const check = () => {
@@ -89,16 +74,16 @@ function waitForPort(port: number, host: string, timeout = 90000): Promise<void>
       socket.on('connect', () => {
         socket.end();
         console.log(`✅ [waitForPort] Port ${host}:${port} is open.`);
-        console.timeEnd(`[waitForPort] ${host}:${port}`); // End timer
+        console.timeEnd(timerLabel);
         resolve();
       });
       socket.on('error', (err: NodeJS.ErrnoException) => {
         if (Date.now() - startTime > timeout) {
           console.error(`❌ [waitForPort] Timeout waiting for port ${host}:${port}`);
-          console.timeEnd(`[waitForPort] ${host}:${port}`); // End timer on error
+          console.timeEnd(timerLabel);
           reject(new Error(`Timeout waiting for port ${host}:${port}: ${err.message}`));
         } else {
-          console.log(`⏳ [waitForPort] Waiting for port ${host}:${port}... (${err.code})`);
+          // console.log(`⏳ [waitForPort] Waiting for port ${host}:${port}... (${err.code})`); // Reduce noise
           setTimeout(check, 1000);
         }
       });
@@ -111,17 +96,17 @@ function waitForPort(port: number, host: string, timeout = 90000): Promise<void>
 
 async function _clearPrismaData() {
   try {
-    console.log('[clearTestData:_clearPrismaData] Clearing Prisma Session data...');
-    const sessionCount = await prisma.session.deleteMany({});
-    console.log(`[clearTestData:_clearPrismaData] Cleared ${sessionCount.count} sessions.`);
+    // console.log('[clearTestData:_clearPrismaData] Clearing Prisma Session data...');
+    await prisma.session.deleteMany({});
+    // console.log(`[clearTestData:_clearPrismaData] Cleared ${sessionCount.count} sessions.`);
 
-    console.log('[clearTestData:_clearPrismaData] Clearing Prisma Account data...');
-    const accountCount = await prisma.account.deleteMany({});
-    console.log(`[clearTestData:_clearPrismaData] Cleared ${accountCount.count} accounts.`);
+    // console.log('[clearTestData:_clearPrismaData] Clearing Prisma Account data...');
+    await prisma.account.deleteMany({});
+    // console.log(`[clearTestData:_clearPrismaData] Cleared ${accountCount.count} accounts.`);
 
-    console.log('[clearTestData:_clearPrismaData] Clearing Prisma User data...');
-    const userCount = await prisma.user.deleteMany({});
-    console.log(`[clearTestData:_clearPrismaData] Cleared ${userCount.count} users.`);
+    // console.log('[clearTestData:_clearPrismaData] Clearing Prisma User data...');
+    await prisma.user.deleteMany({});
+    // console.log(`[clearTestData:_clearPrismaData] Cleared ${userCount.count} users.`);
 
     console.log(
       '✅ [clearTestData:_clearPrismaData] Prisma data cleared (User, Account, Session).'
@@ -134,17 +119,22 @@ async function _clearPrismaData() {
 async function _clearAuthEmulatorData() {
   try {
     const clearAuthUrl = `${AUTH_EMULATOR_URL}/emulator/v1/projects/${projectIdForEmulator}/accounts`;
-    console.log(`[clearTestData:_clearAuthEmulatorData] Attempting DELETE ${clearAuthUrl}`);
-    await axios.delete(clearAuthUrl);
+    // console.log(`[clearTestData:_clearAuthEmulatorData] Attempting DELETE ${clearAuthUrl}`);
+    // Use fetch or another method if axios was only used here
+    // For simplicity, assume fetch is available in this Node env or polyfilled
+    const response = await fetch(clearAuthUrl, { method: 'DELETE' });
+    if (!response.ok) {
+      throw new Error(`Failed to clear auth emulator: ${response.status} ${response.statusText}`);
+    }
     console.log('✅ [clearTestData:_clearAuthEmulatorData] Auth emulator data cleared.');
   } catch (error: any) {
-    console.warn(
-      `⚠️ [clearTestData:_clearAuthEmulatorData] Could not clear Auth emulator (project: ${projectIdForEmulator}): ${error.message}`
-    );
+    // console.warn(
+    //   `⚠️ [clearTestData:_clearAuthEmulatorData] Could not clear Auth emulator (project: ${projectIdForEmulator}): ${error.message}`
+    // );
     if (error.response) {
-      console.warn(
-        `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
-      );
+    //   console.warn(
+    //     `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
+    //   );
     }
   }
 }
@@ -152,19 +142,22 @@ async function _clearAuthEmulatorData() {
 async function _clearFirestoreEmulatorData() {
   try {
     const clearFirestoreUrl = `${FIRESTORE_EMULATOR_URL}/emulator/v1/projects/${projectIdForEmulator}/databases/(default)/documents`;
-    console.log(
-      `[clearTestData:_clearFirestoreEmulatorData] Attempting DELETE ${clearFirestoreUrl}`
-    );
-    await axios.delete(clearFirestoreUrl);
+    // console.log(
+    //   `[clearTestData:_clearFirestoreEmulatorData] Attempting DELETE ${clearFirestoreUrl}`
+    // );
+    const response = await fetch(clearFirestoreUrl, { method: 'DELETE' });
+    if (!response.ok) {
+      throw new Error(`Failed to clear firestore emulator: ${response.status} ${response.statusText}`);
+    }
     console.log('✅ [clearTestData:_clearFirestoreEmulatorData] Firestore emulator data cleared.');
   } catch (error: any) {
-    console.warn(
-      `⚠️ [clearTestData:_clearFirestoreEmulatorData] Could not clear Firestore emulator (project: ${projectIdForEmulator}): ${error.message}`
-    );
+    // console.warn(
+    //   `⚠️ [clearTestData:_clearFirestoreEmulatorData] Could not clear Firestore emulator (project: ${projectIdForEmulator}): ${error.message}`
+    // );
     if (error.response) {
-      console.warn(
-        `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
-      );
+    //   console.warn(
+    //     `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
+    //   );
     }
   }
 }
@@ -201,6 +194,7 @@ async function _ensureFirebaseAuthUser(auth: admin.auth.Auth): Promise<admin.aut
     console.log(
       `ℹ️ [setupUserAndSaveUid:_ensureFirebaseAuthUser] User found: ${userRecord.uid}. Updating...`
     );
+    // Only update fields that might change, e.g., displayName
     await auth.updateUser(userRecord.uid, { displayName: TEST_USER_DISPLAY_NAME });
     console.log(`✅ [setupUserAndSaveUid:_ensureFirebaseAuthUser] Existing user updated.`);
     return userRecord;
@@ -257,6 +251,8 @@ async function _upsertPrismaUser(userRecord: admin.auth.UserRecord): Promise<voi
         email: userRecord.email,
         emailVerified: userRecord.emailVerified ? new Date() : null,
         image: userRecord.photoURL,
+        // Ensure role is set if needed by your schema
+        role: 'USER',
       },
     });
     console.log(`✅ [setupUserAndSaveUid:_upsertPrismaUser] Prisma user upserted successfully.`);
@@ -267,174 +263,84 @@ async function _upsertPrismaUser(userRecord: admin.auth.UserRecord): Promise<voi
     throw prismaError;
   }
 }
-
-/**
- * Generates a custom token for the user and saves it to a file.
- * @param auth - Firebase Admin Auth instance.
- * @param uid - The user's UID.
- * @throws Error if token generation or file writing fails.
- */
-async function _generateAndSaveCustomToken(auth: admin.auth.Auth, uid: string): Promise<void> {
-  console.log(
-    `[setupUserAndSaveUid:_generateAndSaveCustomToken] Generating/Saving custom token for UID: ${uid}...`
-  );
-  try {
-    const customToken = await auth.createCustomToken(uid);
-    await fs.writeFile(CUSTOM_TOKEN_PATH, customToken);
-    console.log(
-      `✅ [setupUserAndSaveUid:_generateAndSaveCustomToken] Custom token saved to ${CUSTOM_TOKEN_PATH}`
-    );
-  } catch (tokenError) {
-    console.error(`❌ [setupUserAndSaveUid:_generateAndSaveCustomToken] Failed: ${tokenError}`);
-    throw tokenError;
-  }
-}
-
-/**
- * Saves the user's UID to a file.
- * @param uid - The user's UID.
- * @throws Error if file writing fails.
- */
-async function _saveUserUid(uid: string): Promise<void> {
-  console.log(`[setupUserAndSaveUid:_saveUserUid] Saving UID: ${uid}...`);
-  try {
-    await fs.writeFile(USER_UID_PATH, uid);
-    console.log(`💾 [setupUserAndSaveUid:_saveUserUid] User UID saved to ${USER_UID_PATH}`);
-  } catch (error) {
-    console.error(`❌ [setupUserAndSaveUid:_saveUserUid] Failed to save UID: ${error}`);
-    throw error;
-  }
-}
 // --- End Helper Functions for setupUserAndSaveUid ---
 
-// Modified function to setup user and save UID/token, AND create Prisma user
-async function setupUserAndSaveUid(auth: admin.auth.Auth): Promise<string> {
-  console.log(`👤 Setting up test user via Admin SDK: ${TEST_USER_EMAIL}...`);
-  const timerLabel = '[setupUserAndSaveUid]';
-  console.time(timerLabel);
-
-  try {
-    // 1. Ensure Firebase Auth User exists/is updated
-    const userRecord = await _ensureFirebaseAuthUser(auth);
-    const uid = userRecord.uid;
-
-    // 2. Upsert user in Prisma
-    await _upsertPrismaUser(userRecord);
-
-    // 3. Generate and Save Custom Token
-    await _generateAndSaveCustomToken(auth, uid);
-
-    // 4. Save UID
-    await _saveUserUid(uid);
-
-    console.timeEnd(timerLabel); // End timer on success
-    return uid;
-  } catch (error) {
-    console.error(`❌ [setupUserAndSaveUid] Setup failed overall: ${error}`);
-    console.timeEnd(timerLabel); // End timer on error
-    // Ensure setup fails if any step errors out
-    throw new Error(`User setup failed: ${error instanceof Error ? error.message : error}`);
-  }
-}
-
+// Log relevant config details
 function logConfigDetails() {
   console.log('🔧 Configuration Details:');
   console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
   console.log(`  TEST_USER_EMAIL: ${TEST_USER_EMAIL}`);
   console.log(`  FIREBASE_PROJECT_ID: ${projectIdForEmulator}`);
-  console.log(
-    `  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`
-  );
-  console.log(
-    `  NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`
-  );
-  console.log(
-    `  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
-  );
+  console.log(`  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
+  console.log(`  NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`);
+  console.log(`  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
   console.log(`  PLAYWRIGHT_TEST_BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL}`);
   console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`);
-  console.log(
-    `  GOOGLE_APPLICATION_CREDENTIALS: ${SERVICE_ACCOUNT_PATH ? 'Set' : 'Not Set (Required!)'}`
-  ); // Check if SA path is set
+  console.log(`  GOOGLE_APPLICATION_CREDENTIALS: ${SERVICE_ACCOUNT_PATH ? 'Set' : 'Not Set'}`);
 }
 
-// async function startAndWaitForEmulators() {
-/*
+// Wait for emulators
 async function startAndWaitForEmulators() {
-  // Keep port waiting logic
   console.log('⏳ Waiting for emulators to be ready (started via firebase emulators:exec)...');
-// ... (rest of startAndWaitForEmulators function) ...
-  console.timeEnd('[startAndWaitForEmulators]'); // End timer
-}
-*/
-async function startAndWaitForEmulators() {
-  // Keep port waiting logic
-  console.log('⏳ Waiting for emulators to be ready (started via firebase emulators:exec)...');
-  console.time('[startAndWaitForEmulators]'); // Start timer
-  const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1]);
-  const firestorePort = parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1]);
-  const authHost = AUTH_EMULATOR_HOST.split(':')[0];
-  const firestoreHost = FIRESTORE_EMULATOR_HOST.split(':')[0];
-
   try {
     await Promise.all([
-      waitForPort(authPort, authHost, 90000), // Increased timeout
-      waitForPort(firestorePort, firestoreHost, 90000), // Increased timeout
+      waitForPort(parseInt(AUTH_EMULATOR_HOST.split(':')[1], 10), AUTH_EMULATOR_HOST.split(':')[0]),
+      waitForPort(parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1], 10), FIRESTORE_EMULATOR_HOST.split(':')[0]),
     ]);
     console.log('✅ Firebase Emulators appear to be ready.');
-    // Add a brief delay to ensure services are fully initialized
+    // Add a small delay just in case services need a moment after ports open
     console.log('⏳ Short delay for service initialization...');
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Increased delay
+    await new Promise(resolve => setTimeout(resolve, 5000)); // 5-second delay
   } catch (error) {
     console.error('❌ Error waiting for emulators:', error);
-    console.timeEnd('[startAndWaitForEmulators]'); // End timer on error
-    throw error; // Re-throw to fail setup if emulators aren't ready
+    throw error;
   }
-  console.timeEnd('[startAndWaitForEmulators]'); // End timer
 }
 
-// Modified global setup function
+// Main Global Setup Function (MODIFIED)
 async function globalSetup() {
-  console.log('--- E2E Global Setup --- START ---');
-  console.time('[globalSetup]'); // Start overall timer
+  console.log('\n=== Running Playwright Global Setup (Timestamp:', new Date().toISOString() , ') ===');
+  const timerLabel = '[globalSetup:total]';
+  console.time(timerLabel);
 
-  logConfigDetails(); // Log config first
+  logConfigDetails(); // Log env details
 
-  // Check for GOOGLE_APPLICATION_CREDENTIALS early
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    console.error('❌ FATAL: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
-    console.error('   Firebase Admin SDK initialization will likely fail.');
-    console.error('   Set this variable to the path of your service account key file.');
-    throw new Error('Missing GOOGLE_APPLICATION_CREDENTIALS');
-  }
-
-  // Initialize Admin SDK (already done above, just get the instance)
-  console.timeLog('[globalSetup:adminInit]');
-
-  // Wait for emulators
-  await startAndWaitForEmulators();
-
-  // Clear existing emulator data AND Prisma data
-  await clearTestData();
-
-  // Setup user in Firebase Auth AND Prisma, then save UID
-  await setupUserAndSaveUid(adminAuth); // Pass the auth instance
-
-  console.log('--- E2E Global Setup Complete --- END ---');
-  console.timeEnd('[globalSetup]'); // End overall timer
-}
-
-async function globalTeardown() {
-  console.log('--- E2E Global Teardown --- START ---');
   try {
-    await prisma.$disconnect();
-    console.log('✅ Prisma client disconnected.');
+    const startEmulatorsTimerLabel = '[startAndWaitForEmulators]';
+    console.time(startEmulatorsTimerLabel);
+    await startAndWaitForEmulators(); // Wait for emulators
+    console.timeEnd(startEmulatorsTimerLabel);
+
+    await clearTestData(); // Clear data before setup
+
+    const setupUserTimerLabel = '[setupUser]';
+    console.time(setupUserTimerLabel);
+    const userRecord = await _ensureFirebaseAuthUser(adminAuth);
+    await _upsertPrismaUser(userRecord);
+    console.log(`✅ User setup complete. UID: ${userRecord.uid}`);
+    console.timeEnd(setupUserTimerLabel);
+
+    console.log('🎉 Global setup finished (User created/verified). Test user UID:', userRecord.uid);
   } catch (error) {
-    console.error('❌ Error disconnecting Prisma client:', error);
+    console.error('❌❌❌ Global setup failed:', error);
+    process.exit(1); // Exit with error code if setup fails critically
+  } finally {
+    await prisma.$disconnect(); // Disconnect Prisma client
+    console.timeEnd(timerLabel); // End total timer
+    console.log('=========================================================\n');
   }
-  console.log('--- E2E Global Teardown --- END ---');
 }
 
-// Export both setup and teardown
+// Teardown function (optional, example)
+async function globalTeardown() {
+  console.log('=== Running Playwright Global Teardown ===');
+  // Add any cleanup logic here if needed, e.g., stopping services
+  await prisma.$disconnect(); // Ensure Prisma is disconnected
+  console.log('=== Global Teardown Complete ===');
+}
+
+// Export the setup function as the default export
 export default globalSetup;
-export const teardown = globalTeardown;
+// If you have teardown logic, you might need to configure it differently
+// depending on your Playwright config version.
+export { globalTeardown }; // Exporting teardown separately

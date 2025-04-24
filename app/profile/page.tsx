@@ -7,6 +7,8 @@ import PageLayout from '@/components/layouts/PageLayout';
 export default function Profile() {
   return (
     <PageLayout title="Your Profile">
+      {/* Add a simple marker element for E2E testing */}
+      <div data-testid="profile-page-marker" style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>PROFILE_PAGE_LOADED</div>
       <Suspense
         fallback={
           <Box sx={{ py: 8, textAlign: 'center' }}>

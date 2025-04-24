@@ -3,7 +3,7 @@ import { RenderResult, render, RenderOptions as RTLRenderOptions } from '@testin
 import { SessionProvider } from 'next-auth/react';
 import { Session } from 'next-auth';
 import { TestRenderResult, MockUser, MockIdTokenResult } from './test-types';
-import { UserRole } from '@/types';
+import { UserRole } from '@prisma/client';
 
 const defaultMockUser = {
   uid: 'test-uid',
@@ -57,28 +57,34 @@ export const createMockUser = (overrides: Partial<MockUser> = {}): MockUser => {
 };
 
 type SessionWithUser = Session & {
-  user: MockUser & { id: string; role: UserRole };
   expires: string;
 };
 
 export const SessionFixtures = {
   notAuthenticated: null as null,
-  authenticated: (userOverrides: Partial<MockUser> = {}): SessionWithUser => ({
-    user: {
-      ...createMockUser(userOverrides),
-      id: 'test-id',
-      role: UserRole.USER,
-    },
-    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  }),
+  authenticated: (userOverrides: Partial<MockUser> = {}): Session => {
+    const mockUser = createMockUser(userOverrides);
+    return {
+      user: {
+        id: 'test-id',
+        name: mockUser.displayName || undefined,
+        email: mockUser.email || undefined,
+        image: mockUser.photoURL || undefined,
+        role: 'USER' as UserRole,
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    } as Session;
+  },
   expired: {
     user: {
-      ...createMockUser(),
       id: 'test-id',
-      role: UserRole.USER,
+      name: defaultMockUser.displayName || undefined,
+      email: defaultMockUser.email || undefined,
+      image: defaultMockUser.photoURL || undefined,
+      role: 'USER' as UserRole,
     },
     expires: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  } as SessionWithUser,
+  } as Session,
 };
 
 /**

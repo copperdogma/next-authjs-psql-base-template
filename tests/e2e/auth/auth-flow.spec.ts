@@ -55,20 +55,27 @@ test.describe('Authentication Flow', () => {
       // Wait for page to stabilize
       await page.waitForTimeout(2000);
 
-      // Verify we're on the login page by checking the URL
-      expect(page.url()).toContain(ROUTES.LOGIN);
+      // Verify we're redirected *away* from login (to dashboard/home) when already authenticated
+      // This test runs in the 'chromium' project which depends on auth setup
+      expect(page.url()).not.toContain(ROUTES.LOGIN); // User should not be on login page
+      expect(page.url()).toContain(ROUTES.HOME); // Expect redirection to home/dashboard
 
       // Take a screenshot for debugging
-      await page.screenshot({ path: 'tests/e2e/screenshots/login-page.png' });
+      // We might not reach here if the expect fails, but it's good practice
+      await page.screenshot({ path: 'tests/e2e/screenshots/login-page-redirect.png' });
 
-      // Check for the Google sign-in button using data-testid (most reliable)
-      const googleSignInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
-      await expect(googleSignInButton).toBeVisible({ timeout: 5000 });
+      console.log(`✅ Authenticated user correctly redirected from login page to ${page.url()}`);
 
-      // Success - we've verified the login page is accessible
-      console.log('✅ Login page successfully loaded with sign-in button visible');
+      // // Original checks (commented out as they apply to unauthenticated state)
+      // // Verify we're on the login page by checking the URL
+      // expect(page.url()).toContain(ROUTES.LOGIN);
+      // // Check for the Google sign-in button using data-testid (most reliable)
+      // const googleSignInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
+      // await expect(googleSignInButton).toBeVisible({ timeout: 5000 });
+      // console.log('✅ Login page successfully loaded with sign-in button visible');
+
     } catch (error) {
-      console.error('Error in login page test:', error);
+      console.error('Error in login page test (authenticated context):', error);
       // Take a screenshot on error
       await page.screenshot({ path: 'tests/e2e/screenshots/login-page-error.png' });
       throw error;
@@ -101,8 +108,9 @@ test.describe('Authentication Flow', () => {
       // Wait for page to stabilize
       await page.waitForTimeout(2000);
 
-      // Log the current page after navigation
-      console.log('Current URL after auth navigation:', page.url());
+      // Verify we're redirected *away* from login (to dashboard/home) when already authenticated
+      expect(page.url()).not.toContain(ROUTES.LOGIN); // User should not be on login page
+      expect(page.url()).toContain(ROUTES.HOME); // Or ROUTES.DASHBOARD depending on redirect logic
 
       // Take a screenshot for debugging
       await page.screenshot({ path: 'tests/e2e/screenshots/auth-home-page.png' });

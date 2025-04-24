@@ -1,133 +1,151 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from '@/tests/e2e/fixtures/auth-fixtures';
 import * as path from 'path';
-// Re-add fs import if needed later, but not for this version
-// import * as fs from 'fs';
+import * as fs from 'fs';
 
 // Define the path to the saved storage state
+// This path should match the one used in auth.setup.ts
 const storageStatePath = path.join(process.cwd(), 'tests/.auth/user.json');
 
-// Re-enable test.use({ storageState: ... })
+// Common UI selectors for auth detection
+const UI_ELEMENTS = {
+  USER_PROFILE: {
+    TESTID: '[data-testid="user-profile"]',
+    CONTAINER: '[data-testid="profile-container"]',
+    NAV_PROFILE: 'header [data-testid="user-profile"]',
+    IMAGE: '[data-testid="profile-image"]',
+    NAME: '[data-testid="profile-name"]',
+    // Text-based fallbacks
+    TEXT: 'text=/sign out|logout|profile|account|dashboard/i',
+  },
+};
+
 test.describe('Profile Name Editing', () => {
   // Configure tests in this file to use the saved authentication state
   test.use({ storageState: storageStatePath });
 
-  test('should allow editing user name', async ({ page, context }) => {
-    // Reverted to using storageState. Removed UI Login & Explicit Cookie Setting.
+  // Add a setup function that runs before each test to verify auth state
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/'); // Go to a page that establishes auth state first
+    await page.goto('/profile');
+    console.log('✅ Successfully navigated to profile page');
 
+    // --- Updated Wait Strategy --- 
+    // Wait for the main content container to have the 'authenticated' ID.
+    console.log('Waiting for client session to be authenticated via ID...');
+    await expect(page.locator('#profile-content-authenticated')).toBeVisible({
+      timeout: 25000, // Keep a generous timeout
+    });
+    console.log('✅ Client session authenticated via ID! Proceeding with checks.');
+
+    // --- Essential visibility checks using IDs/Text --- 
+    console.log('Verifying essential profile elements are visible...');
+    await expect(page.locator('h1:has-text("Profile")')).toBeVisible(); // Page title
+    await expect(page.getByText("Email")).toBeVisible(); // Email label 
+    await expect(page.locator('#profile-field-email-value')).toBeVisible({ timeout: 10000 }); // Email value via ID
+    await expect(page.locator('#profile-initials-avatar, #profile-image-avatar')).toBeVisible({ timeout: 10000 }); // Avatar (either initials or image) via ID
+    console.log('✅ Essential profile elements are visible.');
+  });
+
+  test('should allow editing user name', async ({ page, context }) => {
     // Navigate directly to profile AFTER global auth setup provides the session
     console.log('Navigating directly to /profile using storageState...');
     await page.goto('/profile');
-    // Wait for the main content container within the Paper to be present
-    // This selector might need adjustment based on actual rendered DOM
-    console.log('Waiting for profile page main container...');
-    const profileContainer = page.locator('main >> div[class*="MuiPaper-root"] >> div[class*="MuiBox-root"]:has(> section)');
-    await expect(profileContainer).toBeVisible({ timeout: 20000 }); // Increased timeout slightly
-    console.log('✅ Profile container found. Now verifying email...');
-
-    // Now verify the email, which should be rendered by ProfileContent
-    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 10000 });
-    console.log('✅ User email found.');
 
     // Click the edit button
-    const editButton = page.getByRole('button', { name: 'Edit' });
+    const editButton = page.locator('#profile-details-edit-button'); // Using ID selector
     await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Verify edit form appears
-    const nameInput = page.getByRole('textbox');
-    await expect(nameInput).toBeVisible();
+    // Generate a random name
+    const newName = `Test User ${Math.floor(Math.random() * 1000)}`;
 
-    // Clear the existing name and type a new one
+    // Enter the new name
+    const nameInput = page.locator('input[name="name"]'); // Using specific input selector
+    await expect(nameInput).toBeVisible();
     await nameInput.clear();
-    const newName = `Test User ${Date.now()}`;
     await nameInput.fill(newName);
 
-    // Submit the form
+    // Save the changes
     const saveButton = page.getByRole('button', { name: 'Save' });
     await saveButton.click();
 
-    // Verify success message appears and edit form disappears
-    await expect(page.getByText('Name updated successfully')).toBeVisible();
-    await expect(nameInput).not.toBeVisible();
+    // Verify the name has been updated using ID
+    const displayNameElement = page.locator('#profile-display-name');
+    await expect(displayNameElement).toBeVisible();
+    await expect(displayNameElement).toHaveText(newName);
+    await expect(page.getByText('Name updated successfully')).toBeVisible(); // Check success message
 
-    // Verify the displayed name has changed
-    await expect(page.getByRole('heading', { level: 6, name: newName })).toBeVisible();
-
-    // Reload the page and verify persistence
+    // Reload and verify persistence
     await page.reload();
-    await expect(page.getByRole('heading', { level: 6, name: newName })).toBeVisible();
+    await expect(page.locator('#profile-content-authenticated')).toBeVisible({ timeout: 15000 }); // Wait for content again
+    const reloadedDisplayNameElement = page.locator('#profile-display-name');
+    await expect(reloadedDisplayNameElement).toBeVisible();
+    await expect(reloadedDisplayNameElement).toHaveText(newName);
   });
 
   test('should validate name during editing', async ({ page }) => {
-    // SKIPPED: Test consistently fails due to inability to reliably load
-    // the authenticated /profile route using stored auth state during direct navigation.
-
-    // Navigate to profile AFTER global auth setup
+    // Navigate to profile
     await page.goto('/profile');
 
-    // Wait for a key authenticated element
-    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 15000 });
-
     // Click the edit button
-    const editButton = page.getByRole('button', { name: 'Edit' });
+    const editButton = page.locator('#profile-details-edit-button'); // Using ID selector
+    await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Try submitting an empty name
-    const nameInput = page.getByRole('textbox');
+    // Try to save with an empty name
+    const nameInput = page.locator('input[name="name"]'); // Using specific input selector
+    await expect(nameInput).toBeVisible();
     await nameInput.clear();
 
-    // Submit the form with empty name
+    // Save the changes
     const saveButton = page.getByRole('button', { name: 'Save' });
     await saveButton.click();
 
-    // Verify error message appears
-    await expect(page.getByText('Name is required')).toBeVisible();
+    // Verify validation error appears (scoped to form)
+    await expect(
+      page.locator('form[data-edit-name="true"]').getByText('Name is required')
+    ).toBeVisible();
 
-    // Fill in a valid name and verify it works
+    // Fill with valid name and save
     await nameInput.fill(TEST_USER.displayName);
     await saveButton.click();
 
-    // Verify success message and updated name
+    // Verify success and name update using ID
     await expect(page.getByText('Name updated successfully')).toBeVisible();
-    await expect(
-      page.getByRole('heading', { level: 6, name: TEST_USER.displayName })
-    ).toBeVisible();
+    const displayNameElement = page.locator('#profile-display-name');
+    await expect(displayNameElement).toBeVisible();
+    await expect(displayNameElement).toHaveText(TEST_USER.displayName);
   });
 
   test('should cancel editing without saving changes', async ({ page }) => {
-    // SKIPPED: Test consistently fails due to inability to reliably load
-    // the authenticated /profile route using stored auth state during direct navigation.
-
-    // Navigate to profile AFTER global auth setup
+    // Navigate to profile
     await page.goto('/profile');
 
-    // Wait for a key authenticated element
-    await expect(page.getByText(TEST_USER.email)).toBeVisible({ timeout: 15000 });
+    // Get the current name before editing using ID
+    const currentNameElement = page.locator('#profile-display-name');
+    const currentName = await currentNameElement.textContent() || '';
+    expect(currentName).toBeTruthy(); // Ensure we got a name
 
-    // Get the current name before editing
-    const currentNameEl = page.getByText(TEST_USER.displayName);
-    const currentName = await currentNameEl.textContent();
-
-    // Click edit button
-    const editButton = page.getByRole('button', { name: 'Edit' });
+    // Click the edit button
+    const editButton = page.locator('#profile-details-edit-button'); // Using ID selector
+    await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Change the name in the form
-    const nameInput = page.getByRole('textbox');
+    // Enter a new name
+    const nameInput = page.locator('input[name="name"]'); // Using specific input selector
+    await expect(nameInput).toBeVisible();
     await nameInput.clear();
-    await nameInput.fill('Name That Should Not Be Saved');
+    await nameInput.fill('Cancelled Name Change');
 
-    // Click the cancel button
+    // Cancel the edit
     const cancelButton = page.getByRole('button', { name: 'Cancel' });
     await cancelButton.click();
 
-    // Verify edit form disappears
-    await expect(nameInput).not.toBeVisible();
-
-    // Verify name is unchanged
-    await expect(
-      page.getByRole('heading', { level: 6, name: currentName as string })
-    ).toBeVisible();
+    // Verify the name has not changed using ID
+    const finalDisplayNameElement = page.locator('#profile-display-name');
+    await expect(finalDisplayNameElement).toBeVisible();
+    await expect(finalDisplayNameElement).toHaveText(currentName);
+    await expect(nameInput).not.toBeVisible(); // Verify input is gone
   });
 });
