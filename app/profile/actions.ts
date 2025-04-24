@@ -38,7 +38,7 @@ class ProfileActionsImpl {
   constructor(
     private readonly profileService: ProfileService = singletonProfileService,
     private readonly logger: pino.Logger = actionsLogger
-  ) { }
+  ) {}
 
   // Define validation schema for user name
   private userNameSchema = z.object({
@@ -105,34 +105,33 @@ class ProfileActionsImpl {
     userId?: string;
     error?: string;
   }> {
+    let session;
     try {
-      this.logger.debug({ msg: 'verifyAuthentication - Checking auth session' });
-      const session = await auth();
+      this.logger.debug('verifyAuthentication - Checking auth session');
+      session = await auth();
+      this.logger.debug('verifyAuthentication - Auth session retrieved');
 
-      this.logger.debug({
-        msg: 'verifyAuthentication - Auth result',
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
-      });
-
-      if (!session?.user?.id) {
-        this.logger.warn({
-          msg: 'User not authenticated in verifyAuthentication',
-          sessionExists: !!session,
-          userExists: !!session?.user
-        });
-        return { isAuthenticated: false, error: 'You must be logged in to update your profile' };
+      // Directly check for the required property
+      if (session?.user?.id) {
+        this.logger.debug({ msg: 'User authenticated', userId: session.user.id });
+        return { isAuthenticated: true, userId: session.user.id };
       }
 
-      return { isAuthenticated: true, userId: session.user.id };
-    } catch (error) {
-      this.logger.error({
-        msg: 'Error verifying authentication',
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+      // Log specific details if user or ID is missing
+      this.logger.warn({
+        msg: 'User not authenticated in verifyAuthentication',
+        sessionExists: !!session,
+        userExists: !!session?.user,
+        idExists: !!session?.user?.id,
       });
-      return { isAuthenticated: false, error: 'Authentication error' };
+      return {
+        isAuthenticated: false,
+        error: 'You must be logged in to update your profile',
+      };
+    } catch (error) {
+      // Simplified error logging
+      this.logger.error({ err: error }, 'Error during authentication verification');
+      return { isAuthenticated: false, error: 'Authentication check failed' };
     }
   }
 

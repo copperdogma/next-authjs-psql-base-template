@@ -1,26 +1,32 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from '@/tests/e2e/fixtures/auth-fixtures';
 import * as path from 'path';
-import * as fs from 'fs';
+// import { logger } from '@/lib/logger'; // Removed unused logger import
+
+// Configure logger for test context
+// const log = logger.child({ scope: 'edit-profile-test' }); // Removed unused log
 
 // Define the path to the saved storage state
 // This path should match the one used in auth.setup.ts
 const storageStatePath = path.join(process.cwd(), 'tests/.auth/user.json');
 
 // Common UI selectors for auth detection
-const UI_ELEMENTS = {
-  USER_PROFILE: {
-    TESTID: '[data-testid="user-profile"]',
-    CONTAINER: '[data-testid="profile-container"]',
-    NAV_PROFILE: 'header [data-testid="user-profile"]',
-    IMAGE: '[data-testid="profile-image"]',
-    NAME: '[data-testid="profile-name"]',
-    // Text-based fallbacks
-    TEXT: 'text=/sign out|logout|profile|account|dashboard/i',
-  },
-};
+// const UI_ELEMENTS = {
+//   USER_PROFILE: {
+//     TESTID: '[data-testid="user-profile"]',
+//     CONTAINER: '[data-testid="profile-container"]',
+//     NAV_PROFILE: 'header [data-testid="user-profile"]',
+//     IMAGE: '[data-testid="profile-image"]',
+//     NAME: '[data-testid="profile-name"]',
+//     // Text-based fallbacks
+//     TEXT: 'text=/sign out|logout|profile|account|dashboard/i',
+//   },
+// };
 
-test.describe('Profile Name Editing', () => {
+// Use a unique name based on timestamp for each test run
+const newName = `Test User ${Date.now().toString().slice(-3)}`;
+
+test.describe.serial('Profile Name Editing', () => {
   // Configure tests in this file to use the saved authentication state
   test.use({ storageState: storageStatePath });
 
@@ -30,7 +36,7 @@ test.describe('Profile Name Editing', () => {
     await page.goto('/profile');
     console.log('✅ Successfully navigated to profile page');
 
-    // --- Updated Wait Strategy --- 
+    // --- Updated Wait Strategy ---
     // Wait for the main content container to have the 'authenticated' ID.
     console.log('Waiting for client session to be authenticated via ID...');
     await expect(page.locator('#profile-content-authenticated')).toBeVisible({
@@ -38,16 +44,19 @@ test.describe('Profile Name Editing', () => {
     });
     console.log('✅ Client session authenticated via ID! Proceeding with checks.');
 
-    // --- Essential visibility checks using IDs/Text --- 
+    // --- Essential visibility checks using IDs/Text ---
     console.log('Verifying essential profile elements are visible...');
     await expect(page.locator('h1:has-text("Profile")')).toBeVisible(); // Page title
-    await expect(page.getByText("Email")).toBeVisible(); // Email label 
+    await expect(page.getByText('Email')).toBeVisible(); // Email label
     await expect(page.locator('#profile-field-email-value')).toBeVisible({ timeout: 10000 }); // Email value via ID
-    await expect(page.locator('#profile-initials-avatar, #profile-image-avatar')).toBeVisible({ timeout: 10000 }); // Avatar (either initials or image) via ID
+    await expect(page.locator('#profile-initials-avatar, #profile-image-avatar')).toBeVisible({
+      timeout: 10000,
+    }); // Avatar (either initials or image) via ID
     console.log('✅ Essential profile elements are visible.');
   });
 
-  test('should allow editing user name', async ({ page, context }) => {
+  test('should allow editing user name', async ({ page }) => {
+    test.slow(); // Increase timeout for this test
     // Navigate directly to profile AFTER global auth setup provides the session
     console.log('Navigating directly to /profile using storageState...');
     await page.goto('/profile');
@@ -56,9 +65,6 @@ test.describe('Profile Name Editing', () => {
     const editButton = page.locator('#profile-details-edit-button'); // Using ID selector
     await expect(editButton).toBeVisible();
     await editButton.click();
-
-    // Generate a random name
-    const newName = `Test User ${Math.floor(Math.random() * 1000)}`;
 
     // Enter the new name
     const nameInput = page.locator('input[name="name"]'); // Using specific input selector
@@ -124,7 +130,7 @@ test.describe('Profile Name Editing', () => {
 
     // Get the current name before editing using ID
     const currentNameElement = page.locator('#profile-display-name');
-    const currentName = await currentNameElement.textContent() || '';
+    const currentName = (await currentNameElement.textContent()) || '';
     expect(currentName).toBeTruthy(); // Ensure we got a name
 
     // Click the edit button

@@ -38,7 +38,7 @@ const PUBLIC_ROUTES = ['/', '/about', '/api/health', '/api/log/client'];
 const AUTH_ROUTES = ['/login', '/register'];
 const API_AUTH_PREFIX = '/api/auth';
 const API_TEST_PREFIX = '/api/test'; // Keep test API prefix allowed if needed by other flows
-const DEFAULT_LOGIN_REDIRECT = '/dashboard';  // Changed to dashboard from '/'
+const DEFAULT_LOGIN_REDIRECT = '/dashboard'; // Changed to dashboard from '/'
 
 // --- Route Type Checkers ---
 const isPublicRoute = (pathname: string): boolean => PUBLIC_ROUTES.includes(pathname);
@@ -60,7 +60,9 @@ if (!process.env.NEXTAUTH_SECRET) {
   } else {
     // In production, we might want to log an error but let it proceed,
     // relying on the main Node config to throw if needed, or handle based on policy.
-    logger.error('[Auth Edge] FATAL ERROR: NEXTAUTH_SECRET environment variable is not set in PRODUCTION.');
+    logger.error(
+      '[Auth Edge] FATAL ERROR: NEXTAUTH_SECRET environment variable is not set in PRODUCTION.'
+    );
     // Consider whether middleware should fail open or closed if secret is missing
     // throw new Error('NEXTAUTH_SECRET environment variable is not set.');
   }
@@ -69,6 +71,44 @@ if (!process.env.NEXTAUTH_SECRET) {
 // =============================================================================
 // Edge-Compatible Auth Configuration
 // =============================================================================
+
+// Helper function to handle logic for authentication routes
+function handleAuthRoute(isLoggedIn: boolean, nextUrl: URL): Response | true {
+  if (isLoggedIn) {
+    // If logged in, redirect from auth routes to the default redirect page
+    logger.debug('[Auth Edge] Redirecting authenticated user from auth route');
+    return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl.origin));
+  }
+  // If not logged in, allow access to auth routes
+  logger.debug('[Auth Edge] Allowing unauthenticated access to auth route');
+  return true;
+}
+
+// Helper function to handle logic for protected routes
+function handleProtectedRoute(
+  isLoggedIn: boolean,
+  pathname: string,
+  nextUrl: URL,
+  logContext: LogContext
+): Response | true {
+  if (!isLoggedIn) {
+    // If not logged in, redirect to login page with callback URL
+    logger.info({
+      ...logContext,
+      msg: '[Auth Edge Callback] Unauthorized access to protected route, redirecting...',
+    });
+    return Response.redirect(
+      new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl.origin)
+    );
+  }
+  // If logged in and accessing a protected route, allow access.
+  logger.debug({
+    ...logContext,
+    msg: '[Auth Edge] Allowing authenticated access to protected route',
+  });
+  return true;
+}
+
 export const authConfigEdge: NextAuthConfig = {
   // Include only providers compatible with the Edge runtime
   providers: [
@@ -87,9 +127,10 @@ export const authConfigEdge: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production'
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
+      name:
+        process.env.NODE_ENV === 'production'
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
       options: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -108,47 +149,25 @@ export const authConfigEdge: NextAuthConfig = {
     async authorized({ auth, request }) {
       const { nextUrl } = request;
       const pathname = nextUrl.pathname;
-      const isLoggedIn = !!auth; // Check if auth exists
+      const isLoggedIn = !!auth;
       const userId = auth?.user?.id || (auth?.user as { sub?: string })?.sub;
       const logContext = createLogContext(request, isLoggedIn, userId);
 
       logger.debug('[Auth Edge Callback] authorized check running', logContext);
 
-      // 1. Allow Public and API routes unconditionally
+      // 1. Allow Public and API routes first
       if (isPublicRoute(pathname) || isApiRoute(pathname)) {
         logger.debug('[Auth Edge] Allowing public or API route', { ...logContext, pathname });
         return true;
       }
 
-      // 2. Handle Auth routes (e.g., /login)
+      // 2. Handle Auth routes using helper
       if (isAuthRoute(pathname)) {
-        if (isLoggedIn) {
-          // Redirect authenticated users away from login/register to dashboard
-          logger.debug('[Auth Edge] Redirecting authenticated user from auth route', logContext);
-          return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl.origin));
-        }
-        // Allow unauthenticated users to access auth routes
-        logger.debug('[Auth Edge] Allowing unauthenticated access to auth route', logContext);
-        return true;
+        return handleAuthRoute(isLoggedIn, nextUrl);
       }
 
-      // 3. Handle Protected routes
-      if (!isLoggedIn) {
-        // User is not logged in, redirect to login
-        logger.info({
-          ...logContext,
-          msg: '[Auth Edge Callback] Unauthorized access to protected route, redirecting...',
-        });
-        // Redirect to login, preserving the intended destination
-        return Response.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl.origin));
-      }
-
-      // 4. User is logged in and accessing a protected route - allow access
-      logger.debug({
-        ...logContext,
-        msg: '[Auth Edge] Allowing authenticated access to protected route'
-      });
-      return true;
+      // 3. Handle all other routes (protected) using helper
+      return handleProtectedRoute(isLoggedIn, pathname, nextUrl, logContext);
     },
 
     // --- ADDED session callback (Mirroring auth-node.ts logic) ---
@@ -168,7 +187,7 @@ export const authConfigEdge: NextAuthConfig = {
       logger.debug({
         msg: '[Auth Edge] End session callback',
         userId: session.user.id,
-        userRole: session.user.role
+        userRole: session.user.role,
       });
       return session;
     },
@@ -179,13 +198,17 @@ export const authConfigEdge: NextAuthConfig = {
     // refresh or handle the JWT directly.
     async jwt({ token, user, trigger, session }) {
       logger.debug({ msg: '[Auth Edge] Start jwt callback', hasUser: !!user, trigger });
-      if (user) { // Populating token on initial sign-in
+      if (user) {
+        // Populating token on initial sign-in
         token.sub = user.id;
         token.role = user.role;
         token.name = user.name;
         token.email = user.email;
         token.picture = user.image;
-        logger.debug({ msg: '[Auth Edge] jwt callback: Populated token from user object', sub: token.sub });
+        logger.debug({
+          msg: '[Auth Edge] jwt callback: Populated token from user object',
+          sub: token.sub,
+        });
       }
 
       // Handle session update trigger from client
@@ -198,7 +221,7 @@ export const authConfigEdge: NextAuthConfig = {
 
       logger.debug({ msg: '[Auth Edge] End jwt callback' });
       return token;
-    }
+    },
   },
   // Debug flag can be useful
   debug: false,
@@ -217,12 +240,11 @@ export const authConfigEdge: NextAuthConfig = {
 function createLogContext(request: Request, isLoggedIn: boolean, userId?: string): LogContext {
   return {
     correlationId: request.headers.get('X-Correlation-ID') || uuidv4(),
-    clientIp: request.headers.get('x-forwarded-for') ??
-      request.headers.get('remote-addr') ??
-      'unknown',
+    clientIp:
+      request.headers.get('x-forwarded-for') ?? request.headers.get('remote-addr') ?? 'unknown',
     pathname: new URL(request.url).pathname,
     isLoggedIn,
-    userId
+    userId,
   };
 }
 
@@ -235,4 +257,4 @@ logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth.');
 // Initialize NextAuth with the edge config and export only the 'auth' handler for middleware
 export const { auth } = NextAuth(authConfigEdge);
 
-logger.info('[Auth Edge Config] Edge-compatible NextAuth initialization complete.'); 
+logger.info('[Auth Edge Config] Edge-compatible NextAuth initialization complete.');

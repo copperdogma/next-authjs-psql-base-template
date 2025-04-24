@@ -23,9 +23,9 @@ export default function Login() {
   }, [status, router]);
 
   const handleSignIn = (provider: string) => {
-    signIn(provider, { 
+    signIn(provider, {
       callbackUrl,
-      prompt: 'select_account' // Force account selection every time
+      prompt: 'select_account', // Force account selection every time
     });
   };
 
@@ -76,10 +76,8 @@ export default function Login() {
               Sign in with Google
             </Button>
 
-            {/* Conditionally render E2E Credentials Form */} 
-            {isTestEnvironment && (
-              <E2ETestLoginForm callbackUrl={callbackUrl} />
-            )}
+            {/* Conditionally render E2E Credentials Form */}
+            {isTestEnvironment && <E2ETestLoginForm callbackUrl={callbackUrl} />}
           </Stack>
         </CardContent>
       </Card>

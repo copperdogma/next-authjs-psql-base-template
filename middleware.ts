@@ -58,7 +58,7 @@ export default auth(req => {
 export const config = {
   // Matcher ignoring specific paths (e.g., _next/static, _next/image, favicon.ico)
   // and API routes under /api/log/client
-  matcher: ['/((?!api/log/client|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/log/client|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)'],
 };
 
 // Note: All previous complex middleware logic (route checks, redirects)

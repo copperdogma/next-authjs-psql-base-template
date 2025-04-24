@@ -17,8 +17,8 @@ async function createTestUserWithUid(email: string, testUserUid: string): Promis
         name: 'Test User',
         email: email,
         emailVerified: new Date(),
-        role: 'USER'
-      }
+        role: 'USER',
+      },
     });
     logger.info({ msg: 'Created new test user with specified UID', userId: newUser.id });
     return newUser;
@@ -26,7 +26,7 @@ async function createTestUserWithUid(email: string, testUserUid: string): Promis
     logger.error({
       msg: 'Failed to create test user with specified UID',
       error: createError,
-      testUserUid
+      testUserUid,
     });
     return null; // Failed to create
   }
@@ -44,7 +44,7 @@ async function findOrCreateTestUser(email: string): Promise<User | null> {
 
     logger.warn({
       msg: 'Test user not found by email, attempting lookup/creation by UID',
-      email
+      email,
     });
 
     // 2. Check for TEST_USER_UID
@@ -63,12 +63,11 @@ async function findOrCreateTestUser(email: string): Promise<User | null> {
 
     // 4. Try creating the user with the specified UID
     return await createTestUserWithUid(email, testUserUid);
-
   } catch (error) {
     logger.error({
       msg: 'Error during user lookup/creation in E2E Test Login',
       error,
-      email
+      email,
     });
     return null;
   }
@@ -110,12 +109,13 @@ export const authConfigNode: NextAuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials): Promise<User | null> {
-        const isTestEnv = process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true';
+        const isTestEnv =
+          process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true';
 
         if (!isTestEnv) {
           logger.warn({
             msg: 'E2E Test Login not allowed in current environment',
-            nodeEnv: process.env.NODE_ENV
+            nodeEnv: process.env.NODE_ENV,
           });
           return null;
         }
@@ -124,7 +124,7 @@ export const authConfigNode: NextAuthConfig = {
           msg: 'E2E Test Login authorize callback invoked',
           isTestEnv,
           nodeEnv: process.env.NODE_ENV,
-          isE2ETestEnv: process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV
+          isE2ETestEnv: process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV,
         });
 
         const email = credentials?.email as string;
@@ -137,17 +137,16 @@ export const authConfigNode: NextAuthConfig = {
           hasPassword: !!password,
           hasTestPassword: !!process.env.TEST_USER_PASSWORD,
           validEmail: email === process.env.TEST_USER_EMAIL,
-          validPassword: password === process.env.TEST_USER_PASSWORD
+          validPassword: password === process.env.TEST_USER_PASSWORD,
         });
 
         const isValidCredentials =
-          email === process.env.TEST_USER_EMAIL &&
-          password === process.env.TEST_USER_PASSWORD;
+          email === process.env.TEST_USER_EMAIL && password === process.env.TEST_USER_PASSWORD;
 
         if (!isValidCredentials) {
           logger.warn({
             msg: 'Invalid E2E test credentials provided',
-            email
+            email,
           });
           return null;
         }
@@ -159,7 +158,10 @@ export const authConfigNode: NextAuthConfig = {
           logger.info({ msg: 'E2E Test Login successful', userId: user.id });
           return user;
         } else {
-          logger.error({ msg: 'E2E Test Login failed: Could not find or create test user.', email });
+          logger.error({
+            msg: 'E2E Test Login failed: Could not find or create test user.',
+            email,
+          });
           return null;
         }
       },
@@ -168,9 +170,10 @@ export const authConfigNode: NextAuthConfig = {
   cookies: {
     sessionToken: {
       // Use secure prefix in production, default name in test/dev
-      name: process.env.NODE_ENV === 'production'
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
+      name:
+        process.env.NODE_ENV === 'production'
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
       options: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -180,14 +183,15 @@ export const authConfigNode: NextAuthConfig = {
       },
     },
     csrfToken: {
-      name: process.env.NODE_ENV === 'production'
-        ? "__Host-next-auth.csrf-token"
-        : "next-auth.csrf-token",
+      name:
+        process.env.NODE_ENV === 'production'
+          ? '__Host-next-auth.csrf-token'
+          : 'next-auth.csrf-token',
       options: {
-        httpOnly: false,                      // Allow JS access to read token
+        httpOnly: false, // Allow JS access to read token
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',                      // CSRF mitigation
-        path: '/',                            // Ensure cookie sent for all routes
+        sameSite: 'lax', // CSRF mitigation
+        path: '/', // Ensure cookie sent for all routes
       },
     },
   },
@@ -215,13 +219,28 @@ export const authConfigNode: NextAuthConfig = {
       return session;
     },
     async jwt({ token, user, account, profile, trigger, session }) {
-      logger.debug({ msg: 'Start jwt callback', hasUser: !!user, trigger, accountProvider: account?.provider }); // Log start
+      logger.debug({
+        msg: 'Start jwt callback',
+        hasUser: !!user,
+        trigger,
+        accountProvider: account?.provider,
+      }); // Log start
       if (user) {
-        logger.debug({ msg: 'User object present in jwt callback', userId: user.id, userRole: user.role, userName: user.name });
+        logger.debug({
+          msg: 'User object present in jwt callback',
+          userId: user.id,
+          userRole: user.role,
+          userName: user.name,
+        });
         token.sub = user.id;
         token.role = user.role;
         token.name = user.name;
-        logger.debug({ msg: 'Assigned token fields from user', sub: token.sub, role: token.role, name: token.name });
+        logger.debug({
+          msg: 'Assigned token fields from user',
+          sub: token.sub,
+          role: token.role,
+          name: token.name,
+        });
       } else {
         logger.debug({ msg: 'User object NOT present in jwt callback', trigger });
       }
@@ -243,7 +262,10 @@ export const authConfigNode: NextAuthConfig = {
   },
   logger: {
     error(error: Error) {
-      logger.error({ err: { message: error.message, stack: error.stack, name: error.name } }, 'NextAuth Error');
+      logger.error(
+        { err: { message: error.message, stack: error.stack, name: error.name } },
+        'NextAuth Error'
+      );
     },
     warn(code: string) {
       logger.warn({ code }, 'NextAuth Warning');
@@ -258,4 +280,4 @@ export const authConfigNode: NextAuthConfig = {
   debug: false, // Explicitly set debug to false for all environments
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfigNode); 
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfigNode);

@@ -66,4 +66,4 @@ export default function E2ETestLoginForm({ callbackUrl }: E2ETestLoginFormProps)
       </Stack>
     </Box>
   );
-} 
+}

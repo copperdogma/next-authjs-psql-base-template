@@ -243,7 +243,9 @@ function logConfigDetails() {
   console.log(`  TEST_USER_EMAIL: ${TEST_USER_EMAIL}`);
   console.log(`  FIREBASE_PROJECT_ID: ${projectIdForEmulator}`);
   console.log(`  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${AUTH_EMULATOR_HOST}`);
-  console.log(`  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
+  console.log(
+    `  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
+  );
   console.log(`  PLAYWRIGHT_TEST_BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL}`);
   console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`);
   console.log(`  GOOGLE_APPLICATION_CREDENTIALS: ${SERVICE_ACCOUNT_PATH ? 'Set' : 'Not Set'}`);
@@ -259,9 +261,7 @@ async function startAndWaitForEmulators() {
 
   // Firebase emulators are started externally by `firebase emulators:exec` in test:e2e script
   // We just need to wait for them to be ready
-  console.log(
-    '⏳ Waiting for emulators to be ready (started via firebase emulators:exec).'
-  );
+  console.log('⏳ Waiting for emulators to be ready (started via firebase emulators:exec).');
 
   try {
     const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1] || '9099', 10);
@@ -283,7 +283,11 @@ async function startAndWaitForEmulators() {
 
 // Main Global Setup Function (MODIFIED)
 async function globalSetup() {
-  console.log('\n=== Running Playwright Global Setup (Timestamp:', new Date().toISOString(), ') ===');
+  console.log(
+    '\n=== Running Playwright Global Setup (Timestamp:',
+    new Date().toISOString(),
+    ') ==='
+  );
   const timerLabel = '[globalSetup:total]';
   console.time(timerLabel);
 

@@ -113,7 +113,9 @@ if (typeof window !== 'undefined') {
   // Expose auth instance globally FOR TESTING ONLY (Restored original logic)
   // Use the dedicated E2E environment variable instead of NODE_ENV for client-side check
   if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true') {
-    console.log('[firebase-config.ts] E2E test env detected, attempting to expose auth instance...');
+    console.log(
+      '[firebase-config.ts] E2E test env detected, attempting to expose auth instance...'
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__firebaseAuthInstance__ = auth;
     // Expose the sign-in function as well

@@ -17,7 +17,7 @@ logger.info({
   msg: 'Initializing NextAuth',
   correlationId,
   env: process.env.NODE_ENV,
-  component: 'auth'
+  component: 'auth',
 });
 
 // Initialize NextAuth with the configuration
@@ -27,8 +27,8 @@ logger.info({
   msg: 'NextAuth initialized successfully',
   correlationId,
   env: process.env.NODE_ENV,
-  component: 'auth'
+  component: 'auth',
 });
 
 // Export the handlers and the auth function
-export { handlers, auth, signIn, signOut }; 
+export { handlers, auth, signIn, signOut };

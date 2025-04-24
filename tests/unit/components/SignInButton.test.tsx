@@ -91,9 +91,9 @@ describe('SignInButton Component', () => {
 
     // Verify the correct function was called
     expect(signIn).toHaveBeenCalledTimes(1);
-    expect(signIn).toHaveBeenCalledWith('google', { 
+    expect(signIn).toHaveBeenCalledWith('google', {
       callbackUrl: `${mockOrigin}/dashboard`,
-      prompt: 'select_account'
+      prompt: 'select_account',
     });
   });
 

@@ -1,4 +1,4 @@
-import { test as setup, expect, Page } from '@playwright/test';
+import { test as setup, expect } from '@playwright/test';
 import path from 'path';
 import dotenv from 'dotenv';
 
@@ -23,7 +23,9 @@ setup.describe('Authentication Setup via Credentials Provider', () => {
 
     // --- Pre-checks ---
     if (!TEST_USER_EMAIL || !TEST_USER_PASSWORD) {
-      throw new Error('TEST_USER_EMAIL or TEST_USER_PASSWORD environment variables not set. Check .env.test');
+      throw new Error(
+        'TEST_USER_EMAIL or TEST_USER_PASSWORD environment variables not set. Check .env.test'
+      );
     }
     console.log(` Using Test Email: ${TEST_USER_EMAIL}`);
     // --- End Pre-checks ---
@@ -57,7 +59,7 @@ setup.describe('Authentication Setup via Credentials Provider', () => {
       console.log(' Clicking Sign In button...');
       await signInButton.click();
 
-      // Wait for navigation 
+      // Wait for navigation
       console.log(' Waiting for navigation after login...');
       // This pattern gives us more flexibility than Promise.all, which can be fragile
       await page.waitForNavigation({ timeout: 15000 });
@@ -92,10 +94,18 @@ setup.describe('Authentication Setup via Credentials Provider', () => {
         await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: 20000 }); // Increased timeout to 20s
       } catch (e) {
         // Take screenshot for debugging
-        const screenshotPath = path.join(__dirname, `../../test-results/auth-verification-failed-${Date.now()}.png`);
+        const screenshotPath = path.join(
+          __dirname,
+          `../../test-results/auth-verification-failed-${Date.now()}.png`
+        );
         await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.error('Login verification failed: User profile element not visible after 20 seconds.', e);
-        throw new Error(`Login verification failed. Unable to detect logged in state via [data-testid="user-profile"].`);
+        console.error(
+          'Login verification failed: User profile element not visible after 20 seconds.',
+          e
+        );
+        throw new Error(
+          `Login verification failed. Unable to detect logged in state via [data-testid="user-profile"].`
+        );
       }
 
       console.log('✅ Login verification successful - user appears to be logged in');
@@ -104,11 +114,13 @@ setup.describe('Authentication Setup via Credentials Provider', () => {
       await page.context().storageState({ path: STORAGE_STATE });
       console.log(`💾 Authentication state saved to ${STORAGE_STATE}`);
       console.log('🎉 Authentication setup via form-based login complete!');
-
     } catch (error) {
       console.error('❌ Authentication setup failed:', error);
       // Capture screenshot on failure
-      const screenshotPath = path.join(__dirname, `../../test-results/auth-setup-failure-${Date.now()}.png`);
+      const screenshotPath = path.join(
+        __dirname,
+        `../../test-results/auth-setup-failure-${Date.now()}.png`
+      );
       try {
         await page.screenshot({ path: screenshotPath, fullPage: true });
         console.log(`📸 Screenshot saved to ${screenshotPath}`);

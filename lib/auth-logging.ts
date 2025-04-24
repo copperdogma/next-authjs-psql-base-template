@@ -10,14 +10,8 @@
 // log messages related to auth events are checked as part of E2E test flows
 // where applicable.
 // =============================================================================
-import {
-  signIn,
-  signOut,
-  useSession,
-} from 'next-auth/react';
-import type {
-  SignInResponse,
-} from 'next-auth/react';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import type { SignInResponse } from 'next-auth/react';
 import { createContextLogger } from '@/lib/services/logger-service';
 import { v4 as uuidv4 } from 'uuid';
 import type { LoggerService } from '@/lib/interfaces/services';
@@ -208,7 +202,9 @@ async function _signOutRedirectFalse(
 ): Promise<SignOutResponse> {
   logger.debug('[signOutWithLogging] Calling signOut with redirect: false');
   // Define expected return type for redirect: false
-  interface SignOutRedirectFalseResponse { url: string; } // Kept local as it's specific
+  interface SignOutRedirectFalseResponse {
+    url: string;
+  } // Kept local as it's specific
   const result: SignOutRedirectFalseResponse = await signOut({
     ...options,
     redirect: false, // Explicitly false

@@ -60,14 +60,23 @@ function handleAuthorizeError(error: unknown, idTokenProvided: boolean, log: pin
     log.error({ uid: uidLogInfo, err: error.message }, 'Firebase authorization failed internally.');
     throw error; // Re-throw the specific error
   } else if (isFirebaseAdminError(error) && error.code?.startsWith('auth/')) {
-    log.error({ uid: uidLogInfo, firebaseErrorCode: error.code, err: error.message }, 'Firebase ID token verification failed.');
+    log.error(
+      { uid: uidLogInfo, firebaseErrorCode: error.code, err: error.message },
+      'Firebase ID token verification failed.'
+    );
     throw new FirebaseAuthorizationError(`Firebase token verification failed: ${error.message}`);
   } else if (error instanceof PrismaClientKnownRequestError) {
-    log.error({ uid: uidLogInfo, prismaErrorCode: error.code, err: error.message }, 'Prisma database error during authorization.');
+    log.error(
+      { uid: uidLogInfo, prismaErrorCode: error.code, err: error.message },
+      'Prisma database error during authorization.'
+    );
     throw new FirebaseAuthorizationError('Database error during authorization.');
   } else {
     const errorMessage = isFirebaseAdminError(error) ? error.message : 'An unknown error occurred';
-    log.error({ err: error, message: errorMessage }, 'Authorize failed due to an unexpected error.');
+    log.error(
+      { err: error, message: errorMessage },
+      'Authorize failed due to an unexpected error.'
+    );
     throw new FirebaseAuthorizationError(`An unexpected error occurred: ${errorMessage}`);
   }
 }
@@ -88,7 +97,11 @@ export const FirebaseTokenProvider = CredentialsProvider({
     if (!hasToken) {
       log.warn('Authorize failed: No valid idToken provided.');
       // Use the error handler for consistency, even though we know the cause
-      return handleAuthorizeError(new FirebaseAuthorizationError('No Firebase ID Token provided.'), false, log);
+      return handleAuthorizeError(
+        new FirebaseAuthorizationError('No Firebase ID Token provided.'),
+        false,
+        log
+      );
     }
 
     try {
@@ -102,4 +115,4 @@ export const FirebaseTokenProvider = CredentialsProvider({
 });
 
 // Optional export
-// export default FirebaseTokenProvider; 
+// export default FirebaseTokenProvider;

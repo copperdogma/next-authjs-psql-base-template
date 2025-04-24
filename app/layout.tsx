@@ -59,7 +59,7 @@ const themeScript = `
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Fetch the session on the server
   const session = await auth();
-  
+
   // Add logging to debug session state
   logger.info({
     msg: '[RootLayout] Fetched session from auth()',

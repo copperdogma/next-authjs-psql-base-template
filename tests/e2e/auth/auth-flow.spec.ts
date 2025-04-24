@@ -73,7 +73,6 @@ test.describe('Authentication Flow', () => {
       // const googleSignInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
       // await expect(googleSignInButton).toBeVisible({ timeout: 5000 });
       // console.log('✅ Login page successfully loaded with sign-in button visible');
-
     } catch (error) {
       console.error('Error in login page test (authenticated context):', error);
       // Take a screenshot on error

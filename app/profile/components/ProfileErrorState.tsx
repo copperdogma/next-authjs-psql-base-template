@@ -12,4 +12,4 @@ export default function ProfileErrorState() {
       </Typography>
     </Paper>
   );
-} 
+}

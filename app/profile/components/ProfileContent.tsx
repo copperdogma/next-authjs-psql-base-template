@@ -18,11 +18,11 @@ export default function ProfileContent() {
   // console.log(`[E2E DEBUG] ProfileContent - Session Data: ${JSON.stringify(session, null, 2)}`);
   // END TEMPORARY E2E DEBUG LOGGING
 
-  profileLogger.debug('[ProfileContent] useSession status and data', { 
-    status, 
-    hasSessionData: !!session, 
-    hasUserData: !!session?.user, 
-    userId: session?.user?.id 
+  profileLogger.debug('[ProfileContent] useSession status and data', {
+    status,
+    hasSessionData: !!session,
+    hasUserData: !!session?.user,
+    userId: session?.user?.id,
   });
 
   if (status === 'loading') {
