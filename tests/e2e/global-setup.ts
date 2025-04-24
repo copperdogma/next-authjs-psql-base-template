@@ -22,10 +22,6 @@ if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
   process.env.FIREBASE_AUTH_EMULATOR_HOST =
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
 }
-if (!process.env.FIRESTORE_EMULATOR_HOST) {
-  process.env.FIRESTORE_EMULATOR_HOST =
-    process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
-}
 
 let adminApp: admin.app.App;
 try {
@@ -56,11 +52,9 @@ const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com';
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'Test123!';
 const TEST_USER_DISPLAY_NAME = process.env.TEST_USER_DISPLAY_NAME || 'Test User';
 const AUTH_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
-const FIRESTORE_EMULATOR_HOST = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS; // Get path from env
 
 const AUTH_EMULATOR_URL = `http://${AUTH_EMULATOR_HOST}`;
-const FIRESTORE_EMULATOR_URL = `http://${FIRESTORE_EMULATOR_HOST}`;
 
 // Utility to wait for a port to be open
 function waitForPort(port: number, host: string, timeout = 90000): Promise<void> {
@@ -132,35 +126,13 @@ async function _clearAuthEmulatorData() {
     //   `⚠️ [clearTestData:_clearAuthEmulatorData] Could not clear Auth emulator (project: ${projectIdForEmulator}): ${error.message}`
     // );
     if (error.response) {
-    //   console.warn(
-    //     `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
-    //   );
+      //   console.warn(
+      //     `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
+      //   );
     }
   }
 }
 
-async function _clearFirestoreEmulatorData() {
-  try {
-    const clearFirestoreUrl = `${FIRESTORE_EMULATOR_URL}/emulator/v1/projects/${projectIdForEmulator}/databases/(default)/documents`;
-    // console.log(
-    //   `[clearTestData:_clearFirestoreEmulatorData] Attempting DELETE ${clearFirestoreUrl}`
-    // );
-    const response = await fetch(clearFirestoreUrl, { method: 'DELETE' });
-    if (!response.ok) {
-      throw new Error(`Failed to clear firestore emulator: ${response.status} ${response.statusText}`);
-    }
-    console.log('✅ [clearTestData:_clearFirestoreEmulatorData] Firestore emulator data cleared.');
-  } catch (error: any) {
-    // console.warn(
-    //   `⚠️ [clearTestData:_clearFirestoreEmulatorData] Could not clear Firestore emulator (project: ${projectIdForEmulator}): ${error.message}`
-    // );
-    if (error.response) {
-    //   console.warn(
-    //     `   Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
-    //   );
-    }
-  }
-}
 // --- End Helper Functions for clearTestData ---
 
 // Clear emulator data AND Prisma data
@@ -172,7 +144,6 @@ async function clearTestData() {
   // Use helper functions
   await _clearPrismaData();
   await _clearAuthEmulatorData();
-  await _clearFirestoreEmulatorData();
 
   console.timeEnd(timerLabel); // End timer
 }
@@ -271,35 +242,48 @@ function logConfigDetails() {
   console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
   console.log(`  TEST_USER_EMAIL: ${TEST_USER_EMAIL}`);
   console.log(`  FIREBASE_PROJECT_ID: ${projectIdForEmulator}`);
-  console.log(`  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
-  console.log(`  NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`);
+  console.log(`  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: ${AUTH_EMULATOR_HOST}`);
   console.log(`  NEXT_PUBLIC_USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
   console.log(`  PLAYWRIGHT_TEST_BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL}`);
   console.log(`  ALLOW_TEST_ENDPOINTS: ${process.env.ALLOW_TEST_ENDPOINTS}`);
   console.log(`  GOOGLE_APPLICATION_CREDENTIALS: ${SERVICE_ACCOUNT_PATH ? 'Set' : 'Not Set'}`);
+  console.log('=========================================================');
 }
 
-// Wait for emulators
+/**
+ * Starts and waits for emulators if they are not already running (detected by env var).
+ */
 async function startAndWaitForEmulators() {
-  console.log('⏳ Waiting for emulators to be ready (started via firebase emulators:exec)...');
+  const timerLabel = '[startAndWaitForEmulators]';
+  console.time(timerLabel);
+
+  // Firebase emulators are started externally by `firebase emulators:exec` in test:e2e script
+  // We just need to wait for them to be ready
+  console.log(
+    '⏳ Waiting for emulators to be ready (started via firebase emulators:exec).'
+  );
+
   try {
-    await Promise.all([
-      waitForPort(parseInt(AUTH_EMULATOR_HOST.split(':')[1], 10), AUTH_EMULATOR_HOST.split(':')[0]),
-      waitForPort(parseInt(FIRESTORE_EMULATOR_HOST.split(':')[1], 10), FIRESTORE_EMULATOR_HOST.split(':')[0]),
-    ]);
+    const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1] || '9099', 10);
+    const authHost = AUTH_EMULATOR_HOST.split(':')[0] || 'localhost';
+
+    await waitForPort(authPort, authHost);
+    // Firestore port wait removed
     console.log('✅ Firebase Emulators appear to be ready.');
-    // Add a small delay just in case services need a moment after ports open
-    console.log('⏳ Short delay for service initialization...');
-    await new Promise(resolve => setTimeout(resolve, 5000)); // 5-second delay
   } catch (error) {
     console.error('❌ Error waiting for emulators:', error);
-    throw error;
+    throw error; // Re-throw error to fail the setup
   }
+
+  // Add a small delay to ensure services are fully initialized after ports are open
+  console.log('⏳ Short delay for service initialization...');
+  await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+  console.timeEnd(timerLabel); // End timer
 }
 
 // Main Global Setup Function (MODIFIED)
 async function globalSetup() {
-  console.log('\n=== Running Playwright Global Setup (Timestamp:', new Date().toISOString() , ') ===');
+  console.log('\n=== Running Playwright Global Setup (Timestamp:', new Date().toISOString(), ') ===');
   const timerLabel = '[globalSetup:total]';
   console.time(timerLabel);
 

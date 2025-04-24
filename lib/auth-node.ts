@@ -255,6 +255,7 @@ export const authConfigNode: NextAuthConfig = {
   pages: {
     signIn: '/login', // Redirect users to custom login page
   },
+  debug: false, // Explicitly set debug to false for all environments
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfigNode); 

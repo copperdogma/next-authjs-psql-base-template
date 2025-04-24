@@ -13,14 +13,12 @@ const dotenv = require('dotenv');
 // Load environment variables from .env.test
 dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
 
-const FIRESTORE_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
 
 // Use the correct project ID consistent with firebase.json
 const PROJECT_ID = 'next-firebase-base-template';
 
 // Emulator endpoints for clearing data
-const FIRESTORE_CLEAR_URL = `http://${FIRESTORE_HOST}/emulator/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const AUTH_CLEAR_URL = `http://${AUTH_HOST}/emulator/v1/projects/${PROJECT_ID}/accounts`;
 
 // Helper function to clear a specific emulator service
@@ -44,7 +42,6 @@ async function clearEmulatorData() {
 
   try {
     // Clear individual services
-    await clearEmulatorService('Firestore', FIRESTORE_CLEAR_URL);
     await clearEmulatorService('Auth', AUTH_CLEAR_URL);
 
     console.log('✅ Emulator data clearing complete');

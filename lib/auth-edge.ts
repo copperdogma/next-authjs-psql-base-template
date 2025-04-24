@@ -201,7 +201,7 @@ export const authConfigEdge: NextAuthConfig = {
     }
   },
   // Debug flag can be useful
-  debug: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  debug: false,
   // Pages might be needed if redirects happen from middleware
   pages: {
     signIn: '/login',
