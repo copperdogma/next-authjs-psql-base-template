@@ -3,6 +3,8 @@ import { initializeFirebaseAdminApp } from '@/lib/firebase-admin'; // Corrected 
 import { prisma } from '@/lib/prisma'; // Corrected path
 import { logger } from '@/lib/logger'; // Corrected path
 import type { User as NextAuthUser } from 'next-auth'; // Import NextAuth User type
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import * as pino from 'pino'; // Add pino import
 
 // Custom error class to mimic CredentialsSignin error structure
 class FirebaseAuthorizationError extends Error {
@@ -15,6 +17,61 @@ class FirebaseAuthorizationError extends Error {
   }
 }
 
+// Verifies token, finds user, and maps to NextAuthUser
+async function verifyAndFetchUser(idToken: string, log: pino.Logger): Promise<NextAuthUser> {
+  // 1. Verify the ID token
+  const adminApp = initializeFirebaseAdminApp();
+  const decodedToken = await adminApp.auth().verifyIdToken(idToken);
+  const uid = decodedToken.uid;
+  log.info({ uid }, 'Firebase ID token verified successfully.');
+
+  // 2. Find the corresponding user in the Prisma database
+  const prismaUser = await prisma.user.findUnique({
+    where: { id: uid },
+  });
+
+  if (!prismaUser) {
+    log.error({ uid }, 'Authorize failed: User found in Firebase Auth but not in Prisma DB.');
+    throw new FirebaseAuthorizationError('User not found in database.');
+  }
+
+  log.info({ userId: prismaUser.id }, 'User found in Prisma DB.');
+
+  // 3. Return the mapped user object
+  return {
+    id: prismaUser.id,
+    name: prismaUser.name,
+    email: prismaUser.email,
+    image: prismaUser.image,
+    role: prismaUser.role,
+  };
+}
+
+// Handles errors during the authorization process
+function handleAuthorizeError(error: unknown, idTokenProvided: boolean, log: pino.Logger): never {
+  const uidLogInfo = idTokenProvided ? 'token_provided' : 'no_token';
+
+  // Type guard for Firebase Admin SDK errors
+  const isFirebaseAdminError = (e: unknown): e is { code?: string; message: string } => {
+    return typeof e === 'object' && e !== null && 'message' in e;
+  };
+
+  if (error instanceof FirebaseAuthorizationError) {
+    log.error({ uid: uidLogInfo, err: error.message }, 'Firebase authorization failed internally.');
+    throw error; // Re-throw the specific error
+  } else if (isFirebaseAdminError(error) && error.code?.startsWith('auth/')) {
+    log.error({ uid: uidLogInfo, firebaseErrorCode: error.code, err: error.message }, 'Firebase ID token verification failed.');
+    throw new FirebaseAuthorizationError(`Firebase token verification failed: ${error.message}`);
+  } else if (error instanceof PrismaClientKnownRequestError) {
+    log.error({ uid: uidLogInfo, prismaErrorCode: error.code, err: error.message }, 'Prisma database error during authorization.');
+    throw new FirebaseAuthorizationError('Database error during authorization.');
+  } else {
+    const errorMessage = isFirebaseAdminError(error) ? error.message : 'An unknown error occurred';
+    log.error({ err: error, message: errorMessage }, 'Authorize failed due to an unexpected error.');
+    throw new FirebaseAuthorizationError(`An unexpected error occurred: ${errorMessage}`);
+  }
+}
+
 export const FirebaseTokenProvider = CredentialsProvider({
   id: 'firebase-token', // Unique ID for this provider
   name: 'Firebase Token',
@@ -23,68 +80,23 @@ export const FirebaseTokenProvider = CredentialsProvider({
     idToken: { label: 'Firebase ID Token', type: 'text' },
   },
   // Return type should be compatible with NextAuth User
-  // eslint-disable-next-line complexity
   async authorize(credentials): Promise<NextAuthUser | null> {
     const log = logger.child({ provider: 'FirebaseTokenProvider' });
     const idToken = credentials?.idToken;
+    const hasToken = !!idToken && typeof idToken === 'string';
 
-    if (!idToken || typeof idToken !== 'string') { // Add type check for idToken
+    if (!hasToken) {
       log.warn('Authorize failed: No valid idToken provided.');
-      throw new FirebaseAuthorizationError('No Firebase ID Token provided.');
+      // Use the error handler for consistency, even though we know the cause
+      return handleAuthorizeError(new FirebaseAuthorizationError('No Firebase ID Token provided.'), false, log);
     }
 
     try {
-      // 1. Verify the ID token using Firebase Admin SDK (against emulator)
-      const adminApp = initializeFirebaseAdminApp(); // Get initialized admin app
-      const decodedToken = await adminApp.auth().verifyIdToken(idToken);
-      const uid = decodedToken.uid;
-      log.info({ uid }, 'Firebase ID token verified successfully.');
-
-      // 2. Find the corresponding user in the Prisma database
-      const prismaUser = await prisma.user.findUnique({
-        where: { id: uid },
-      });
-
-      if (!prismaUser) {
-        log.error({ uid }, 'Authorize failed: User found in Firebase Auth but not in Prisma DB. Global setup might be incomplete.');
-         throw new FirebaseAuthorizationError('User not found in database. Ensure test setup is complete.');
-      }
-
-      log.info({ userId: prismaUser.id }, 'User found in Prisma DB.');
-      // 3. Return the user object mapping fields to NextAuth User type
-      //    Ensure all required fields for NextAuth User are present.
-      //    NextAuth User typically requires id, name, email, image.
-      return {
-        id: prismaUser.id,
-        name: prismaUser.name,
-        email: prismaUser.email,
-        image: prismaUser.image,
-        // Assign role directly from Prisma user object
-        role: prismaUser.role,
-      };
-
+      // Use the helper function for the core logic
+      return await verifyAndFetchUser(idToken as string, log);
     } catch (error: unknown) {
-      const uidFromCredentials = typeof credentials?.idToken === 'string' ? 'token_provided' : 'no_token'; // Avoid logging potentially sensitive token
-
-      // Type guard for Firebase Admin SDK errors (often have a .code property)
-      const isFirebaseAdminError = (e: unknown): e is { code?: string; message: string } => {
-        return typeof e === 'object' && e !== null && 'message' in e;
-      };
-
-      // Catch specific Firebase errors if possible, otherwise log the generic error
-      if (error instanceof FirebaseAuthorizationError) {
-          log.error({ uid: uidFromCredentials, err: error.message }, 'Firebase authorization failed.');
-          throw error; // Re-throw the custom error
-      } else if (isFirebaseAdminError(error) && error.code?.startsWith('auth/')) {
-        // Handle Firebase Admin SDK verification errors
-        log.error({ uid: uidFromCredentials, firebaseErrorCode: error.code, err: error.message }, 'Firebase ID token verification failed.');
-         throw new FirebaseAuthorizationError(`Firebase token verification failed: ${error.message}`);
-      } else {
-        // Handle other errors (e.g., Prisma connection issues, or unknown structure)
-         const errorMessage = isFirebaseAdminError(error) ? error.message : 'An unknown error occurred';
-        log.error({ err: error, message: errorMessage }, 'Authorize failed due to an unexpected error.');
-        throw new FirebaseAuthorizationError(`An unexpected error occurred during authorization: ${errorMessage}`);
-      }
+      // Use the error handling helper function
+      return handleAuthorizeError(error, true, log);
     }
   },
 });

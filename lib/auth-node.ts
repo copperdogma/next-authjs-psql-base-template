@@ -7,6 +7,73 @@ import { defaultUserService } from './services/user-service'; // Adjust path if 
 import { logger } from './logger'; // Import the shared logger
 import { UserRole, User } from '.prisma/client';
 
+// Helper function to attempt creating the test user with a specific UID
+async function createTestUserWithUid(email: string, testUserUid: string): Promise<User | null> {
+  logger.info({ msg: 'Attempting to create new test user with specified UID', testUserUid });
+  try {
+    const newUser = await prisma.user.create({
+      data: {
+        id: testUserUid,
+        name: 'Test User',
+        email: email,
+        emailVerified: new Date(),
+        role: 'USER'
+      }
+    });
+    logger.info({ msg: 'Created new test user with specified UID', userId: newUser.id });
+    return newUser;
+  } catch (createError) {
+    logger.error({
+      msg: 'Failed to create test user with specified UID',
+      error: createError,
+      testUserUid
+    });
+    return null; // Failed to create
+  }
+}
+
+// Helper function to find or create the test user for E2E testing
+async function findOrCreateTestUser(email: string): Promise<User | null> {
+  try {
+    // 1. Attempt to find the user by email first
+    let user = await defaultUserService.findUserByEmail(email);
+    if (user) {
+      logger.info({ msg: 'Found test user by email', userId: user.id });
+      return user;
+    }
+
+    logger.warn({
+      msg: 'Test user not found by email, attempting lookup/creation by UID',
+      email
+    });
+
+    // 2. Check for TEST_USER_UID
+    const testUserUid = process.env.TEST_USER_UID;
+    if (!testUserUid) {
+      logger.error({ msg: 'TEST_USER_UID not set, cannot proceed with UID lookup/creation.' });
+      return null;
+    }
+
+    // 3. Try finding by UID
+    user = await prisma.user.findUnique({ where: { id: testUserUid } });
+    if (user) {
+      logger.info({ msg: 'Found test user by UID', userId: user.id });
+      return user;
+    }
+
+    // 4. Try creating the user with the specified UID
+    return await createTestUserWithUid(email, testUserUid);
+
+  } catch (error) {
+    logger.error({
+      msg: 'Error during user lookup/creation in E2E Test Login',
+      error,
+      email
+    });
+    return null;
+  }
+}
+
 // Extend session to include user ID and role
 declare module 'next-auth' {
   interface Session extends DefaultSession {
@@ -43,8 +110,15 @@ export const authConfigNode: NextAuthConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials): Promise<User | null> {
-        // Allow E2E test login in test environment or when E2E test flag is set
         const isTestEnv = process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true';
+
+        if (!isTestEnv) {
+          logger.warn({
+            msg: 'E2E Test Login not allowed in current environment',
+            nodeEnv: process.env.NODE_ENV
+          });
+          return null;
+        }
 
         logger.info({
           msg: 'E2E Test Login authorize callback invoked',
@@ -53,98 +127,41 @@ export const authConfigNode: NextAuthConfig = {
           isE2ETestEnv: process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV
         });
 
-        if (isTestEnv) {
-          const email = credentials?.email as string;
-          const password = credentials?.password as string;
+        const email = credentials?.email as string;
+        const password = credentials?.password as string;
 
-          logger.debug({
-            msg: 'E2E Test Login credentials received',
-            email,
-            testEmail: process.env.TEST_USER_EMAIL,
-            hasPassword: !!password,
-            hasTestPassword: !!process.env.TEST_USER_PASSWORD,
-            validEmail: email === process.env.TEST_USER_EMAIL,
-            validPassword: password === process.env.TEST_USER_PASSWORD
-          });
+        logger.debug({
+          msg: 'E2E Test Login credentials received',
+          email,
+          testEmail: process.env.TEST_USER_EMAIL,
+          hasPassword: !!password,
+          hasTestPassword: !!process.env.TEST_USER_PASSWORD,
+          validEmail: email === process.env.TEST_USER_EMAIL,
+          validPassword: password === process.env.TEST_USER_PASSWORD
+        });
 
-          if (
-            email === process.env.TEST_USER_EMAIL &&
-            password === process.env.TEST_USER_PASSWORD
-          ) {
-            try {
-              // Attempt to find the user by email
-              const user = await defaultUserService.findUserByEmail(email);
+        const isValidCredentials =
+          email === process.env.TEST_USER_EMAIL &&
+          password === process.env.TEST_USER_PASSWORD;
 
-              if (!user) {
-                logger.error({
-                  msg: 'Test user not found in database, attempting to create now',
-                  email
-                });
-
-                // If user not found in Prisma but credentials are valid,
-                // check if we can find by TEST_USER_UID from .env.test
-                const testUserUid = process.env.TEST_USER_UID;
-                if (testUserUid) {
-                  const userById = await prisma.user.findUnique({
-                    where: { id: testUserUid }
-                  });
-
-                  if (userById) {
-                    logger.info({
-                      msg: 'Found test user by UID instead of email',
-                      userId: userById.id
-                    });
-                    return userById;
-                  }
-
-                  // Try to create the user with the specified UID
-                  try {
-                    const newUser = await prisma.user.create({
-                      data: {
-                        id: testUserUid,
-                        name: 'Test User',
-                        email: email,
-                        emailVerified: new Date(),
-                        role: 'USER'
-                      }
-                    });
-                    logger.info({ msg: 'Created new test user with specified UID', userId: newUser.id });
-                    return newUser;
-                  } catch (createError) {
-                    logger.error({
-                      msg: 'Failed to create test user with specified UID',
-                      error: createError,
-                      testUserUid
-                    });
-                  }
-                }
-
-                return null;
-              }
-
-              logger.info({ msg: 'E2E Test Login successful', userId: user.id });
-              return user;
-            } catch (error) {
-              logger.error({
-                msg: 'Error during user lookup in E2E Test Login',
-                error,
-                email
-              });
-              return null;
-            }
-          } else {
-            logger.warn({
-              msg: 'Invalid E2E test credentials provided',
-              email
-            });
-          }
-        } else {
+        if (!isValidCredentials) {
           logger.warn({
-            msg: 'E2E Test Login not allowed in current environment',
-            nodeEnv: process.env.NODE_ENV
+            msg: 'Invalid E2E test credentials provided',
+            email
           });
+          return null;
         }
-        return null;
+
+        // Call the helper function (now defined outside)
+        const user = await findOrCreateTestUser(email);
+
+        if (user) {
+          logger.info({ msg: 'E2E Test Login successful', userId: user.id });
+          return user;
+        } else {
+          logger.error({ msg: 'E2E Test Login failed: Could not find or create test user.', email });
+          return null;
+        }
       },
     }),
   ],

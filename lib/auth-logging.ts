@@ -129,6 +129,42 @@ export function logSignInError(params: SignInErrorParams): void {
   });
 }
 
+// --- Internal Helpers for signInWithLogging ---
+
+// Handles signIn with redirect: false
+async function _signInRedirectFalse(
+  provider: string | undefined,
+  options: Parameters<typeof signIn>[1],
+  loggingParams: SignInLoggingParams
+): Promise<SignInResponse> {
+  const result: SignInResponse = await signIn(provider, {
+    ...options,
+    redirect: false, // Explicitly false
+    prompt: 'select_account',
+  });
+  if (result?.error) {
+    logSignInFailure({ ...loggingParams, error: result.error });
+  } else if (result?.ok) {
+    logSignInSuccess(loggingParams);
+  }
+  return result;
+}
+
+// Handles signIn with redirect: true (or default)
+async function _signInRedirectTrue(
+  provider: string | undefined,
+  options: Parameters<typeof signIn>[1],
+  loggingParams: SignInLoggingParams
+): Promise<void> {
+  const redirectOption = options?.redirect === undefined ? undefined : true;
+  await signIn(provider, {
+    ...options,
+    redirect: redirectOption,
+    prompt: 'select_account',
+  });
+  logSignInSuccess(loggingParams);
+}
+
 /**
  * Wrapper for NextAuth's signIn function with enhanced logging
  */
@@ -140,6 +176,7 @@ export const signInWithLogging = async (
   const startTime = Date.now();
   const logger = createContextLogger('auth');
   const clientInfo = extractClientInfo(options, false);
+  const loggingParams: SignInLoggingParams = { logger, provider, correlationId, startTime };
 
   logger.info({
     msg: 'Sign-in attempt started',
@@ -149,39 +186,63 @@ export const signInWithLogging = async (
   });
 
   try {
-    // Handle redirect: false case
     if (options?.redirect === false) {
-      const result: SignInResponse = await signIn(provider, {
-        ...options,
-        redirect: false, // Explicitly false
-        prompt: 'select_account', // Force account selection every time
-      });
-      // Log result based on redirect: false response
-      if (result?.error) {
-        logSignInFailure({ logger, provider, correlationId, startTime, error: result.error });
-      } else if (result?.ok) {
-        logSignInSuccess({ logger, provider, correlationId, startTime });
-      }
-      return result; // Return SignInResponse
+      return await _signInRedirectFalse(provider, options, loggingParams);
     } else {
-      // Handle redirect: true (or default) case
-      // Ensure redirect is explicitly true or undefined for the void promise overload
-      const redirectOption = options?.redirect === undefined ? undefined : true;
-      await signIn(provider, {
-        ...options,
-        redirect: redirectOption,
-        prompt: 'select_account', // Force account selection every time
-      });
-      // Log success (cannot log result object as it's void)
-      logSignInSuccess({ logger, provider, correlationId, startTime });
-      // No return for void
-      return;
+      return await _signInRedirectTrue(provider, options, loggingParams);
     }
   } catch (error) {
-    logSignInError({ logger, provider, correlationId, startTime, error });
+    logSignInError({ ...loggingParams, error });
     throw error; // Re-throw error after logging
   }
 };
+
+// --- Internal Helpers for signOutWithLogging ---
+
+// Handles signOut with redirect: false
+async function _signOutRedirectFalse(
+  options: Parameters<typeof signOut>[0],
+  logger: LoggerService,
+  correlationId: string,
+  startTime: number
+): Promise<SignOutResponse> {
+  logger.debug('[signOutWithLogging] Calling signOut with redirect: false');
+  // Define expected return type for redirect: false
+  interface SignOutRedirectFalseResponse { url: string; } // Kept local as it's specific
+  const result: SignOutRedirectFalseResponse = await signOut({
+    ...options,
+    redirect: false, // Explicitly false
+  });
+  const duration = Date.now() - startTime;
+  logger.info({
+    msg: 'Sign-out successful (redirect: false)',
+    correlationId,
+    duration,
+    resultUrl: result?.url,
+  });
+  return result;
+}
+
+// Handles signOut with redirect: true (or default)
+async function _signOutRedirectTrue(
+  options: Parameters<typeof signOut>[0],
+  logger: LoggerService,
+  correlationId: string,
+  startTime: number
+): Promise<void> {
+  logger.debug('[signOutWithLogging] Calling signOut with redirect: true (default)');
+  const redirectOption = options?.redirect === undefined ? undefined : true;
+  await signOut({
+    ...options,
+    redirect: redirectOption,
+  });
+  const duration = Date.now() - startTime;
+  logger.info({
+    msg: 'Sign-out successful (redirect: true/default)',
+    correlationId,
+    duration,
+  });
+}
 
 /**
  * Wrapper for NextAuth's signOut function with enhanced logging
@@ -202,42 +263,10 @@ export const signOutWithLogging = async (
   });
 
   try {
-    // Handle redirect: false case
     if (options?.redirect === false) {
-       logger.debug('[signOutWithLogging] Calling signOut with redirect: false');
-       // Define expected return type for redirect: false
-       interface SignOutRedirectFalseResponse { url: string; }
-       const result: SignOutRedirectFalseResponse = await signOut({
-        ...options,
-        redirect: false, // Explicitly false
-       });
-       // Log successful sign-out (can log result URL)
-       const duration = Date.now() - startTime;
-       logger.info({
-        msg: 'Sign-out successful (redirect: false)',
-        correlationId,
-        duration,
-        resultUrl: result?.url,
-       });
-       return result; // Return response object
+      return await _signOutRedirectFalse(options, logger, correlationId, startTime);
     } else {
-      // Handle redirect: true (or default) case
-      logger.debug('[signOutWithLogging] Calling signOut with redirect: true (default)');
-      // Ensure redirect is explicitly true or undefined for the void promise overload
-      const redirectOption = options?.redirect === undefined ? undefined : true;
-      await signOut({
-        ...options,
-        redirect: redirectOption,
-      });
-      // Log successful sign-out (no result object)
-      const duration = Date.now() - startTime;
-      logger.info({
-        msg: 'Sign-out successful (redirect: true/default)',
-        correlationId,
-        duration,
-      });
-      // No return for void
-      return;
+      return await _signOutRedirectTrue(options, logger, correlationId, startTime);
     }
   } catch (error) {
     // Log any errors
@@ -253,12 +282,12 @@ export const signOutWithLogging = async (
   }
 };
 
-// Re-export original hooks/types if needed elsewhere
-export { useSession };
-export type { Session } from 'next-auth';
-
-// Define SignOutResponse interface if not already present or imported
-// This matches the expected structure for redirect: false
+// Minimal type definition for SignOutResponse when redirect is false
+// Needed for the wrapper function signature
 export interface SignOutResponse {
   url: string;
 }
+
+// Re-export original hooks/types if needed elsewhere
+export { useSession };
+export type { Session } from 'next-auth';

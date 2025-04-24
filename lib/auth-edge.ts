@@ -40,6 +40,12 @@ const API_AUTH_PREFIX = '/api/auth';
 const API_TEST_PREFIX = '/api/test'; // Keep test API prefix allowed if needed by other flows
 const DEFAULT_LOGIN_REDIRECT = '/dashboard';  // Changed to dashboard from '/'
 
+// --- Route Type Checkers ---
+const isPublicRoute = (pathname: string): boolean => PUBLIC_ROUTES.includes(pathname);
+const isApiRoute = (pathname: string): boolean =>
+  pathname.startsWith(API_AUTH_PREFIX) || pathname.startsWith(API_TEST_PREFIX);
+const isAuthRoute = (pathname: string): boolean => AUTH_ROUTES.includes(pathname);
+
 // =============================================================================
 // Environment Variable Check for Edge Runtime
 // =============================================================================
@@ -101,75 +107,47 @@ export const authConfigEdge: NextAuthConfig = {
     // --- authorized callback (Edge-specific logic) ---
     async authorized({ auth, request }) {
       const { nextUrl } = request;
-
-      // First try auth from middleware
-      const isLoggedIn = !!auth; // Check if auth exists at all
-
-      // Log what we have in auth
-      logger.debug({
-        msg: '[Auth Edge] authorized callback data',
-        hasAuth: !!auth,
-        hasUser: !!auth?.user,
-        userId: auth?.user?.id || (auth?.user as { sub?: string })?.sub,
-        path: nextUrl.pathname
-      });
-
-      // Extract user ID for logging
-      let userId;
-      if (auth?.user && auth.user.id) {
-        userId = auth.user.id;
-      } else if (auth?.user && 'sub' in auth.user) {
-        userId = (auth.user as { sub: string }).sub;
-      }
-
       const pathname = nextUrl.pathname;
-
-      // Create log context
+      const isLoggedIn = !!auth; // Check if auth exists
+      const userId = auth?.user?.id || (auth?.user as { sub?: string })?.sub;
       const logContext = createLogContext(request, isLoggedIn, userId);
 
       logger.debug('[Auth Edge Callback] authorized check running', logContext);
 
-      // Handle special routes first (APIs, public routes, auth routes)
-      // Check if the route is public or an API route
-      if (
-        PUBLIC_ROUTES.includes(pathname) ||
-        pathname.startsWith(API_AUTH_PREFIX) ||
-        pathname.startsWith(API_TEST_PREFIX)
-      ) {
-        logger.debug('[Auth Edge] Allowing public or API route', { pathname });
+      // 1. Allow Public and API routes unconditionally
+      if (isPublicRoute(pathname) || isApiRoute(pathname)) {
+        logger.debug('[Auth Edge] Allowing public or API route', { ...logContext, pathname });
         return true;
       }
 
-      // Handle login route - redirect authenticated users to dashboard
-      if (AUTH_ROUTES.includes(pathname)) {
+      // 2. Handle Auth routes (e.g., /login)
+      if (isAuthRoute(pathname)) {
         if (isLoggedIn) {
-          logger.debug('[Auth Edge] Redirecting authenticated user from auth route to dashboard');
+          // Redirect authenticated users away from login/register to dashboard
+          logger.debug('[Auth Edge] Redirecting authenticated user from auth route', logContext);
           return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl.origin));
         }
+        // Allow unauthenticated users to access auth routes
+        logger.debug('[Auth Edge] Allowing unauthenticated access to auth route', logContext);
         return true;
       }
 
-      // Handle protected routes - if not logged in, return false to trigger redirect
+      // 3. Handle Protected routes
       if (!isLoggedIn) {
-        // Use the logContext directly and add the specific message
+        // User is not logged in, redirect to login
         logger.info({
-          ...logContext, // Spread context first (contains pathname, userId etc.)
-          msg: '[Auth Edge Callback] Unauthorized access to protected route, redirecting...', // Add specific message
+          ...logContext,
+          msg: '[Auth Edge Callback] Unauthorized access to protected route, redirecting...',
         });
-
-        // Explicitly return redirect instead of false for testing
-        // return false; 
-        return Response.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(nextUrl.pathname)}`, nextUrl.origin));
+        // Redirect to login, preserving the intended destination
+        return Response.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(pathname)}`, nextUrl.origin));
       }
 
-      // User is authenticated and trying to access a protected route
+      // 4. User is logged in and accessing a protected route - allow access
       logger.debug({
-        msg: '[Auth Edge] Allowing authenticated access to protected route',
-        // userId,
-        // pathname
-        ...logContext // Use context here too for consistency
+        ...logContext,
+        msg: '[Auth Edge] Allowing authenticated access to protected route'
       });
-
       return true;
     },
 
@@ -177,23 +155,14 @@ export const authConfigEdge: NextAuthConfig = {
     async session({ session, token }) {
       // Use simplified logging for Edge
       logger.debug({ msg: '[Auth Edge] Start session callback', hasTokenSub: !!token?.sub });
-      if (token?.sub) {
-        session.user.id = token.sub;
-      }
-      if (token?.role) {
-        // Ensure role is treated as the UserRole type
-        session.user.role = token.role as UserRole;
-      }
-      // Add other fields if needed, ensure they exist on token
-      if (token?.name) {
-        session.user.name = token.name;
-      }
-      if (token?.email) {
-        session.user.email = token.email;
-      }
-      // Potentially add image if present on token
-      if (token?.picture) {
-        session.user.image = token.picture;
+
+      // Assign properties from token to session.user if they exist
+      if (token) {
+        if (token.sub) session.user.id = token.sub;
+        if (token.role) session.user.role = token.role as UserRole;
+        if (token.name) session.user.name = token.name;
+        if (token.email) session.user.email = token.email;
+        if (token.picture) session.user.image = token.picture; // Ensure image field matches DefaultSession or extension
       }
 
       logger.debug({
