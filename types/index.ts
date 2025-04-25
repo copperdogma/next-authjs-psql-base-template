@@ -45,12 +45,8 @@ export enum HttpStatusCode {
   SERVICE_UNAVAILABLE = 503,
 }
 
-// User Role enum
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-  GUEST = 'guest',
-}
+// Re-export UserRole directly from Prisma client to ensure consistency
+export { UserRole } from '@prisma/client';
 
 // Database types
 export interface DatabaseConfig {
