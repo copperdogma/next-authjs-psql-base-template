@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { clientLogger } from '@/lib/client-logger';
 
 // Recovery timeout in milliseconds
 const SESSION_RECOVERY_DELAY_MS = 3000;
@@ -25,7 +26,7 @@ export default function SessionErrorHandler({
         error instanceof ErrorEvent &&
         (error.message?.includes('session') || error.message?.includes('auth'))
       ) {
-        console.error('Session initialization error:', error);
+        clientLogger.error('Session initialization error', { error });
         setSessionError(error instanceof Error ? error : new Error('Unknown session error'));
       }
     };
@@ -36,7 +37,7 @@ export default function SessionErrorHandler({
     // The unhandledrejection handler looks good as it already checks for session/auth keywords
     window.addEventListener('unhandledrejection', event => {
       if (event.reason?.message?.includes('session') || event.reason?.message?.includes('auth')) {
-        console.error('Unhandled session promise rejection:', event.reason);
+        clientLogger.error('Unhandled session promise rejection', { reason: event.reason });
         setSessionError(event.reason);
       }
     });
@@ -50,7 +51,7 @@ export default function SessionErrorHandler({
   // Handle session recovery if there's an error
   useEffect(() => {
     if (sessionError) {
-      console.error('Attempting to recover from session error');
+      clientLogger.error('Attempting to recover from session error');
       const timer = setTimeout(() => {
         // Try to refresh the page after a delay
         router.refresh();

@@ -29,6 +29,7 @@ interface FirebaseAuthErrorResponse {
 
 // Helper function to call the Firebase Auth REST API
 async function callFirebaseAuthApi(payload: object): Promise<FirebaseAuthSuccessResponse> {
+  const logger = createContextLogger('callFirebaseAuthApi');
   // Use specific type
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   if (!apiKey) {
@@ -51,14 +52,14 @@ async function callFirebaseAuthApi(payload: object): Promise<FirebaseAuthSuccess
     if (!response.ok || 'error' in data) {
       const errorData = data as FirebaseAuthErrorResponse;
       const errorMessage = errorData?.error?.message || 'Unknown Firebase auth error';
-      console.error('Firebase Auth API Error:', errorData); // Log the full error object
+      logger.error({ msg: 'Firebase Auth API Error', errorData });
       throw new Error(`Firebase Auth Error: ${errorMessage}`);
     }
 
     return data as FirebaseAuthSuccessResponse; // Contains idToken, refreshToken, expiresIn, localId, etc.
   } catch (error) {
     // Handle network errors or unexpected issues
-    console.error('Error calling Firebase Auth API:', error);
+    logger.error({ msg: 'Error calling Firebase Auth API', error });
     throw new Error(
       `Failed to verify password: ${error instanceof Error ? error.message : 'Unknown error'}`
     );

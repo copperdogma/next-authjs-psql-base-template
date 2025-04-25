@@ -5,6 +5,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import LoadingAuthButton from './LoadingAuthButton';
 import AuthButton from './AuthButton';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * SignInButton component that handles authentication while preserving theme
@@ -43,7 +44,7 @@ export default function SignInButton() {
         });
       }
     } catch (error) {
-      console.error('Auth action failed:', error);
+      clientLogger.error('Auth action failed', { error });
     } finally {
       setIsLoading(false);
     }

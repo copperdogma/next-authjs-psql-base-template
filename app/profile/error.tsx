@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { clientLogger } from '@/lib/client-logger';
 
 export default function ProfileError({
   error,
@@ -12,7 +13,7 @@ export default function ProfileError({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Profile error:', error);
+    clientLogger.error('Profile error', { error });
   }, [error]);
 
   return (

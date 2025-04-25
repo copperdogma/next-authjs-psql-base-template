@@ -3,6 +3,7 @@
 import { Box, Button } from '@mui/material';
 import { LogoutOutlined } from '@mui/icons-material';
 import { signOut } from 'next-auth/react';
+import { clientLogger } from '@/lib/client-logger';
 
 /**
  * Sign out button component for profile page.
@@ -12,7 +13,7 @@ export default function SignOutButton() {
     try {
       await signOut({ callbackUrl: '/' });
     } catch (error) {
-      console.error('Error signing out:', error);
+      clientLogger.error('Error signing out', { error });
     }
   };
 
