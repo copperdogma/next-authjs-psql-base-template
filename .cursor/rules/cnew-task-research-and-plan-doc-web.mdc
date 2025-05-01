@@ -35,6 +35,7 @@ Conduct comprehensive research and develop a detailed implementation plan for th
 
 3. **WEB RESEARCH**
    - Search for current best practices, patterns, and standards related to the topic
+   - Use the MCP tool "deepwiki fetch" to get docs on anything you need
    - Focus on recent and authoritative sources
    - Document key findings directly in scratchpad.md as you discover them
    - Update checklist items as you complete them

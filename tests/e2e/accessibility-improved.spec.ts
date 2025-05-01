@@ -129,6 +129,9 @@ test.describe('Accessibility Tests', () => {
     const mainContent = await waitForElementToBeVisible(page, 'LAYOUT.MAIN_CONTENT');
     await expect(mainContent, 'Main content should be visible on mobile viewport').toBeVisible();
 
+    // Explicitly wait for the main header landmark before running Axe
+    await expect(page.getByRole('banner')).toBeVisible({ timeout: 10000 });
+
     // Take a screenshot
     await page.screenshot({
       path: 'tests/e2e/screenshots/a11y-mobile.png',

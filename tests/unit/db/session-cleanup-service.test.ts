@@ -9,12 +9,11 @@ import {
 } from '../../../lib/db/session-cleanup-service';
 import { jest } from '@jest/globals';
 
-// Mock the entire prisma module
-jest.mock('../../../lib/prisma');
+// No longer needed, use singleton mock
+// jest.mock('../../../lib/prisma');
 
-// Import the mocked prisma client after mocking
-import { prisma } from '../../../lib/prisma';
-import { resetPrismaMock } from '../../../lib/__mocks__/prisma';
+// Import the singleton mock
+import { prismaMock, resetPrismaMock } from '../../mocks/db/prisma-mock';
 
 // Mock logger
 jest.mock('../../../lib/logger', () => ({
@@ -43,9 +42,7 @@ describe('Session Cleanup Service Functions', () => {
     jest.clearAllMocks();
     resetPrismaMock();
 
-    // Setup mocks directly
-    prisma.session.deleteMany = jest.fn().mockResolvedValue({ count: 3 });
-    prisma.session.findFirst = jest.fn().mockResolvedValue(null);
+    // No need to set up default mocks here if tests mock specific calls
 
     // Setup mock for setInterval
     global.setInterval = jest.fn().mockReturnValue(123) as any;
@@ -67,7 +64,7 @@ describe('Session Cleanup Service Functions', () => {
     it('should delete expired sessions', async () => {
       // Arrange
       const deleteResult = { count: 5 };
-      prisma.session.deleteMany = jest.fn().mockResolvedValue(deleteResult);
+      prismaMock.session.deleteMany.mockResolvedValue(deleteResult);
 
       // Act
       const result = await cleanupExpiredSessions();
@@ -77,7 +74,7 @@ describe('Session Cleanup Service Functions', () => {
         count: 5,
         timestamp: expect.any(Date),
       });
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
         where: {
           expires: {
             lt: expect.any(Date),
@@ -89,7 +86,7 @@ describe('Session Cleanup Service Functions', () => {
     it('should handle errors by rethrowing them', async () => {
       // Arrange
       const testError = new Error('Test error');
-      prisma.session.deleteMany = jest.fn().mockRejectedValue(testError);
+      prismaMock.session.deleteMany.mockRejectedValue(testError);
 
       // Act & Assert
       await expect(cleanupExpiredSessions()).rejects.toThrow(testError);
@@ -100,6 +97,8 @@ describe('Session Cleanup Service Functions', () => {
     it('should delete all sessions for a user when keepCurrent is false', async () => {
       // Arrange
       const userId = 'user-123';
+      // Explicitly mock deleteMany for this test
+      prismaMock.session.deleteMany.mockResolvedValue({ count: 3 });
 
       // Act
       const result = await cleanupUserSessions(userId);
@@ -110,7 +109,7 @@ describe('Session Cleanup Service Functions', () => {
         keptCurrentSession: false,
         timestamp: expect.any(Date),
       });
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId,
         },
@@ -121,20 +120,22 @@ describe('Session Cleanup Service Functions', () => {
       // Arrange
       const userId = 'user-123';
       const currentSessionId = 'session-456';
+      // Explicitly mock deleteMany for this test (assuming 3 records deleted)
+      prismaMock.session.deleteMany.mockResolvedValue({ count: 3 });
 
       // Setup mock for findFirst to return the current session
-      prisma.session.findFirst = jest.fn().mockResolvedValue({ id: currentSessionId });
+      prismaMock.session.findFirst.mockResolvedValue({ id: currentSessionId } as any);
 
       // Act
       const result = await cleanupUserSessions(userId, { keepCurrent: true });
 
       // Assertions
       expect(result).toEqual({
-        count: 3,
+        count: 3, // Count of deleted records
         keptCurrentSession: true,
         timestamp: expect.any(Date),
       });
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      expect(prismaMock.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId,
           id: {
@@ -148,7 +149,7 @@ describe('Session Cleanup Service Functions', () => {
       // Arrange
       const userId = 'user-123';
       const testError = new Error('Test error');
-      prisma.session.findFirst = jest.fn().mockRejectedValue(testError);
+      prismaMock.session.findFirst.mockRejectedValue(testError);
 
       // Act & Assert
       await expect(cleanupUserSessions(userId, { keepCurrent: true })).rejects.toThrow(testError);
@@ -182,15 +183,18 @@ describe('Session Cleanup Service Functions', () => {
     it('should run cleanup immediately by default', async () => {
       // Arrange
       const mockOnComplete = jest.fn();
+      // Mock the underlying DB call needed for the immediate cleanup
+      prismaMock.session.deleteMany.mockResolvedValue({ count: 1 });
 
       // Act
       scheduleSessionCleanup({ onComplete: mockOnComplete });
 
-      // Wait for promises to resolve
-      await new Promise(process.nextTick);
+      // Wait for promises to resolve (using await Promise.resolve() can sometimes be safer)
+      await Promise.resolve(); // Allow microtasks queue to flush
+      await Promise.resolve(); // Sometimes needed twice for nested promises
 
       // Assert - cleanupExpiredSessions should have been called
-      expect(prisma.session.deleteMany).toHaveBeenCalled();
+      expect(prismaMock.session.deleteMany).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
 
@@ -202,13 +206,13 @@ describe('Session Cleanup Service Functions', () => {
       await new Promise(process.nextTick);
 
       // Assert - cleanupExpiredSessions should not have been called
-      expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+      expect(prismaMock.session.deleteMany).not.toHaveBeenCalled();
     });
 
     it('should handle errors during cleanup', async () => {
       // Arrange
       const testError = new Error('Test error');
-      prisma.session.deleteMany = jest.fn().mockRejectedValue(testError);
+      prismaMock.session.deleteMany.mockRejectedValue(testError);
       const mockOnError = jest.fn();
 
       // Act

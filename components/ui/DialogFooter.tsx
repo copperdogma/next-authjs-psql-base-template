@@ -19,7 +19,7 @@ export default function DialogFooter({ actions, children, sx, ...props }: Dialog
         py: 2,
         display: 'flex',
         gap: 1,
-        borderTop: 1,
+        borderTop: '1px solid',
         borderColor: 'divider',
         ...(sx || {}),
       }}

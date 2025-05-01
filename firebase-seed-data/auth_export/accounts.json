@@ -2,26 +2,25 @@
   "kind": "identitytoolkit#DownloadAccountResponse",
   "users": [
     {
-      "localId": "HO7RHwsYbuKwr00ogeDO9YouTL5m",
-      "createdAt": "1745043877762",
-      "lastLoginAt": "1745043877762",
-      "displayName": "Test User",
-      "passwordHash": "fakeHash:salt=fakeSaltDf4DLmMLgge791PSiTpu:password=Test123!",
-      "salt": "fakeSaltDf4DLmMLgge791PSiTpu",
-      "passwordUpdatedAt": 1745101064292,
+      "localId": "D3It1C4XhJBvuBn0tYThZSIefh3y",
+      "createdAt": "1746034047976",
+      "lastLoginAt": "1746034047976",
+      "passwordHash": "fakeHash:salt=fakeSalt0Mf3YJ9mQGoi7pb3gChd:password=Test123!",
+      "salt": "fakeSalt0Mf3YJ9mQGoi7pb3gChd",
+      "passwordUpdatedAt": 1746037876585,
       "providerUserInfo": [
         {
           "providerId": "password",
           "email": "test@example.com",
           "federatedId": "test@example.com",
-          "rawId": "test@example.com",
-          "displayName": "Test User"
+          "rawId": "test@example.com"
         }
       ],
-      "validSince": "1745101064",
+      "validSince": "1746037876",
       "email": "test@example.com",
       "emailVerified": true,
-      "disabled": false
+      "disabled": false,
+      "lastRefreshAt": "2025-04-30T18:31:16.585Z"
     }
   ]
 }

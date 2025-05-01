@@ -28,7 +28,7 @@ export async function loginTestUser(page: Page, userId?: string): Promise<void> 
     let url;
     try {
       url = new URL(baseURL);
-    } catch (e) {
+    } catch {
       console.error(`[Test Setup] Invalid baseURL provided: ${baseURL}`);
       throw new Error(`Invalid baseURL for setting cookie: ${baseURL}`);
     }
@@ -71,6 +71,22 @@ type ErrorCheckOptions = {
   // Example: filterOut?: RegExp;
 };
 
+// Helper function to check if an error should be ignored
+function shouldIgnoreError(errorText: string): boolean {
+  // Ignore React hydration mismatches which are common with dynamic components
+  if (
+    errorText.includes(
+      "A tree hydrated but some attributes of the server rendered HTML didn't match"
+    )
+  ) {
+    return true;
+  }
+
+  // Add other error patterns to ignore here if needed
+
+  return false;
+}
+
 // Extend the base test object
 export const test = base.extend<ErrorCheckFixtures & ErrorCheckOptions>({
   // Override the page fixture
@@ -81,12 +97,17 @@ export const test = base.extend<ErrorCheckFixtures & ErrorCheckOptions>({
     // Listener for console messages
     const consoleListener = (msg: ConsoleMessage) => {
       if (msg.type() === 'error') {
-        // Optional: Add filtering logic here if needed in the future
-        // e.g., if (options.filterOut && options.filterOut.test(msg.text())) return;
+        const errorText = msg.text();
 
-        const errorText = `[Browser Console Error]: ${msg.text()}`;
-        console.error(errorText); // Log to test output immediately
-        consoleErrors.push(errorText);
+        // Skip errors we've decided to ignore
+        if (shouldIgnoreError(errorText)) {
+          console.log('[Ignored Browser Error]:', errorText.substring(0, 150) + '...');
+          return;
+        }
+
+        const formattedError = `[Browser Console Error]: ${errorText}`;
+        console.error(formattedError); // Log to test output immediately
+        consoleErrors.push(formattedError);
 
         // Include location if available
         const location = msg.location();

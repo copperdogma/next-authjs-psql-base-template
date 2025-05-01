@@ -10,36 +10,36 @@ interface ClientLogEntry {
 }
 
 // Internal function to send the log data
-function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
+async function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
   const endpoint = '/api/log/client';
   const body = JSON.stringify(entry);
 
+  // Use sendBeacon for critical/error logs or when page might unload
+  // It's asynchronous and non-blocking, but has data limits and no response access
+  if (useBeacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    if (navigator.sendBeacon(endpoint, body)) {
+      return; // Successfully sent via beacon
+    }
+    // Fallback to fetch if sendBeacon fails (e.g., data too large)
+    console.warn('Client Logger: sendBeacon failed, falling back to fetch.');
+    // Fall-through to the fetch logic below
+  }
+
+  // Use fetch for regular logs or as fallback
   try {
-    // Use sendBeacon for critical/error logs or when page might unload
-    // It's asynchronous and non-blocking, but has data limits and no response access
-    if (useBeacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      if (!navigator.sendBeacon(endpoint, body)) {
-        // Fallback to fetch if sendBeacon fails (e.g., data too large)
-        console.warn('Client Logger: sendBeacon failed, falling back to fetch.');
-        fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          keepalive: true, // Important for requests potentially during unload
-        });
-      }
-    } else {
-      // Use fetch for regular logs
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-        keepalive: true, // Keepalive helps ensure delivery during page transitions
-      });
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true, // Keepalive helps ensure delivery during page transitions
+    });
+    if (!response.ok) {
+      // Log non-ok responses, but don't throw to avoid breaking caller
+      console.error('Client Logger: Log submission failed with status:', response.status);
     }
   } catch (error) {
     // Avoid logging errors from the logger itself to prevent loops
-    console.error('Client Logger: Failed to send log entry:', error);
+    console.error('Client Logger: Failed to send log entry via fetch:', error);
   }
 }
 

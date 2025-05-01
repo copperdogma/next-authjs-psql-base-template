@@ -1,84 +1,187 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { middleware } from '../../../middleware';
-import { createAuthMiddleware } from '../../../tests/mocks/lib/auth/middleware';
+import { NextRequest as NextReq, NextResponse } from 'next/server';
+// DO NOT import the middleware at the top level when using jest.doMock
+// import { middleware as actualMiddleware } from '@/middleware';
 
-// Mock middleware
-jest.mock('../../../tests/mocks/lib/auth/middleware', () => ({
-  createAuthMiddleware: jest.fn(() => ({ type: 'auth-middleware-result' })),
+// --- Mocks --- //
+
+// Define the mock function signature clearly FIRST.
+const mockAuthImplementation = jest.fn<Promise<NextResponse | undefined>, [NextReq]>();
+
+// Use jest.doMock which is NOT hoisted.
+// This ensures mockAuthImplementation is initialized before being used in the mock factory.
+jest.doMock('@/lib/auth-edge', () => ({
+  __esModule: true, // Required when mocking modules with default or named exports
+  auth: mockAuthImplementation,
 }));
 
-// Mock NextResponse
+// Mock the logger used within the middleware (keep as is)
+jest.mock('@/lib/logger', () => ({
+  loggers: {
+    middleware: {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    },
+  },
+}));
+
+// Define an interface for the mocked NextRequest structure
+interface MockNextRequest {
+  nextUrl: URL;
+  url: string;
+  headers: Headers;
+  cookies: { get: jest.Mock; has: jest.Mock };
+  clone: jest.Mock;
+}
+
+// Mock NextResponse (keep as is, potentially simplify if full mock isn't needed)
 jest.mock('next/server', () => ({
   NextResponse: {
-    redirect: jest.fn(() => ({ type: 'redirect' })),
-    next: jest.fn(() => ({ type: 'next' })),
+    redirect: jest.fn((url: URL | string) => {
+      // Simulate a basic response object for testing headers/status
+      const resp = new Response(null, { status: 307 });
+      resp.headers.set('location', url.toString());
+      return resp as unknown as NextResponse; // Cast for type compatibility
+    }),
+    next: jest.fn(() => {
+      // Simulate a basic non-redirect response
+      return new Response(null, { status: 200 }) as unknown as NextResponse;
+    }),
   },
-  NextRequest: jest.fn().mockImplementation(url => ({
-    nextUrl: new URL(url),
-    url,
-    cookies: {
-      get: jest.fn().mockImplementation(name => {
-        if (name === 'session' && !url.includes('no-session')) {
-          return { name: 'session', value: 'mock-session-token' };
-        }
-        return undefined;
+  NextRequest: jest.fn().mockImplementation(
+    (urlStr: string): MockNextRequest => ({
+      nextUrl: new URL(urlStr),
+      url: urlStr,
+      headers: new Headers(),
+      cookies: {
+        get: jest.fn(),
+        has: jest.fn(),
+      },
+      // Add clone method if middleware uses it, explicitly typing 'this'
+      clone: jest.fn().mockImplementation(function (this: MockNextRequest) {
+        return { ...this };
       }),
-    },
-  })),
+    })
+  ),
 }));
 
-// Create a mock middleware function
-const mockAuthMiddlewareFunction = jest.fn(_req => NextResponse.next());
+describe('Middleware Logic', () => {
+  let middleware: (req: NextReq) => Promise<NextResponse | undefined>;
 
-// Mock the middleware module
-jest.mock('../../../middleware', () => ({
-  middleware: jest.fn(req => mockAuthMiddlewareFunction(req)),
-}));
+  beforeAll(async () => {
+    // Import the middleware *after* mocks are set up
+    const middlewareModule = require('@/middleware');
+    // Access the default export, which is the auth function itself
+    middleware = middlewareModule.default as (req: NextReq) => Promise<NextResponse | undefined>;
 
-describe('Auth Middleware', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+    if (!middleware) {
+      // Fallback if .default isn't used (e.g., different module system interaction)
+      middleware = middlewareModule as (req: NextReq) => Promise<NextResponse | undefined>;
+    }
+
+    if (typeof middleware !== 'function') {
+      throw new Error('Failed to correctly import the middleware function for testing.');
+    }
   });
 
-  describe('URL encoding', () => {
-    test('should properly encode the callbackUrl parameter without double encoding', () => {
-      // Create a request for a protected route without a session
-      const req = new NextRequest('http://localhost:3000/dashboard?no-session=true');
+  beforeEach(() => {
+    // Reset mocks before each test
+    mockAuthImplementation.mockReset();
+    // Also reset mocks on NextResponse methods if they were called
+    (NextResponse.redirect as jest.Mock).mockClear();
+    (NextResponse.next as jest.Mock).mockClear();
+    // Reset calls on the mock NextRequest constructor if needed
+    (NextReq as jest.Mock).mockClear();
+  });
 
-      // Create the URL object for login
-      const loginUrl = new URL('/login', 'http://localhost:3000');
-      loginUrl.searchParams.set('callbackUrl', 'http://localhost:3000/dashboard?no-session=true');
+  // --- Type Assertion for Test Scope ---
+  // Moved inside beforeAll as the middleware is now imported dynamically
 
-      // Setup the mock for the auth middleware function
-      mockAuthMiddlewareFunction.mockImplementationOnce(() => NextResponse.redirect(loginUrl));
+  it('should correctly encode redirect URLs when auth triggers a redirect', async () => {
+    // --- Arrange ---
+    const originalRequestUrl = 'http://localhost/dashboard?param=value with spaces&other=val';
+    const loginUrl = new URL('/login', 'http://localhost');
+    loginUrl.searchParams.set('callbackUrl', originalRequestUrl);
 
-      // Setup the mock for the createAuthMiddleware factory
-      (createAuthMiddleware as jest.Mock).mockReturnValueOnce(mockAuthMiddlewareFunction);
+    // Create the expected redirect response using the *mocked* NextResponse
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    // Reset the mock call count just from creating the expected response
+    (NextResponse.redirect as jest.Mock).mockClear();
 
-      // Call the middleware
-      middleware(req);
+    mockAuthImplementation.mockResolvedValue(redirectResponse);
 
-      // Check if middleware was called
-      expect(middleware).toHaveBeenCalledWith(req);
+    const req = new NextReq(originalRequestUrl);
 
-      // Check if the auth middleware function was called
-      expect(mockAuthMiddlewareFunction).toHaveBeenCalledWith(req);
+    // --- Act ---
+    const result = await middleware(req);
 
-      // Check if NextResponse.redirect was called
-      expect(NextResponse.redirect).toHaveBeenCalledWith(loginUrl);
+    // --- Assert ---
+    if (!result) {
+      fail('Expected a NextResponse, but received undefined');
+    }
 
-      // Get the URL that was passed to redirect
-      const redirectUrl = (NextResponse.redirect as jest.Mock).mock.calls[0][0];
+    // Check properties of the mocked response returned by auth
+    expect(result).toBe(redirectResponse); // It should be the exact object returned by the mock
+    expect(result.status).toBe(307); // From our mocked NextResponse.redirect
+    const locationHeader = result.headers.get('location');
+    expect(locationHeader).toBeDefined();
+    // Adjust expectation for space encoding (+ instead of %20 in query params)
+    const expectedEncodedCallbackUrl = encodeURIComponent(originalRequestUrl).replace(/%20/g, '+');
+    expect(locationHeader).toBe(`http://localhost/login?callbackUrl=${expectedEncodedCallbackUrl}`);
 
-      // Parse the URL to check the callbackUrl parameter
-      const url = new URL(redirectUrl);
-      const callbackUrlParam = url.searchParams.get('callbackUrl');
+    // Verify the auth mock was called
+    expect(mockAuthImplementation).toHaveBeenCalledTimes(1);
+    expect(mockAuthImplementation).toHaveBeenCalledWith(req);
+    // The middleware returns the response from auth directly, so NextResponse.redirect is NOT called by it.
+    expect(NextResponse.redirect).not.toHaveBeenCalled();
+  });
 
-      // The callbackUrl should be the full URL properly encoded
-      expect(callbackUrlParam).toBe('http://localhost:3000/dashboard?no-session=true');
+  it('should return undefined if auth passes and returns undefined', async () => {
+    // --- Arrange ---
+    mockAuthImplementation.mockResolvedValue(undefined);
+    const originalRequestUrl = 'http://localhost/protected-route';
+    const req = new NextReq(originalRequestUrl);
 
-      // Make sure there are no double-encoded characters like %253A (which would be %3A double-encoded)
-      expect(callbackUrlParam).not.toContain('%25');
-    });
+    // --- Act ---
+    const result = await middleware(req);
+
+    // --- Assert ---
+    expect(result).toBeUndefined();
+    expect(mockAuthImplementation).toHaveBeenCalledTimes(1);
+    expect(mockAuthImplementation).toHaveBeenCalledWith(req);
+    // Ensure redirect/next were not called
+    expect(NextResponse.redirect).not.toHaveBeenCalled();
+    expect(NextResponse.next).not.toHaveBeenCalled();
+  });
+
+  it('should return NextResponse.next() if auth passes and returns that', async () => {
+    // --- Arrange ---
+    const nextResponse = NextResponse.next();
+    // Reset the mock call count just from creating the expected response
+    (NextResponse.next as jest.Mock).mockClear();
+
+    mockAuthImplementation.mockResolvedValue(nextResponse);
+    const originalRequestUrl = 'http://localhost/another-route';
+    const req = new NextReq(originalRequestUrl);
+
+    // --- Act ---
+    const result = await middleware(req);
+
+    // --- Assert ---
+    if (!result) {
+      fail('Expected a NextResponse, but received undefined');
+    }
+    // Check that the result IS the object returned by the auth mock
+    expect(result).toBe(nextResponse);
+    // We can still check basic properties from our mocked next()
+    expect(result.status).toBe(200);
+    expect(result.headers.get('location')).toBeNull();
+
+    expect(mockAuthImplementation).toHaveBeenCalledTimes(1);
+    expect(mockAuthImplementation).toHaveBeenCalledWith(req);
+    // The middleware likely returns the auth result directly, so NextResponse.next is NOT called by it
+    expect(NextResponse.next).not.toHaveBeenCalled();
+    expect(NextResponse.redirect).not.toHaveBeenCalled();
   });
 });

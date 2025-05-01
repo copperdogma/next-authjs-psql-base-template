@@ -1,8 +1,6 @@
 const nextJest = require('next/jest');
 
-const createJestConfig = nextJest({
-  dir: './',
-});
+const createJestConfig = nextJest({ dir: './' });
 
 // Shared configuration for both test environments
 const sharedConfig = {
@@ -31,25 +29,21 @@ const sharedConfig = {
     '/node_modules/(?!(@firebase|firebase|@clerk|@radix-ui|@hookform|next|@mui|@emotion|@babel/runtime|next-auth|@auth\/core|oauth4webapi|jose|openid-client|@panva/hkdf|uuid|preact|preact-render-to-string|@auth/prisma-adapter|@prisma/client)/)',
   ],
   moduleNameMapper: {
-    // Explicitly map top-level directories under @/
+    // Restore original shared mappings
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
-
-    // Keep the CSS mock
+    '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',
+    '^@/types/(.*)$': '<rootDir>/types/$1',
+    '^@/types$': '<rootDir>/types/index',
+    '^@/actions/(.*)$': '<rootDir>/lib/actions/$1',
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
-
-    // Fallback for any other @/ path (might not be needed if above are exhaustive)
     '^@/(.*)$': '<rootDir>/$1',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFiles: ['<rootDir>/jest.setup.env.js'],
   testEnvironment: 'jest-environment-jsdom',
-
-  // Add msw to ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/tests/unit/msw/'],
-
-  // Improved coverage reporting
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
     'lib/**/*.{js,jsx,ts,tsx}',
@@ -58,8 +52,6 @@ const sharedConfig = {
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],
-
-  // This ensures coverage is only collected from files that are actually tested
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
@@ -67,17 +59,16 @@ const sharedConfig = {
     '/tests/',
     '/scripts/',
     '/public/',
+    '<rootDir>/lib/store/userStore.ts',
+    '<rootDir>/lib/services/api-logger-service.ts',
   ],
-
-  // Increase max listeners to suppress warning during parallel test runs
-  maxWorkers: '50%', // Adjust based on your system resources if needed
+  maxWorkers: '50%',
 };
 
 // Custom Jest configuration with multiple projects
 const customJestConfig = {
-  // Define multiple test projects for different test environments
   projects: [
-    // API, utility, SWC, middleware tests in Node.js environment
+    // Node environment
     {
       displayName: 'node',
       testMatch: [
@@ -85,35 +76,82 @@ const customJestConfig = {
         '<rootDir>/tests/unit/api/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/db/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/auth/**/*.test.ts?(x)',
-        '<rootDir>/tests/unit/swc/**/*.test.ts?(x)', // Added swc
-        '<rootDir>/tests/unit/middleware/**/*.test.ts?(x)', // Added middleware
+        '<rootDir>/tests/unit/swc/**/*.test.ts?(x)',
+        '<rootDir>/tests/unit/middleware/**/*.test.ts?(x)',
+        '<rootDir>/tests/unit/profile/**/*.test.ts?(x)',
       ],
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.api.js', '<rootDir>/jest.setup.js'],
+      setupFilesAfterEnv: [
+        '<rootDir>/jest.setup.api.js',
+        '<rootDir>/tests/config/setup/jest.setup.api.mocks.ts',
+        '<rootDir>/jest.setup.js',
+      ],
       testEnvironment: 'node',
       ...sharedConfig,
+
+      // Override transformIgnorePatterns specifically for node env
+      transformIgnorePatterns: [
+        // Allow transformation of key ESM dependencies
+        '/node_modules/(?!(next-auth|@auth|jose|uuid|@panva/hkdf|oauth4webapi|openid-client|preact|preact-render-to-string)/)',
+
+        // Keep the default CSS/SASS ignore pattern if needed, assuming it came from next/jest
+        '^.+\.module\.(css|sass|scss)$',
+      ],
+
+      // Keep comprehensive, isolated mapper for node
+      roots: [
+        '<rootDir>/lib',
+        '<rootDir>/lib/actions',
+        '<rootDir>/tests',
+
+        // Add other roots if necessary
+      ],
+      moduleNameMapper: {
+        // Keep specific overrides first
+        '^@/lib/prisma$': '<rootDir>/lib/prisma.ts',
+        '^@/lib/db/prisma$': '<rootDir>/lib/db/prisma.ts',
+        '^@/lib/logger$': '<rootDir>/lib/logger.ts',
+        '^@/lib/auth-node$': '<rootDir>/lib/auth-node.ts',
+
+        // Add general lib mapping BEFORE specific one
+        '^@/lib/(.*)$': '<rootDir>/lib/$1',
+
+        // More specific lib mapping that includes file extensions
+        '^@/lib/(.+\\.(?:ts|tsx|js|jsx))$': '<rootDir>/lib/$1',
+
+        // Keep other specific mappings
+        '^@/types$': '<rootDir>/types/index.ts',
+        '^@/types/(.*)$': '<rootDir>/types/$1',
+        '^@/components/(.*)$': '<rootDir>/components/$1',
+        '^@/app/(.*)$': '<rootDir>/app/$1',
+        '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
+
+        // Add the general root mapping
+        '^@/(.*)$': '<rootDir>/$1',
+      },
     },
 
-    // Component, utils, profile, providers, pages tests in JSDOM environment
+    // Restore jsdom project
     {
       displayName: 'jsdom',
       testMatch: [
         '<rootDir>/tests/unit/components/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/utils/**/*.test.ts?(x)',
-        '<rootDir>/tests/unit/profile/**/*.test.ts?(x)', // Added profile
-        '<rootDir>/tests/unit/providers/**/*.test.ts?(x)', // Added providers
-        '<rootDir>/tests/unit/pages/**/*.test.ts?(x)', // Added pages
+        '<rootDir>/tests/unit/providers/**/*.test.ts?(x)',
+        '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
       setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
       testEnvironment: 'jsdom',
       ...sharedConfig,
+      moduleNameMapper: {
+        ...sharedConfig.moduleNameMapper,
+        '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',
+      },
     },
   ],
 
-  // Move coverage options back here
+  // Restore global coverage options
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover'],
-
-  // Set coverage thresholds to enforce code quality
   coverageThreshold: {
     global: {
       statements: 80,
@@ -122,7 +160,12 @@ const customJestConfig = {
       lines: 80,
     },
   },
+
+  // reporters: ['default', 'jest-junit'], // Example: Add JUnit reporter
+  testTimeout: 30000, // Increase timeout for potentially slow tests
+
+  // === E2E Testing (Placeholder/Example - Use Playwright config primarily) ===
+  // E2E tests are typically run via Playwright (`playwright.config.ts`)
 };
 
-// Export the combined configuration
-module.exports = createJestConfig(customJestConfig);
+module.exports = createJestConfig(customJestConfig); // Restore wrapper

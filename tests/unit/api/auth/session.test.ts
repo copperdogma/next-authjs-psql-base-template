@@ -4,7 +4,10 @@
  * Tests the functionality of the session API endpoints for authentication.
  */
 
-import { HTTP_STATUS, API_ENDPOINTS, AUTH, TEST_DOMAINS } from '../../../utils/test-constants';
+import {
+  HTTP_STATUS,
+  /* API_ENDPOINTS, */ AUTH /* TEST_DOMAINS */,
+} from '../../../utils/test-constants';
 import {
   mockUser,
   mockSessionCookie,
@@ -63,7 +66,7 @@ describe('Auth Session API', () => {
 
         try {
           // Call mocked functions
-          const decodedToken = await adminAuth.verifyIdToken(body.token);
+          await adminAuth.verifyIdToken(body.token);
           const sessionCookie = await adminAuth.createSessionCookie(body.token, {
             expiresIn: 5 * 24 * 60 * 60 * 1000, // 5 days
           });

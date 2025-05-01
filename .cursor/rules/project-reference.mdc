@@ -163,7 +163,7 @@ TEST_USER_EMAIL=test@example.com
 TEST_USER_PASSWORD=Test123!
 
 # Database
-POSTGRES_URL=
+DATABASE_URL=
 REDIS_URL=
 ```
 
@@ -184,7 +184,7 @@ REDIS_URL=
 - `next.config.ts` - Next.js configuration
 - `tsconfig.json` - TypeScript settings
 - `.env.example` - Environment variables template
-- `.eslintrc.js` - ESLint rules
+- `eslint.config.mjs` - ESLint rules
 - `.prettierrc` - Code formatting
 - `jest.config.js` - Jest test configuration with three projects:
   - Components testing (jsdom environment)

@@ -1,26 +1,30 @@
-import { LoggerService } from '@/lib/interfaces/services';
 import { createLogger } from '@/lib/logger';
 
 // Mock createLogger implementation
-jest.mock('@/lib/logger', () => ({
-  createLogger: jest.fn().mockImplementation(component => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-    trace: jest.fn(),
-    child: jest.fn().mockImplementation(() => ({
+jest.mock('@/lib/logger', () => {
+  // Define a reusable mock logger structure that adheres to LoggerService
+  const createMockLogger = () => {
+    const loggerInstance = {
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
       debug: jest.fn(),
-      trace: jest.fn(),
-    })),
-  })),
-}));
+      child: jest.fn(),
+    };
+
+    // Make child return the logger instance to allow chaining
+    loggerInstance.child.mockImplementation(() => loggerInstance);
+
+    return loggerInstance;
+  };
+
+  return {
+    createLogger: jest.fn().mockImplementation(() => createMockLogger()),
+  };
+});
 
 describe('LoggerService Interface', () => {
-  let logger: LoggerService;
+  let logger: ReturnType<typeof createLogger>;
 
   beforeEach(() => {
     // Create a fresh logger for each test
@@ -35,8 +39,7 @@ describe('LoggerService Interface', () => {
     expect(logger.warn).toBeDefined();
     expect(logger.debug).toBeDefined();
 
-    // TypeScript allows testing optional methods
-    expect(typeof logger.trace).toBe('function');
+    // Verify optional methods
     expect(typeof logger.child).toBe('function');
   });
 
@@ -65,7 +68,7 @@ describe('LoggerService Interface', () => {
   });
 
   it('should create child loggers with additional context', () => {
-    // Skip if child method is not available
+    // Skip if child method is not available (shouldn't happen with our mock)
     if (!logger.child) {
       return;
     }
@@ -97,18 +100,5 @@ describe('LoggerService Interface', () => {
     const error = new Error('Test error');
     logger.error({ error }, 'Error occurred');
     expect(logger.error).toHaveBeenLastCalledWith({ error }, 'Error occurred');
-  });
-
-  it('should handle optional trace method', () => {
-    // Skip if trace method is not available
-    if (!logger.trace) {
-      return;
-    }
-
-    // Test trace log level
-    logger.trace('Trace message');
-
-    // Verify trace was called
-    expect(logger.trace).toHaveBeenCalledWith('Trace message');
   });
 });

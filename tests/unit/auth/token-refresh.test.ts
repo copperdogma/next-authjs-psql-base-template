@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect /*, it */ } from '@jest/globals';
 import { calculateBackoffTime, BackoffOptions } from '../../../tests/mocks/lib/auth/token-refresh';
 
 describe('Exponential Backoff', () => {

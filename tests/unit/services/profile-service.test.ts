@@ -4,7 +4,10 @@ import type { FirebaseAdminService } from '../../../lib/services/firebase-admin-
 import { ProfileService } from '../../../lib/services/profile-service';
 import type { UserService } from '../../../lib/services/user-service';
 import type { auth } from 'firebase-admin'; // Import auth namespace
+// @ts-ignore - TODO: Investigate Prisma type resolution issue
 import type { User as PrismaUser } from '@prisma/client'; // Import Prisma User type
+// @ts-ignore - TODO: Investigate Prisma type resolution issue
+import { UserRole } from '@prisma/client'; // Import UserRole enum
 
 // Define mock types for Firebase Admin Auth methods
 type MockAuth = DeepMockProxy<auth.Auth> & {
@@ -19,12 +22,14 @@ const mockFirebaseAdminService = mockDeep<FirebaseAdminService>();
 const mockFirebaseAuth = mockDeep<MockAuth>(); // Mock for auth() return value
 
 // Helper to create a mock Prisma User
-const createMockUser = (overrides: Partial<PrismaUser>): PrismaUser => ({
+const createMockUser = (overrides: Partial<PrismaUser> = {}): PrismaUser => ({
   id: 'default-id',
   name: 'Default Name',
   email: 'default@example.com',
-  emailVerified: null,
+  emailVerified: new Date(),
   image: null,
+  hashedPassword: null,
+  role: UserRole.USER,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

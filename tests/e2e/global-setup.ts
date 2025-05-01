@@ -4,6 +4,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import * as admin from 'firebase-admin'; // Import Firebase Admin SDK
 import { PrismaClient } from '@prisma/client'; // Import Prisma Client
+import bcrypt from 'bcrypt'; // <-- Import bcrypt
 
 // Load .env.test for emulator hosts and test user credentials
 dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
@@ -199,7 +200,7 @@ async function _ensureFirebaseAuthUser(auth: admin.auth.Auth): Promise<admin.aut
 }
 
 /**
- * Upserts the user data into the Prisma database.
+ * Upserts the user data into the Prisma database AND sets the password hash.
  * @param userRecord - The Firebase UserRecord.
  * @throws Error if Prisma operation fails.
  */
@@ -208,28 +209,41 @@ async function _upsertPrismaUser(userRecord: admin.auth.UserRecord): Promise<voi
     `[setupUserAndSaveUid:_upsertPrismaUser] Upserting Prisma user for UID: ${userRecord.uid}...`
   );
   try {
-    await prisma.user.upsert({
+    const userData = {
+      name: userRecord.displayName,
+      email: userRecord.email,
+      emailVerified: userRecord.emailVerified ? new Date() : null,
+      image: userRecord.photoURL,
+      role: 'USER' as const, // Ensure role matches Prisma type
+    };
+
+    // Upsert basic user data
+    const upsertedUser = await prisma.user.upsert({
       where: { id: userRecord.uid },
-      update: {
-        name: userRecord.displayName,
-        email: userRecord.email,
-        emailVerified: userRecord.emailVerified ? new Date() : null,
-        image: userRecord.photoURL,
-      },
+      update: userData,
       create: {
         id: userRecord.uid,
-        name: userRecord.displayName,
-        email: userRecord.email,
-        emailVerified: userRecord.emailVerified ? new Date() : null,
-        image: userRecord.photoURL,
-        // Ensure role is set if needed by your schema
-        role: 'USER',
+        ...userData,
       },
+      select: { id: true }, // Only select id
     });
-    console.log(`✅ [setupUserAndSaveUid:_upsertPrismaUser] Prisma user upserted successfully.`);
+    console.log(`✅ [setupUserAndSaveUid:_upsertPrismaUser] Basic Prisma user data upserted.`);
+
+    // Hash the password
+    console.log(
+      `[setupUserAndSaveUid:_upsertPrismaUser] Hashing password for user ${userRecord.uid}...`
+    );
+    const hashedPassword = await bcrypt.hash(TEST_USER_PASSWORD, 12); // Use 12 rounds
+
+    // Update the user with the hashed password
+    await prisma.user.update({
+      where: { id: upsertedUser.id },
+      data: { hashedPassword: hashedPassword },
+    });
+    console.log(`✅ [setupUserAndSaveUid:_upsertPrismaUser] Hashed password set for Prisma user.`);
   } catch (prismaError) {
     console.error(
-      `❌ [setupUserAndSaveUid:_upsertPrismaUser] Failed to upsert Prisma user: ${prismaError}`
+      `❌ [setupUserAndSaveUid:_upsertPrismaUser] Failed to upsert Prisma user or set password: ${prismaError}`
     );
     throw prismaError;
   }

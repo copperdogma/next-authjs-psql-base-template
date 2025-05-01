@@ -126,6 +126,25 @@ export class UserService {
       },
     });
   }
+
+  /**
+   * Finds a user based on the provider and provider account ID.
+   *
+   * @param provider The OAuth provider name (e.g., 'google')
+   * @param providerAccountId The user's unique ID for that provider
+   * @returns The user associated with the account, or null if not found.
+   */
+  async getUserByAccount(provider: string, providerAccountId: string) {
+    const account = await this.prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: { provider, providerAccountId },
+      },
+      include: { user: true }, // Include the user data associated with the account
+    });
+
+    // Return the user object if the account and associated user exist
+    return account?.user ?? null;
+  }
 }
 
 // Create a default instance for backward compatibility

@@ -52,7 +52,7 @@ try {
     try {
       // Step 3: Set up test user
       console.log('Creating test user...');
-      execSync('node scripts/setup-test-user.js', { stdio: 'inherit' });
+      execSync('node scripts/create-test-user.js', { stdio: 'inherit' });
 
       // Step 4: Export emulator data (kills emulators)
       console.log('Exporting emulator data...');

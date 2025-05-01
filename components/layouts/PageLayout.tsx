@@ -18,7 +18,8 @@ interface PageLayoutProps {
  * Standard page layout component for consistent page structure across the application
  *
  * Provides consistent padding, margins, and layout for all pages
- * Following Material UI spacing guidelines
+ * Following Material UI spacing guidelines and ensuring proper accessibility
+ * through semantic HTML and ARIA landmarks
  */
 export default function PageLayout({
   children,
@@ -31,6 +32,8 @@ export default function PageLayout({
 }: PageLayoutProps) {
   return (
     <Box
+      component="div"
+      data-testid="page-layout"
       sx={{
         minHeight: 'calc(100vh - 64px - 100px)',
         bgcolor: 'background.default',
@@ -47,9 +50,12 @@ export default function PageLayout({
         <PageHeader title={title} subtitle={subtitle} action={action} containerSx={headerSx} />
 
         <Box
-          component="div"
-          role="region"
-          aria-label="Page content"
+          component="main"
+          role="main"
+          id="main-content"
+          data-testid="main-content"
+          aria-labelledby="page-title"
+          tabIndex={-1}
           sx={{
             mt: { xs: 2, sm: 3 },
             ...contentSx,

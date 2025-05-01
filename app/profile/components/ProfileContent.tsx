@@ -1,7 +1,10 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { User } from 'next-auth';
 import { Box, Paper } from '@mui/material';
+import { useUserStore } from '@/lib/store/userStore';
+import { UserRole } from '@/types';
 import ProfileAvatarSection from './ProfileAvatarSection';
 import ProfileDetailsSection from './ProfileDetailsSection';
 import ProfileLoadingState from './ProfileLoadingState';
@@ -11,18 +14,15 @@ import { loggers } from '@/lib/logger';
 const profileLogger = loggers.ui;
 
 export default function ProfileContent() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
+  const { id, name, email, image, role } = useUserStore();
 
-  // TEMPORARY E2E DEBUG LOGGING
-  // console.log(`[E2E DEBUG] ProfileContent - Status: ${status}`);
-  // console.log(`[E2E DEBUG] ProfileContent - Session Data: ${JSON.stringify(session, null, 2)}`);
-  // END TEMPORARY E2E DEBUG LOGGING
-
-  profileLogger.debug('[ProfileContent] useSession status and data', {
+  profileLogger.debug('[ProfileContent] Zustand store state', {
+    id,
+    name,
+    email,
+    hasImage: !!image,
     status,
-    hasSessionData: !!session,
-    hasUserData: !!session?.user,
-    userId: session?.user?.id,
   });
 
   if (status === 'loading') {
@@ -30,24 +30,30 @@ export default function ProfileContent() {
     return <ProfileLoadingState />;
   }
 
-  const user = session?.user;
-
-  if (!user) {
-    profileLogger.warn('No user data found in session', { status });
+  if (!id) {
+    profileLogger.warn('No user ID found in Zustand store', { status });
     return <ProfileErrorState />;
   }
 
-  profileLogger.info('Rendering profile content for user', { userId: user.id });
-  // ADDED E2E DEBUG LOG
-  // console.log(`[E2E DEBUG] ProfileContent rendering MAIN content (User ID: ${user.id})`);
+  const userFromStore: User = {
+    id,
+    name: name ?? undefined,
+    email: email ?? undefined,
+    image: image ?? undefined,
+    role: role ?? UserRole.USER,
+  };
+
+  profileLogger.info('Rendering profile content for user from store', { userId: id });
 
   return (
     <Paper
-      id={status === 'authenticated' ? 'profile-content-authenticated' : 'profile-content-loading'}
-      elevation={1}
+      id={id ? 'profile-content-authenticated' : 'profile-content-loading'}
       sx={{
         p: { xs: 3, sm: 4 },
         borderRadius: 2,
+        border: 'none',
+        boxShadow: 'none',
+        backgroundImage: 'none',
       }}
     >
       <Box
@@ -57,8 +63,8 @@ export default function ProfileContent() {
           gap: { xs: 4, md: 6 },
         }}
       >
-        <ProfileAvatarSection user={user} />
-        <ProfileDetailsSection user={user} />
+        <ProfileAvatarSection user={userFromStore} />
+        <ProfileDetailsSection user={userFromStore} />
       </Box>
     </Paper>
   );

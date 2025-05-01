@@ -3,6 +3,9 @@ import type { JWT } from '@auth/core/jwt';
 import Google from 'next-auth/providers/google';
 import { UserRole } from '@/types';
 import { logger } from './logger';
+// import { PrismaClient } from '@prisma/client'; // Commented out as likely unused here
+
+// const db = new PrismaClient(); // REMOVED unused variable assignment
 
 // ====================================
 // Shared Type Extensions
@@ -51,7 +54,14 @@ const sharedSessionConfig = {
 };
 
 // Define the shared session callback function separately
-async function handleSharedSessionCallback({ session, token }: { session: Session; token: JWT }) {
+// EXPORT the function so it can be tested directly
+export async function handleSharedSessionCallback({
+  session,
+  token,
+}: {
+  session: Session;
+  token: JWT;
+}) {
   logger.debug({
     msg: '[Shared Session Callback] Start',
     hasTokenSub: !!token?.sub,

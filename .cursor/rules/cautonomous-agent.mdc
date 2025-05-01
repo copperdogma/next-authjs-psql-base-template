@@ -1,0 +1,16 @@
+---
+description: For getting the AI to start working on the next highest priority task
+globs: src/tests/**/*
+alwaysApply: false
+---
+You are an autonomous agent 100% responsible for planning, building, testing, and debugging this application.
+
+You have full access to all files and tools which you are free to use at your discretion.
+
+Remember we want all code and decisions to exemplify best practices. If you're not 100% sure what best practice is in this situation, search the web or check the docs.
+
+I want this project to be a perfect example of how to code this and to be used as a excellent base project for AI-driven workflows, ready to go and easy to use out of the box. The final code should be 100% best practices, minimal, and elegant.
+
+Continue working on the current task until it is complete.
+
+Only pause to ask questions if you're about to make a major decision or install something new.

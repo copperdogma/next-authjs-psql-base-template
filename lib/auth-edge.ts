@@ -22,7 +22,13 @@ interface LogContext {
 // =============================================================================
 // Constants for Edge Runtime (Keep specific to Edge)
 // =============================================================================
-const PUBLIC_ROUTES = ['/', '/about', '/api/health', '/api/log/client'];
+const PUBLIC_ROUTES = [
+  '/', // Allow access to the home page when logged out
+  '/about',
+  '/api/health',
+  '/api/log/client',
+  '/manifest.webmanifest', // Explicitly allow manifest
+];
 const AUTH_ROUTES = ['/login', '/register'];
 const API_AUTH_PREFIX = '/api/auth';
 const API_TEST_PREFIX = '/api/test';
@@ -150,8 +156,15 @@ export const authConfigEdge: NextAuthConfig = {
 
       logger.debug('[Auth Edge Callback] authorized check running', logContext);
 
-      if (isPublicRoute(pathname) || isApiRoute(pathname)) {
-        logger.debug('[Auth Edge] Allowing public or API route', { ...logContext, pathname });
+      // --- ADDED CHECK for icon patterns ---
+      const isIcon = pathname.startsWith('/icon-');
+
+      if (isPublicRoute(pathname) || isApiRoute(pathname) || isIcon) {
+        // Added isIcon check
+        logger.debug('[Auth Edge] Allowing public, API, or icon route', {
+          ...logContext,
+          pathname,
+        });
         return true;
       }
       if (isAuthRoute(pathname)) {

@@ -9,8 +9,16 @@ module.exports = {
       autorestart: true,
       env_development: {
         NODE_ENV: 'development',
-
-        // Port will be assigned dynamically if not set
+        DATABASE_URL:
+          'postgresql://postgres:postgres@localhost:5432/ai-calendar-helper-test?schema=public',
+        NEXTAUTH_SECRET: 'test_nextauth_secret',
+        PORT: '3001',
+        NEXTAUTH_URL: 'http://localhost:3001',
+        USE_FIREBASE_EMULATOR: 'true',
+        FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
+        FIRESTORE_EMULATOR_HOST: 'localhost:8080',
+        TEST_USER_EMAIL: 'test@example.com',
+        TEST_USER_PASSWORD: 'Test123!',
       },
       out_file: './logs/next-dev-out.log',
       error_file: './logs/next-dev-err.log',

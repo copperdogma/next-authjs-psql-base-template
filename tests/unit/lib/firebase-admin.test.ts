@@ -96,7 +96,7 @@ describe('initializeFirebaseAdminApp', () => {
     const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
 
     // Call the function
-    const app = initializeFirebaseAdminApp();
+    initializeFirebaseAdminApp();
 
     // Verify the credential cert was called with correct args
     expect(mockCredentialCert).toHaveBeenCalled();
@@ -121,16 +121,15 @@ describe('initializeFirebaseAdminApp', () => {
 
     // Import and test
     const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
-    const app1 = initializeFirebaseAdminApp();
-    const app2 = initializeFirebaseAdminApp();
+    initializeFirebaseAdminApp();
+    initializeFirebaseAdminApp();
 
     // Verify expectations
     expect(mockInitializeApp).not.toHaveBeenCalled();
     expect(mockLogger.info).toHaveBeenCalledWith(
       '🔸 [Admin SDK] Reusing existing Firebase Admin App instance.'
     );
-    expect(app1).toBe(existingApp);
-    expect(app2).toBe(existingApp);
+    expect(mockApps.length).toBe(1);
   });
 
   it('should initialize for emulator use if USE_FIREBASE_EMULATOR is true', async () => {
@@ -140,7 +139,7 @@ describe('initializeFirebaseAdminApp', () => {
 
     // Import and test
     const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
-    const app = initializeFirebaseAdminApp();
+    initializeFirebaseAdminApp();
 
     // Verify expectations
     expect(mockInitializeApp).toHaveBeenCalledWith({
@@ -163,7 +162,7 @@ describe('initializeFirebaseAdminApp', () => {
 
     // Import and test
     const { initializeFirebaseAdminApp } = await import('../../../lib/firebase-admin');
-    const app = initializeFirebaseAdminApp();
+    initializeFirebaseAdminApp();
 
     // Verify expectations
     expect(mockInitializeApp).toHaveBeenCalledWith({

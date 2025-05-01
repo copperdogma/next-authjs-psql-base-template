@@ -102,6 +102,11 @@ export class PinoLoggerService implements LoggerService {
     this.logger.debug(obj, msg);
   }
 
+  trace(obj: object | string, msg?: string): void {
+    // Pino doesn't have a distinct trace level by default, map to debug
+    this.logger.debug(obj, msg);
+  }
+
   /**
    * Create a child logger with additional context
    */

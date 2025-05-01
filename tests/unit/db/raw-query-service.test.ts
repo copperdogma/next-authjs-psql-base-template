@@ -1,6 +1,6 @@
 import { RawQueryService } from '../../../lib/db/raw-query-service';
 import { prisma } from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
+// import { Prisma } from '@prisma/client'; // Unused import
 import { RawQueryServiceImpl } from '../../../lib/services/raw-query-service';
 
 // Mock the prisma client and Prisma.raw
@@ -189,6 +189,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
+    trace: jest.fn(),
   };
 
   beforeEach(() => {
@@ -353,7 +354,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
 
       // Extract stringifiable parts of the SQL to verify
       const callArgs = mockPrismaClient.$executeRaw.mock.calls[0]
-        .map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
+        .map((arg: any) => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
         .join(' ');
 
       // Verify userIds are included but expiresAt condition is not
@@ -382,7 +383,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
 
       // Extract stringifiable parts of the SQL to verify
       const callArgs = mockPrismaClient.$executeRaw.mock.calls[0]
-        .map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
+        .map((arg: any) => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
         .join(' ');
 
       // Verify both userIds and expiresAt are included
@@ -436,7 +437,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
     // Test to cover buildActivityWhereClause with null since (line 218)
     it('builds empty where clause when since is not provided', async () => {
       // Mock query results
-      const mockResults = [];
+      const mockResults: any[] = [];
       mockPrismaClient.$queryRaw.mockResolvedValue(mockResults);
 
       // Create service with mocked dependencies
@@ -458,7 +459,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
     // Test to cover buildActivityWhereClause with since (line 218)
     it('builds where clause with since when provided', async () => {
       // Mock query results
-      const mockResults = [];
+      const mockResults: any[] = [];
       mockPrismaClient.$queryRaw.mockResolvedValue(mockResults);
 
       // Create service with mocked dependencies
@@ -558,7 +559,7 @@ describe('RawQueryServiceImpl (DI version)', () => {
     // Test for SQL truncation logic
     it('truncates long SQL queries in logs', async () => {
       // Mock query results
-      const mockResults = [];
+      const mockResults: any[] = [];
       mockPrismaClient.$queryRaw.mockResolvedValue(mockResults);
 
       // Create service with mocked dependencies

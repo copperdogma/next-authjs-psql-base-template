@@ -39,26 +39,12 @@ body.dark {
   color: #ffffff;
 }
 
-/* Core page elements must also get theme colors */
-.dark [data-mui-color-scheme='dark'] {
-  background-color: #121212;
-  color: #ffffff;
-}
-
-.light [data-mui-color-scheme='light'] {
-  background-color: #ffffff;
-  color: #212121;
-}
-
 /* Removed MUI component-specific overrides now handled in the theme:
    - html.dark .MuiPaper-root
    - html.dark .MuiCard-root
    - html.dark .MuiAlert-root
    - html.dark .MuiDialog-paper
    - html.dark .MuiBox-root
-   - html.dark .MuiPaper-root .MuiBox-root
-   - html.dark .theme-aware-paper
-   - html.light .theme-aware-paper
 */
 
 /* Prevent transitions during theme change to avoid flashing */

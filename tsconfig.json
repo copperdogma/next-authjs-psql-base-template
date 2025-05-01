@@ -38,10 +38,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "tests/unit/**/*.test.ts",
-    "tests/unit/**/*.test.tsx",
-    "tests/e2e/**/*.test.ts"
-  ]
+  "exclude": ["node_modules", "tests/e2e/**/*.test.ts"]
 }

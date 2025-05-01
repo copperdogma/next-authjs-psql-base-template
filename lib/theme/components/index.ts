@@ -35,42 +35,22 @@ const getDialogOverrides = (mode: PaletteMode): Components<Theme>['MuiDialog'] =
  */
 export const getComponentOverrides = (mode: PaletteMode): Components<Theme> => ({
   MuiCssBaseline: {
-    styleOverrides: {
-      ...getScrollbarStyles(mode),
+    styleOverrides: theme => ({
+      ...getScrollbarStyles(theme.palette.mode),
       // Migrate .theme-aware-paper overrides from globals.css
       '.theme-aware-paper': {
-        backgroundColor: (theme: Theme) => theme.palette.background.paper,
-        color: (theme: Theme) => theme.palette.text.primary,
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
       },
-      // Migrate .MuiPaper-root .MuiBox-root (Box inside Paper) if needed
-      '.MuiPaper-root .MuiBox-root': {
-        backgroundColor: (theme: Theme) => theme.palette.background.paper,
-      },
-    },
+    }),
   },
   MuiButton: getButtonOverrides(mode),
   MuiPaper: {
     ...getCardAndPaperOverrides(),
-    styleOverrides: {
-      root: ({ theme }) => ({
-        ...(mode === 'dark' && {
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-        }),
-      }),
-    },
   },
   MuiAppBar: getAppBarOverrides(),
   MuiCard: {
     ...getCardAndPaperOverrides(),
-    styleOverrides: {
-      root: ({ theme }) => ({
-        ...(mode === 'dark' && {
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-        }),
-      }),
-    },
   },
   MuiAlert: getAlertOverrides(mode),
   MuiDialog: getDialogOverrides(mode),

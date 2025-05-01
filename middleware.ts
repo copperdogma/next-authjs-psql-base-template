@@ -13,14 +13,9 @@
 // =============================================================================
 
 // import NextAuth from 'next-auth'; // No longer needed directly
-import { NextResponse } from 'next/server';
-// import type { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth-edge'; // Import from edge config
-import { loggers } from '@/lib/logger';
 // import { PUBLIC_ROUTES, AUTH_ROUTES, DEFAULT_LOGIN_REDIRECT } from '@/lib/routes'; // Cannot find this file
 // import { logger } from '@/lib/logger'; // Logger is implicitly used by auth
-
-const logger = loggers.middleware;
 
 // Initialize NextAuth with the Edge-compatible config and export the middleware handler.
 // The `auth` property returned by NextAuth contains the middleware function.
@@ -31,34 +26,21 @@ const logger = loggers.middleware;
 // export default auth((req) => {
 //   const { nextUrl } = req;
 //   const isLoggedIn = !!req.auth;
-//   middlewareLogger.debug({ isLoggedIn, pathname: nextUrl.pathname }, 'Processing request');
+//   // Logger debug call removed to prevent unused variable error
 // });
-
-// Export the default auth middleware directly
-// The logic is handled within the authorized callback in lib/auth-edge.ts
-export default auth(req => {
-  // Auth.js handles authentication checks via the authorized callback
-  // This middleware function can add additional custom logic if needed
-
-  const { auth: session, nextUrl } = req;
-  const isAuthenticated = !!session;
-
-  logger.debug({
-    msg: '[Middleware] Processing request',
-    path: nextUrl.pathname,
-    isAuthenticated,
-    userId: session?.user?.id,
-  });
-
-  // Let Auth.js handle route protection based on the authorized callback
-  return NextResponse.next();
-});
 
 // Config for route matching
 export const config = {
-  // Matcher ignoring specific paths (e.g., _next/static, _next/image, favicon.ico)
-  // and API routes under /api/log/client
-  matcher: ['/((?!api/log/client|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next (static files, image optimization files)
+     * - api/auth (Auth.js API routes)
+     * - favicon.ico (favicon file)
+     * Other assets (e.g., /icon-*.png) are typically ignored by default.
+     */
+    '/((?!api/auth|_next|favicon.ico).*)',
+  ],
 };
 
 // Note: All previous complex middleware logic (route checks, redirects)
@@ -83,4 +65,6 @@ export const config = {
 
 // Re-export auth from auth-edge.ts to be used as middleware
 // This automatically uses the `authorized` callback in authConfigEdge for route protection.
-export { auth as middleware } from '@/lib/auth-edge';
+export default auth;
+
+// const PUBLIC_PATHS = ['/login', '/register', '/about', '/api/health', '/api/auth/session']; // This is unused and handled by auth config

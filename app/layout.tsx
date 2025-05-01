@@ -9,6 +9,9 @@ import BaseLayout from '@/components/layouts/BaseLayout';
 import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
 import { auth } from '@/lib/auth-edge';
 import { loggers } from '@/lib/logger';
+import { CssBaseline, Box } from '@mui/material';
+import Header from '@/components/layouts/Header';
+import Footer from '@/components/layouts/Footer';
 
 const logger = loggers.auth;
 
@@ -21,7 +24,6 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: 'Next.js + NextAuth + PostgreSQL',
   description: 'A Next.js starter template with NextAuth.js Authentication and PostgreSQL database',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
 };
 
 // This script runs before page renders to prevent theme flashing
@@ -44,6 +46,9 @@ const themeScript = `
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
     document.documentElement.style.colorScheme = theme;
+    
+    // Set data attribute on body for client hydration
+    document.body.dataset.initialTheme = theme;
     
     // Remove transition prevention after a minimal delay
     setTimeout(function() {
@@ -70,26 +75,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+      <head>{/* <script dangerouslySetInnerHTML={{ __html: themeScript }} /> */}</head>
       <body className={roboto.className}>
+        {/* Visually hidden H1 moved inside main container */}
         <FirebaseClientInitializer />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="theme-preference"
-        >
-          {/* Pass the server-fetched session to the provider */}
-          <SessionProviderWrapper session={session}>
+        <SessionProviderWrapper session={session}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            storageKey="theme-preference"
+          >
             <ThemeRegistry>
-              <BaseLayout>{children}</BaseLayout>
-              <Toaster />
+              <CssBaseline />
+              <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                <Header />
+                <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
+                  <BaseLayout>{children}</BaseLayout>
+                  <Toaster />
+                </Box>
+                <Footer />
+              </Box>
             </ThemeRegistry>
-          </SessionProviderWrapper>
-        </ThemeProvider>
+          </ThemeProvider>
+        </SessionProviderWrapper>
+        {/* Moved theme script here to ensure body exists */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </body>
     </html>
   );

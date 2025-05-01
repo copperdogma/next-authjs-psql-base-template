@@ -17,54 +17,69 @@ export class ProfileService {
   ) {}
 
   /**
-   * Updates a user's name in both the database and Firebase
+   * Try to update a user's display name in Firebase if possible
+   * @private
+   */
+  private async tryUpdateFirebaseUserName(
+    userEmail: string,
+    name: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      // Try to find the user in Firebase
+      const firebaseUser = await this.firebaseAdminService.getUserByEmail(userEmail);
+
+      if (firebaseUser) {
+        // Update Firebase user display name
+        await this.firebaseAdminService.updateUser(firebaseUser.uid, { displayName: name });
+        this.logger.info(
+          { userId, firebaseUid: firebaseUser.uid },
+          'Firebase user displayName updated'
+        );
+      }
+    } catch (firebaseError: unknown) {
+      // Log but don't fail if Firebase update fails
+      this.logger.warn(
+        {
+          userId,
+          error: firebaseError instanceof Error ? firebaseError.message : String(firebaseError),
+        },
+        'Could not update Firebase user - continuing'
+      );
+    }
+  }
+
+  /**
+   * Updates a user's display name in both the database and Firebase Auth (if available)
    */
   async updateUserName(
     userId: string,
     name: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // 1. Update the name in the database
+      // Update in database
       await this.userService.updateUserName(userId, name);
 
-      // 2. Get the user to find them in Firebase
+      // If user has email, also update in Firebase
       const user = await this.userService.findUserById(userId);
 
-      if (user?.email) {
-        try {
-          // 3. Find the Firebase user by email
-          const firebaseUser = await this.firebaseAdminService.auth().getUserByEmail(user.email);
-
-          // 4. Update the Firebase user's display name
-          await this.firebaseAdminService.auth().updateUser(firebaseUser.uid, {
-            displayName: name,
-          });
-
-          this.logger.info({
-            msg: 'Firebase user displayName updated',
-            userId,
-            firebaseUid: firebaseUser.uid,
-          });
-        } catch (firebaseError) {
-          // Log Firebase error but don't fail the overall operation
-          this.logger.error({
-            msg: 'Error updating Firebase user displayName',
-            error: firebaseError instanceof Error ? firebaseError.message : String(firebaseError),
-            userId,
-          });
-          // We continue even if Firebase update fails, as the database is the source of truth
-        }
+      if (!user || !user.email) {
+        this.logger.info({ userId }, 'User name updated successfully (no Firebase update needed)');
+        return { success: true };
       }
 
-      this.logger.info({ msg: 'User name updated successfully', userId });
+      // Try Firebase update separately
+      await this.tryUpdateFirebaseUserName(user.email, name, userId);
+
+      this.logger.info({ userId }, 'User name updated successfully');
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error({
         msg: 'Error updating user name in database',
         error: error instanceof Error ? error.message : String(error),
         userId,
       });
-      return { success: false, error: 'An error occurred while updating your name' };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 }

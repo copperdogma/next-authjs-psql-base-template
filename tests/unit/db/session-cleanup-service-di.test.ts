@@ -3,7 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { PrismaClient, Session, Prisma } from '@prisma/client';
+import { PrismaClient, Session /*, Prisma */ } from '@prisma/client';
 import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
 import { Logger } from 'pino';
 import {

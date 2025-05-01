@@ -1,30 +1,34 @@
 // Mock firebase-admin before importing FirebaseAdminService
 import * as admin from 'firebase-admin';
 import { DeepMockProxy, mockDeep, mockReset } from 'jest-mock-extended';
+// @ts-ignore - Firebase types might not align perfectly with admin SDK v12+
 import type { App } from 'firebase-admin/app';
+// @ts-ignore - Firebase types might not align perfectly with admin SDK v12+
 import { Auth } from 'firebase-admin/auth'; // Use Auth type
 
 // Mock the entire firebase-admin module
-jest.mock('firebase-admin', () => ({
-  // Use mockDeep to create mocks for sub-modules like auth()
-  auth: mockDeep<() => admin.auth.Auth>(),
-  initializeApp: jest.fn(),
-  credential: { cert: jest.fn() },
-}));
+jest.mock('firebase-admin', () => {
+  return {
+    initializeApp: jest.fn().mockReturnValue({}),
+    auth: jest.fn(),
+    credential: {
+      cert: jest.fn().mockReturnValue({}),
+    },
+  };
+});
 
 import type * as pino from 'pino';
 import { FirebaseAdminService } from '../../../lib/services/firebase-admin-service';
 
-// Define mock types for Firebase Admin Auth methods more granularly
+// Define types for mocks
 type MockAuth = DeepMockProxy<admin.auth.Auth> & {
+  createCustomToken: jest.Mock;
+  verifyIdToken: jest.Mock;
+  getUser: jest.Mock;
   getUserByEmail: jest.Mock;
-  updateUser: jest.Mock;
-  createCustomToken: jest.Mock; // Added
-  // Removed getUser, verifyIdToken
 };
 
 // Get typed access to the mocked admin functions/objects
-const mockInitializeApp = admin.initializeApp as jest.Mock;
 const mockAuth = admin.auth as jest.MockedFunction<() => MockAuth>; // Cast return type
 
 // Mocks

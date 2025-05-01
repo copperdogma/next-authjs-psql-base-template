@@ -4,7 +4,7 @@
 
 import { jest } from '@jest/globals';
 import { PrismaClient } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 
 // Define our own simplified LoggerService for testing
 interface LoggerService {
@@ -12,6 +12,7 @@ interface LoggerService {
   error(obj: object | string, msg?: string): void;
   warn(obj: object | string, msg?: string): void;
   debug(obj: object | string, msg?: string): void;
+  trace(obj: object | string, msg?: string): void;
   child(bindings: Record<string, unknown>): LoggerService;
 }
 
@@ -35,7 +36,12 @@ class MockLoggerService implements LoggerService {
     this.logs.push({ level: 'debug', data: obj, message: msg });
   }
 
-  child(bindings: Record<string, unknown>): LoggerService {
+  trace(obj: object | string, msg?: string): void {
+    // Mock implementation - just log as debug for simplicity
+    this.logs.push({ level: 'trace', data: obj, message: msg });
+  }
+
+  child(/* bindings: Record<string, unknown> */): LoggerService {
     // Return self for simplicity
     return this;
   }

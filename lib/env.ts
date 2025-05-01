@@ -35,15 +35,11 @@ const envSchema = z.object({
   }),
 
   // Database
-  POSTGRES_URL: z.string({
-    required_error: 'POSTGRES_URL is required',
-  }),
-  REDIS_URL: z.string({
-    required_error: 'REDIS_URL is required',
-  }),
   DATABASE_URL: z.string({
     required_error: 'DATABASE_URL is required',
+    invalid_type_error: 'DATABASE_URL must be a string',
   }),
+  REDIS_URL: z.string().optional(), // Assuming Redis is optional for now
 
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string({
@@ -80,9 +76,8 @@ export const requiredEnvVars = [
   'FIREBASE_PRIVATE_KEY',
 
   // Database
-  'POSTGRES_URL',
-  'REDIS_URL',
   'DATABASE_URL',
+  'REDIS_URL',
 
   // Google OAuth
   'GOOGLE_CLIENT_ID',

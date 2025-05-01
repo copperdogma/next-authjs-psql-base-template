@@ -1,133 +1,201 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect, type Page } from '@playwright/test';
 import path from 'path';
+import { STORAGE_STATE } from '../../../playwright.config'; // Keep this one
 import dotenv from 'dotenv';
+import { ROUTES } from '../../utils/routes';
 
-// Load .env.test variables if not already loaded by Playwright config
-// It's safer to load them explicitly here as well.
+// Load environment variables from .env.test
+// Use override: false to avoid overwriting existing process vars if needed
+// Ensure the path is correct relative to the current file
 dotenv.config({ path: path.resolve(__dirname, '../../../.env.test'), override: false });
 
-const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL;
-const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD;
+// Define test user credentials
+const testUserEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
+const testUserPassword = process.env.TEST_USER_PASSWORD || 'Test123!';
 
-const STORAGE_STATE = path.join(__dirname, '../../.auth/user.json');
-const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-// Auth.js default sign-in page path (adjust if custom pages are configured)
-const SIGN_IN_URL = `${BASE_URL}/api/auth/signin`;
+// Base URL for the application under test
+// const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'; // REMOVED - Rely on Playwright's baseURL
+// Removed unused SIGN_IN_URL
+
 const EXPECTED_POST_LOGIN_PATHS = ['/', '/dashboard']; // Accept either home or dashboard after login
 
+// --- Helper Functions ---
+
+async function navigateToLoginAndVerifyForm(page: Page): Promise<void> {
+  console.log(` Navigating to Login Route: ${ROUTES.LOGIN}`);
+  await page.goto(ROUTES.LOGIN, { waitUntil: 'networkidle', timeout: 20000 });
+  console.log(` Current URL: ${page.url()}`);
+
+  const signInButton = page.locator('button:has-text("Sign In with Email")');
+  console.log(' Waiting for Sign In button to be visible...');
+  await signInButton.waitFor({ state: 'visible', timeout: 20000 });
+  console.log('✅ Sign In button located');
+
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
+  await expect(emailInput, 'Email input should be visible').toBeVisible({ timeout: 5000 });
+  await expect(passwordInput, 'Password input should be visible').toBeVisible({
+    timeout: 5000,
+  });
+  console.log('✅ Form elements located');
+}
+
+async function fillAndSubmitLoginForm(page: Page, email: string, password: string): Promise<void> {
+  console.log(' Filling credentials...');
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(password);
+  console.log(' Clicking Sign In button...');
+  await page.locator('button:has-text("Sign In with Email")').click();
+}
+
+async function waitForSuccessfulLoginRedirect(page: Page): Promise<void> {
+  console.log(' Waiting for navigation after login...');
+  await page.waitForURL(url => EXPECTED_POST_LOGIN_PATHS.some(p => url.pathname === p), {
+    timeout: 15000,
+  });
+
+  const currentUrl = page.url();
+  console.log(` Current URL after login: ${currentUrl}`);
+
+  if (currentUrl.includes('error=')) {
+    const errorCode = new URL(currentUrl).searchParams.get('error');
+    throw new Error(`Login might have failed with error in URL: ${errorCode}`);
+  }
+}
+
+async function verifyLoggedInState(page: Page): Promise<void> {
+  console.log(' Verifying successful login by checking UI state...');
+  // Navigate to DASHBOARD to verify session is really working for protected routes
+  console.log(` Navigating to ${ROUTES.DASHBOARD} for verification...`);
+  await page.goto(ROUTES.DASHBOARD, { waitUntil: 'networkidle', timeout: 20000 });
+  await page.waitForLoadState('networkidle'); // Extra wait just in case
+
+  console.log(` Current URL after navigating to dashboard: ${page.url()}`);
+
+  // Check we are actually on the dashboard
+  if (!page.url().endsWith(ROUTES.DASHBOARD)) {
+    throw new Error(
+      `Login verification failed. Expected to be on ${ROUTES.DASHBOARD} but ended up at ${page.url()}`
+    );
+  }
+
+  try {
+    // Verify dashboard heading is visible
+    const dashboardHeading = page.locator('h1:has-text("Dashboard")');
+    await expect(dashboardHeading, 'Dashboard heading should be visible').toBeVisible({
+      timeout: 20000,
+    });
+    console.log('✅ Dashboard heading visible.');
+
+    // Verify user profile element is visible (redundant but safe)
+    await expect(
+      page.locator('[data-testid="user-profile-chip"]'),
+      'User profile chip should be visible'
+    ).toBeVisible({ timeout: 5000 });
+    console.log('✅ User profile chip visible.');
+
+    // Check for session cookie
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(
+      c =>
+        c.name.startsWith('next-auth.session-token') ||
+        c.name.startsWith('__Secure-next-auth.session-token')
+    );
+    if (!sessionCookie) {
+      console.error(
+        'Login verification failed: NextAuth session cookie missing after dashboard load.'
+      );
+      console.log('Cookies found:', JSON.stringify(cookies, null, 2));
+      throw new Error('Login verification failed: Session cookie missing.');
+    }
+    console.log(`✅ Found session cookie: ${sessionCookie.name}`);
+  } catch (e) {
+    // Take screenshot for debugging
+    const screenshotPath = path.join(
+      __dirname, // Use __dirname directly
+      `../../test-results/auth-verification-failed-${Date.now()}.png`
+    );
+    try {
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      console.error(`📸 Screenshot saved to ${screenshotPath}`);
+    } catch (ssError) {
+      console.error(`Failed to take screenshot: ${String(ssError)}`);
+    }
+    console.error(
+      'Login verification failed: Could not verify elements or cookie on dashboard.',
+      e
+    );
+    // Re-throw the original error or a more specific one
+    throw new Error(
+      `Login verification failed. Could not verify elements or cookie on dashboard. Original error: ${e}`
+    );
+  }
+  console.log('✅ Login verification successful - user appears to be logged in on dashboard');
+}
+
+async function saveStorageState(page: Page, storagePath: string): Promise<void> {
+  await page.context().storageState({ path: storagePath });
+  console.log(`💾 Authentication state saved to ${storagePath}`);
+}
+
+// --- End Helper Functions ---
+
 setup.describe('Authentication Setup via Credentials Provider', () => {
-  setup.setTimeout(90000); // Increase timeout for potential slow first loads/compilations
+  setup.setTimeout(90000); // Increase timeout
 
   setup('authenticate via test credentials', async ({ page }) => {
-    console.log('🚀 Starting authentication setup via E2E Credentials Provider...');
+    console.log('🚀 Starting authentication setup via Credentials Provider (UI Form)...');
 
     // --- Pre-checks ---
-    if (!TEST_USER_EMAIL || !TEST_USER_PASSWORD) {
+    if (!testUserEmail || !testUserPassword) {
       throw new Error(
         'TEST_USER_EMAIL or TEST_USER_PASSWORD environment variables not set. Check .env.test'
       );
     }
-    console.log(` Using Test Email: ${TEST_USER_EMAIL}`);
+    console.log(` Using Test Email: ${testUserEmail}`);
     // --- End Pre-checks ---
 
     try {
-      // Navigate to the Sign-in page
-      console.log(` Navigating to Sign-in URL: ${SIGN_IN_URL}`);
-      await page.goto(SIGN_IN_URL, { waitUntil: 'domcontentloaded' });
-      console.log(` Current URL: ${page.url()}`);
+      // Call the helper function
+      await navigateToLoginAndVerifyForm(page);
 
-      // Wait for the E2E Test Login form elements
-      console.log(' Waiting for E2E Test Login form elements...');
-      const emailInput = page.locator('input[name="email"]');
-      const passwordInput = page.locator('input[name="password"]');
-      const csrfInput = page.locator('input[name="csrfToken"]');
-      const signInButton = page.getByRole('button', { name: 'Sign in with E2E Test Login' });
+      // Call the new helper function
+      await fillAndSubmitLoginForm(page, testUserEmail, testUserPassword);
 
-      // Wait for inputs to be ready
-      await emailInput.waitFor({ state: 'visible', timeout: 15000 });
-      await passwordInput.waitFor({ state: 'visible', timeout: 15000 });
-      await csrfInput.waitFor({ state: 'attached', timeout: 15000 });
-      await signInButton.waitFor({ state: 'visible', timeout: 15000 });
-      console.log('✅ Form elements located');
+      // Call the new helper function
+      await waitForSuccessfulLoginRedirect(page);
 
-      // Fill in credentials
-      console.log(' Filling credentials...');
-      await emailInput.fill(TEST_USER_EMAIL);
-      await passwordInput.fill(TEST_USER_PASSWORD);
+      console.log(' Signed in successfully via credentials.');
 
-      // Click sign in and wait for redirect
-      console.log(' Clicking Sign In button...');
-      await signInButton.click();
+      // Add a short delay to allow session propagation
+      console.log(' Waiting for 1 second for session to propagate...');
+      await page.waitForTimeout(1000);
 
-      // Wait for navigation
-      console.log(' Waiting for navigation after login...');
-      // This pattern gives us more flexibility than Promise.all, which can be fragile
-      await page.waitForNavigation({ timeout: 15000 });
+      // Verify login state
+      await verifyLoggedInState(page);
+      console.log('✅ Login state verified.');
 
-      const currentUrl = page.url();
-      console.log(` Current URL after login: ${currentUrl}`);
+      // Call the new helper function
+      await saveStorageState(page, STORAGE_STATE);
 
-      // Check for error in URL
-      if (currentUrl.includes('error=')) {
-        const errorCode = new URL(currentUrl).searchParams.get('error');
-        throw new Error(`Login failed with error: ${errorCode}`);
-      }
-
-      // Check if we're on an expected page
-      const currentPath = new URL(currentUrl).pathname;
-      if (!EXPECTED_POST_LOGIN_PATHS.includes(currentPath)) {
-        throw new Error(`Login did not redirect to expected page. Current URL: ${currentUrl}`);
-      }
-
-      // Verify successful login by checking session
-      console.log(' Verifying successful login by checking session state...');
-
-      // Navigate to a page that shows login state clearly
-      await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
-
-      // Wait for page to settle
-      await page.waitForLoadState('networkidle');
-
-      // Check for the UserProfile component rendering, indicating login success
-      // Use a longer timeout to allow for hydration
-      try {
-        await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: 20000 }); // Increased timeout to 20s
-      } catch (e) {
-        // Take screenshot for debugging
-        const screenshotPath = path.join(
-          __dirname,
-          `../../test-results/auth-verification-failed-${Date.now()}.png`
-        );
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.error(
-          'Login verification failed: User profile element not visible after 20 seconds.',
-          e
-        );
-        throw new Error(
-          `Login verification failed. Unable to detect logged in state via [data-testid="user-profile"].`
-        );
-      }
-
-      console.log('✅ Login verification successful - user appears to be logged in');
-
-      // Save storage state
-      await page.context().storageState({ path: STORAGE_STATE });
-      console.log(`💾 Authentication state saved to ${STORAGE_STATE}`);
       console.log('🎉 Authentication setup via form-based login complete!');
     } catch (error) {
-      console.error('❌ Authentication setup failed:', error);
-      // Capture screenshot on failure
+      console.error(
+        'Authentication with credentials failed:',
+        error instanceof Error ? error.message : String(error)
+      );
+      // Take screenshot if error occurs during login process
       const screenshotPath = path.join(
-        __dirname,
-        `../../test-results/auth-setup-failure-${Date.now()}.png`
+        __dirname, // Use __dirname directly
+        `../../test-results/auth-login-failed-${Date.now()}.png`
       );
       try {
         await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.log(`📸 Screenshot saved to ${screenshotPath}`);
+        console.error(`📸 Login failure screenshot saved to ${screenshotPath}`);
       } catch (ssError) {
         console.error(`Failed to take screenshot: ${String(ssError)}`);
       }
-      throw error; // Re-throw the original error to fail the setup
+      throw new Error(`Authentication with credentials failed: ${error}`);
     }
   });
 });

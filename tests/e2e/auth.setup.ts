@@ -2,7 +2,6 @@ import { test as setup } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Page } from 'playwright';
-import { loginTestUser } from './utils/test-base'; // Import the new helper
 
 const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
 
@@ -31,28 +30,43 @@ console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 
 /**
- * Sets up authentication using the new loginTestUser helper.
+ * Sets up authentication using the standard UI Login form.
  */
-async function setupAuthViaCookieInjection(page: Page): Promise<boolean> {
-  console.log('🔑 Setting up authentication via Cookie Injection...');
+async function setupAuthViaUiLogin(page: Page): Promise<boolean> {
+  console.log('🔑 Setting up authentication via UI Login Form...');
   const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
 
   try {
-    // 1. Log in the user by setting the cookie
-    await loginTestUser(page, TEST_USER.uid);
-    console.log(`✅ Cookie injected for user: ${TEST_USER.uid}`);
+    // 1. Navigate to Login Page
+    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+    console.log('Navigated to /login');
 
-    // 2. Navigate to a protected page to verify session is picked up
-    console.log('🚀 Navigating to protected route (/dashboard) to verify session...');
-    // Ensure navigation happens *after* cookie is set
-    await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'networkidle' });
+    // 2. Locate Form Elements (Using selectors from CredentialsLoginForm.tsx)
+    const emailInput = page.locator('#email'); // Found id="email"
+    const passwordInput = page.locator('#password'); // Found id="password"
+    // Use type and text content for submit button
+    const submitButton = page.locator('button[type="submit"]:has-text("Sign In with Email")');
 
-    // 3. Verify and Save State
-    console.log('🔍 Verifying authentication and session state...');
+    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+    console.log('Login form elements located');
+
+    // 3. Fill and Submit Form
+    await emailInput.fill(TEST_USER.email);
+    await passwordInput.fill(TEST_USER.password);
+    console.log(`Filled credentials for ${TEST_USER.email}`);
+    await submitButton.click();
+    console.log('Clicked Sign In button');
+
+    // 4. Wait for successful redirect to Dashboard
+    await page.waitForURL('**/dashboard', { timeout: 15000, waitUntil: 'networkidle' });
+    console.log('Redirected to /dashboard after login attempt');
+
+    // 5. Verify and Save State
+    console.log('🔍 Verifying authentication and session state after UI login...');
     return verifyAuthentication(page);
   } catch (error) {
-    console.error('❌ Error during Cookie Injection auth setup:', error);
-    await page.screenshot({ path: 'tests/e2e/screenshots/auth-setup-error-cookie-injection.png' });
+    console.error('❌ Error during UI Login auth setup:', error);
+    await page.screenshot({ path: 'tests/e2e/screenshots/auth-setup-error-ui-login.png' });
     await createEmptyAuthState(); // Ensure we create empty state on failure
     return false;
   }
@@ -66,19 +80,19 @@ async function setupAuthViaCookieInjection(page: Page): Promise<boolean> {
 // }
 
 /**
- * This setup function now uses the cookie injection method.
+ * This setup function now uses the UI Login method.
  */
 setup('authenticate', async ({ page }) => {
   console.log('🔒 Setting up authentication for testing...');
 
   try {
-    // Use the new Cookie Injection method
-    const success = await setupAuthViaCookieInjection(page);
+    // Use the new UI Login method
+    const success = await setupAuthViaUiLogin(page);
 
     if (success) {
-      console.log('✅ Authentication setup completed successfully via Cookie Injection');
+      console.log('✅ Authentication setup completed successfully via UI Login');
     } else {
-      console.error('❌ Cookie Injection Authentication setup failed.');
+      console.error('❌ UI Login Authentication setup failed.');
       await createEmptyAuthState(); // Ensure we fall back to empty state
       console.warn('⚠️ Created empty auth state as fallback after setup failure');
     }
@@ -95,6 +109,13 @@ setup('authenticate', async ({ page }) => {
 async function verifyAuthentication(page: Page): Promise<boolean> {
   try {
     console.log(`Verifying authentication status at URL: ${page.url()}`);
+
+    // ADDED: Log cookies at the start of verification
+    const cookiesAtVerification = await page.context().cookies();
+    console.log(
+      '🍪 Cookies at start of verification:',
+      JSON.stringify(cookiesAtVerification, null, 2)
+    );
 
     // Increased timeout for verification checks
     const verificationTimeout = 15000; // 15 seconds
@@ -136,7 +157,7 @@ async function verifyAuthentication(page: Page): Promise<boolean> {
       await page.context().storageState({ path: storageStatePath });
       console.log(`✅ Authentication state saved to ${storageStatePath}`);
       return true;
-    } catch (error) {
+    } catch {
       console.error(
         `❌ Authentication verification failed - Dashboard element "${dashboardHeadingSelector}" not found within ${verificationTimeout}ms.`
       );

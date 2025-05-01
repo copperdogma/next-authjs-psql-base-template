@@ -2,9 +2,12 @@
 
 import { render, RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ReactElement, ReactNode } from 'react';
+import { ReactElement, ReactNode, useMemo } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { Session } from 'next-auth';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { createAppTheme } from '@/lib/theme';
 import { TestRenderResult, MockUser } from './test-types';
 import { SessionFixtures } from './test-fixtures';
 
@@ -18,32 +21,36 @@ type CustomRenderOptions = RenderOptions & {
 
 type SessionWithUser = Session;
 
-export const withSessionProvider = (
+export const renderWithProviders = (
   ui: ReactElement,
-  session: SessionWithUser | null = null
-): ReactElement => {
-  const Wrapper = ({ children }: WrapperProps) => (
-    <SessionProvider session={session}>{children}</SessionProvider>
-  );
-
-  return <Wrapper>{ui}</Wrapper>;
-};
-
-export const renderWithSession = (
-  ui: ReactElement,
-  session: SessionWithUser | null = null
+  session: SessionWithUser | null = null,
+  options?: Omit<CustomRenderOptions, 'wrapper'>
 ): TestRenderResult => {
-  const wrapper = ({ children }: WrapperProps) => (
-    <SessionProvider session={session}>{children}</SessionProvider>
-  );
+  const Wrapper = ({ children }: WrapperProps) => {
+    const testTheme = useMemo(() => createAppTheme('light'), []);
 
-  const result = render(ui, { wrapper } as CustomRenderOptions);
+    return (
+      <MuiThemeProvider theme={testTheme}>
+        <CssBaseline />
+        <SessionProvider session={session}>{children}</SessionProvider>
+      </MuiThemeProvider>
+    );
+  };
+
+  const result = render(ui, { wrapper: Wrapper, ...options });
   const user = userEvent.setup();
 
   return {
     ...result,
     user,
   } as TestRenderResult;
+};
+
+export const renderWithSession = (
+  ui: ReactElement,
+  session: SessionWithUser | null = null
+): TestRenderResult => {
+  return renderWithProviders(ui, session);
 };
 
 export const renderWithAuth = (
@@ -62,7 +69,5 @@ export const renderWithAuthenticatedSession = (
   return renderWithSession(ui, session);
 };
 
-// Re-export everything
 export * from '@testing-library/react';
-// Override render method
-export { renderWithSession as render };
+export { renderWithProviders as render };

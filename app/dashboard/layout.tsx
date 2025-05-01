@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { Container } from '@mui/material';
-import PageLayout from '@/components/layouts/PageLayout';
 
 // Dynamic metadata for the dashboard
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,14 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PageLayout title="Dashboard">
-      <Suspense
-        fallback={
-          <Container sx={{ py: 6, textAlign: 'center' }}>Loading dashboard content...</Container>
-        }
-      >
-        {children}
-      </Suspense>
-    </PageLayout>
+    <Suspense
+      fallback={
+        <Container sx={{ py: 6, textAlign: 'center' }}>Loading dashboard content...</Container>
+      }
+    >
+      {children}
+    </Suspense>
   );
 }

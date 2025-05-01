@@ -1,10 +1,10 @@
 import React, { ReactNode, createContext } from 'react';
 
 // Define the theme context shape that mimics next-themes
-type Theme = 'light' | 'dark' | 'system';
-type ResolvedTheme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
 
-type ThemeContextValue = {
+export type ThemeContextValue = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   resolvedTheme: ResolvedTheme;

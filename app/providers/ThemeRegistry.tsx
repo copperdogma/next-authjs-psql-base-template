@@ -1,7 +1,7 @@
 // This component must be a Client Component
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
@@ -25,19 +25,25 @@ import { useTheme } from 'next-themes';
  * @param {ReactNode} props.children - Child components that will use the Material UI theme
  * @returns {JSX.Element} Themed application with Material UI support
  */
+
 export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Determine the theme mode, defaulting to light pre-mount
+  const mode = isMounted && resolvedTheme === 'dark' ? 'dark' : 'light';
 
   const currentTheme = React.useMemo(() => {
-    return createAppTheme(resolvedTheme === 'dark' ? 'dark' : 'light');
-  }, [resolvedTheme]);
+    return createAppTheme(mode);
+  }, [mode]);
 
-  if (!mounted) {
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Only render children after mount to ensure correct theme context
+  if (!isMounted) {
+    // Return null or a minimal placeholder/loader
     return null;
   }
 

@@ -25,168 +25,161 @@ import { auth } from '@/lib/auth-node';
 const actionsLogger = rootLogger.child({ service: 'profile-actions' });
 
 // Define the form state type for the profile form
-export type FormState = {
+export type UpdateUserNameFormState = {
   message: string;
   success: boolean;
+  updatedName?: string | null; // Add optional field for the updated name
 };
 
+// --- Private Helper Functions (Extracted from Class) ---
+
+// Define validation schema for user name
+const userNameSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .trim(),
+});
+
 /**
- * ProfileActions class with dependency injection
- * Note: This class is not exported because "use server" files can only export async functions
+ * Extracts specific error messages from Zod errors
  */
-class ProfileActionsImpl {
-  constructor(
-    private readonly profileService: ProfileService = singletonProfileService,
-    private readonly logger: pino.Logger = actionsLogger
-  ) {}
-
-  // Define validation schema for user name
-  private userNameSchema = z.object({
-    name: z
-      .string()
-      .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name must be less than 50 characters')
-      .trim(),
-  });
-
-  /**
-   * Validates the user name using Zod schema
-   */
-  private validateUserName(name: string): { isValid: boolean; error?: string } {
-    try {
-      this.userNameSchema.parse({ name });
-      return { isValid: true };
-    } catch (error) {
-      return this.handleValidationError(error);
-    }
+function _extractZodErrorMessage(error: z.ZodError): { isValid: boolean; error: string } {
+  const issues = error.errors;
+  const tooSmallError = issues.find(issue => issue.code === 'too_small' && issue.minimum === 2);
+  if (tooSmallError) {
+    return { isValid: false, error: 'Name is required' };
   }
-
-  /**
-   * Handles Zod validation errors
-   */
-  private handleValidationError(error: unknown): { isValid: boolean; error: string } {
-    // Handle Zod errors
-    if (error instanceof z.ZodError) {
-      return this.extractZodErrorMessage(error);
-    }
-
-    // Handle other errors
-    return { isValid: false, error: 'Invalid name format' };
+  const tooBigError = issues.find(issue => issue.code === 'too_big' && issue.maximum === 50);
+  if (tooBigError) {
+    return { isValid: false, error: 'Name is too long (maximum 50 characters)' };
   }
+  const errorMessage = error.errors[0]?.message || 'Invalid name format';
+  return { isValid: false, error: errorMessage };
+}
 
-  /**
-   * Extracts specific error messages from Zod errors
-   */
-  private extractZodErrorMessage(error: z.ZodError): { isValid: boolean; error: string } {
-    const issues = error.errors;
-
-    // Check for empty name (too_small) error
-    const tooSmallError = issues.find(issue => issue.code === 'too_small' && issue.minimum === 2);
-    if (tooSmallError) {
-      return { isValid: false, error: 'Name is required' };
-    }
-
-    // Check for too long name error
-    const tooBigError = issues.find(issue => issue.code === 'too_big' && issue.maximum === 50);
-    if (tooBigError) {
-      return { isValid: false, error: 'Name is too long (maximum 50 characters)' };
-    }
-
-    // Default error message
-    const errorMessage = error.errors[0]?.message || 'Invalid name format';
-    return { isValid: false, error: errorMessage };
+/**
+ * Handles Zod validation errors
+ */
+function _handleValidationError(error: unknown): { isValid: boolean; error: string } {
+  if (error instanceof z.ZodError) {
+    return _extractZodErrorMessage(error);
   }
+  return { isValid: false, error: 'Invalid name format' };
+}
 
-  /**
-   * Verifies the user is authenticated
-   */
-  private async verifyAuthentication(): Promise<{
-    isAuthenticated: boolean;
-    userId?: string;
-    error?: string;
-  }> {
-    let session;
-    try {
-      this.logger.debug('verifyAuthentication - Checking auth session');
-      session = await auth();
-      this.logger.debug('verifyAuthentication - Auth session retrieved');
-
-      // Directly check for the required property
-      if (session?.user?.id) {
-        this.logger.debug({ msg: 'User authenticated', userId: session.user.id });
-        return { isAuthenticated: true, userId: session.user.id };
-      }
-
-      // Log specific details if user or ID is missing
-      this.logger.warn({
-        msg: 'User not authenticated in verifyAuthentication',
-        sessionExists: !!session,
-        userExists: !!session?.user,
-        idExists: !!session?.user?.id,
-      });
-      return {
-        isAuthenticated: false,
-        error: 'You must be logged in to update your profile',
-      };
-    } catch (error) {
-      // Simplified error logging
-      this.logger.error({ err: error }, 'Error during authentication verification');
-      return { isAuthenticated: false, error: 'Authentication check failed' };
-    }
-  }
-
-  /**
-   * Server action to update the user's display name
-   */
-  async updateUserName(_prevState: FormState, formData: FormData): Promise<FormState> {
-    const name = formData.get('name') as string;
-    this.logger.info({ msg: 'updateUserName called', name });
-
-    // 1. Verify user authentication
-    const auth = await this.verifyAuthentication();
-    if (!auth.isAuthenticated || !auth.userId) {
-      return {
-        message: auth.error || 'You must be logged in to update your profile',
-        success: false,
-      };
-    }
-
-    // 2. Validate the user name
-    const validation = this.validateUserName(name);
-    if (!validation.isValid) {
-      this.logger.warn({ msg: 'Invalid user name', name });
-      return {
-        message: validation.error || 'Invalid name format',
-        success: false,
-      };
-    }
-
-    // 3. Update the user name using the ProfileService
-    const updateResult = await this.profileService.updateUserName(auth.userId, name);
-    if (!updateResult.success) {
-      return {
-        message: updateResult.error || 'An error occurred while updating your name',
-        success: false,
-      };
-    }
-
-    // 4. Revalidate the profile page to show the updated name
-    revalidatePath('/profile');
-
-    this.logger.info({ msg: 'User name updated successfully', userId: auth.userId });
-    return {
-      message: 'Name updated successfully',
-      success: true,
-    };
+/**
+ * Validates the user name using Zod schema
+ */
+function _validateUserName(name: string): { isValid: boolean; error?: string } {
+  try {
+    userNameSchema.parse({ name });
+    return { isValid: true };
+  } catch (error) {
+    return _handleValidationError(error);
   }
 }
 
-// Create instance of the implementation class
-const profileActions = new ProfileActionsImpl();
+/**
+ * Verifies the user is authenticated
+ */
+async function _verifyAuthentication(loggerInstance: pino.Logger): Promise<{
+  isAuthenticated: boolean;
+  userId?: string;
+  error?: string;
+}> {
+  let session;
+  try {
+    loggerInstance.debug('verifyAuthentication - Checking auth session');
+    session = await auth();
+    loggerInstance.debug('verifyAuthentication - Auth session retrieved');
+
+    if (session?.user?.id) {
+      loggerInstance.debug({ msg: 'User authenticated', userId: session.user.id });
+      return { isAuthenticated: true, userId: session.user.id };
+    }
+
+    loggerInstance.warn({
+      msg: 'User not authenticated in verifyAuthentication',
+      sessionExists: !!session,
+      userExists: !!session?.user,
+      idExists: !!session?.user?.id,
+    });
+    return {
+      isAuthenticated: false,
+      error: 'You must be logged in to update your profile',
+    };
+  } catch (error) {
+    loggerInstance.error({ err: error }, 'Error during authentication verification');
+    return { isAuthenticated: false, error: 'Authentication check failed' };
+  }
+}
 
 /**
- * Server action to update a user's display name
+ * Server action to update the user's display name.
+ * Dependencies can be injected for testing.
  */
-export async function updateUserName(prevState: FormState, formData: FormData): Promise<FormState> {
-  return profileActions.updateUserName(prevState, formData);
+// eslint-disable-next-line max-statements -- Statement count is minimally high due to necessary auth/validation checks and service calls.
+export async function updateUserName(
+  _prevState: UpdateUserNameFormState, // Use the new type
+  formData: FormData,
+  // Optional dependencies for testing
+  injectedProfileService?: ProfileService,
+  injectedLogger?: pino.Logger
+): Promise<UpdateUserNameFormState> {
+  // Return the new type
+  // Use injected dependencies or fall back to defaults
+  const currentProfileService = injectedProfileService || singletonProfileService;
+  const currentLogger = injectedLogger || actionsLogger;
+
+  const name = formData.get('name') as string;
+  currentLogger.info({ msg: 'updateUserName called', name });
+
+  // 1. Verify user authentication
+  const authResult = await _verifyAuthentication(currentLogger);
+  if (!authResult.isAuthenticated || !authResult.userId) {
+    return {
+      message: authResult.error || 'You must be logged in to update your profile',
+      success: false,
+      updatedName: null,
+    };
+  }
+  const userId = authResult.userId;
+
+  // 2. Validate the user name
+  const validation = _validateUserName(name);
+  if (!validation.isValid) {
+    currentLogger.warn({ msg: 'Invalid user name', name });
+    return {
+      message: validation.error || 'Invalid name format',
+      success: false,
+      updatedName: null,
+    };
+  }
+
+  // 3. Update the user name using the ProfileService
+  const updateResult = await currentProfileService.updateUserName(userId, name);
+  if (!updateResult.success) {
+    currentLogger.error(
+      { userId, name, error: updateResult.error },
+      'Profile service failed to update user name'
+    );
+    return {
+      message: updateResult.error || 'An error occurred while updating your name',
+      success: false,
+      updatedName: null,
+    };
+  }
+
+  // 4. Revalidate paths
+  revalidatePath('/profile');
+  revalidatePath('/');
+
+  currentLogger.info({ msg: 'User name updated successfully', userId: userId });
+  return {
+    message: 'Name updated successfully',
+    success: true,
+    updatedName: name, // Include the updated name on success
+  };
 }

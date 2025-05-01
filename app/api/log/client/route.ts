@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loggers } from '@/lib/logger'; // Use alias
+// import baseLogger from '@/lib/logger'; // Remove Pino import
 import { z } from 'zod';
-
-const clientLogger = loggers.api.child({ source: 'client' });
 
 // Define Zod schema for expected log entry structure
 const ClientLogSchema = z.object({
@@ -16,19 +14,19 @@ const ClientLogSchema = z.object({
 // type ClientLogEntry = z.infer<typeof ClientLogSchema>; // Removed unused type alias
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Remove Pino logger usage
+  // const logger = baseLogger;
+
   try {
     const body = await request.json();
     const result = ClientLogSchema.safeParse(body);
 
     if (!result.success) {
-      // Log the validation error for debugging
-      loggers.api.warn(
-        {
-          validationErrors: result.error.format(),
-          location: 'client-log-api-validation',
-        },
-        'Invalid client log entry received'
-      );
+      // Log validation error using console.warn
+      console.warn('Invalid client log entry received:', {
+        validationErrors: result.error.format(),
+        location: 'client-log-api-validation',
+      });
       return NextResponse.json(
         { error: 'Invalid log entry', details: result.error.format() },
         { status: 400 }
@@ -36,31 +34,45 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const logEntry = result.data;
+    // Remove child logger creation
+    // const clientLogContextLogger = logger.child({ source: 'client', context: 'api' });
 
-    // Map client level to Pino logger function
-    // We know logEntry.level is valid because the schema validated it
-    const logFunction = clientLogger[logEntry.level];
+    // Map client level to console method (handle 'fatal' explicitly)
+    let logMethod;
+    switch (logEntry.level) {
+      case 'trace':
+        logMethod = console.trace;
+        break;
+      case 'debug':
+        logMethod = console.debug;
+        break;
+      case 'info':
+        logMethod = console.info;
+        break;
+      case 'warn':
+        logMethod = console.warn;
+        break;
+      case 'error':
+      case 'fatal': // Map fatal to error
+        logMethod = console.error;
+        break;
+      default:
+        logMethod = console.log;
+    }
 
-    // Log the message with context
-    logFunction(
-      {
-        clientContext: logEntry.context,
-        clientTimestamp: logEntry.timestamp,
-        // Add any other relevant server-side context if needed
-      },
-      logEntry.message
-    );
+    // Log the message with context using console
+    logMethod(`[Client Log - ${logEntry.level.toUpperCase()}] ${logEntry.message}`, {
+      clientContext: logEntry.context,
+      clientTimestamp: logEntry.timestamp,
+    });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    // Log the error during processing on the server
-    loggers.api.error(
-      {
-        err: error,
-        location: 'client-log-api',
-      },
-      'Error processing client log entry'
-    );
+    // Log the error during processing on the server using console.error
+    console.error('Error processing client log entry:', {
+      err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      location: 'client-log-api',
+    });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

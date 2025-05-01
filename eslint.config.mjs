@@ -216,10 +216,8 @@ export default [
       'tests/unit/components/UserProfile.test.tsx',
       'tests/unit/api/auth/*.test.ts',
       'tests/unit/auth/*.test.ts',
-      'tests/e2e/**/*.ts',
-      'tests/e2e/**/*.js',
-      'tests/config/**/*.ts',
-      'tests/utils/**/*.ts',
+      'tests/e2e/**/*.spec.ts',
+      'tests/e2e/**/*.test.ts',
     ],
     plugins: {
       jest: jestPlugin,
@@ -244,10 +242,37 @@ export default [
       'jest/no-standalone-expect': 'error',
 
       // Adjusted complexity thresholds for test files
-      // These allow for more complex test cases while still encouraging good practices
-      'max-lines-per-function': ['warn', { max: 120, skipBlankLines: true, skipComments: true }], // More permissive for E2E tests
-      'max-statements': ['warn', 25], // Allow more statements in test functions
-      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }], // More permissive for test files
+      'max-lines-per-function': ['warn', { max: 120, skipBlankLines: true, skipComments: true }],
+      'max-statements': ['warn', 25],
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
+      complexity: 'off', // Relax complexity for tests
+      'sonarjs/cognitive-complexity': 'off',
+    },
+  },
+
+  // Configuration specifically for Test Setup and Utility files
+  // Relaxes certain rules but doesn't enforce Jest structure rules meant for tests
+  {
+    files: [
+      '**/setup/*.{js,ts}', // Target setup files
+      '**/jest.setup.*.{js,ts}', // Target jest setup files
+      'tests/config/**/*.ts', // General config files (excluding tests)
+      'tests/utils/**/*.ts', // Test utilities
+      'tests/mocks/**/*.ts', // Test mocks
+      'tests/e2e/setup/auth.setup.ts', // E2E setup specific file
+      'playwright.config.ts', // Playwright config
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'max-lines-per-function': 'off', // No line limits for setup
+      'max-statements': 'off', // No statement limits for setup
+      'max-lines': 'off', // No file line limits for setup
+      complexity: 'off', // Allow complexity in setup
+      'sonarjs/cognitive-complexity': 'off',
+
+      // DO NOT include jest/require-top-level-describe here
     },
   },
 

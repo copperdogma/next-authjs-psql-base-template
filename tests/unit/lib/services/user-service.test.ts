@@ -1,5 +1,6 @@
 import { mockDeep, mockReset } from 'jest-mock-extended';
-import { PrismaClient, User as PrismaUser } from '@prisma/client';
+// @ts-ignore - TODO: Investigate Prisma type resolution issue
+import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import * as pino from 'pino';
 import { UserService } from '../../../../lib/services/user-service';
 
@@ -44,6 +45,8 @@ const createMockUser = (overrides: Partial<PrismaUser>): PrismaUser => ({
   email: 'default@example.com',
   emailVerified: null,
   image: null,
+  hashedPassword: null,
+  role: UserRole.USER, // Explicitly set default role
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

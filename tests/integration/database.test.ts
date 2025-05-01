@@ -1,7 +1,15 @@
-import { Prisma } from '@prisma/client';
+import { describe, it, expect } from '@jest/globals';
+import { checkDatabaseConnection, withTransaction } from '../../lib/db/utils';
 import { TEST_USER } from '../utils/test-constants';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma } from '../../lib/prisma'; // Use the singleton client
+import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma'; // Import the singleton prisma client
+
+// Type for transaction
+type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
 describe('Database Integration Tests', () => {
   // Generate unique test IDs for better isolation
@@ -22,11 +30,9 @@ describe('Database Integration Tests', () => {
   });
 
   describe('Database Connection', () => {
-    it('should successfully connect to the database', async () => {
-      // Test basic query execution - using raw SQL directly
-      const result = await prisma.$queryRaw<Array<{ result: number }>>`SELECT 1 as result`;
-      expect(Array.isArray(result)).toBe(true);
-      expect(result[0]).toHaveProperty('result', 1);
+    it('should connect to the database', async () => {
+      const isConnected = await checkDatabaseConnection();
+      expect(isConnected).toBe(true);
     });
 
     it('should handle connection errors gracefully', async () => {
@@ -38,17 +44,22 @@ describe('Database Integration Tests', () => {
   describe('User Sync Functionality', () => {
     // Use test run ID for better isolation between test runs
     const createUniqueTestUser = (suffix = '') => ({
+      id: uuidv4(), // Add required ID field
       email: `test-${testRunId}-${suffix}-${Date.now()}@example.com`,
       name: `${TEST_USER.name} ${testRunId} ${suffix}`,
       image: TEST_USER.photoURL,
       emailVerified: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hashedPassword: null,
+      role: 'USER' as const,
     });
 
     // Use transactions for test isolation instead of cleanup
     it('should create a new user successfully', async () => {
       // Use transaction to ensure test isolation
       await prisma.$transaction(
-        async tx => {
+        async (tx: TransactionClient) => {
           const uniqueTestUser = createUniqueTestUser('create');
           const user = await tx.user.create({
             data: uniqueTestUser,
@@ -60,7 +71,7 @@ describe('Database Integration Tests', () => {
         },
         {
           timeout: 5000,
-          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+          isolationLevel: 'ReadCommitted',
         }
       );
     });
@@ -68,7 +79,7 @@ describe('Database Integration Tests', () => {
     it('should update existing user details', async () => {
       // Use transaction for test isolation
       await prisma.$transaction(
-        async tx => {
+        async (tx: TransactionClient) => {
           // Create initial user with unique email
           const uniqueTestUser = createUniqueTestUser('update');
           const createdUser = await tx.user.create({
@@ -89,7 +100,7 @@ describe('Database Integration Tests', () => {
         },
         {
           timeout: 5000,
-          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+          isolationLevel: 'ReadCommitted',
         }
       );
     });
@@ -123,12 +134,16 @@ describe('Database Integration Tests', () => {
 
       // Test transaction isolation with nested operations
       await prisma.$transaction(
-        async tx => {
+        async (tx: TransactionClient) => {
           // Create temporary test user for this transaction
           const tempUser = await tx.user.create({
             data: {
+              id: uuidv4(), // Add required ID field
               email: tempEmail,
               name: `Temp User ${testRunId}`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              role: 'USER' as const,
             },
           });
           tempUserId = tempUser.id;
@@ -146,7 +161,7 @@ describe('Database Integration Tests', () => {
         },
         {
           timeout: 5000,
-          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+          isolationLevel: 'ReadCommitted',
         }
       );
 
@@ -167,6 +182,94 @@ describe('Database Integration Tests', () => {
       });
 
       expect(user).toBeNull();
+    });
+  });
+
+  it('should handle a transaction correctly', async () => {
+    // Test record
+    const testId = uuidv4();
+    const testEmail = `${testId}@example.com`;
+
+    // Create a test user in a transaction
+    const result = await withTransaction(async (tx: TransactionClient) => {
+      const user = await tx.user.create({
+        data: {
+          id: testId,
+          email: testEmail,
+          name: TEST_USER.name,
+        },
+      });
+      return user;
+    });
+
+    expect(result).toBeDefined();
+    expect(result.id).toBe(testId);
+    expect(result.email).toBe(testEmail);
+
+    // Clean up - delete the test user in a transaction
+    await withTransaction(async (tx: TransactionClient) => {
+      await tx.user.delete({
+        where: { id: testId },
+      });
+    });
+  });
+
+  describe('Transaction Tests', () => {
+    it('should rollback on error in transaction', async () => {
+      // Generate unique test data
+      const testId = uuidv4();
+      const testEmail = `${testId}@example.com`;
+
+      // First, create a test user outside the failing transaction
+      await withTransaction(async (tx: TransactionClient) => {
+        return await tx.user.create({
+          data: {
+            id: testId,
+            email: testEmail,
+            name: TEST_USER.name,
+          },
+        });
+      });
+
+      // Using a boolean flag instead of fail()
+      let transactionSucceeded = false;
+
+      try {
+        await withTransaction(async (tx: TransactionClient) => {
+          // Update the user
+          await tx.user.update({
+            where: { id: testId },
+            data: { name: 'Updated Name' },
+          });
+
+          // Throw an error explicitly to trigger rollback
+          throw new Error('Intentional error to test transaction rollback');
+
+          // This line is now unreachable, ensuring transactionSucceeded remains false
+          // transactionSucceeded = true;
+        });
+        // If we get here, transaction didn't throw as expected
+        expect(transactionSucceeded).toBe(false);
+      } catch (error) {
+        // Expected error - transaction should rollback
+        expect(error).toBeDefined();
+      }
+
+      // Now verify the name was NOT updated due to rollback
+      const result = await withTransaction(async (tx: TransactionClient) => {
+        return await tx.user.findUnique({
+          where: { id: testId },
+        });
+      });
+
+      expect(result?.name).toBe(TEST_USER.name); // Still the original name
+
+      // Clean up the test data
+      await withTransaction(async (tx: TransactionClient) => {
+        await tx.user.delete({
+          where: { id: testId },
+        });
+      });
     });
   });
 });

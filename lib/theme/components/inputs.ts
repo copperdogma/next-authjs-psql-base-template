@@ -52,6 +52,7 @@ export const getFormComponentOverrides = (mode: PaletteMode) => ({
       root: {
         backgroundColor: mode === 'light' ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.05)',
         borderRadius: 8,
+        color: mode === 'light' ? PALETTE.light.text.primary : PALETTE.dark.text.primary,
       },
     },
   },

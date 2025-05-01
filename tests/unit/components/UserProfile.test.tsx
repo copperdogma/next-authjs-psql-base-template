@@ -1,157 +1,105 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ReactNode } from 'react';
 import UserProfile from '../../../components/auth/UserProfile';
-import { useSession } from 'next-auth/react';
+import { useUserStore } from '@/lib/store/userStore';
 import React from 'react';
 
 // Mock Next.js components
-jest.mock('next/image', () => ({
-  __esModule: true,
-  default: function Image(props: React.ImgHTMLAttributes<HTMLImageElement>) {
-    return <img {...props} alt={props.alt || ''} />;
-  },
-}));
-
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: function Link({
-    href,
-    children,
-    ...props
-  }: {
-    href: string;
-    children: ReactNode;
-    [key: string]: any;
-  }) {
-    return (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    );
+  default: function Link({ children }: { children: ReactNode; [key: string]: any }) {
+    return <>{children}</>;
   },
 }));
 
-// Mock NextAuth
-jest.mock('next-auth/react', () => ({
-  useSession: jest.fn(),
+jest.mock('@mui/icons-material/Person', () => ({
+  __esModule: true,
+  default: (props: any) => <svg data-testid="PersonIcon" {...props} />,
 }));
 
 describe('UserProfile', () => {
+  const originalState = useUserStore.getState();
+
   beforeEach(() => {
+    useUserStore.setState(originalState, true);
     jest.clearAllMocks();
   });
 
-  test('renders loading state when authentication is loading', () => {
-    // Mock the useSession hook to return loading state
-    (useSession as jest.Mock).mockReturnValue({
-      data: null,
-      status: 'loading',
-    });
-
-    // Render the component
+  test('renders nothing when user is not authenticated (no ID in store)', () => {
     render(<UserProfile />);
-
-    // Assert loading state is shown
-    expect(screen.getByTestId('profile-loading')).toBeInTheDocument();
+    const profileChip = screen.queryByTestId('user-profile-chip');
+    expect(profileChip).not.toBeInTheDocument();
   });
 
   test('renders authenticated user information correctly with image', () => {
-    // Mock the useSession hook to return authenticated state with image
-    (useSession as jest.Mock).mockReturnValue({
-      data: {
-        user: {
-          name: 'Test User',
-          email: 'test@example.com',
-          image: 'https://example.com/photo.jpg',
-        },
-        expires: '2023-01-01T00:00:00.000Z',
-      },
-      status: 'authenticated',
-    });
+    const mockUser = {
+      id: 'user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      image: 'https://example.com/photo.jpg',
+    };
+    useUserStore.setState(mockUser);
 
-    // Render the component
     render(<UserProfile />);
 
-    // Assert user information is shown correctly
-    const userName = screen.getByTestId('profile-name');
-    const profileButton = screen.getByTestId('user-profile');
-    const profileImage = screen.getByTestId('profile-image');
+    const profileChip = screen.getByTestId('user-profile-chip');
+    expect(profileChip).toBeInTheDocument();
 
-    expect(userName).toHaveTextContent('Test User');
-    expect(profileButton).toHaveAttribute('href', '/profile');
-    expect(profileImage).toBeInTheDocument();
+    const avatarImg = within(profileChip).getByRole('img');
+    expect(avatarImg).toBeInTheDocument();
+    expect(avatarImg).toHaveAttribute('src', mockUser.image);
+
+    const displayName = within(profileChip).getByText(mockUser.name!);
+    expect(displayName).toBeInTheDocument();
   });
 
   test('renders avatar with initials when user has no image', () => {
-    // Mock the useSession hook to return authenticated state without image
-    (useSession as jest.Mock).mockReturnValue({
-      data: {
-        user: {
-          name: 'Test User',
-          email: 'test@example.com',
-          image: null,
-        },
-        expires: '2023-01-01T00:00:00.000Z',
-      },
-      status: 'authenticated',
-    });
+    const mockUserNoImage = {
+      id: 'user-456',
+      name: 'Test User No Image',
+      email: 'test-no-image@example.com',
+      image: null,
+    };
+    useUserStore.setState(mockUserNoImage);
 
-    // Render the component
     render(<UserProfile />);
 
-    // Assert avatar with initials is shown
-    const userName = screen.getByTestId('profile-name');
-    const profileButton = screen.getByTestId('user-profile');
-    const profileImage = screen.queryByTestId('profile-image');
-    const avatar = screen.getByText('T'); // Gets the avatar with the initial 'T'
+    const profileChip = screen.getByTestId('user-profile-chip');
+    expect(profileChip).toBeInTheDocument();
 
-    expect(userName).toHaveTextContent('Test User');
-    expect(profileButton).toHaveAttribute('href', '/profile');
-    expect(profileImage).not.toBeInTheDocument();
-    expect(avatar).toBeInTheDocument();
+    const displayName = within(profileChip).getByText(mockUserNoImage.name!);
+    expect(displayName).toBeInTheDocument();
+
+    const fallbackIcon = within(profileChip).getByTestId('PersonIcon');
+    expect(fallbackIcon).toBeInTheDocument();
   });
 
-  test('uses email initial when name is not available', () => {
-    // Mock the useSession hook to return authenticated state with only email
-    (useSession as jest.Mock).mockReturnValue({
-      data: {
-        user: {
-          name: null,
-          email: 'test@example.com',
-          image: null,
-        },
-        expires: '2023-01-01T00:00:00.000Z',
-      },
-      status: 'authenticated',
-    });
+  test('uses email as display name when name is not available', () => {
+    const mockUserNoName = {
+      id: 'user-789',
+      name: null,
+      email: 'test-no-name@example.com',
+      image: null,
+    };
+    useUserStore.setState(mockUserNoName);
 
-    // Render the component
     render(<UserProfile />);
 
-    // Assert avatar with email initial is shown
-    const userName = screen.getByTestId('profile-name');
-    const avatar = screen.getByText('T'); // Gets the avatar with the initial 'T'
+    const profileChip = screen.getByTestId('user-profile-chip');
+    expect(profileChip).toBeInTheDocument();
 
-    expect(userName).toHaveTextContent('User Profile');
-    expect(avatar).toBeInTheDocument();
+    const displayName = within(profileChip).getByText(mockUserNoName.email!);
+    expect(displayName).toBeInTheDocument();
+
+    const fallbackIcon = within(profileChip).getByTestId('PersonIcon');
+    expect(fallbackIcon).toBeInTheDocument();
   });
 
-  test('renders nothing when user is not authenticated', () => {
-    // Mock the useSession hook to return unauthenticated state
-    (useSession as jest.Mock).mockReturnValue({
-      data: null,
-      status: 'unauthenticated',
-    });
-
-    // Render the component
+  test('renders nothing when user is explicitly unauthenticated', () => {
+    useUserStore.setState({ id: null, name: null, email: null, image: null });
     render(<UserProfile />);
-
-    // Assert nothing is rendered
-    const profileButton = screen.queryByTestId('user-profile');
-    const userName = screen.queryByTestId('profile-name');
-
-    expect(profileButton).not.toBeInTheDocument();
-    expect(userName).not.toBeInTheDocument();
+    const profileChip = screen.queryByTestId('user-profile-chip');
+    expect(profileChip).not.toBeInTheDocument();
   });
 });

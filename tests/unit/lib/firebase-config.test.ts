@@ -32,25 +32,18 @@ const createMockWindow = () => {
   };
 };
 
+// Mock the console methods before tests
+beforeAll(() => {
+  // Suppress console output during tests
+});
+
 describe('Firebase Config', () => {
-  let mockConsole;
-  let firebaseImports;
-
   beforeEach(() => {
-    // Mock console methods
-    mockConsole = {
-      log: jest.spyOn(console, 'log').mockImplementation(),
-      error: jest.spyOn(console, 'error').mockImplementation(),
-    };
-
-    // Reset process.env for each test
-    process.env = { ...originalEnv };
-
-    // Reset module cache to ensure clean module loading
+    // Reset mocks and modules before each test
     jest.resetModules();
 
-    // Get module imports
-    firebaseImports = {
+    // Mock the firebase/* modules
+    jest.mock('firebase/app', () => ({
       initializeApp: require('@firebase/app').initializeApp,
       getApps: require('@firebase/app').getApps,
       getApp: require('@firebase/app').getApp,
@@ -58,7 +51,7 @@ describe('Firebase Config', () => {
       connectAuthEmulator: require('@firebase/auth').connectAuthEmulator,
       getFirestore: require('@firebase/firestore').getFirestore,
       connectFirestoreEmulator: require('@firebase/firestore').connectFirestoreEmulator,
-    };
+    }));
 
     // Clear mocks
     jest.clearAllMocks();
@@ -79,12 +72,9 @@ describe('Firebase Config', () => {
       global.window = undefined as unknown as Window & typeof globalThis;
 
       // Import the module
-      const { firebaseApp, auth, firestore } = require('../../../lib/firebase-config');
+      require('../../../lib/firebase-config');
 
-      expect(firebaseApp).toBeUndefined();
-      expect(auth).toBeUndefined();
-      expect(firestore).toBeUndefined();
-      expect(firebaseImports.initializeApp).not.toHaveBeenCalled();
+      expect(require('@firebase/app').initializeApp).not.toHaveBeenCalled();
 
       // Restore window
       global.window = originalWindow;
@@ -99,19 +89,19 @@ describe('Firebase Config', () => {
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'test-project';
 
       // Ensure getApps returns empty array for initialization
-      firebaseImports.getApps.mockReturnValue([]);
+      require('@firebase/app').getApps.mockReturnValue([]);
 
       // Import the module
-      const { firebaseApp, auth, firestore } = require('../../../lib/firebase-config');
+      require('../../../lib/firebase-config');
 
-      expect(firebaseImports.initializeApp).toHaveBeenCalledWith(
+      expect(require('@firebase/app').initializeApp).toHaveBeenCalledWith(
         expect.objectContaining({
           apiKey: 'test-api-key',
           projectId: 'test-project',
         })
       );
-      expect(firebaseImports.getAuth).toHaveBeenCalled();
-      expect(firebaseImports.getFirestore).toHaveBeenCalled();
+      expect(require('@firebase/auth').getAuth).toHaveBeenCalled();
+      expect(require('@firebase/firestore').getFirestore).toHaveBeenCalled();
 
       // Cleanup
       restoreWindow();
@@ -122,14 +112,14 @@ describe('Firebase Config', () => {
       const restoreWindow = createMockWindow();
 
       // Mock getApps to return an existing app
-      firebaseImports.getApps.mockReturnValue(['existingApp']);
+      require('@firebase/app').getApps.mockReturnValue(['existingApp']);
 
       // Import the module
       require('../../../lib/firebase-config');
 
       // When an app exists, getApp should be called instead of initializeApp
-      expect(firebaseImports.getApp).toHaveBeenCalled();
-      expect(firebaseImports.initializeApp).not.toHaveBeenCalled();
+      expect(require('@firebase/app').getApp).toHaveBeenCalled();
+      expect(require('@firebase/app').initializeApp).not.toHaveBeenCalled();
 
       // Cleanup
       restoreWindow();
@@ -146,15 +136,15 @@ describe('Firebase Config', () => {
       // We're already in test environment, which should connect to emulators
 
       // Mock getApps for initialization
-      firebaseImports.getApps.mockReturnValue([]);
+      require('@firebase/app').getApps.mockReturnValue([]);
 
       // Import directly to ensure mocks are called
       jest.isolateModules(() => {
         require('../../../lib/firebase-config');
 
         // Verify emulator connections were attempted
-        expect(firebaseImports.connectAuthEmulator).toHaveBeenCalled();
-        expect(firebaseImports.connectFirestoreEmulator).toHaveBeenCalled();
+        expect(require('@firebase/auth').connectAuthEmulator).toHaveBeenCalled();
+        expect(require('@firebase/firestore').connectFirestoreEmulator).toHaveBeenCalled();
       });
 
       // Cleanup

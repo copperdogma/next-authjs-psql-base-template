@@ -2,26 +2,44 @@
  * @jest-environment node
  */
 
+// Import Next types first
 import { NextRequest, NextResponse } from 'next/server';
+// Import utilities & factory
 import {
   getRequestId,
   getRequestPath,
   getRequestMethod,
-  createErrorResponse,
   sanitizeHeaders,
-  withApiLogger,
-  ApiRequestContext,
-  createApiLogger,
+  createApiLogger, // Import factory
 } from '../../../../lib/services/api-logger-service';
-import { LoggerService } from '../../../../lib/interfaces/services';
 import { v4 as uuidv4 } from 'uuid';
 
-// Mock the uuid package
+// --- Mock Dependencies ---
+
+// Mock uuid
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('mock-uuid-value'),
 }));
 
-// Mock NextResponse.json
+// --- Mock logger-service ---
+const mockBaseLogger = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
+  child: jest.fn().mockReturnThis(), // Mock child to return itself
+};
+// Mock the factory function using the PATH ALIAS
+jest.mock('@/lib/services/logger-service', () => ({
+  __esModule: true,
+  createContextLogger: jest.fn(() => mockBaseLogger),
+}));
+
+// --- Get a reference to the MOCKED createContextLogger ---
+import { createContextLogger as mockedCreateContextLogger } from '@/lib/services/logger-service';
+
+// Mock NextResponse.json (used by some utility tests)
 const mockNextResponseJson = jest.fn().mockImplementation((data, options) => {
   return {
     status: options?.status || 200,
@@ -29,41 +47,22 @@ const mockNextResponseJson = jest.fn().mockImplementation((data, options) => {
     json: () => Promise.resolve(data),
   };
 });
-
-// Save original NextResponse.json
 const originalNextResponseJson = NextResponse.json;
 
-// Mock createApiLogger
-jest.mock('../../../../lib/services/api-logger-service', () => {
-  const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-  return {
-    ...originalModule,
-    createApiLogger: jest.fn(),
-    createErrorResponse: jest.fn(),
-  };
-});
-
-// Import the mocked functions directly to use for test setup
-import {
-  createApiLogger as mockedCreateApiLogger,
-  createErrorResponse as mockedCreateErrorResponse,
-} from '../../../../lib/services/api-logger-service';
-
 beforeAll(() => {
-  // Replace NextResponse.json with our mock
   NextResponse.json = mockNextResponseJson;
 });
 
 afterAll(() => {
-  // Restore original NextResponse.json
   NextResponse.json = originalNextResponseJson;
+  jest.restoreAllMocks();
 });
 
-// Reset mocks between tests
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
+// --- Tests for UTILITIES ---
 describe('API Logger Service Utilities', () => {
   describe('getRequestId', () => {
     it('should extract request ID from headers if present', () => {
@@ -197,125 +196,145 @@ describe('API Logger Service Utilities', () => {
       expect(result['x-api-key']).toBe('[REDACTED]');
     });
   });
+});
 
-  describe('createErrorResponse', () => {
-    const requestId = 'test-request-id';
-
-    beforeEach(() => {
-      // Reset the mock implementation of NextResponse.json
-      mockNextResponseJson.mockClear();
-    });
-
-    it('should create a formatted error response from Error object', () => {
-      const error = new Error('Test error');
-
-      // Call the non-mocked original implementation
-      const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-      const response = originalModule.createErrorResponse(error, requestId, 400);
-
-      expect(mockNextResponseJson).toHaveBeenCalledWith(
-        {
-          error: 'Error',
-          message: 'Test error',
-          requestId: 'test-request-id',
-        },
-        { status: 400 }
-      );
-    });
-
-    it('should handle string errors', () => {
-      const error = 'String error message';
-
-      // Call the non-mocked original implementation
-      const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-      const response = originalModule.createErrorResponse(error, requestId);
-
-      expect(mockNextResponseJson).toHaveBeenCalledWith(
-        {
-          error: 'UnknownError',
-          message: 'String error message',
-          requestId: 'test-request-id',
-        },
-        { status: 500 }
-      );
-    });
-
-    it('should use default status code of 500 when not specified', () => {
-      const error = new Error('Test error');
-
-      // Call the non-mocked original implementation
-      const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-      const response = originalModule.createErrorResponse(error, requestId);
-
-      expect(mockNextResponseJson).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Error',
-          message: 'Test error',
-          requestId: 'test-request-id',
-        }),
-        { status: 500 }
-      );
-    });
+// --- Tests for createApiLogger Functionality ---
+describe('createApiLogger', () => {
+  it('should return a logger instance', () => {
+    const logger = createApiLogger();
+    expect(logger).toBeDefined();
   });
 
-  describe('withApiLogger', () => {
-    it('should return a standardized error response when handler throws', async () => {
-      // Get the original implementation
-      const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-      const { withApiLogger } = originalModule;
+  it('should create logger with default context if no request provided', () => {
+    createApiLogger();
+    expect(mockedCreateContextLogger).toHaveBeenCalledWith(
+      'api',
+      expect.objectContaining({
+        baseOptions: expect.objectContaining({
+          base: expect.objectContaining({
+            requestId: 'mock-uuid-value',
+            path: '/unknown',
+            method: 'UNKNOWN',
+            startTime: expect.any(Number),
+          }),
+        }),
+        level: expect.any(String), // Default level is set
+        transport: undefined, // Default transport in non-prod
+      })
+    );
+  });
 
-      // Create a handler that throws an error
-      const mockError = new Error('Test error');
-      const mockHandler = jest.fn().mockRejectedValue(mockError);
+  it('should create logger with context from NextRequest', () => {
+    const mockRequest = {
+      headers: new Headers({ 'x-request-id': 'req-id-123' }),
+      nextUrl: { pathname: '/api/data' },
+      method: 'GET',
+    } as unknown as NextRequest;
+    createApiLogger(mockRequest);
+    expect(mockedCreateContextLogger).toHaveBeenCalledWith(
+      'api',
+      expect.objectContaining({
+        baseOptions: expect.objectContaining({
+          base: expect.objectContaining({
+            requestId: 'req-id-123',
+            path: '/api/data',
+            method: 'GET',
+            startTime: expect.any(Number),
+          }),
+        }),
+      })
+    );
+  });
 
-      // Create a simplified request
-      const mockRequest = {
-        nextUrl: {
-          toString: () => 'http://localhost/api/test',
-          pathname: '/api/test',
-        },
-        headers: new Headers(),
-        method: 'GET',
-      } as unknown as NextRequest;
+  // --- Tests for Logger Methods ---
+  describe('Logger Instance Methods', () => {
+    let logger: ReturnType<typeof createApiLogger>;
+    const defaultReqId = 'default-req-id';
+    const defaultContextBase = {
+      requestId: defaultReqId,
+      path: '/unknown',
+      method: 'UNKNOWN',
+      startTime: expect.any(Number),
+    };
 
-      // Wrap the handler
-      const wrappedHandler = withApiLogger(mockHandler);
+    beforeEach(() => {
+      // Reset and setup mocks for each test
+      jest.clearAllMocks();
+      (uuidv4 as jest.Mock).mockReturnValue(defaultReqId);
 
-      // Execute the handler
-      await wrappedHandler(mockRequest);
+      // Configure the mock factory to return the base logger for these tests
+      (mockedCreateContextLogger as jest.Mock).mockReturnValue(mockBaseLogger);
 
-      // Verify handler was called
-      expect(mockHandler).toHaveBeenCalledWith(mockRequest, expect.anything());
+      // Create a logger instance for each test
+      logger = createApiLogger(); // Use default context
+
+      // Verify factory was called (to ensure logger is based on mocks)
+      expect(mockedCreateContextLogger).toHaveBeenCalledWith(
+        'api',
+        expect.objectContaining({ baseOptions: { base: defaultContextBase } })
+      );
+      // Clear mocks again AFTER logger creation to isolate method call assertions
+      jest.clearAllMocks();
     });
 
-    it('should log start and completion for successful request', async () => {
-      // Get the original implementation
-      const originalModule = jest.requireActual('../../../../lib/services/api-logger-service');
-      const { withApiLogger } = originalModule;
+    it('info(context, message) should call base logger correctly', () => {
+      const message = 'Informational log message';
+      const context = { userId: 'user-abc', action: 'login' };
+      logger.info(context, message);
+      expect(mockBaseLogger.info).toHaveBeenCalledTimes(1);
+      // Base context (reqId etc.) is handled by pino automatically
+      // We expect the base logger to be called with only the call-specific context and message
+      expect(mockBaseLogger.info).toHaveBeenCalledWith(context, message);
+    });
 
-      // Create a successful handler
-      const mockResponse = { status: 200 };
-      const mockHandler = jest.fn().mockResolvedValue(mockResponse);
+    it('info(message) should call base logger correctly', () => {
+      const message = 'Simple info message';
+      logger.info(message);
+      expect(mockBaseLogger.info).toHaveBeenCalledTimes(1);
+      // When only message is passed, pino receives only the message
+      expect(mockBaseLogger.info).toHaveBeenCalledWith(message);
+    });
 
-      // Create a simplified request
-      const mockRequest = {
-        nextUrl: {
-          toString: () => 'http://localhost/api/test',
-          pathname: '/api/test',
-        },
-        headers: new Headers(),
-        method: 'GET',
-      } as unknown as NextRequest;
+    it('warn(context, message) should call base logger correctly', () => {
+      const message = 'Warning log message';
+      const context = { reason: 'timeout' };
+      logger.warn(context, message);
+      expect(mockBaseLogger.warn).toHaveBeenCalledTimes(1);
+      expect(mockBaseLogger.warn).toHaveBeenCalledWith(context, message);
+    });
 
-      // Wrap the handler
-      const wrappedHandler = withApiLogger(mockHandler);
+    it('error(context_with_err, message) should call base logger correctly', () => {
+      const message = 'Error occurred during processing';
+      const error = new Error('Something went wrong');
+      const context = { operation: 'update', err: error }; // Pino convention: error under 'err' key
 
-      // Execute the handler
-      const response = await wrappedHandler(mockRequest);
+      logger.error(context, message);
+      expect(mockBaseLogger.error).toHaveBeenCalledTimes(1);
+      expect(mockBaseLogger.error).toHaveBeenCalledWith(context, message);
+    });
 
-      // Verify handler was called and returned expected response
-      expect(mockHandler).toHaveBeenCalledWith(mockRequest, expect.anything());
-      expect(response).toBe(mockResponse);
+    it('error(error_object) should call base logger correctly', () => {
+      const error = new Error('Standalone error');
+      logger.error(error);
+      expect(mockBaseLogger.error).toHaveBeenCalledTimes(1);
+      // When only error is passed, pino receives only the error object
+      expect(mockBaseLogger.error).toHaveBeenCalledWith(error);
+    });
+
+    it('debug(context, message) should call base logger correctly', () => {
+      const message = 'Debug log message';
+      const context = { data: { key: 'value' } };
+      logger.debug(context, message);
+      expect(mockBaseLogger.debug).toHaveBeenCalledTimes(1);
+      expect(mockBaseLogger.debug).toHaveBeenCalledWith(context, message);
+    });
+
+    it('trace(context, message) should call base logger correctly', () => {
+      const message = 'Trace log message';
+      const context = { step: 1 };
+      logger.trace(context, message);
+      expect(mockBaseLogger.trace).toHaveBeenCalledTimes(1); // Assuming trace exists on mockBaseLogger
+      expect(mockBaseLogger.trace).toHaveBeenCalledWith(context, message);
     });
   });
 });

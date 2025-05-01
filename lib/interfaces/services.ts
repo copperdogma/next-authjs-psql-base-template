@@ -2,6 +2,7 @@
  * Common service interfaces for application-wide use
  */
 // Removed firebase-admin import attempts
+import type * as admin from 'firebase-admin'; // <-- Import firebase-admin types
 
 /**
  * Interface for logger services, supporting standard log levels and context
@@ -36,6 +37,13 @@ export interface LoggerService {
   debug(obj: object | string, msg?: string): void;
 
   /**
+   * Log at trace level
+   * @param obj Data object or message string
+   * @param msg Optional message if first parameter is an object
+   */
+  trace(obj: object | string, msg?: string): void;
+
+  /**
    * Create a child logger with additional context
    * @param bindings Context data to add to all log entries from this logger
    */
@@ -55,20 +63,20 @@ export interface FirebaseAdminService {
    * Verify a Firebase ID token
    * @param token Firebase ID token to verify
    */
-  verifyIdToken(token: string): Promise<unknown>;
+  verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken>;
 
   /**
    * Get a user by their Firebase UID
    * @param uid Firebase user ID
    */
-  getUserByUid(uid: string): Promise<unknown>;
+  getUserByUid(uid: string): Promise<admin.auth.UserRecord>;
 
   /**
    * Update a user's profile in Firebase Auth
    * @param uid Firebase user ID
    * @param updates Object containing profile updates
    */
-  updateUser(uid: string, updates: Record<string, unknown>): Promise<unknown>;
+  updateUser(uid: string, updates: admin.auth.UpdateRequest): Promise<admin.auth.UserRecord>;
 
   /**
    * Creates a custom token for authentication
@@ -76,6 +84,15 @@ export interface FirebaseAdminService {
    * @param claims Optional custom claims to include in the token
    */
   createCustomToken(uid: string, claims?: Record<string, unknown>): Promise<string>;
+
+  /**
+   * Creates a new user in Firebase Auth.
+   *
+   * @param properties The properties for the new user record, adhering to admin.auth.CreateRequest.
+   * @returns A Promise resolving with the newly created UserRecord.
+   * @throws Throws an error if the user creation fails.
+   */
+  createUser(properties: admin.auth.CreateRequest): Promise<admin.auth.UserRecord>;
 }
 
 /**

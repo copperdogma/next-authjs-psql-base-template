@@ -1,36 +1,10 @@
 import { test, expect } from '../utils/test-base';
 import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures';
 import { ROUTES } from '../../utils/routes';
+import { UI_ELEMENTS } from './auth-selectors'; // Import from the new file
 
-// UI element selectors in a centralized object - enhanced with more data-testid attributes
-export const UI_ELEMENTS = {
-  AUTH: {
-    // Primary selectors
-    BUTTON: '[data-testid="auth-button"]',
-    PLACEHOLDER: '[data-testid="auth-button-placeholder"]',
-    GOOGLE_SIGNIN: '[data-testid="google-signin-button"]',
-  },
-  USER_PROFILE: {
-    // Primary data-testid selector (most reliable)
-    TESTID: '[data-testid="user-profile"]',
-    // Fallbacks with various selection strategies
-    CONTAINER: '[data-testid="profile-container"]',
-    NAV_PROFILE: 'header [data-testid="user-profile"]',
-    IMAGE: '[data-testid="profile-image"]',
-    NAME: '[data-testid="profile-name"]',
-  },
-  NAVIGATION: {
-    NAV: '[data-testid="navbar"]',
-    DESKTOP_MENU: '[data-testid="desktop-menu"]',
-    MOBILE_MENU: '[data-testid="mobile-menu"]',
-    HEADER: 'header',
-  },
-  CONTENT: {
-    DASHBOARD: '[data-testid="dashboard-content"]',
-    DASHBOARD_HEADING: 'h1:has-text("Dashboard"), [data-testid="dashboard-heading"]',
-    PAGE_HEADING: 'h1',
-  },
-};
+// UI element selectors moved to auth-selectors.ts
+// export const UI_ELEMENTS = { ... }; // Removed
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -104,8 +78,13 @@ test.describe('Authentication Flow', () => {
         timeout: 45000,
       });
 
-      // Wait for page to stabilize
+      // Wait for page to stabilize and client-side session to potentially update
       await page.waitForTimeout(2000);
+
+      // *** ADDED: Wait specifically for the UserProfile element to appear ***
+      await expect(page.locator('[data-testid="user-profile-chip"]')).toBeVisible({
+        timeout: 10000,
+      }); // Increased timeout for potential client-side hydration/session check
 
       // Verify we're redirected *away* from login (to dashboard/home) when already authenticated
       expect(page.url()).not.toContain(ROUTES.LOGIN); // User should not be on login page
@@ -121,7 +100,7 @@ test.describe('Authentication Flow', () => {
       // Look for any authenticated UI elements
       const userProfileExists = await page
         .locator(UI_ELEMENTS.USER_PROFILE.TESTID)
-        .isVisible()
+        .isVisible() // We already waited for this, but keep check for logging
         .catch(() => false);
       const authButtonExists = await page
         .locator(UI_ELEMENTS.AUTH.BUTTON)
