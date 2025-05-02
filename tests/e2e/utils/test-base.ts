@@ -22,7 +22,7 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
 export async function loginTestUser(page: Page, userId?: string): Promise<void> {
   try {
     const token = await generateTestSessionToken(userId);
-    console.log(`[Test Setup] Generated test token for user: ${userId || 'default'}`);
+    // console.log(`[Test Setup] Generated test token for user: ${userId || 'default'}`);
 
     // Parse the baseURL to get domain and protocol reliably
     let url;
@@ -36,9 +36,9 @@ export async function loginTestUser(page: Page, userId?: string): Promise<void> 
     const path = '/';
     const isSecure = url.protocol === 'https:';
 
-    console.log(
-      `[Test Setup] Setting cookie for domain: ${domain}, path: ${path}, secure: ${isSecure}`
-    );
+    // console.log(
+    //   `[Test Setup] Setting cookie for domain: ${domain}, path: ${path}, secure: ${isSecure}`
+    // );
 
     await page.context().addCookies([
       {
@@ -52,9 +52,9 @@ export async function loginTestUser(page: Page, userId?: string): Promise<void> 
       },
     ]);
 
-    console.log(
-      `[Test Setup] Set session cookie (${secureSessionCookieName}) for domain ${domain}`
-    );
+    // console.log(
+    //   `[Test Setup] Set session cookie (${secureSessionCookieName}) for domain ${domain}`
+    // );
   } catch (error) {
     console.error('[Test Setup] Failed to log in test user:', error);
     throw error; // Re-throw to fail the test setup

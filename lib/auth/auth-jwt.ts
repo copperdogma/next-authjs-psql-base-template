@@ -160,6 +160,63 @@ const _handleJwtCredentialsSignIn = (
   return token;
 };
 
+// --- Helper Functions for _handleJwtOAuthSignIn ---
+
+// Helper to validate inputs specific to OAuth flow
+function _validateOAuthInputs(
+  user: NextAuthUser | AdapterUser,
+  account: Account | null,
+  correlationId: string,
+  validateInputsDependency: typeof validateSignInInputs
+): { isValid: true; userId: string; userEmail: string } | { isValid: false } {
+  if (!account) {
+    logger.error({ msg: 'OAuth sign-in called without account object', correlationId });
+    return { isValid: false };
+  }
+
+  const validationResult = validateInputsDependency(user, account, correlationId);
+  if (!validationResult.isValid) {
+    return { isValid: false };
+  }
+
+  const { userId, userEmail } = validationResult;
+  if (!userId || !userEmail) {
+    logger.error(
+      { provider: account.provider, correlationId },
+      'Validation passed but userId or userEmail missing'
+    );
+    return { isValid: false };
+  }
+
+  return { isValid: true, userId, userEmail };
+}
+
+// Helper to build the final JWT for OAuth flow
+function _buildOAuthJwt(
+  token: JWT,
+  dbUser: AuthUserInternal,
+  account: Account,
+  uuidv4: typeof import('uuid').v4 // Use correct type
+): JWT {
+  const updatedToken: JWT = {
+    ...token,
+    sub: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    picture: dbUser.image,
+    role: dbUser.role,
+    jti: token.jti ?? uuidv4(),
+    accessToken: account.access_token,
+    provider: account.provider,
+  };
+  // Optional: Add logging if desired
+  logger.debug(
+    { userId: updatedToken.sub, role: updatedToken.role, provider: updatedToken.provider },
+    '[_buildOAuthJwt] Built OAuth token'
+  );
+  return updatedToken;
+}
+
 /**
  * Handles the JWT logic specifically for OAuth sign-ins.
  *
@@ -167,37 +224,21 @@ const _handleJwtCredentialsSignIn = (
  * @returns The updated JWT for an OAuth user.
  * @internal Used internally by handleJwtSignIn
  */
-// eslint-disable-next-line max-statements -- Statement count is minimally over limit after significant refactoring.
 const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> => {
   const { token, user, account, profile, correlationId, dependencies } = args;
-  const { uuidv4 } = dependencies; // Only extract needed dependencies
+  const { uuidv4, validateInputs } = dependencies; // Extract needed dependencies
 
-  // Account cannot be null for OAuth flow, checked by the caller (handleJwtSignIn)
-  if (!account) {
-    logger.error({ msg: 'OAuth sign-in called without account object', correlationId });
-    return token; // Or throw
+  // Step 1: Validate Input using helper
+  const validation = _validateOAuthInputs(user, account, correlationId, validateInputs);
+  if (!validation.isValid) {
+    return token; // Validation failed
   }
-
-  // Step 1: Validate Input
-  const validationResult = dependencies.validateInputs(user, account, correlationId);
-  if (!validationResult.isValid) {
-    return token; // Validation failed, return original token
-  }
-
-  // Add null checks
-  const { userId, userEmail } = validationResult;
-  if (!userId || !userEmail) {
-    logger.error(
-      { provider: account.provider, correlationId },
-      'Validation passed but userId or userEmail missing'
-    );
-    return token;
-  }
+  const { userId, userEmail } = validation; // Destructure validated ID and email
 
   logger.info({
     msg: 'OAuth sign-in processing in JWT callback',
     userId,
-    provider: account.provider,
+    provider: account?.provider, // Use optional chaining for safety
     correlationId,
   });
 
@@ -207,37 +248,15 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
     userEmail,
     profile,
     user,
-    account,
+    account: account as Account, // Assert account is not null here after validation
     correlationId,
   });
   if (!dbUser) {
-    return token; // DB operation failed, return original token
+    return token; // DB operation failed
   }
 
-  // Step 3: Build the updated token, including OAuth specific details
-  const updatedToken: JWT = {
-    ...token, // Preserve existing token properties
-    sub: dbUser.id,
-    name: dbUser.name,
-    email: dbUser.email,
-    picture: dbUser.image,
-    role: dbUser.role,
-    jti: token.jti ?? uuidv4(), // Ensure JTI exists
-    accessToken: account.access_token, // Include directly
-    provider: account.provider, // Include directly
-  };
-
-  // Log additions (optional, could be removed if logs are too verbose)
-  logger.debug(
-    { correlationId, provider: account.provider },
-    '[_handleJwtOAuthSignIn] Added access token and provider to token'
-  );
-
-  logger.debug(
-    { correlationId, userId: updatedToken.sub, role: updatedToken.role },
-    '[_handleJwtOAuthSignIn] Built OAuth token'
-  );
-  return updatedToken;
+  // Step 3: Build the updated token using helper
+  return _buildOAuthJwt(token, dbUser, account as Account, uuidv4);
 };
 
 // Helper function to apply user updates from session to the token

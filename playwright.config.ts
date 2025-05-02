@@ -94,6 +94,7 @@ const config: PlaywrightTestConfig = defineConfig({
         /accessibility-improved\.spec\.ts/, // Assuming this doesn't strictly need auth
         /basic\.spec\.ts/,
         /ultra-basic\.spec\.ts/,
+        /auth\/registration\.spec\.ts/,
       ],
       // Explicitly ignore tests known to require auth state
       testIgnore: [/auth\/.*\.spec\.ts/, /profile\/.*\.spec\.ts/, /dashboard\.spec\.ts/],
@@ -108,7 +109,8 @@ const config: PlaywrightTestConfig = defineConfig({
       name: 'chromium',
       // Define tests that *require* authentication
       testMatch: [
-        /auth\/.*\.spec\.ts/,
+        /auth\/login-logout-cycle\.spec\.ts/,
+        /auth\/redirect\.test\.ts/,
         /profile\/.*\.spec\.ts/,
         /dashboard\.spec\.ts/,
         // Add other auth-dependent test files/patterns here

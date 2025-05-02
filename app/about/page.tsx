@@ -38,8 +38,12 @@ export default function AboutPage() {
           <CardHeader title="Quick Actions" />
           <CardContent>
             <Grid container spacing={2}>
-              {/* @ts-expect-error - Suppressing Grid item prop error (MUI/TS issue) */}
-              <Grid item xs={12} sm={4}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 4,
+                }}
+              >
                 <Button variant="outlined" color="warning" fullWidth onClick={handleLogout}>
                   Debug Log Out
                 </Button>

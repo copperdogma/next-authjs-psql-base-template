@@ -10,7 +10,17 @@ interface ClientLogEntry {
 }
 
 // Internal function to send the log data
+// eslint-disable-next-line complexity, max-statements -- Complexity/Statements slightly high due to environment checks
 async function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
+  // --- Add check for disabling fetch during most tests --- //
+  if (process.env.DISABLE_CLIENT_LOGGER_FETCH === 'true') {
+    // During general tests (e.g., jsdom components), do not attempt to send logs
+    return;
+  }
+  // Note: This allows tests specifically for client-logger.ts (running in node env
+  // without this variable set) to proceed and test fetch/sendBeacon mocks.
+  // --- End check --- //
+
   const endpoint = '/api/log/client';
   const body = JSON.stringify(entry);
 
@@ -21,7 +31,10 @@ async function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
       return; // Successfully sent via beacon
     }
     // Fallback to fetch if sendBeacon fails (e.g., data too large)
-    console.warn('Client Logger: sendBeacon failed, falling back to fetch.');
+    // Only warn in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn('Client Logger: sendBeacon failed, falling back to fetch.');
+    }
     // Fall-through to the fetch logic below
   }
 
@@ -35,11 +48,17 @@ async function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
     });
     if (!response.ok) {
       // Log non-ok responses, but don't throw to avoid breaking caller
-      console.error('Client Logger: Log submission failed with status:', response.status);
+      // Only log error in non-test environments
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Client Logger: Log submission failed with status:', response.status);
+      }
     }
   } catch (error) {
     // Avoid logging errors from the logger itself to prevent loops
-    console.error('Client Logger: Failed to send log entry via fetch:', error);
+    // Only log error in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Client Logger: Failed to send log entry via fetch:', error);
+    }
   }
 }
 

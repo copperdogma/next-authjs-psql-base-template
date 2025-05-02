@@ -1,0 +1,22 @@
+---
+description: Instructions for handling linting errors
+globs: 
+alwaysApply: false
+---
+If the issues are simple (running Prettier, removing unused varibales, etc) just do them.
+
+For more complex issues, try these approaches in order for Code or Test linting issues:
+
+## Code
+1) Try to make the code more succinct.
+2) If that's not possible, plan out how to refactor the code. Use your judgement on whether or not this makes sense.
+3) If the issue is extremely difficult or a lot of effort for very little reward, ask the user if you can add an exception for this file. Explain why you think it would be a good idea. Only do this if you think it's the best possible option, otherwise make an alternative suggestion.
+
+
+## Tests
+1) Try to make the code more succinct.
+2) If that's not possible, plan out how to refactor the code. Only do this if it's a big win for testing. Perhaps you can extract a method that's useful across many tests. But they're just tests so a lot of refactoring doesn't make much sense.
+3) If the issue is extremely difficult or a lot of effort for very little reward, ask the user if you can add an exception for this file. This is probably the best option at this point. Test code is less important for linting thresholds than regular code.
+
+
+If you do end up adding an exception, ensure the reason for disabling the linting warning is well documented in-line.

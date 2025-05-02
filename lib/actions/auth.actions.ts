@@ -1,5 +1,10 @@
 'use server'; // Restore directive
 
+/* eslint-disable max-lines -- Disabled: This file contains multiple related server actions 
+   (registration, credentials auth) and their associated helper functions. 
+   Significant refactoring has already been done to break down logic internally. 
+   Further splitting might reduce clarity and cohesion more than the length limit warrants. */
+
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import { User } from '@prisma/client'; // Explicitly import User type
@@ -55,67 +60,79 @@ async function _checkExistingUser(email: string, db: RegisterUserDbClient): Prom
   return !!existingUser;
 }
 
-async function _createUser(
-  data: RegistrationInput,
-  db: RegisterUserDbClient,
-  hasher: Hasher,
-  fbService: FirebaseAdminServiceInterface // Add Firebase Admin service dependency
-): Promise<User> {
-  const { name, email, password } = data;
-  const logContext = { email }; // For logging
-  actionLogger.debug(logContext, '_createUser: Attempting to create Firebase user');
-
-  // 1. Create user in Firebase first
-  let firebaseUser: admin.auth.UserRecord;
+// --- Extracted Helper for Firebase User Creation ---
+async function _createFirebaseUser(
+  data: { email: string; password?: string; name?: string | null }, // Use specific fields needed
+  fbService: FirebaseAdminServiceInterface,
+  logContext: { email: string }
+): Promise<admin.auth.UserRecord> {
+  actionLogger.debug(logContext, '_createFirebaseUser: Attempting...');
   try {
-    firebaseUser = await fbService.createUser({
-      email,
-      password,
-      displayName: name,
+    const firebaseUser = await fbService.createUser({
+      email: data.email,
+      password: data.password,
+      displayName: data.name,
     });
-    actionLogger.info(
-      { ...logContext, uid: firebaseUser.uid },
-      '_createUser: Firebase user created successfully'
-    );
+    actionLogger.info({ ...logContext, uid: firebaseUser.uid }, '_createFirebaseUser: Success');
+    return firebaseUser;
   } catch (error) {
-    actionLogger.error({ ...logContext, error }, '_createUser: Firebase user creation failed');
-    throw error;
+    actionLogger.error({ ...logContext, error }, '_createFirebaseUser: FAILED');
+    throw error; // Re-throw to be caught by caller
   }
+}
 
-  // 2. If Firebase creation succeeded, hash password and create user in Prisma DB
-  actionLogger.debug(
-    { ...logContext, uid: firebaseUser.uid },
-    '_createUser: Hashing password for Prisma'
-  );
-  const hashedPassword = await hasher.hash(password, SALT_ROUNDS);
-  actionLogger.debug(
-    { ...logContext, uid: firebaseUser.uid },
-    '_createUser: Attempting to create Prisma user'
-  );
-
+// --- Extracted Helper for Prisma User Creation ---
+async function _createPrismaUser(
+  firebaseUser: admin.auth.UserRecord,
+  passwordToHash: string,
+  services: { db: RegisterUserDbClient; hasher: Hasher },
+  logContext: { email?: string | null; uid: string }
+): Promise<User> {
+  const { db, hasher } = services; // Destructure inside
+  actionLogger.debug(logContext, '_createPrismaUser: Hashing password...');
+  const hashedPassword = await hasher.hash(passwordToHash, SALT_ROUNDS);
+  actionLogger.debug(logContext, '_createPrismaUser: Attempting DB create...');
   try {
     const prismaUser = await db.user.create({
       data: {
         id: firebaseUser.uid,
-        name: name,
+        name: firebaseUser.displayName,
         email: firebaseUser.email,
         hashedPassword,
         emailVerified: firebaseUser.emailVerified ? new Date() : null,
-        // Role defaults to USER in schema
       },
     });
-    actionLogger.info(
-      { ...logContext, userId: prismaUser.id },
-      '_createUser: Prisma user created successfully'
-    );
+    actionLogger.info({ ...logContext, userId: prismaUser.id }, '_createPrismaUser: Success');
     return prismaUser;
   } catch (dbError) {
-    actionLogger.error(
-      { ...logContext, uid: firebaseUser.uid, dbError },
-      '_createUser: Prisma user creation failed'
-    );
-    throw dbError;
+    actionLogger.error(logContext, '_createPrismaUser: FAILED');
+    throw dbError; // Re-throw to be caught by caller
   }
+}
+
+// --- Original _createUser Function (Refactored) ---
+async function _createUser(
+  data: RegistrationInput,
+  db: RegisterUserDbClient,
+  hasher: Hasher,
+  fbService: FirebaseAdminServiceInterface
+): Promise<User> {
+  const { email, password } = data;
+  const baseLogContext = { email };
+
+  // 1. Create Firebase user using helper
+  const firebaseUser = await _createFirebaseUser(data, fbService, baseLogContext);
+
+  // 2. Create Prisma user using helper
+  const prismaLogContext = { email: firebaseUser.email, uid: firebaseUser.uid };
+  const prismaUser = await _createPrismaUser(
+    firebaseUser,
+    password, // Pass original password for hashing
+    { db, hasher }, // Pass services object
+    prismaLogContext
+  );
+
+  return prismaUser;
 }
 
 // Type guard for Prisma errors
@@ -167,6 +184,33 @@ async function _signInAfterRegistration(
   }
 }
 
+// --- Extracted Helper for Error Translation ---
+function _translateRegistrationError(error: unknown): { message: string; code: string } {
+  let errorMessage = 'An error occurred during registration.';
+  let errorCode = 'UNKNOWN_ERROR';
+
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const firebaseErrorCode = (error as { code: string }).code;
+    errorCode = firebaseErrorCode;
+    switch (firebaseErrorCode) {
+      case 'auth/email-already-exists':
+        errorMessage = 'This email address is already registered.';
+        break;
+      case 'auth/invalid-password':
+        errorMessage = 'Password must be at least 6 characters long.';
+        break;
+      default:
+        errorMessage = 'An unexpected Firebase error occurred.';
+        break;
+    }
+  } else if (isPrismaError(error) && error.code === 'P2002') {
+    errorMessage = 'An unexpected database conflict occurred.';
+    errorCode = 'PRISMA_P2002';
+  }
+
+  return { message: errorMessage, code: errorCode };
+}
+
 // --- Core Registration Logic ---
 async function _performRegistrationAttempt(
   validatedData: RegistrationInput,
@@ -198,37 +242,16 @@ async function _performRegistrationAttempt(
   } catch (error) {
     // Catch errors from _createUser
     actionLogger.warn({ ...logContext, error }, '_performRegistrationAttempt: _createUser failed');
-    // Translate Firebase/DB errors into user-friendly messages
-    let errorMessage = 'An error occurred during registration.';
-    let errorCode = 'UNKNOWN_ERROR';
 
-    // Check for Firebase errors first (assuming fbService throws errors with a 'code' property)
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-      const firebaseErrorCode = (error as { code: string }).code;
-      errorCode = firebaseErrorCode; // Store the specific code
-      switch (firebaseErrorCode) {
-        case 'auth/email-already-exists':
-          errorMessage = 'This email address is already registered.';
-          break;
-        case 'auth/invalid-password':
-          errorMessage = 'Password must be at least 6 characters long.'; // Firebase enforces 6, Zod enforces 8
-          break;
-        // Add other specific Firebase error codes as needed
-        default:
-          errorMessage = 'An unexpected Firebase error occurred.';
-          break;
-      }
-    } else if (isPrismaError(error) && error.code === 'P2002') {
-      // Handle potential Prisma unique constraint errors (though less likely now)
-      errorMessage = 'An unexpected database conflict occurred.';
-      errorCode = 'PRISMA_P2002';
-    }
+    // Use the extracted error translation helper
+    const { message: translatedMessage, code: translatedCode } = _translateRegistrationError(error);
 
     actionLogger.error(
-      { ...logContext, errorCode, originalError: error },
+      { ...logContext, errorCode: translatedCode, originalError: error },
       '_performRegistrationAttempt: Returning failure from _createUser catch'
     );
-    return { success: false, message: errorMessage, error: errorCode }; // Include error code for potential debugging
+    // Return using the translated message and code
+    return { success: false, message: translatedMessage, error: translatedCode };
   }
 }
 

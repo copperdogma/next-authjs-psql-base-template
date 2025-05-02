@@ -41,43 +41,48 @@ if (!testEmail || !testPassword) {
   process.exit(1);
 }
 
-// --- Main Logic ---
-async function main() {
-  // Wrap logic in async function
-  console.log(`Attempting to create/update Firebase Auth user: ${testEmail}...`);
-  let userRecord;
+// --- Helper Functions ---
+
+async function ensureFirebaseAuthUser(email, password) {
+  console.log(`Attempting to ensure Firebase Auth user: ${email}...`);
   try {
-    userRecord = await auth.getUserByEmail(testEmail);
-    console.log(`Firebase Auth user ${testEmail} already exists. Updating password.`);
-    await auth.updateUser(userRecord.uid, { password: testPassword });
+    const userRecord = await auth.getUserByEmail(email);
+    console.log(`Firebase Auth user ${email} already exists. Updating password.`);
+    await auth.updateUser(userRecord.uid, { password });
+    console.log(
+      `✅ Successfully updated Firebase Auth user: ${userRecord.email} (UID: ${userRecord.uid})`
+    );
+
+    return userRecord;
   } catch (error) {
     if (error.code === 'auth/user-not-found') {
-      console.log(`Firebase Auth user ${testEmail} not found. Creating.`);
-      userRecord = await auth.createUser({
-        email: testEmail,
-        password: testPassword,
-        emailVerified: true,
+      console.log(`Firebase Auth user ${email} not found. Creating.`);
+      const userRecord = await auth.createUser({
+        email,
+        password,
+        emailVerified: true, // Assuming verified for test users
       });
+      console.log(
+        `✅ Successfully created Firebase Auth user: ${userRecord.email} (UID: ${userRecord.uid})`
+      );
+
+      return userRecord;
     } else {
-      throw error; // Rethrow unexpected errors
+      console.error('❌ Error ensuring Firebase user:', error);
+      throw error;
     }
   }
-  console.log(
-    `✅ Successfully ensured Firebase Auth user: ${userRecord.email} (UID: ${userRecord.uid})`
-  );
+}
 
-  // Now, ensure the Prisma user has the correct bcryptjs hash
-  console.log(`Hashing password with bcryptjs...`);
-  const hashedPassword = await bcrypt.hash(testPassword, SALT_ROUNDS);
-  console.log(`Updating Prisma user ${testEmail} with hashed password...`);
-
+async function updatePrismaUserHash(userRecord, passwordToHash) {
+  console.log(`Hashing password with bcryptjs for Prisma update...`);
+  const hashedPassword = await bcrypt.hash(passwordToHash, SALT_ROUNDS);
+  console.log(`Updating Prisma user ${userRecord.email} with hashed password...`);
   try {
     const updatedPrismaUser = await prisma.user.update({
-      where: { email: testEmail },
+      where: { email: userRecord.email },
       data: {
-        hashedPassword: hashedPassword,
-
-        // Optionally ensure other fields are synced if needed
+        hashedPassword,
         name: userRecord.displayName || 'Test User',
         emailVerified: userRecord.emailVerified ? new Date() : null,
       },
@@ -86,21 +91,29 @@ async function main() {
       `✅ Successfully updated Prisma user: ${updatedPrismaUser.email} with bcryptjs hash.`
     );
   } catch (prismaError) {
-    // Handle case where user might not exist in Prisma yet (though adapter should handle this)
     if (prismaError.code === 'P2025') {
-      console.warn(
-        `Prisma user ${testEmail} not found for update. This might indicate an adapter issue.`
-      );
+      console.warn(`Prisma user ${userRecord.email} not found for update. Consider creating.`);
 
-      // Optionally attempt prisma.user.create here if needed, but adapter should handle creation.
+      // Decide if creation is needed here or rely on adapter
     } else {
-      console.error('❌ Error updating Prisma user:', prismaError);
-      throw prismaError; // Rethrow if it's not a record-not-found error
+      console.error('❌ Error updating Prisma user hash:', prismaError);
+      throw prismaError;
     }
   }
-} // End async function main
+}
 
-main() // Call the async function
+// --- Main Logic ---
+async function main() {
+  // Step 1: Ensure Firebase user exists and has correct password
+  const firebaseUser = await ensureFirebaseAuthUser(testEmail, testPassword);
+
+  // Step 2: Ensure Prisma user has the correct bcrypt hash
+  await updatePrismaUserHash(firebaseUser, testPassword);
+
+  console.log('✅ Test user setup complete.');
+}
+
+main()
   .catch(async e => {
     console.error('❌ An error occurred during test user setup:', e);
     await prisma.$disconnect();

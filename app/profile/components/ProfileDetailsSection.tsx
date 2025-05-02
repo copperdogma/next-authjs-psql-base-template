@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useActionState, useRef } from 'react';
+import { useState, useEffect, useActionState, useRef, useCallback } from 'react';
 import { Box, Divider, Stack } from '@mui/material';
 import { User } from 'next-auth';
 import SignOutButton from './SignOutButton';
@@ -11,83 +11,102 @@ import NameEditSection from './NameEditSection';
 import ProfileField from './ProfileField';
 import { toast } from '@/components/ui/Toaster'; // Import toast
 
+// Custom Hook for Profile Details Logic
+const useProfileDetails = (
+  /* userId: string | null, */ currentName: string | null,
+  setUserDetails: (details: Partial<User>) => void
+) => {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [state, formAction] = useActionState<UpdateUserNameFormState, FormData>(updateUserName, {
+    message: '',
+    success: false,
+    updatedName: null,
+  });
+  const storeUpdateAttemptedRef = useRef(false);
+
+  const handleFormSubmit = useCallback(
+    async (formData: FormData) => {
+      storeUpdateAttemptedRef.current = false; // Reset attempt flag on new submit
+      return formAction(formData);
+    },
+    [formAction]
+  ); // Depend on formAction
+
+  useEffect(() => {
+    if (state.success && state.updatedName && !storeUpdateAttemptedRef.current) {
+      storeUpdateAttemptedRef.current = true;
+      setIsEditingName(false);
+      console.log('Profile action success, updating Zustand store with:', {
+        name: state.updatedName,
+      });
+      setUserDetails({ name: state.updatedName });
+      if (state.message) {
+        toast.success(state.message);
+      }
+    } else if (!state.success && state.message) {
+      storeUpdateAttemptedRef.current = false;
+      toast.error(state.message);
+    } else if (!state.success) {
+      storeUpdateAttemptedRef.current = false;
+    }
+  }, [state, setUserDetails]);
+
+  return {
+    isEditingName,
+    setIsEditingName,
+    state,
+    handleFormSubmit,
+    effectiveUserName: currentName, // Pass current name from store
+    formAction, // Return formAction if NameEditSection needs it directly (might not)
+  };
+};
+
 interface ProfileDetailsSectionProps {
   user: User; // Keep initial user prop for non-name fields
 }
 
+// Main Component
 export default function ProfileDetailsSection({ user }: ProfileDetailsSectionProps) {
-  const [isEditingName, setIsEditingName] = useState(false);
-  // const { data: session, update: updateSession } = useSession(); // Removed useSession
-
   // Get user details and update action from Zustand store
-  const { id: userId, name: currentName, email, setUserDetails } = useUserStore();
+  const {
+    id: userIdFromStore,
+    name: currentNameFromStore,
+    email: emailFromStore,
+    setUserDetails,
+  } = useUserStore();
 
-  // Use the specific state type from the action
-  const [state, formAction] = useActionState<UpdateUserNameFormState, FormData>(updateUserName, {
-    message: '',
-    success: false,
-    updatedName: null, // Initial state for the new field
-  });
+  // Use the custom hook
+  const {
+    isEditingName,
+    setIsEditingName,
+    state,
+    handleFormSubmit,
+    effectiveUserName,
+    // formAction - Not directly needed by NameEditSection if handleFormSubmit is used
+  } = useProfileDetails(currentNameFromStore, setUserDetails);
 
-  // Use ref to track if store update was attempted to prevent multiple updates
-  const storeUpdateAttemptedRef = useRef(false);
-
-  const handleFormSubmit = async (formData: FormData) => {
-    storeUpdateAttemptedRef.current = false; // Reset attempt flag on new submit
-    return formAction(formData);
-  };
-
-  useEffect(() => {
-    // When the server action succeeds AND we haven't tried updating the store yet
-    if (state.success && state.updatedName && !storeUpdateAttemptedRef.current) {
-      storeUpdateAttemptedRef.current = true; // Mark update as attempted
-      setIsEditingName(false);
-
-      console.log('Profile action success, updating Zustand store with:', {
-        name: state.updatedName,
-      });
-
-      // Update the Zustand store directly with the new name
-      setUserDetails({ name: state.updatedName });
-
-      // Show success toast
-      if (state.message) {
-        toast.success(state.message);
-      }
-
-      // Removed updateSession call
-    } else if (!state.success && state.message) {
-      // Show error toast only if there's an error message
-      // Reset attempt flag if the action failed (e.g., validation error)
-      storeUpdateAttemptedRef.current = false;
-      toast.error(state.message);
-    } else if (!state.success) {
-      // If action failed without a message, still reset the flag
-      storeUpdateAttemptedRef.current = false;
-    }
-    // Depend on the entire state object to react to changes
-  }, [state, setUserDetails]);
-
-  // Read the name directly from the Zustand store for display
-  const effectiveUserName = currentName;
+  // Combine store and initial prop values for display
+  const displayUserId = userIdFromStore || user.id;
+  const displayEmail = emailFromStore || user.email;
+  const displayUserName = effectiveUserName || user.name; // Fallback to prop if store is empty initially
 
   return (
     <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 calc(100% - 250px - 48px)' } }}>
       <Stack spacing={4}>
         <NameEditSection
-          // Pass the current name from the store to the edit section
-          user={{ ...user, id: userId || '', name: effectiveUserName || '' }}
+          // Pass combined/effective user details
+          user={{ ...user, id: displayUserId || '', name: displayUserName || '' }}
           isEditingName={isEditingName}
           setIsEditingName={setIsEditingName}
-          formAction={handleFormSubmit}
+          formAction={handleFormSubmit} // Use the wrapped submit handler from the hook
           state={state}
         />
         <Divider />
-        {/* Use email from store if available, fallback to initial prop */}
-        <ProfileField label="Email" value={email || user.email} />
+        {/* Use combined/effective email */}
+        <ProfileField label="Email" value={displayEmail} />
         <Divider />
-        {/* Use id from store if available, fallback to initial prop */}
-        <ProfileField label="User ID" value={userId || user.id} />
+        {/* Use combined/effective user ID */}
+        <ProfileField label="User ID" value={displayUserId} />
         <Divider />
         <SignOutButton />
       </Stack>

@@ -11,6 +11,8 @@ type TransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >;
 
+// Disable rule for this large integration test suite
+// eslint-disable-next-line max-lines-per-function
 describe('Database Integration Tests', () => {
   // Generate unique test IDs for better isolation
   const testRunId = uuidv4().substring(0, 8);

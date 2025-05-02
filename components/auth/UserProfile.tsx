@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { useUserStore } from '@/lib/store/userStore'; // Import Zustand store
 import { Avatar, Box, /* Typography, */ Skeleton, Chip } from '@mui/material';
 import NextLink from 'next/link';
+import { clientLogger } from '@/lib/client-logger'; // Import client logger
 
 // Extracted loader component to reduce complexity
 const UserProfileSkeleton = () => (
@@ -70,29 +71,29 @@ const UserProfile: React.FC = () => {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    console.log('[UserProfile] Mounted'); // Log mount
+    clientLogger.debug('[UserProfile] Mounted'); // Use debug log
     setMounted(true);
   }, []);
 
   // Log store changes
   useEffect(() => {
-    console.log(`[UserProfile] Store updated:`, { id, name, email, image });
+    clientLogger.debug('[UserProfile] Store updated:', { id, name, email, image }); // Use debug log
   }, [id, name, email, image]);
 
   // Show skeleton loader if not mounted yet
   if (!mounted) {
-    console.log(`[UserProfile] Rendering Skeleton (not mounted yet)`);
+    clientLogger.debug(`[UserProfile] Rendering Skeleton (not mounted yet)`); // Use debug log
     return <UserProfileSkeleton />;
   }
 
   // If mounted and we have an ID from the store, assume authenticated
   if (id) {
-    console.log('[UserProfile] Rendering Authenticated state from store');
+    clientLogger.debug('[UserProfile] Rendering Authenticated state from store'); // Use debug log
     return <AuthenticatedProfile user={{ id, name, email, image }} />;
   }
 
   // Handle unauthenticated state (no ID in store)
-  console.log(`[UserProfile] Rendering Unauthenticated state (no ID in store)`);
+  clientLogger.debug(`[UserProfile] Rendering Unauthenticated state (no ID in store)`); // Use debug log
   return null;
 };
 

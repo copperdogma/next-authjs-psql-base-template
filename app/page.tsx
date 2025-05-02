@@ -71,8 +71,7 @@ export default function HomePage() {
     return (
       <PageLayout title="Home" subtitle="Loading...">
         <Grid container justifyContent="center" alignItems="center" minHeight="50vh">
-          {/* @ts-expect-error - Suppressing Grid item prop error (MUI/TS issue) */}
-          <Grid item>
+          <Grid>
             <CircularProgress />
           </Grid>
         </Grid>

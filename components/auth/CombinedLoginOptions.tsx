@@ -75,7 +75,7 @@ export function CombinedLoginOptions() {
       role="region"
       aria-labelledby="login-header"
     >
-      {/* Use a proper h1 element for the page heading */}
+      {/* Restore h1 for accessibility when this is the main page content */}
       <Typography
         variant="h4"
         component="h1"

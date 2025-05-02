@@ -48,8 +48,8 @@ test.describe('Auth Redirection', () => {
     const signInButton = page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN);
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
-    // Check for the heading element
-    const heading = page.locator('h1');
+    // Check for the specific "Login" heading element
+    const heading = page.getByRole('heading', { name: 'Login' });
     await expect(heading).toBeVisible({ timeout: 5000 });
 
     // Check that the page has meaningful content (not mostly blank)

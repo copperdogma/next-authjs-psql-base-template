@@ -2,7 +2,8 @@
 import { initializeApp, getApps, getApp } from '@firebase/app';
 import { getAuth, connectAuthEmulator, Auth, signInWithEmailAndPassword } from '@firebase/auth';
 import { getFirestore, connectFirestoreEmulator, Firestore } from '@firebase/firestore';
-import { logger } from '@/lib/logger'; // Import logger
+import { logger } from '@/lib/logger'; // Import server logger
+import { clientLogger } from '@/lib/client-logger'; // Import client logger
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -76,9 +77,12 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
   const shouldUseEmulator =
     process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
 
-  console.log(
-    `[firebase-config.ts] Inside setupEmulators: shouldUseEmulator = ${shouldUseEmulator}, NEXT_PUBLIC_USE_FIREBASE_EMULATOR = ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
-  );
+  // Use clientLogger.debug for verbose setup logs - Corrected argument order
+  clientLogger.debug('[firebase-config] setupEmulators check', {
+    shouldUseEmulator,
+    envVar: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR,
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   if (!shouldUseEmulator) {
     return;
@@ -91,17 +95,19 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
 
 // Create a client-only implementation that will be properly initialized
 if (typeof window !== 'undefined') {
-  // Original logging
-  console.log('[firebase-config.ts] File loaded (client-side check)');
-  console.log(
-    `[firebase-config.ts] Client-side init: NEXT_PUBLIC_USE_FIREBASE_EMULATOR = ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`
-  );
+  // Use clientLogger.debug for initialization phase logs - Corrected argument order
+  clientLogger.debug('[firebase-config] File loaded (client-side check)');
+  clientLogger.debug('[firebase-config] Client-side init check', {
+    envVar: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR,
+  });
 
   // Only initialize Firebase on the client side
   firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-  // Log NODE_ENV on the client
-  console.log(`[firebase-config.ts] Client-side NODE_ENV: ${process.env.NODE_ENV}`);
+  // Log NODE_ENV on the client using debug - Corrected argument order
+  clientLogger.debug('[firebase-config] Client-side NODE_ENV', {
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   // Initialize auth and firestore
   auth = getAuth(firebaseApp);
@@ -113,19 +119,20 @@ if (typeof window !== 'undefined') {
   // Expose auth instance globally FOR TESTING ONLY (Restored original logic)
   // Use the dedicated E2E environment variable instead of NODE_ENV for client-side check
   if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true') {
-    console.log(
-      '[firebase-config.ts] E2E test env detected, attempting to expose auth instance...'
+    // Use debug for E2E specific logs
+    clientLogger.debug(
+      '[firebase-config] E2E test env detected, attempting to expose auth instance...'
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__firebaseAuthInstance__ = auth;
     // Expose the sign-in function as well
-    console.log('[firebase-config.ts] Exposing signInWithEmailAndPassword function...');
+    clientLogger.debug('[firebase-config] Exposing signInWithEmailAndPassword function...');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__signInWithEmailAndPassword__ = signInWithEmailAndPassword;
     logger.info('🧪 Exposed Firebase Auth instance and sign-in function to window for testing.');
   } else {
     // Optional: Log if not in E2E test env
-    console.log('[firebase-config.ts] NODE_ENV is NOT test, skipping auth instance exposure.');
+    clientLogger.debug('[firebase-config] Not E2E test env, skipping auth instance exposure.');
   }
 } else {
   // Provide placeholders for SSR context that won't be used

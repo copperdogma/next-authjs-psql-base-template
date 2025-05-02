@@ -142,6 +142,9 @@ const customJestConfig = {
       setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
       testEnvironment: 'jsdom',
       ...sharedConfig,
+      globals: {
+        DISABLE_CLIENT_LOGGER_FETCH: 'true', // Prevent client logger API calls in jsdom tests
+      },
       moduleNameMapper: {
         ...sharedConfig.moduleNameMapper,
         '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',

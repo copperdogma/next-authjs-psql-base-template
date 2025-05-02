@@ -17,6 +17,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import UserProfile from '@/components/auth/UserProfile'; // Restore import
 import ThemeToggle from '@/components/ui/ThemeToggle'; // Import ThemeToggle
 import LoginIcon from '@mui/icons-material/Login'; // Import LoginIcon
+import { SxProps, Theme } from '@mui/material/styles'; // Import SxProps and Theme
 
 // Define navigation links including public/private status
 const navItems = [
@@ -26,12 +27,90 @@ const navItems = [
   { name: 'About', path: '/about', icon: <InfoIcon />, public: true },
 ];
 
+// --- Extracted Components ---
+
+interface NavigationLinksProps {
+  navItems: Array<{ name: string; path: string; icon: React.ReactNode; public: boolean }>;
+  isAuthenticated: boolean;
+  pathname: string | null; // pathname can be null
+}
+
+const NavigationLinks: React.FC<NavigationLinksProps> = ({
+  navItems,
+  isAuthenticated,
+  pathname,
+}) => {
+  const displayedNavItems = navItems.filter(item => item.public || isAuthenticated);
+
+  const activeLinkStyle: SxProps<Theme> = {
+    border: '1px solid',
+    borderColor: theme => theme.palette.primary.main,
+  };
+
+  const hoverStyle: SxProps<Theme> = {
+    '&:hover': {
+      backgroundColor: theme =>
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+    },
+  };
+
+  return (
+    <Box sx={{ flexGrow: 1, display: 'flex', gap: 1 }}>
+      {displayedNavItems.map(item => (
+        <Button
+          key={item.name}
+          component={Link}
+          href={item.path}
+          startIcon={item.icon}
+          sx={{
+            color: 'inherit',
+            textTransform: 'none',
+            ...(pathname === item.path ? activeLinkStyle : {}),
+            ...hoverStyle,
+          }}
+        >
+          {item.name}
+        </Button>
+      ))}
+    </Box>
+  );
+};
+
+interface AuthSectionProps {
+  status: 'loading' | 'authenticated' | 'unauthenticated';
+}
+
+const AuthSection: React.FC<AuthSectionProps> = ({ status }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <ThemeToggle />
+    {status === 'loading' && (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Optional loading indicator */}
+      </Box>
+    )}
+    {status === 'authenticated' && <UserProfile />} {/* Restore UserProfile */}
+    {status === 'unauthenticated' && (
+      <Button
+        component={Link}
+        href="/login"
+        color="inherit"
+        startIcon={<LoginIcon />}
+        sx={{ textTransform: 'none' }}
+      >
+        Sign In
+      </Button>
+    )}
+  </Box>
+);
+
+// --- Main Header Component ---
+
 const Header: React.FC = () => {
   const { status } = useSession();
   const pathname = usePathname();
   const isAuthenticated = status === 'authenticated';
 
-  const displayedNavItems = navItems.filter(item => item.public || isAuthenticated);
+  // const displayedNavItems = navItems.filter(item => item.public || isAuthenticated); // Logic moved to NavigationLinks
 
   return (
     <AppBar
@@ -50,53 +129,15 @@ const Header: React.FC = () => {
             {'{YOUR_APP_NAME}'}
           </Typography>
 
-          {/* Navigation Links */}
-          <Box sx={{ flexGrow: 1, display: 'flex', gap: 1 }}>
-            {displayedNavItems.map(item => (
-              <Button
-                key={item.name}
-                component={Link}
-                href={item.path}
-                startIcon={item.icon}
-                sx={{
-                  color: 'inherit',
-                  textTransform: 'none',
-                  border: pathname === item.path ? '1px solid' : 'none',
-                  borderColor: theme => theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: theme =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 255, 255, 0.1)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                {item.name}
-              </Button>
-            ))}
-          </Box>
+          {/* Use extracted NavigationLinks component */}
+          <NavigationLinks
+            navItems={navItems}
+            isAuthenticated={isAuthenticated}
+            pathname={pathname}
+          />
 
-          {/* Right side: Theme Toggle and Auth Info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ThemeToggle />
-            {status === 'loading' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {/* Optional loading indicator */}
-              </Box>
-            )}
-            {status === 'authenticated' && <UserProfile />} {/* Restore UserProfile */}
-            {status === 'unauthenticated' && (
-              <Button
-                component={Link}
-                href="/login"
-                color="inherit"
-                startIcon={<LoginIcon />}
-                sx={{ textTransform: 'none' }}
-              >
-                Sign In
-              </Button>
-            )}
-          </Box>
+          {/* Use extracted AuthSection component */}
+          <AuthSection status={status} />
         </Toolbar>
       </Container>
     </AppBar>

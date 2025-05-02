@@ -14,11 +14,14 @@ test.describe('Public Route Accessibility', () => {
       // For home page specifically, check either main content or login card
       if (pagePath === '/') {
         // Try first for login card (when not logged in)
-        const loginCard = page.locator('h1#login-header');
+        // Use a more robust selector for the login options container
+        const loginOptionsContainer = page.locator(
+          'div[role="region"][aria-labelledby="login-header"]'
+        );
         const mainContent = page.locator('[data-testid="main-content"]');
 
         // Use a conditional check - either login form or main content should be visible
-        const isLoginVisible = await loginCard.isVisible().catch(() => false);
+        const isLoginVisible = await loginOptionsContainer.isVisible().catch(() => false);
         const isMainContentVisible = await mainContent.isVisible().catch(() => false);
 
         // Check that at least one element is visible
