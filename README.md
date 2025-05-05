@@ -13,6 +13,7 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 - Comprehensive Testing Setup
 - TypeScript
 - Material Design Components (MUI)
+- Consistent linting with ESLint flat config
 
 ## Technology Stack
 
