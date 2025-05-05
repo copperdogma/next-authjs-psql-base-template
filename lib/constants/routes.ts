@@ -9,6 +9,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   ABOUT: '/about',
+  SETTINGS: '/settings',
   // API Routes
   API_AUTH_SESSION: '/api/auth/session',
   API_AUTH_LOGIN: '/api/auth/login', // Example if needed for Pages Router style API

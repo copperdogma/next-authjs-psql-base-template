@@ -10,7 +10,7 @@ import {
   authorizeLogic,
   CredentialsSchema,
   type AuthorizeDependencies,
-} from './auth/auth-credentials'; // Corrected path again
+} from './auth/auth-credentials';
 // Import helpers from the auth helper file - RE-ADD THIS
 import {
   findOrCreateUserAndAccountInternal,
@@ -36,7 +36,7 @@ import { handleJwtSignIn, handleJwtUpdate, type HandleJwtSignInArgs } from './au
 // ====================================
 // CredentialsSchema moved to auth-credentials.ts
 
-// Prepare dependencies for authorizeLogic
+// Prepare dependencies for authorizeLogic (Restore this block)
 const dependencies: AuthorizeDependencies = {
   db: {
     user: {
@@ -68,6 +68,7 @@ export const authConfigNode: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   providers: [
     ...(sharedAuthConfig.providers || []),
+    // Restore CredentialsProvider configuration
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
