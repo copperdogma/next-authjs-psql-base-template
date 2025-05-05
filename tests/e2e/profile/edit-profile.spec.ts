@@ -113,18 +113,21 @@ test.describe.serial('Profile Name Editing', () => {
     await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Try to save with an empty name
+    // Fill with invalid name (empty)
     const nameInput = page.locator('input[name="name"]'); // Using specific input selector
     await expect(nameInput).toBeVisible();
     await nameInput.clear();
-
-    // Save the changes
+    await nameInput.fill('');
+    // Save button should still be enabled, click it to trigger server-side validation
     const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeEnabled();
     await saveButton.click();
 
-    // Verify validation error appears (scoped to form)
+    // Verify validation message is shown (check server action message)
+    // The server action returns a specific message for short/empty names
+    const expectedValidationMessage = 'Name must be at least 3 characters long.';
     await expect(
-      page.locator('form[data-edit-name="true"]').getByText('Name is required')
+      page.locator('form[data-edit-name="true"]').getByText(expectedValidationMessage)
     ).toBeVisible();
 
     // Fill with valid name and save

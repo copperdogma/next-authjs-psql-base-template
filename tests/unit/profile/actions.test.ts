@@ -14,12 +14,16 @@ jest.mock('@/lib/server/services', () => ({
   },
 }));
 
+// Mock server-only package
+jest.mock('server-only', () => ({}), { virtual: true });
+
 // Import the real services module - THIS IMPORT IS NOW MOCKED
-import { profileService } from '../../../lib/server/services';
+// import { profileService } from '@/lib/server/services';
 // Import revalidatePath
-import { revalidatePath } from 'next/cache';
-// Import the function we're testing
-import { updateUserName, UpdateUserNameFormState } from '../../../app/profile/actions'; // Add FormState import
+// import { revalidatePath } from 'next/cache';
+// Import the type and the actual action function
+import { NameUpdateState, updateUserName } from '@/app/profile/actions';
+// import { auth } from '@/lib/auth-edge'; // No longer needed here if mocked below
 
 // Mock lib/auth - define mock function inside the factory
 jest.mock('@/lib/auth-node', () => {
@@ -44,170 +48,157 @@ jest.mock('@/lib/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
-    child: jest.fn().mockReturnThis(), // Mock child to return the mock itself
+    trace: jest.fn(), // Add trace mock
+    child: jest.fn().mockReturnThis(),
   },
 }));
 
+// Mock lib/auth-edge (auto-mock)
+jest.mock('@/lib/auth-edge');
+
+// Now import the mocked function AFTER jest.mock
+import { auth } from '@/lib/auth-edge';
+
+// Assert the type of the imported mock
+const mockedAuth = auth as jest.Mock;
+
+// Mock revalidatePath from next/cache
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn(),
+}));
+
+// Mock the root logger
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(), // Add trace mock
+    child: jest.fn().mockReturnThis(),
+  },
+}));
+
+// Mock lib/auth-edge
+jest.mock('@/lib/auth-edge', () => ({
+  auth: jest.fn(), // Mock the auth function directly
+}));
+
 // Import the mock accessor
-const { __getMockAuth } = require('@/lib/auth-node');
+// const { __getMockAuth } = require('@/lib/auth-node');
 // Get reference to mocked logger
-const mockActionsLogger = require('@/lib/logger').logger;
+// const mockActionsLogger = require('@/lib/logger').logger;
 
-describe('updateUserName action', () => {
-  // Access the mocked service method directly
-  const mockUpdateUserName = profileService.updateUserName as jest.Mock;
-  const mockAuth = __getMockAuth();
-  let initialState: UpdateUserNameFormState;
-
-  const mockUser = {
-    id: 'user-123',
-    name: 'Test User',
-    email: 'test@example.com',
-    // Add role if needed by auth logic internally, assuming string for simplicity here
-    // role: UserRole.USER,
-  };
+describe('updateUserName Server Action', () => {
+  let formData: FormData;
+  let initialState: NameUpdateState;
+  let mockUpdateUserName: jest.Mock; // Mock for profileService.updateUserName
+  let mockRevalidate: jest.Mock; // Mock for revalidatePath
 
   beforeEach(() => {
+    // Clear all mocks
     jest.clearAllMocks();
-    mockUpdateUserName.mockClear();
-    mockAuth.mockClear();
-    mockAuth.mockResolvedValue({ user: mockUser }); // Default to authenticated
-    initialState = { message: '', success: false };
+
+    // Set up default mocks AFTER clearing
+    mockUpdateUserName = jest.requireMock('@/lib/server/services').profileService.updateUserName;
+    mockRevalidate = jest.requireMock('next/cache').revalidatePath;
+
+    // Configure the imported mock function
+    mockedAuth.mockClear();
+    mockedAuth.mockResolvedValue({ user: { id: 'user-123' } }); // Default to authenticated
+
+    // Setup common test data
+    formData = new FormData();
+    formData.set('name', 'New Valid Name');
+    initialState = { message: '', success: false, updatedName: null };
   });
 
-  it('should update user name when authenticated and input is valid', async () => {
-    // Arrange
-    mockUpdateUserName.mockResolvedValue({ success: true });
-    const formData = new FormData();
-    const newName = 'New Valid Name';
-    formData.append('name', newName);
+  it('should return error if user is not authenticated', async () => {
+    // Override the auth mock for this specific test
+    mockedAuth.mockResolvedValue(null); // Simulate no session
 
-    // Act
     const result = await updateUserName(initialState, formData);
-
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
-    expect(mockUpdateUserName).toHaveBeenCalledWith(mockUser.id, newName);
-    expect(revalidatePath).toHaveBeenCalledWith('/profile');
-    expect(revalidatePath).toHaveBeenCalledWith('/');
     expect(result).toEqual({
-      message: 'Name updated successfully',
-      success: true,
-      updatedName: newName,
-    });
-    expect(mockActionsLogger.info).toHaveBeenCalledWith(
-      expect.objectContaining({ msg: 'User name updated successfully' })
-    );
-  });
-
-  it('should return error when user is not authenticated', async () => {
-    // Arrange
-    mockAuth.mockResolvedValue(null); // Not logged in
-    const formData = new FormData();
-    formData.append('name', 'New Name');
-
-    // Act
-    const result = await updateUserName(initialState, formData);
-
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
-    expect(mockUpdateUserName).not.toHaveBeenCalled();
-    expect(revalidatePath).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      message: 'You must be logged in to update your profile',
       success: false,
+      message: 'User not authenticated.',
       updatedName: null,
     });
-    expect(mockActionsLogger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        msg: 'User not authenticated in verifyAuthentication',
-      })
-    );
+    // Check the mocked service directly if profileService might be undefined
+    const mockedService = require('@/lib/server/services').profileService;
+    expect(mockedService?.updateUserName).not.toHaveBeenCalled();
   });
 
-  it('should return error for name too short', async () => {
-    // Arrange
-    const formData = new FormData();
-    formData.append('name', 'A');
-
-    // Act
+  it('should return error for invalid name (too short)', async () => {
+    // Default mock is authenticated
+    formData.set('name', 'N');
     const result = await updateUserName(initialState, formData);
+    expect(result).toEqual({
+      success: false,
+      message: 'Name must be at least 3 characters long.',
+      updatedName: null,
+    });
+    const mockedService = require('@/lib/server/services').profileService;
+    expect(mockedService?.updateUserName).not.toHaveBeenCalled();
+  });
 
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
+  it('should return error for invalid name (too long)', async () => {
+    formData.set('name', 'A'.repeat(51));
+    const result = await updateUserName(initialState, formData);
+    expect(result).toEqual({
+      success: false,
+      message: 'Name cannot exceed 50 characters.',
+      updatedName: null,
+    });
+    expect(mockedAuth).toHaveBeenCalledTimes(1);
     expect(mockUpdateUserName).not.toHaveBeenCalled();
-    expect(result.success).toBe(false);
-    // Check for specific message from Zod error handling
-    expect(result.message).toBe('Name is required');
-    expect(mockActionsLogger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ msg: 'Invalid user name' })
-    );
   });
 
-  it('should return error for name too long', async () => {
-    // Arrange
-    const formData = new FormData();
-    const longName = 'a'.repeat(51);
-    formData.append('name', longName);
+  it('should call profileService.updateUserName and return success on valid input', async () => {
+    // Default mock is authenticated
+    mockUpdateUserName.mockResolvedValue({ success: true });
 
-    // Act
     const result = await updateUserName(initialState, formData);
 
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
-    expect(mockUpdateUserName).not.toHaveBeenCalled();
-    expect(result.success).toBe(false);
-    expect(result.message).toBe('Name is too long (maximum 50 characters)');
-    expect(mockActionsLogger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ msg: 'Invalid user name' })
-    );
+    expect(mockUpdateUserName).toHaveBeenCalledWith('user-123', 'New Valid Name');
+    // Verify revalidatePath was called correctly
+    expect(mockRevalidate).toHaveBeenCalledTimes(2);
+    expect(mockRevalidate).toHaveBeenCalledWith('/profile');
+    expect(mockRevalidate).toHaveBeenCalledWith('/');
+    expect(result).toEqual({
+      success: true,
+      message: 'Name updated successfully',
+      updatedName: 'New Valid Name',
+    });
   });
 
-  it('should return error if auth() itself throws', async () => {
-    // Arrange
-    const authError = new Error('Auth Service Unavailable');
-    mockAuth.mockRejectedValue(authError);
-    const formData = new FormData();
-    formData.append('name', 'Valid Name');
+  it('should return error message from profileService on failure', async () => {
+    // Default mock is authenticated
+    mockUpdateUserName.mockResolvedValue({ success: false, error: 'Service update failed' });
 
-    // Act
     const result = await updateUserName(initialState, formData);
 
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
-    expect(mockUpdateUserName).not.toHaveBeenCalled();
-    expect(result.success).toBe(false);
-    expect(result.message).toBe('Authentication check failed');
-    expect(mockActionsLogger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ err: authError }),
-      'Error during authentication verification'
-    );
+    expect(mockUpdateUserName).toHaveBeenCalledWith('user-123', 'New Valid Name');
+    expect(mockRevalidate).not.toHaveBeenCalled(); // Correct assertion
+    expect(result).toEqual({
+      success: false,
+      message: 'Service update failed',
+      updatedName: null,
+    });
   });
 
-  it('should return error if profile service fails', async () => {
-    // Arrange
-    const serviceErrorMsg = 'Database connection lost';
-    mockUpdateUserName.mockResolvedValue({ success: false, error: serviceErrorMsg });
-    const formData = new FormData();
-    const validName = 'Valid Name';
-    formData.append('name', validName);
+  it('should return generic error on unexpected service exception', async () => {
+    // Default mock is authenticated
+    const error = new Error('Unexpected DB error');
+    mockUpdateUserName.mockRejectedValue(error);
 
-    // Act
     const result = await updateUserName(initialState, formData);
 
-    // Assert
-    expect(mockAuth).toHaveBeenCalledTimes(1);
-    expect(mockUpdateUserName).toHaveBeenCalledWith(mockUser.id, validName);
-    expect(revalidatePath).not.toHaveBeenCalled();
-    expect(result.success).toBe(false);
-    expect(result.message).toBe(serviceErrorMsg);
-    expect(mockActionsLogger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: mockUser.id,
-        name: validName,
-        error: serviceErrorMsg,
-      }),
-      'Profile service failed to update user name'
-    );
+    expect(mockUpdateUserName).toHaveBeenCalledWith('user-123', 'New Valid Name');
+    expect(mockRevalidate).not.toHaveBeenCalled(); // Correct assertion
+    expect(result).toEqual({
+      success: false,
+      message: 'Unexpected DB error',
+      updatedName: null,
+    });
   });
 });

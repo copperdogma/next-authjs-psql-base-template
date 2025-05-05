@@ -1,192 +1,178 @@
 import * as admin from 'firebase-admin';
-import { logger } from './logger'; // Use correct export name 'logger'
+import pino from 'pino';
 
-const serviceLogger = logger.child({ service: 'firebase-admin' }); // Use 'logger'
+// Get the root logger instance
+// import { logger as rootLogger } from '@/lib/logger'; // Avoid importing logger here if possible to reduce cycles
 
-let firebaseAdminApp: admin.app.App | null = null;
+// Create a logger specific to this module if necessary, or rely on caller's logger
+const moduleLogger = pino({ level: process.env.LOG_LEVEL || 'info' }).child({
+  module: 'firebase-admin',
+});
+
+// Define types for configuration and initialization result
+export interface FirebaseCredentials {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+}
+
+export interface FirebaseAdminConfig {
+  projectId: string;
+  clientEmail?: string | null; // Allow null/undefined
+  privateKey?: string | null; // Allow null/undefined
+  useEmulator: boolean;
+  nodeEnv: 'production' | 'development' | 'test' | string; // Include NODE_ENV
+}
+
+export interface FirebaseInitResult {
+  app?: admin.app.App;
+  auth?: admin.auth.Auth;
+  db?: admin.firestore.Firestore;
+  error?: string;
+}
+
+// --- Helper Functions ---
 
 /**
- * Formats the private key string from environment variables into the format required by Firebase Admin SDK.
- * Handles keys with escaped newlines (\\n) or missing newlines.
- *
- * @param key - The private key string from the environment variable.
- * @returns The formatted private key string.
+ * Validates the Firebase Admin configuration.
  */
-const formatPrivateKey = (key: string): string => {
-  // Handle keys with escaped newlines (\\n)
-  if (key.includes('\\n')) {
-    return key.replace(/\\n/g, '\n');
+function validateConfig(config: FirebaseAdminConfig): string | null {
+  const requiredInProd: Array<keyof FirebaseAdminConfig> = ['clientEmail', 'privateKey'];
+
+  // Only perform strict validation if in production OR if using credentials (not emulator)
+  if (config.nodeEnv !== 'production' && config.useEmulator) {
+    return null; // Skip validation for emulator use in non-prod
   }
 
-  // Handle keys without newlines between the header and footer
-  const beginMarker = '-----BEGIN PRIVATE KEY-----';
-  const endMarker = '-----END PRIVATE KEY-----';
-
-  if (key.includes(beginMarker) && key.includes(endMarker)) {
-    // Extract the content between markers
-    const contentStartIndex = key.indexOf(beginMarker) + beginMarker.length;
-    const contentEndIndex = key.indexOf(endMarker);
-    let content = key.substring(contentStartIndex, contentEndIndex).trim();
-
-    // If no newlines exist, add them appropriately
-    if (!key.includes('\n')) {
-      return `${beginMarker}\n${content}\n${endMarker}`;
+  // Check required fields
+  for (const key of requiredInProd) {
+    if (!config[key]) {
+      const message = `Missing Firebase Admin SDK config value for: ${key}`;
+      // Throw in production to prevent startup with invalid config
+      if (config.nodeEnv === 'production') {
+        moduleLogger.error(message);
+        throw new Error(message);
+      }
+      // Return error message for non-production environments (when not using emulator)
+      return message;
     }
   }
 
-  // Assume it's already formatted correctly or is a simple string
-  return key;
-};
+  return null; // No validation errors
+}
 
 /**
- * Checks if Firebase emulator mode is enabled.
- *
- * @returns True if using Firebase emulators, false otherwise
+ * Sets up emulator environment variables.
  */
-const isUsingEmulator = (): boolean => {
-  return (
-    process.env.USE_FIREBASE_EMULATOR === 'true' ||
-    !!process.env.FIREBASE_AUTH_EMULATOR_HOST ||
-    !!process.env.FIRESTORE_EMULATOR_HOST
-  );
-};
+function setupEmulator(): void {
+  moduleLogger.info('Configuring Firebase Admin SDK for EMULATOR use.');
+  process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080'; // Default Firestore emulator host
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099'; // Default Auth emulator host
+}
 
 /**
- * Initializes Firebase Admin in emulator mode
- * @returns The initialized Firebase Admin App
+ * Creates Firebase credentials from config.
  */
-const initializeEmulator = (): admin.app.App => {
-  // Prioritize FIREBASE_PROJECT_ID env var if set, otherwise use default emulator ID
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'next-firebase-base-template-emulator';
-
-  // Set the emulator host environment variable explicitly IF not already set
-  // This helps ensure the SDK connects locally, even if the env var isn't inherited perfectly
-  if (!process.env.FIREBASE_AUTH_EMULATOR_HOST) {
-    process.env.FIREBASE_AUTH_EMULATOR_HOST =
-      process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
-    serviceLogger.warn(
-      'FIREBASE_AUTH_EMULATOR_HOST was not set, setting explicitly for Admin SDK.'
-    );
+function createCredentials(config: FirebaseAdminConfig): FirebaseCredentials {
+  if (!config.clientEmail || !config.privateKey) {
+    // This should theoretically be caught by validateConfig, but helps type safety
+    throw new Error('Client email and private key are required for credential creation.');
   }
-  if (!process.env.FIRESTORE_EMULATOR_HOST) {
-    process.env.FIRESTORE_EMULATOR_HOST =
-      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || 'localhost:8080';
-    serviceLogger.warn('FIRESTORE_EMULATOR_HOST was not set, setting explicitly for Admin SDK.');
-  }
-
-  serviceLogger.info(
-    {
-      projectId,
-      authHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
-      firestoreHost: process.env.FIRESTORE_EMULATOR_HOST,
-    },
-    'Initializing Admin SDK for Emulators...'
-  );
-
-  // Initialize with just the projectId. The SDK should automatically
-  // pick up the FIREBASE_AUTH_EMULATOR_HOST/FIRESTORE_EMULATOR_HOST environment variables.
-  const app = admin.initializeApp({ projectId });
-
-  serviceLogger.info({ projectId }, '✅ [Admin SDK] Initialized for Firebase Emulators.');
-  return app;
-};
-
-/**
- * Validates Firebase credentials from environment variables
- * @returns Validated credential values
- * @throws Error if any credential is missing
- */
-const validateCredentials = (): { projectId: string; clientEmail: string; privateKey: string } => {
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-  if (!projectId || !clientEmail || !rawPrivateKey) {
-    const missingCredentials = {
-      projectId: !!projectId,
-      clientEmail: !!clientEmail,
-      privateKey: !!rawPrivateKey,
-    };
-
-    serviceLogger.error(
-      missingCredentials,
-      '❌ [Admin SDK] Missing required Firebase Admin credentials in environment variables.'
-    );
-
-    throw new Error(
-      'Missing Firebase Admin SDK credentials. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.'
-    );
-  }
-
   return {
-    projectId,
-    clientEmail,
-    privateKey: formatPrivateKey(rawPrivateKey),
+    projectId: config.projectId,
+    clientEmail: config.clientEmail,
+    privateKey: config.privateKey.replace(/\\n/g, '\n'), // Replace escaped newlines
   };
-};
+}
 
 /**
- * Initialize Firebase Admin with credentials
- * @returns Initialized Firebase Admin App
+ * Retrieves Firebase services (Auth, Firestore) from the app instance.
  */
-const initializeWithCredentials = (): admin.app.App => {
-  const { projectId, clientEmail, privateKey } = validateCredentials();
-
-  // Create the credential using admin.credential.cert
-  const credential = admin.credential.cert({
-    projectId,
-    clientEmail,
-    privateKey,
-  });
-
-  // Initialize with credential
-  const app = admin.initializeApp({
-    credential,
-  });
-
-  serviceLogger.info({ projectId }, '✅ [Admin SDK] Initialized with service account credentials.');
-
-  return app;
-};
-
-/**
- * Initializes the Firebase Admin SDK application instance.
- * Ensures that only one instance is created (singleton pattern).
- * Reads credentials from environment variables.
- * Handles both emulator and production/credential-based initialization.
- *
- * @returns The initialized Firebase Admin `App` instance.
- * @throws Error if initialization fails.
- */
-export const initializeFirebaseAdminApp = (): admin.app.App => {
-  // Return existing instance if available
-  if (firebaseAdminApp) {
-    return firebaseAdminApp;
-  }
-
-  // Check for existing Firebase apps
-  const apps = admin.apps;
-  if (apps && apps.length > 0 && apps[0] !== null) {
-    firebaseAdminApp = apps[0];
-    serviceLogger.info('🔸 [Admin SDK] Reusing existing Firebase Admin App instance.');
-    return firebaseAdminApp;
-  }
-
+function getFirebaseServices(app: admin.app.App): {
+  auth?: admin.auth.Auth;
+  db?: admin.firestore.Firestore;
+  error?: string;
+} {
   try {
-    // Initialize for emulator or with credentials
-    if (isUsingEmulator()) {
-      firebaseAdminApp = initializeEmulator();
-    } else {
-      firebaseAdminApp = initializeWithCredentials();
-    }
-
-    return firebaseAdminApp;
-  } catch (error) {
-    serviceLogger.error(
-      { err: error instanceof Error ? error.message : String(error) },
-      '❌ [Admin SDK] Failed to initialize Firebase Admin SDK.'
-    );
-    // Re-throw the error
-    throw error;
+    const auth = admin.auth(app);
+    const db = admin.firestore(app);
+    return { auth, db };
+  } catch (error: unknown) {
+    const errorMessage = `Failed to retrieve Auth/Firestore services from initialized app.`;
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    moduleLogger.error({ error: errorMsg }, errorMessage);
+    return { error: `${errorMessage} Error: ${errorMsg}` };
   }
-};
+}
+
+/**
+ * Performs the actual admin.initializeApp call based on config.
+ */
+function performInitialization(config: FirebaseAdminConfig): admin.app.App {
+  if (config.useEmulator) {
+    setupEmulator();
+    return admin.initializeApp({ projectId: config.projectId });
+  } else {
+    const credentials = createCredentials(config);
+    const credential = admin.credential.cert(credentials);
+    // Ensure emulator hosts are unset if using credentials
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    return admin.initializeApp({ credential });
+  }
+}
+
+// --- Main Initialization Function ---
+
+let adminApp: admin.app.App | undefined;
+let adminAuth: admin.auth.Auth | undefined;
+let adminDb: admin.firestore.Firestore | undefined;
+
+/**
+ * Initializes the Firebase Admin SDK based on provided configuration.
+ * Ensures singleton pattern (only initializes once).
+ */
+// eslint-disable-next-line max-statements -- Statements slightly high after refactor, deemed acceptable
+export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
+  // 1. Singleton Check: Return existing instance if already initialized
+  if (admin.apps.length > 0) {
+    moduleLogger.warn('Firebase Admin already initialized. Skipping re-initialization.');
+    // Use the default app instance if available
+    const existingApp = admin.app();
+    const services = getFirebaseServices(existingApp);
+    return { app: existingApp, ...services };
+  }
+
+  // 2. Validate Configuration
+  const validationError = validateConfig(config);
+  if (validationError) {
+    moduleLogger.warn(
+      'Firebase Admin SDK not initialized due to missing configuration in non-production environment.'
+    );
+    return { error: `Initialization failed: Invalid configuration state.` }; // Return generic error
+  }
+
+  // 3. Initialize App
+  try {
+    // Delegate actual initialization to helper
+    const app = performInitialization(config);
+    moduleLogger.info('Firebase Admin SDK initialized successfully.');
+
+    // 4. Get Services
+    const servicesResult = getFirebaseServices(app);
+
+    // 5. Store Singleton Instances
+    adminApp = app;
+    if (servicesResult.auth) adminAuth = servicesResult.auth;
+    if (servicesResult.db) adminDb = servicesResult.db;
+
+    return { app, ...servicesResult };
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    moduleLogger.error({ error: errorMsg }, 'Firebase Admin SDK initialization failed.');
+    return { error: errorMsg };
+  }
+}
+
+// Export the initialized services (potentially undefined if init failed)
+export { adminApp, adminAuth, adminDb };

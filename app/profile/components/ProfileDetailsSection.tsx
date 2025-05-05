@@ -4,12 +4,12 @@ import { useState, useEffect, useActionState, useRef, useCallback } from 'react'
 import { Box, Divider, Stack } from '@mui/material';
 import { User } from 'next-auth';
 import SignOutButton from './SignOutButton';
-import { updateUserName, UpdateUserNameFormState } from '@/app/profile/actions'; // Import type
 // import { useSession } from 'next-auth/react'; // No longer needed for update
 import { useUserStore } from '@/lib/store/userStore'; // Import Zustand store
 import NameEditSection from './NameEditSection';
-import ProfileField from './ProfileField';
 import { toast } from '@/components/ui/Toaster'; // Import toast
+import ProfileField from './ProfileField'; // Correct default import
+import { updateUserName, NameUpdateState } from '@/app/profile/actions'; // Use correct type
 
 // Custom Hook for Profile Details Logic
 const useProfileDetails = (
@@ -17,7 +17,7 @@ const useProfileDetails = (
   setUserDetails: (details: Partial<User>) => void
 ) => {
   const [isEditingName, setIsEditingName] = useState(false);
-  const [state, formAction] = useActionState<UpdateUserNameFormState, FormData>(updateUserName, {
+  const [state, formAction] = useActionState<NameUpdateState, FormData>(updateUserName, {
     message: '',
     success: false,
     updatedName: null,

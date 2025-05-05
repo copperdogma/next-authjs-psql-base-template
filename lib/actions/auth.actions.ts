@@ -7,20 +7,20 @@
 
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import { User } from '@prisma/client'; // Explicitly import User type
+import { User } from '@prisma/client';
 import * as admin from 'firebase-admin';
+import pino from 'pino';
 
-import { logger } from '@/lib/logger';
+import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import type { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
 import { firebaseAdminService } from '@/lib/server/services';
 import { signIn } from '@/lib/auth-node';
 
 // Constants
-const SALT_ROUNDS = 10; // Recommended salt rounds for bcryptjs
+const SALT_ROUNDS = 10;
 
-// Logger instance specific to auth actions
-const actionLogger = logger.child({ module: 'auth-actions' });
+const actionLogger = rootLogger.child({ module: 'auth-actions' });
 
 // --- Schemas ---
 const RegistrationSchema = z.object({
@@ -28,10 +28,11 @@ const RegistrationSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });
-
 type RegistrationInput = z.infer<typeof RegistrationSchema>;
 
-// --- Interfaces for Dependency Injection / Testing ---
+// --- Locally Defined Interfaces --- //
+
+// Interface for the DB client subset needed by registration logic
 interface RegisterUserDbClient {
   user: {
     findUnique: typeof prisma.user.findUnique;
@@ -39,11 +40,35 @@ interface RegisterUserDbClient {
   };
 }
 
+// Interface for the password hasher subset needed
 interface Hasher {
   hash: (password: string, saltOrRounds: number) => Promise<string>;
 }
 
-// --- Private Helper Functions for registerUserLogic ---
+// Result type returned by the server action wrapper
+interface RegistrationResult {
+  success: boolean;
+  message?: string;
+  error?: string; // Optional error code/key
+  user?: User; // Can be included but often omitted in final action result
+}
+
+// Structure expected by _performRegistrationAttempt
+interface PerformRegistrationDeps {
+  db: RegisterUserDbClient;
+  hasher: Hasher;
+  fbService: FirebaseAdminServiceInterface;
+}
+
+// Interface for optional dependencies passed into the main action logic
+interface RegisterUserOptionalDeps {
+  db?: RegisterUserDbClient;
+  hasher?: Hasher;
+  fbService?: FirebaseAdminServiceInterface;
+  logger?: pino.Logger;
+}
+
+// --- Private Helper Functions --- //
 
 function _validateRegistrationInput(
   formData: FormData
@@ -52,9 +77,8 @@ function _validateRegistrationInput(
   return RegistrationSchema.safeParse(rawFormData);
 }
 
-// --- Extracted Helper for Firebase User Creation ---
 async function _createFirebaseUser(
-  data: { email: string; password?: string; name?: string | null }, // Use specific fields needed
+  data: { email: string; password?: string; name?: string | null },
   fbService: FirebaseAdminServiceInterface,
   logContext: { email: string }
 ): Promise<admin.auth.UserRecord> {
@@ -63,24 +87,23 @@ async function _createFirebaseUser(
     const firebaseUser = await fbService.createUser({
       email: data.email,
       password: data.password,
-      displayName: data.name,
+      displayName: data.name ?? undefined, // Handle potential null name
     });
     actionLogger.info({ ...logContext, uid: firebaseUser.uid }, '_createFirebaseUser: Success');
     return firebaseUser;
   } catch (error) {
     actionLogger.error({ ...logContext, error }, '_createFirebaseUser: FAILED');
-    throw error; // Re-throw to be caught by caller
+    throw error;
   }
 }
 
-// --- Extracted Helper for Prisma User Creation ---
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
   services: { db: RegisterUserDbClient; hasher: Hasher },
   logContext: { email?: string | null; uid: string }
 ): Promise<User> {
-  const { db, hasher } = services; // Destructure inside
+  const { db, hasher } = services;
   actionLogger.debug(logContext, '_createPrismaUser: Hashing password...');
   const hashedPassword = await hasher.hash(passwordToHash, SALT_ROUNDS);
   actionLogger.debug(logContext, '_createPrismaUser: Attempting DB create...');
@@ -97,12 +120,11 @@ async function _createPrismaUser(
     actionLogger.info({ ...logContext, userId: prismaUser.id }, '_createPrismaUser: Success');
     return prismaUser;
   } catch (dbError) {
-    actionLogger.error(logContext, '_createPrismaUser: FAILED');
-    throw dbError; // Re-throw to be caught by caller
+    actionLogger.error({ ...logContext, error: dbError }, '_createPrismaUser: FAILED');
+    throw dbError;
   }
 }
 
-// --- Original _createUser Function (Refactored) ---
 async function _createUser(
   data: RegistrationInput,
   db: RegisterUserDbClient,
@@ -111,23 +133,17 @@ async function _createUser(
 ): Promise<User> {
   const { email, password } = data;
   const baseLogContext = { email };
-
-  // 1. Create Firebase user using helper
   const firebaseUser = await _createFirebaseUser(data, fbService, baseLogContext);
-
-  // 2. Create Prisma user using helper
   const prismaLogContext = { email: firebaseUser.email, uid: firebaseUser.uid };
   const prismaUser = await _createPrismaUser(
     firebaseUser,
-    password, // Pass original password for hashing
-    { db, hasher }, // Pass services object
+    password,
+    { db, hasher },
     prismaLogContext
   );
-
   return prismaUser;
 }
 
-// Type guard for Prisma errors
 interface PrismaErrorWithCodeAndMeta {
   code?: string;
   meta?: { target?: string[] };
@@ -136,21 +152,9 @@ function isPrismaError(error: unknown): error is PrismaErrorWithCodeAndMeta {
   return typeof error === 'object' && error !== null && ('code' in error || 'meta' in error);
 }
 
-// --- Public Registration Logic (Refactored) ---
-
-// --- Private Helper Functions for registerUserLogic (Refactored) ---
-
-type RegistrationResult = Promise<{
-  success: boolean;
-  message?: string;
-  user?: User;
-  error?: string;
-}>;
-
-// --- Helper for Post-Registration Sign-in ---
 async function _signInAfterRegistration(
   newUser: User,
-  passwordAttempt: string, // The original password attempt
+  passwordAttempt: string,
   logContext: { email: string; userId: string }
 ): Promise<RegistrationResult> {
   try {
@@ -176,82 +180,99 @@ async function _signInAfterRegistration(
   }
 }
 
-// --- Extracted Helper for Error Translation ---
-function _translateRegistrationError(error: unknown): { message: string; code: string } {
-  let errorMessage = 'An error occurred during registration.';
-  let errorCode = 'UNKNOWN_ERROR';
-
-  if (typeof error === 'object' && error !== null && 'code' in error) {
-    const firebaseErrorCode = (error as { code: string }).code;
-    errorCode = firebaseErrorCode;
-    switch (firebaseErrorCode) {
-      case 'auth/email-already-exists':
-        errorMessage = 'This email address is already registered.';
-        break;
-      case 'auth/invalid-password':
-        errorMessage = 'Password must be at least 6 characters long.';
-        break;
-      default:
-        errorMessage = 'An unexpected Firebase error occurred.';
-        break;
-    }
-  } else if (isPrismaError(error) && error.code === 'P2002') {
-    errorMessage = 'An unexpected database conflict occurred.';
-    errorCode = 'PRISMA_P2002';
+// Helper function to translate Firebase Auth errors
+function _translateFirebaseAuthError(code: string): { message: string; code: string } {
+  switch (code) {
+    case 'auth/email-already-exists':
+      return { message: 'This email address is already registered.', code };
+    case 'auth/invalid-password':
+      return { message: 'Password must be at least 6 characters long.', code };
+    // Add more specific Firebase error codes here if needed
+    default:
+      return { message: 'An unexpected Firebase authentication error occurred.', code };
   }
-
-  return { message: errorMessage, code: errorCode };
 }
 
-// --- Core Registration Logic ---
-async function _performRegistrationAttempt(
-  validatedData: RegistrationInput,
-  services: {
-    db: RegisterUserDbClient;
-    hasher: Hasher;
-    fbService: FirebaseAdminServiceInterface;
-  },
-  logContext: { email: string }
-): RegistrationResult {
-  const { db, hasher, fbService } = services;
-
-  try {
-    // Call _createUser which now handles both Firebase and Prisma creation
-    const newUser = await _createUser(validatedData, db, hasher, fbService);
-
-    // Attempt sign-in after successful creation
-    return await _signInAfterRegistration(
-      newUser,
-      validatedData.password, // Pass original password for sign-in attempt
-      { ...logContext, userId: newUser.id }
-    );
-  } catch (error) {
-    // Errors from _createUser (Firebase or Prisma) or _signInAfterRegistration are caught here
-    actionLogger.error({ ...logContext, error }, '_performRegistrationAttempt: FAILED');
-    // Use the error handler to translate Firebase/Prisma errors
-    return _handleRegistrationError(error, logContext);
+// Helper function to translate Prisma errors (specifically unique constraint)
+function _translatePrismaError(error: PrismaErrorWithCodeAndMeta): {
+  message: string;
+  code: string;
+} {
+  if (error.code === 'P2002') {
+    // Could check error.meta.target to be more specific if needed (e.g., email_unique)
+    return { message: 'This email address is already registered.', code: 'PRISMA_P2002' };
   }
+  // Handle other Prisma errors if necessary
+  return {
+    message: 'A database error occurred during registration.',
+    code: error.code || 'PRISMA_UNKNOWN',
+  };
+}
+
+// Helper function to translate generic errors
+function _translateGenericError(error: Error): { message: string; code: string } {
+  const errorCode = error.name === 'Error' ? 'GENERIC_ERROR' : error.name;
+  return { message: error.message || 'An unexpected error occurred.', code: errorCode };
+}
+
+function _translateRegistrationError(error: unknown): { message: string; code: string } {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const errorCode = (error as { code: string }).code;
+    if (typeof errorCode === 'string' && errorCode.startsWith('auth/')) {
+      return _translateFirebaseAuthError(errorCode);
+    } else if (isPrismaError(error)) {
+      return _translatePrismaError(error);
+    }
+    // Fallthrough for other object errors with a 'code' property
+  }
+
+  if (error instanceof Error) {
+    return _translateGenericError(error);
+  }
+
+  // Fallback for completely unknown errors
+  return { message: 'An unknown error occurred during registration.', code: 'UNKNOWN_ERROR' };
 }
 
 function _handleRegistrationError(
   error: unknown,
-  _logContext: { email: string }
-): { success: boolean; message?: string; error?: string } {
-  // Extract translated message and code
+  logContext: { email: string }
+): RegistrationResult {
+  // Return RegistrationResult directly
+  actionLogger.error({ ...logContext, error }, '_handleRegistrationError');
   const { message: translatedMessage, code: translatedCode } = _translateRegistrationError(error);
-
   return {
     success: false,
-    message: translatedMessage, // Return user-friendly message
-    error: translatedCode, // Return the code for potential frontend logic
+    message: translatedMessage,
+    error: translatedCode,
   };
 }
 
-// --- Main Logic Entry Point --- //
+async function _performRegistrationAttempt(
+  validatedData: RegistrationInput,
+  services: PerformRegistrationDeps,
+  logContext: { email: string }
+): Promise<RegistrationResult> {
+  // Correct return type
+  const { db, hasher, fbService } = services;
+  try {
+    const newUser = await _createUser(validatedData, db, hasher, fbService);
+    return await _signInAfterRegistration(newUser, validatedData.password, {
+      ...logContext,
+      userId: newUser.id,
+    });
+  } catch (error) {
+    actionLogger.error({ ...logContext, error }, '_performRegistrationAttempt: FAILED');
+    return _handleRegistrationError(error, logContext);
+  }
+}
+
+// --- Main Logic Entry Point (Refactored dependencies) --- //
 export async function registerUserLogic(
   formData: FormData,
-  db: RegisterUserDbClient // Keep db dependency for potential future use? Maybe remove later.
-): RegistrationResult {
+  deps?: RegisterUserOptionalDeps
+): Promise<RegistrationResult> {
+  // Correct return type
   const validationResult = _validateRegistrationInput(formData);
 
   if (!validationResult.success) {
@@ -270,43 +291,50 @@ export async function registerUserLogic(
   const logContext = { email: validatedData.email };
   actionLogger.info(logContext, 'registerUserLogic: Starting registration attempt...');
 
-  // **REMOVED**: Premature check for existing user in Prisma:
-  // const emailExists = await _checkExistingUser(validatedData.email, db);
-  // if (emailExists) {
-  //   actionLogger.warn(logContext, 'registerUserLogic: Email already exists in Prisma DB');
-  //   return { success: false, message: 'Email already exists', error: 'EMAIL_EXISTS' };
-  // }
-
-  // Directly attempt the registration process (Firebase creation first)
-  return _performRegistrationAttempt(
-    validatedData,
-    {
-      db, // Keep passing db for now, _createPrismaUser needs it
-      hasher: { hash }, // Pass bcryptjs hash function
-      fbService: firebaseAdminService, // Pass the real Firebase Admin service
+  // Resolve dependencies: Use injected or default
+  const currentDbService: RegisterUserDbClient = deps?.db || {
+    user: {
+      findUnique: prisma.user.findUnique,
+      create: prisma.user.create,
     },
-    logContext
-  );
+  };
+  const currentHasher: Hasher = deps?.hasher || { hash };
+  const currentFbService: FirebaseAdminServiceInterface | undefined =
+    deps?.fbService || firebaseAdminService;
+
+  // *** Check Firebase Service Availability ***
+  if (!currentFbService) {
+    actionLogger.fatal('Firebase Admin Service is unavailable. Check server configuration.');
+    return { success: false, error: 'Server configuration error [Auth]' };
+  }
+
+  // Prepare dependencies for the core logic, now knowing fbService is defined
+  const coreDeps: PerformRegistrationDeps = {
+    db: currentDbService,
+    hasher: currentHasher,
+    fbService: currentFbService, // Pass the defined service
+  };
+
+  return _performRegistrationAttempt(validatedData, coreDeps, logContext);
 }
 
-// --- Server Action Wrapper ---
-export async function registerUserAction(formData: FormData) {
+// --- Server Action Wrapper --- //
+export async function registerUserAction(
+  formData: FormData
+): Promise<{ success: boolean; message?: string }> {
   actionLogger.info('registerUserAction: Received request');
   try {
-    // Use the logic function, passing the real Prisma client
-    const result = await registerUserLogic(formData, prisma);
+    const result = await registerUserLogic(formData);
     if (result.success) {
       actionLogger.info({ email: result.user?.email }, 'registerUserAction: Success');
     } else {
       actionLogger.warn(
-        { email: formData.get('email'), error: result.error, message: result.message },
+        { email: formData.get('email') as string, error: result.error, message: result.message },
         'registerUserAction: Failed'
       );
     }
-    // Ensure sensitive data like user object is not returned if not needed
     return { success: result.success, message: result.message };
   } catch (error: unknown) {
-    // Catch any unexpected errors from registerUserLogic itself
     actionLogger.error({ error }, 'registerUserAction: UNEXPECTED Exception');
     return {
       success: false,
@@ -315,95 +343,89 @@ export async function registerUserAction(formData: FormData) {
   }
 }
 
-// --- Authentication Logic ---
-
-// --- Private Helper Functions for authenticateWithCredentials ---
+// --- Authentication Logic --- //
 
 function _validateAuthInput(email?: string | null, password?: string | null): boolean {
   return !!email && !!password;
 }
 
-// Define a more specific type for the error cause if possible
 interface AuthErrorCause {
-  err?: Error; // Standard Error object
+  err?: Error;
 }
 
-// Interface describing the structure we expect from NextAuth errors
-// based on runtime checks and observed behavior.
 interface PossibleAuthError {
   type?: string;
   cause?: AuthErrorCause;
-  // Other properties might exist
 }
 
-// Type guard to check if an unknown error might be a structured AuthError
 function isPossibleAuthError(error: unknown): error is PossibleAuthError {
   return typeof error === 'object' && error !== null;
 }
 
-// Function to handle complex error logic from signIn
-// eslint-disable-next-line complexity -- Refactored slightly, but still complex due to error types
+// Helper to handle specific AuthError types from NextAuth
+function _handleNextAuthErrorType(
+  error: PossibleAuthError,
+  logContext: { email: string | null }
+): { message: string } {
+  const errorType = error.type;
+  actionLogger.warn(
+    { ...logContext, errorType: errorType, errorCause: error.cause },
+    '[authenticateWithCredentials] Authentication error detected (has type property)'
+  );
+  switch (errorType) {
+    case 'CredentialsSignin':
+      return { message: 'Invalid email or password.' };
+    case 'CallbackRouteError':
+      const causeMessage = error.cause?.err?.message ?? 'Callback configuration error';
+      return { message: `Login failed: ${causeMessage}` };
+    default:
+      actionLogger.warn(
+        { ...logContext, errorType: errorType },
+        '[authenticateWithCredentials] Unhandled AuthError type property'
+      );
+      return { message: 'An authentication error occurred. Please try again.' };
+  }
+}
+
 function _handleAuthError(
   error: unknown,
   logContext: { email: string | null }
 ): { message: string } {
-  // Handle edge case where catch might be triggered with undefined/null
   if (error == null) {
-    // Checks for both null and undefined
-    logger.error(
+    actionLogger.error(
       { ...logContext },
       '[authenticateWithCredentials] _handleAuthError called with null or undefined error'
     );
-    return { message: 'An unexpected empty error occurred during login.' }; // Specific message for this case
+    return { message: 'An unexpected empty error occurred during login.' };
   }
 
-  // Check for NEXT_REDIRECT first, as it should be re-thrown
+  // Handle NEXT_REDIRECT first
   if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-    logger.info(logContext, '[authenticateWithCredentials] Redirect initiated.');
-    throw error; // Re-throw the specific error
+    actionLogger.info(logContext, '[authenticateWithCredentials] Redirect initiated.');
+    throw error;
   }
 
-  // Check for specific AuthError types first using the type property
+  // Handle specific NextAuth error types
   if (isPossibleAuthError(error) && error.type) {
-    const errorType = error.type;
-    logger.warn(
-      { ...logContext, errorType: errorType, errorCause: error.cause },
-      '[authenticateWithCredentials] Authentication error detected (has type property)'
-    );
-
-    switch (errorType) {
-      case 'CredentialsSignin':
-        return { message: 'Invalid email or password.' };
-      case 'CallbackRouteError':
-        const causeMessage = error.cause?.err?.message ?? 'Callback configuration error';
-        return { message: `Login failed: ${causeMessage}` };
-      default:
-        logger.warn(
-          { ...logContext, errorType: errorType },
-          '[authenticateWithCredentials] Unhandled AuthError type property'
-        );
-        return { message: 'An authentication error occurred. Please try again.' };
-    }
+    return _handleNextAuthErrorType(error, logContext);
   }
 
-  // If it wasn't an AuthError-like object, check if it's a standard Error
+  // Handle generic JS Errors
   if (error instanceof Error) {
-    logger.error(
+    actionLogger.error(
       { ...logContext, errorName: error.name, errorMessage: error.message },
       '[authenticateWithCredentials] Standard Error encountered'
     );
     return { message: 'An unexpected error occurred during login.' };
   }
 
-  // Handle/log truly unexpected non-Error types and return generic server error
-  logger.error(
+  // Handle anything else
+  actionLogger.error(
     { ...logContext, errorDetails: String(error) },
     '[authenticateWithCredentials] Unexpected non-Error type thrown'
   );
   return { message: 'An unexpected server error occurred during login.' };
 }
-
-// --- Public Authentication Action (Refactored) ---
 
 export async function authenticateWithCredentials(
   formData: FormData
@@ -412,24 +434,22 @@ export async function authenticateWithCredentials(
   const password = formData.get('password') as string;
   const logContext = { email };
 
-  logger.info(logContext, '[authenticateWithCredentials] Attempting login');
+  actionLogger.info(logContext, '[authenticateWithCredentials] Attempting login');
 
   if (!_validateAuthInput(email, password)) {
-    logger.warn(logContext, '[authenticateWithCredentials] Missing email or password');
+    actionLogger.warn(logContext, '[authenticateWithCredentials] Missing email or password');
     return { message: 'Email and password are required.' };
   }
 
   try {
-    logger.debug(logContext, '[authenticateWithCredentials] Calling signIn...');
+    actionLogger.debug(logContext, '[authenticateWithCredentials] Calling signIn...');
     await signIn('credentials', { email, password, redirect: false });
-    // If signIn resolves without throwing, log and return success immediately
-    logger.info(
+    actionLogger.info(
       logContext,
       '[authenticateWithCredentials] signIn completed successfully (no error caught)'
     );
     return { message: 'Login successful (pending redirect).' };
   } catch (error: unknown) {
-    // If an error was caught, handle it
     return _handleAuthError(error, logContext);
   }
 }

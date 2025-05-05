@@ -1,7 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { LoggerService, RawQueryService } from '../interfaces/services';
+import { RawQueryService } from '../interfaces/services';
 import { prisma } from '../prisma';
-import { createLoggerService } from './logger-service';
+import * as pino from 'pino';
+import { logger as rootLogger } from '../logger';
 
 /**
  * Implementation of RawQueryService with dependency injection
@@ -10,7 +11,7 @@ import { createLoggerService } from './logger-service';
 export class RawQueryServiceImpl implements RawQueryService {
   constructor(
     private readonly prismaClient: PrismaClient = prisma,
-    private readonly logger: LoggerService = createLoggerService('db:raw-queries')
+    private readonly logger: pino.Logger = rootLogger.child({ component: 'db:raw-queries' })
   ) {}
 
   /**
@@ -288,14 +289,7 @@ export class RawQueryServiceImpl implements RawQueryService {
    * @returns Query results
    */
   async executeRawQuery<T = any>(sql: string, params: any[] = []): Promise<T> {
-    const truncatedSql = sql.length > 100 ? `${sql.substring(0, 100)}...` : sql;
-
-    this.logger.debug({
-      msg: 'Executing raw query',
-      sql: truncatedSql,
-      paramCount: params.length,
-    });
-
+    this.logger.trace({ msg: 'Executing raw query', sql, params });
     try {
       // Convert the SQL string and parameters to a tagged template literal that Prisma requires
       const result = (await this.prismaClient.$queryRaw(Prisma.raw(sql), ...params)) as T;
@@ -306,7 +300,7 @@ export class RawQueryServiceImpl implements RawQueryService {
 
       return result;
     } catch (error) {
-      return this.handleQueryError(error, 'executing raw query', { sql: truncatedSql });
+      return this.handleQueryError(error, 'executing raw query', { sql });
     }
   }
 }
