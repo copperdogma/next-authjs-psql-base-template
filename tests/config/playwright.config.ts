@@ -39,10 +39,10 @@ export default defineConfig({
   // Limit the number of failures on CI to save resources
   maxFailures: process.env.CI ? 10 : undefined,
   // Reporter to use. See https://playwright.dev/docs/test-reporters
-  reporter: 'html',
+  reporter: process.env.CI ? 'html' : 'list',
 
   // Global setup script, runs once before all tests
-  globalSetup: require.resolve('./global-setup'),
+  // globalSetup: require.resolve('./global-setup'),
   // globalTeardown: require.resolve('./global-teardown'),
 
   // Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions.
@@ -119,17 +119,16 @@ export default defineConfig({
 
   // Run your local dev server before starting the tests
   webServer: {
-    command: 'npm run dev:test',
-    // Point the URL check directly to the health endpoint
-    url: `${baseURL}/api/health`,
-    // Use 'ignore' to avoid issues if the process exits uncleanly on Windows
-    // See: https://github.com/microsoft/playwright/issues/21218
-    // stderr: 'pipe',
-    // stdout: 'pipe',
-    // use 'pipe' to capture logs if needed for debugging, otherwise 'ignore' is fine
+    command: 'next dev --port 3777',
+    port: 3777,
+    env: {
+      NODE_ENV: 'test',
+      ALLOW_TEST_ENDPOINTS: 'true',
+      NEXT_PUBLIC_IS_E2E_TEST_ENV: 'true',
+    },
     stdout: 'pipe',
     stderr: 'pipe',
-    timeout: TIMEOUT_SERVER, // 60 seconds timeout for server start
-    reuseExistingServer: !process.env.CI, // Reuse server in local dev, start fresh in CI
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
   },
 });

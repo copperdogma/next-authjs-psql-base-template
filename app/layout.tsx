@@ -8,12 +8,9 @@ import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
 import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
 import { auth } from '@/lib/auth-edge';
-import { loggers } from '@/lib/logger';
 import { CssBaseline, Box } from '@mui/material';
 import Header from '@/components/layouts/Header';
 import Footer from '@/components/layouts/Footer';
-
-const logger = loggers.auth;
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
