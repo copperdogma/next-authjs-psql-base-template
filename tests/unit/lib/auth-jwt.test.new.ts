@@ -445,7 +445,6 @@ describe('auth-jwt Callbacks', () => {
       // ... existing code ...
     });
 
-    // eslint-disable-next-line sonarjs/no-duplicate-string
     it('should return null for an invalid token', async () => {
       // Arrange
       const token = { ...baseJwt, jti: 'old-jti' } as JWT;
