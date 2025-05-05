@@ -1,65 +1,16 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { ConsoleMessage } from 'playwright-core'; // Import ConsoleMessage type
-import { generateTestSessionToken } from './auth'; // Import the token generator
 
 // Determine session cookie name (adjust if different)
-const sessionCookieName = process.env.NEXTAUTH_SESSION_COOKIE_NAME || 'next-auth.session-token';
+// const sessionCookieName = process.env.NEXTAUTH_SESSION_COOKIE_NAME || 'next-auth.session-token';
 // Determine if using secure prefix (adjust based on environment)
-const useSecurePrefix = process.env.NODE_ENV === 'production';
-const secureSessionCookieName = useSecurePrefix
-  ? `__Secure-${sessionCookieName}`
-  : sessionCookieName;
+// const useSecurePrefix = process.env.NODE_ENV === 'production';
+// const secureSessionCookieName = useSecurePrefix
+//   ? `__Secure-${sessionCookieName}`
+//   : sessionCookieName;
 
 // Get base URL from environment or fallback
-const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
-
-/**
- * Logs in a test user by generating a JWT and setting the session cookie.
- *
- * @param page The Playwright Page object.
- * @param userId Optional user ID for the session. Defaults to the test user ID.
- */
-export async function loginTestUser(page: Page, userId?: string): Promise<void> {
-  try {
-    const token = await generateTestSessionToken(userId);
-    // console.log(`[Test Setup] Generated test token for user: ${userId || 'default'}`);
-
-    // Parse the baseURL to get domain and protocol reliably
-    let url;
-    try {
-      url = new URL(baseURL);
-    } catch {
-      console.error(`[Test Setup] Invalid baseURL provided: ${baseURL}`);
-      throw new Error(`Invalid baseURL for setting cookie: ${baseURL}`);
-    }
-    const domain = url.hostname; // e.g., 'localhost'
-    const path = '/';
-    const isSecure = url.protocol === 'https:';
-
-    // console.log(
-    //   `[Test Setup] Setting cookie for domain: ${domain}, path: ${path}, secure: ${isSecure}`
-    // );
-
-    await page.context().addCookies([
-      {
-        name: secureSessionCookieName,
-        value: token,
-        domain: domain, // Use domain from baseURL
-        path: path, // Root path
-        httpOnly: true,
-        secure: isSecure, // Set secure based on baseURL protocol
-        sameSite: 'Lax', // Common setting for session cookies
-      },
-    ]);
-
-    // console.log(
-    //   `[Test Setup] Set session cookie (${secureSessionCookieName}) for domain ${domain}`
-    // );
-  } catch (error) {
-    console.error('[Test Setup] Failed to log in test user:', error);
-    throw error; // Re-throw to fail the test setup
-  }
-}
+// const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
 
 // Define types for fixture options if needed later
 type ErrorCheckFixtures = {
