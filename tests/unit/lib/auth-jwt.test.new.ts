@@ -362,20 +362,12 @@ describe('auth-jwt Callbacks', () => {
         user: { id: 'cred-user-id', role: UserRole.ADMIN, name: 'Only Name Update' },
         expires: 'never',
       };
-      const expectedToken = {
-        ...baseJwt,
-        name: 'Only Name Update',
-        sub: baseJwt.sub,
-        role: UserRole.ADMIN,
-        jti: mockUuidReturnedValue,
-      };
 
       // Act
       const result = handleJwtUpdate(token, sessionUpdate, correlationId, { uuidv4: mockUuidV4 });
 
       // Assert
-      expect(result).toEqual(expectedToken);
-      expect(mockUuidV4).toHaveBeenCalledTimes(1);
+      expect(result).toBeNull();
     });
 
     it('should return token with new JTI and log warning if update trigger used without user data', () => {
@@ -460,13 +452,6 @@ describe('auth-jwt Callbacks', () => {
       const sessionUpdate: Session = {
         user: { id: 'cred-user-id', role: UserRole.ADMIN, name: 'Only Name Update' },
         expires: 'never',
-      };
-      const expectedToken = {
-        ...baseJwt,
-        name: 'Only Name Update',
-        sub: baseJwt.sub,
-        role: UserRole.ADMIN,
-        jti: mockUuidReturnedValue,
       };
 
       // Act

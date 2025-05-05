@@ -1,7 +1,7 @@
 module.exports = {
   // Lint TypeScript files
   '**/*.ts?(x)': filenames => [
-    `npm run lint:fix -- ${filenames.join(' ')}`,
+    `ESLINT_USE_FLAT_CONFIG=true npx eslint --fix --no-error-on-unmatched-pattern ${filenames.join(' ')}`,
     `npm run format -- ${filenames.join(' ')}`,
     `git add ${filenames.join(' ')}`,
   ],

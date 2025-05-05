@@ -158,9 +158,12 @@ const config: PlaywrightTestConfig = defineConfig({
   // Built-in webServer configuration - manages Next.js server for tests
 
   webServer: {
-    // Use kill-port first, then firebase emulators:exec to start emulators AND the server
-    // This ensures ports are clear and emulators are ready before the server starts responding
-    command: `npx kill-port 8080 9099 || true && firebase emulators:exec --only auth,firestore --project next-firebase-base-template \"npm run dev:test\"`,
+    // Enhanced command that:
+    // 1. Clears ports
+    // 2. Removes .next directory
+    // 3. Starts Firebase emulators with seed data
+    // 4. Runs the dev:test script which captures logs
+    command: `npx kill-port 8080 9099 4000 4400 4500 || true && rm -rf .next && firebase emulators:exec --only auth,firestore --import=./firebase-seed-data --project next-firebase-base-template \"npm run dev:test\"`,
     url: BASE_URL,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for emulators + server
     reuseExistingServer: !process.env.CI,
