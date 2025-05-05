@@ -140,6 +140,12 @@ export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseIn
     // Use the default app instance if available
     const existingApp = admin.app();
     const services = getFirebaseServices(existingApp);
+
+    // Ensure module-level variables are populated even when skipping re-init
+    adminApp = existingApp;
+    if (services.auth) adminAuth = services.auth;
+    if (services.db) adminDb = services.db;
+
     return { app: existingApp, ...services };
   }
 
