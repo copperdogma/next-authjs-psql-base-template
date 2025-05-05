@@ -19,6 +19,25 @@ jest.mock('@firebase/firestore', () => ({
   connectFirestoreEmulator: jest.fn(),
 }));
 
+// Mock the loggers
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
+jest.mock('@/lib/client-logger', () => ({
+  clientLogger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
 // Store original environment
 const originalEnv = { ...process.env };
 
@@ -32,10 +51,9 @@ const createMockWindow = () => {
   };
 };
 
-// Mock the console methods before tests
-beforeAll(() => {
-  // Suppress console output during tests
-});
+// Import logger for verification
+import { logger } from '@/lib/logger';
+import { clientLogger } from '@/lib/client-logger';
 
 describe('Firebase Config', () => {
   beforeEach(() => {
@@ -148,6 +166,188 @@ describe('Firebase Config', () => {
       });
 
       // Cleanup
+      restoreWindow();
+    });
+
+    test('should handle errors when connecting to Auth emulator', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Set emulator environment variables
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
+
+      // Mock connectAuthEmulator to throw an error
+      require('@firebase/auth').connectAuthEmulator.mockImplementation(() => {
+        throw new Error('Auth emulator connection failed');
+      });
+
+      // Import the module, which should catch the error
+      jest.isolateModules(() => {
+        require('../../../lib/firebase-config');
+
+        // Verify the error was logged
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({
+            err: expect.any(Error)
+          }),
+          'Failed to connect to Auth emulator'
+        );
+      });
+
+      // Cleanup
+      restoreWindow();
+    });
+
+    test('should handle errors when connecting to Firestore emulator', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Set emulator environment variables
+      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
+
+      // Mock connectFirestoreEmulator to throw an error
+      require('@firebase/firestore').connectFirestoreEmulator.mockImplementation(() => {
+        throw new Error('Firestore emulator connection failed');
+      });
+
+      // Import the module, which should catch the error
+      jest.isolateModules(() => {
+        require('../../../lib/firebase-config');
+
+        // Verify the error was logged
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({
+            err: expect.any(Error)
+          }),
+          'Failed to connect to Firestore emulator'
+        );
+      });
+
+      // Cleanup
+      restoreWindow();
+    });
+
+    test('should not connect to emulators when not in development or test mode', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Simulate production environment by setting a copy of process.env
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: 'production',
+        // Configure emulator hosts to ensure they're not used
+        NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
+        NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: 'localhost:8080',
+        NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'false',
+      };
+
+      // Import the module
+      jest.isolateModules(() => {
+        require('../../../lib/firebase-config');
+
+        // Verify emulator connections were not attempted
+        expect(require('@firebase/auth').connectAuthEmulator).not.toHaveBeenCalled();
+        expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
+      });
+
+      // Cleanup - env will be restored by afterEach      
+      restoreWindow();
+    });
+
+    test('should not try to reconnect to Auth emulator if already connected', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Set emulator environment variables
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
+
+      // Import the module twice to test the connection flag
+      jest.isolateModules(() => {
+        // First import - should connect
+        const config1 = require('../../../lib/firebase-config');
+
+        // Reset the connectAuthEmulator mock to verify it's not called again
+        require('@firebase/auth').connectAuthEmulator.mockClear();
+
+        // Second import - should not connect again due to the flag
+        const config2 = require('../../../lib/firebase-config');
+
+        // Verify the second import didn't attempt to connect
+        expect(require('@firebase/auth').connectAuthEmulator).not.toHaveBeenCalled();
+      });
+
+      // Cleanup
+      restoreWindow();
+    });
+
+    test('should not try to reconnect to Firestore emulator if already connected', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Set emulator environment variables
+      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
+
+      // Import the module twice to test the connection flag
+      jest.isolateModules(() => {
+        // First import - should connect
+        const config1 = require('../../../lib/firebase-config');
+
+        // Reset the connectFirestoreEmulator mock to verify it's not called again
+        require('@firebase/firestore').connectFirestoreEmulator.mockClear();
+
+        // Second import - should not connect again due to the flag
+        const config2 = require('../../../lib/firebase-config');
+
+        // Verify the second import didn't attempt to connect
+        expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
+      });
+
+      // Cleanup
+      restoreWindow();
+    });
+
+    test('should properly log debug information with clientLogger', () => {
+      // Setup client environment
+      const restoreWindow = createMockWindow();
+
+      // Simulate development environment by setting a copy of process.env
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: 'development',
+        NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'true',
+      };
+
+      // Import the module
+      jest.isolateModules(() => {
+        require('../../../lib/firebase-config');
+
+        // Verify client debug logs were called
+        expect(clientLogger.debug).toHaveBeenCalledWith(
+          '[firebase-config] File loaded (client-side check)'
+        );
+
+        expect(clientLogger.debug).toHaveBeenCalledWith(
+          '[firebase-config] Client-side init check',
+          expect.objectContaining({
+            envVar: 'true'
+          })
+        );
+
+        expect(clientLogger.debug).toHaveBeenCalledWith(
+          '[firebase-config] setupEmulators check',
+          expect.objectContaining({
+            shouldUseEmulator: true,
+            envVar: 'true',
+            nodeEnv: 'development'
+          })
+        );
+      });
+
+      // Cleanup - env will be restored by afterEach
       restoreWindow();
     });
   });

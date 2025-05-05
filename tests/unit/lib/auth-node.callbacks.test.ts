@@ -211,6 +211,63 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
       expect(mockLoggerInfo).not.toHaveBeenCalled();
     });
+
+    // --- Error Handling Tests ---
+
+    it('should propagate error from handleJwtSignIn', async () => {
+      const trigger = 'signIn';
+      const token = createMockToken();
+      const user = createMockUser();
+      const account = createMockAccount('oauth');
+      const signInError = new Error('DB connection failed during sign-in');
+
+      // Arrange: Mock handleJwtSignIn to reject
+      mockHandleJwtSignIn.mockRejectedValue(signInError);
+
+      // Act & Assert: Expect the jwtCallback to reject with the same error
+      await expect(jwtCallback({ token, user, account, trigger })).rejects.toThrow(signInError);
+
+      // Verify basic logging and mock calls
+      expect(mockUuidv4).toHaveBeenCalledTimes(1);
+      expect(mockLoggerDebug).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
+        '[JWT Callback] Invoked'
+      );
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ trigger: 'signIn', correlationId: mockCorrelationId }),
+        '[JWT Callback] Sign-in/Sign-up flow'
+      );
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Ensure it was called
+      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
+      // Note: Error logging within handleJwtSignIn itself should be tested in its own unit tests
+    });
+
+    it('should propagate error from handleJwtUpdate', async () => {
+      const token = createMockToken({ role: UserRole.USER });
+      const session = { user: { name: 'Updated Name' } };
+      const trigger = 'update';
+      const updateError = new Error('Failed to update session token');
+
+      // Arrange: Mock handleJwtUpdate to reject
+      mockHandleJwtUpdate.mockRejectedValue(updateError);
+
+      // Act & Assert: Expect the jwtCallback to reject with the same error
+      await expect(jwtCallback({ token, trigger, session })).rejects.toThrow(updateError);
+
+      // Verify basic logging and mock calls
+      expect(mockUuidv4).toHaveBeenCalledTimes(1);
+      expect(mockLoggerDebug).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
+        '[JWT Callback] Invoked'
+      );
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ trigger: 'update', correlationId: mockCorrelationId }),
+        '[JWT Callback] Update flow'
+      );
+      expect(mockHandleJwtUpdate).toHaveBeenCalledTimes(1); // Ensure it was called
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+      // Note: Error logging within handleJwtUpdate itself should be tested in its own unit tests
+    });
   });
 
   // Testing the session callback logic directly from handleSharedSessionCallback

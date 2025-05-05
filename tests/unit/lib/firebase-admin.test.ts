@@ -167,6 +167,101 @@ describe('Firebase Admin SDK Initialization (Config Validation & Setup)', () => 
     );
   });
 
+  // --- Tests for Edge Cases & Coverage ---
+
+  it('should log warning and skip initialization if app already exists', async () => {
+    // Arrange: Mock admin.apps to return a non-empty array
+    const adminMock = jest.requireMock('firebase-admin');
+    adminMock.apps = [{ name: '__DEFAULT__' }]; // Simulate existing default app
+    adminMock.app.mockReturnValue({ name: 'mockExistingApp' }); // Configure mock return
+
+    // Dynamically import AFTER setting up the mock apps array
+    const { initializeFirebaseAdmin } = await import('../../../lib/firebase-admin');
+
+    // Act: Call the initialization function
+    const result = initializeFirebaseAdmin(baseDevConfig);
+
+    // Assert: Check warning log and that initializeApp was NOT called
+    expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
+      'Firebase Admin already initialized. Skipping re-initialization.'
+    );
+    expect(adminMock.initializeApp).not.toHaveBeenCalled();
+    // Existing app/services should still be returned (or attempted to be retrieved)
+    // Since we mock getAuth/getFirestore simply, we expect the mock values
+    expect(result.app).toBeDefined(); // Or check for the mock app if possible
+    expect(result.auth).toBeDefined();
+    expect(result.db).toBeDefined();
+    expect(result.error).toBeUndefined();
+
+    // Cleanup: Reset apps array for other tests
+    adminMock.apps = [];
+  });
+
+  it('should return error object if getAuth fails', async () => {
+    // Arrange: Mock admin.auth() to throw an error
+    const adminMock = jest.requireMock('firebase-admin');
+    adminMock.initializeApp.mockReturnValue({ name: 'mockInitializedApp' }); // Simulate successful init
+    const authError = new Error('Failed to get Auth service');
+    adminMock.auth.mockImplementation(() => {
+      throw authError;
+    });
+
+    // Dynamically import AFTER setting up the mock apps array and auth mock
+    const { initializeFirebaseAdmin } = await import('../../../lib/firebase-admin');
+
+    // Act: Call the initialization function with a valid config
+    const result = initializeFirebaseAdmin(baseDevConfig);
+
+    // Assert: Check error log and returned error object
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Failed to get Auth service' }),
+      'Failed to retrieve Auth/Firestore services from initialized app.'
+    );
+    // Adjust the expected error message to include the underlying error
+    expect(result.error).toBe(
+      `Failed to retrieve Auth/Firestore services from initialized app. Error: ${authError.message}`
+    );
+    expect(result.app).toBeDefined(); // App might initialize successfully
+    expect(result.auth).toBeUndefined(); // Auth failed
+    expect(result.db).toBeUndefined(); // Firestore likely not attempted or failed too
+
+    // Cleanup: Restore default mock implementation
+    adminMock.auth.mockImplementation(() => ({ getAuth: jest.fn() }));
+  });
+
+  it('should return error object if getFirestore fails', async () => {
+    // Arrange: Mock admin.firestore() to throw an error
+    const adminMock = jest.requireMock('firebase-admin');
+    adminMock.initializeApp.mockReturnValue({ name: 'mockInitializedApp' }); // Simulate successful init
+    const firestoreError = new Error('Failed to get Firestore service');
+    adminMock.firestore.mockImplementation(() => {
+      throw firestoreError;
+    });
+
+    // Dynamically import AFTER setting up the mock apps array and firestore mock
+    const { initializeFirebaseAdmin } = await import('../../../lib/firebase-admin');
+
+    // Act: Call the initialization function with a valid config
+    const result = initializeFirebaseAdmin(baseDevConfig);
+
+    // Assert: Check error log and returned error object
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Failed to get Firestore service' }),
+      'Failed to retrieve Auth/Firestore services from initialized app.'
+    );
+    // Adjust the expected error message to include the underlying error
+    expect(result.error).toBe(
+      `Failed to retrieve Auth/Firestore services from initialized app. Error: ${firestoreError.message}`
+    );
+    expect(result.app).toBeDefined(); // App might initialize successfully
+    // Auth might also fail if Firestore fails during the same init attempt
+    expect(result.auth).toBeUndefined();
+    expect(result.db).toBeUndefined(); // Firestore failed
+
+    // Cleanup: Restore default mock implementation
+    adminMock.firestore.mockImplementation(() => ({ getFirestore: jest.fn() }));
+  });
+
   // Remove tests related to:
   // - Deep initializeApp calls and return values
   // - Returned auth/db objects

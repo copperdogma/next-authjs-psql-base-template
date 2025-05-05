@@ -134,19 +134,26 @@ let adminDb: admin.firestore.Firestore | undefined;
  */
 // eslint-disable-next-line max-statements -- Statements slightly high after refactor, deemed acceptable
 export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
-  // 1. Singleton Check: Return existing instance if already initialized
+  // Check if Admin SDK is already initialized (e.g., in another function)
   if (admin.apps.length > 0) {
     moduleLogger.warn('Firebase Admin already initialized. Skipping re-initialization.');
-    // Use the default app instance if available
-    const existingApp = admin.app();
-    const services = getFirebaseServices(existingApp);
-
-    // Ensure module-level variables are populated even when skipping re-init
-    adminApp = existingApp;
-    if (services.auth) adminAuth = services.auth;
-    if (services.db) adminDb = services.db;
-
-    return { app: existingApp, ...services };
+    // Return existing services (or attempt to retrieve them)
+    try {
+      const existingApp = admin.app(); // Get default app
+      const existingAuth = admin.auth(existingApp);
+      const existingDb = admin.firestore(existingApp);
+      return { app: existingApp, auth: existingAuth, db: existingDb };
+    } catch (error) {
+      moduleLogger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failed to retrieve Auth/Firestore services from initialized app.'
+      );
+      return {
+        error: `Failed to retrieve Auth/Firestore services from initialized app. Error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
   }
 
   // 2. Validate Configuration
