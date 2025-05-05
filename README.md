@@ -323,3 +323,5 @@ This template uses **Pino** for structured, low-overhead logging.
 - **Client-Side Logging**: Import `clientLogger` from `lib/client-logger.ts` in your client components ('use client'). Logs sent via `clientLogger` (e.g., `clientLogger.warn('Something seems off')`) are sent to the `/api/log/client` endpoint and logged server-side.
 - **Request ID**: Incoming requests are automatically assigned an `x-request-id` header (visible in browser dev tools) and the corresponding `requestId` is included in server-side logs for tracing.
 - **Redaction**: Sensitive fields (passwords, tokens, etc., defined in `lib/logger.ts`) are automatically redacted from logs.
+
+<!-- Test comment for pre-commit hook verification -->
