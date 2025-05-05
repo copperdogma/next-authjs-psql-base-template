@@ -65,14 +65,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Fetch the session on the server
   const session = await auth();
 
-  // Add logging to debug session state
-  logger.info({
-    msg: '[RootLayout] Fetched session from auth()',
-    hasSession: !!session,
-    userId: session?.user?.id,
-    userName: session?.user?.name,
-  });
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>{/* <script dangerouslySetInnerHTML={{ __html: themeScript }} /> */}</head>
