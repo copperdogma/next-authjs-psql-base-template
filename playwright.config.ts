@@ -163,7 +163,7 @@ const config: PlaywrightTestConfig = defineConfig({
     // 2. Removes .next directory
     // 3. Starts Firebase emulators with seed data
     // 4. Runs the dev:test script which captures logs
-    command: `npx kill-port 8080 9099 4000 4400 4500 || true && rm -rf .next && firebase emulators:exec --only auth,firestore --import=./firebase-seed-data --project next-firebase-base-template \"npm run dev:test\"`,
+    command: `npx kill-port 8080 9099 || true && rm -rf .next && ./scripts/run-e2e-server.sh`,
     url: BASE_URL,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for emulators + server
     reuseExistingServer: !process.env.CI,
