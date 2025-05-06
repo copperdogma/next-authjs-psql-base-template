@@ -9,17 +9,15 @@ import { jest } from '@jest/globals';
 import bcrypt from 'bcryptjs';
 // Import the whole module for mocking
 // import * as uuid from 'uuid';
-import type { User as NextAuthUser } from 'next-auth';
-import { UserRole } from '@/types';
+import type { User } from '@prisma/client'; // Use correct Prisma types
+import { UserRole } from '@/types'; // Use correct types
 import {
   authorizeLogic,
   CredentialsSchema,
   type AuthorizeDependencies,
 } from '@/lib/auth/auth-credentials';
 import { logger } from '@/lib/logger';
-import type { User as PrismaUser } from '@prisma/client';
 import { z } from 'zod';
-import type { v4 as uuidv4 } from 'uuid';
 // Remove unused import
 // import type { Prisma } from '@prisma/client';
 
@@ -46,26 +44,19 @@ const mockUuid = 'mock-correlation-id';
 // Create a mock uuidv4 function
 const mockUuidV4 = jest.fn(() => mockUuid);
 
-// Typed mock for Prisma user db operations
-const mockDbUserFindUnique = jest.fn<() => Promise<PrismaUser | null>>();
+// Typed mock for Prisma user db operations - Ensure it's a Jest mock
+// Explicitly type the mock implementation
+const mockDbUserFindUnique = jest.fn<() => Promise<User | null>>();
 
-// Assemble mock dependencies for authorizeLogic
-const mockDependencies: AuthorizeDependencies = {
-  db: {
-    user: {
-      findUnique: mockDbUserFindUnique,
-    },
-  } as unknown as AuthorizeDependencies['db'], // Cast to unknown first
-  hasher: {
-    compare: mockHasherCompare,
-  },
-  validator: {
-    // Use the real schema for validation testing
-    safeParse: CredentialsSchema.safeParse,
-  },
-  // Inject the mocked uuidv4 function
-  uuidv4: mockUuidV4,
-};
+// Reset mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Setup default successful mocks
+  mockUuidV4.mockReturnValue(mockUuid);
+  // Call mockResolvedValue directly on the correctly typed mock
+  mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
+  mockHasherCompare.mockResolvedValue(true);
+});
 
 // --- Test Data ---
 const validCredentials = {
@@ -73,7 +64,7 @@ const validCredentials = {
   password: 'password123',
 };
 
-const mockPrismaUser: PrismaUser = {
+const mockPrismaUser: User = {
   id: 'user-id-123',
   name: 'Test User',
   email: 'test@example.com',
@@ -85,7 +76,14 @@ const mockPrismaUser: PrismaUser = {
   updatedAt: new Date(),
 };
 
-const expectedNextAuthUser: NextAuthUser = {
+// Define the expected return type more accurately based on authorizeLogic
+const expectedNextAuthUser: {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  role: UserRole;
+} = {
   id: mockPrismaUser.id,
   name: mockPrismaUser.name,
   email: mockPrismaUser.email,
@@ -95,41 +93,25 @@ const expectedNextAuthUser: NextAuthUser = {
 
 // --- Test Suite ---
 describe('authorizeLogic', () => {
-  // Valid credentials for tests
-  const validCredentials = { email: 'test@example.com', password: 'password123' };
+  // Valid credentials for tests - Defined within describe block
+  // const validCredentials = { email: 'test@example.com', password: 'password123' };
 
-  // Mock Prisma user data
-  const mockPrismaUser: NonNullable<PrismaUser> = {
-    id: 'user-id-123',
-    name: 'Test User',
-    email: 'test@example.com',
-    emailVerified: null,
-    image: null,
-    hashedPassword: 'hashedPassword123',
-    role: UserRole.USER,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  // Mock Prisma user data - Defined within describe block
+  // const mockPrismaUser: NonNullable<User> = { ... };
 
-  // Helper function to create mock dependencies
+  // Helper function to create mock dependencies - Defined within describe block
   const createMockDependencies = (): AuthorizeDependencies => ({
-    db: { user: { findUnique: mockDbUserFindUnique } },
+    db: {
+      user: { findUnique: mockDbUserFindUnique as any },
+    } as AuthorizeDependencies['db'],
     hasher: { compare: mockHasherCompare },
     validator: CredentialsSchema, // Use the real schema as the validator
-    uuidv4: mockUuidV4 as any, // Cast as any to satisfy type
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Setup default successful mocks
-    mockUuidV4.mockReturnValue(mockUuid);
-    mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
-    mockHasherCompare.mockResolvedValue(true);
+    uuidv4: mockUuidV4,
   });
 
   it('should return user object on successful authentication', async () => {
-    const mockDependencies = createMockDependencies();
-    const user = await authorizeLogic(validCredentials, mockDependencies);
+    const localMockDependencies = createMockDependencies();
+    const user = await authorizeLogic(validCredentials, localMockDependencies);
 
     // Assert
     expect(user).toEqual(expectedNextAuthUser);
@@ -152,15 +134,12 @@ describe('authorizeLogic', () => {
   });
 
   it('should return null if credentials validation fails', async () => {
-    const mockDependencies = createMockDependencies();
-    // Override validator for this test
+    const localMockDependencies = createMockDependencies();
     const mockValidator = {
       safeParse: jest.fn().mockReturnValue({ success: false, error: new z.ZodError([]) }),
     };
-    mockDependencies.validator = mockValidator;
-
-    // Assert that authorizeLogic throws when validation fails
-    await expect(authorizeLogic({ email: '', password: '' }, mockDependencies)).rejects.toThrow(
+    localMockDependencies.validator = mockValidator as unknown as typeof CredentialsSchema;
+    await expect(authorizeLogic({ email: '', password: '' }, localMockDependencies)).rejects.toThrow(
       'Invalid credentials provided.'
     );
     expect(mockValidator.safeParse).toHaveBeenCalledTimes(1);
@@ -174,11 +153,10 @@ describe('authorizeLogic', () => {
   });
 
   it('should return null and log warning if user not found in db', async () => {
-    const mockDependencies = createMockDependencies();
-    mockDependencies.db.user.findUnique.mockResolvedValue(null);
-
-    const user = await authorizeLogic(validCredentials, mockDependencies);
-
+    const localMockDependencies = createMockDependencies();
+    // Override the mock value for this test case
+    mockDbUserFindUnique.mockResolvedValue(null);
+    const user = await authorizeLogic(validCredentials, localMockDependencies);
     expect(user).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -192,14 +170,13 @@ describe('authorizeLogic', () => {
   });
 
   it('should return null and log warning if user has no hashed password', async () => {
-    const mockDependencies = createMockDependencies();
-    mockDependencies.db.user.findUnique.mockResolvedValue({
+    const localMockDependencies = createMockDependencies();
+    // Override the mock value for this test case
+    mockDbUserFindUnique.mockResolvedValue({
       ...mockPrismaUser,
       hashedPassword: null,
     });
-
-    const user = await authorizeLogic(validCredentials, mockDependencies);
-
+    const user = await authorizeLogic(validCredentials, localMockDependencies);
     expect(user).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -212,14 +189,10 @@ describe('authorizeLogic', () => {
   });
 
   it('should return null and log warning if password comparison fails', async () => {
-    // Arrange
-    mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
-    mockHasherCompare.mockResolvedValue(false); // Simulate incorrect password
-
-    // Act
-    const result = await authorizeLogic(validCredentials, mockDependencies);
-
-    // Assert
+    const localMockDependencies = createMockDependencies();
+    // Ensure findUnique mock is set (it is by beforeEach)
+    mockHasherCompare.mockResolvedValue(false);
+    const result = await authorizeLogic(validCredentials, localMockDependencies);
     expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -232,15 +205,12 @@ describe('authorizeLogic', () => {
   });
 
   it('should throw original error and log error if db query fails', async () => {
-    // Arrange
+    const localMockDependencies = createMockDependencies();
     const dbError = new Error('Database connection lost');
+    // Override with mockRejectedValue for this test case
     mockDbUserFindUnique.mockRejectedValue(dbError);
-
-    // Act & Assert
-    // await expect(authorizeLogic(validCredentials, mockDependencies)).rejects.toThrow(dbError);
-    const result = await authorizeLogic(validCredentials, mockDependencies);
-    expect(result).toBeNull(); // Code catches error and returns null
-
+    const result = await authorizeLogic(validCredentials, localMockDependencies);
+    expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
     expect(mockHasherCompare).not.toHaveBeenCalled();
@@ -256,16 +226,12 @@ describe('authorizeLogic', () => {
   });
 
   it('should throw original error and log error if password comparison throws', async () => {
-    // Arrange
+    const localMockDependencies = createMockDependencies();
     const compareError = new Error('Bcrypt internal error');
-    mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
+    // Ensure findUnique mock is set (it is by beforeEach)
     mockHasherCompare.mockRejectedValue(compareError);
-
-    // Act & Assert
-    // await expect(authorizeLogic(validCredentials, mockDependencies)).rejects.toThrow(compareError);
-    const result = await authorizeLogic(validCredentials, mockDependencies);
-    expect(result).toBeNull(); // Code catches error and returns null
-
+    const result = await authorizeLogic(validCredentials, localMockDependencies);
+    expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
     expect(mockHasherCompare).toHaveBeenCalledTimes(1);

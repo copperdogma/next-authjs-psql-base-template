@@ -1,0 +1,10 @@
+---
+description: File editing failures
+globs: 
+alwaysApply: false
+---
+Often when you edit files, the changes are successful but it seems like it failed based on what you get back.
+
+Double-check the whole file manually to see if your edits worked.
+
+If not, try the edit again.

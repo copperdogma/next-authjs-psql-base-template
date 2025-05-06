@@ -29,61 +29,75 @@ export interface PinoLoggerOptions {
    * Transport configuration
    */
   transport?: pino.TransportSingleOptions;
+
+  /**
+   * Optional existing Pino logger instance to use.
+   * If provided, other options like level, transport, baseOptions, pretty are ignored for the base instance,
+   * but context will still be applied via .child().
+   */
+  existingLogger?: pino.Logger;
 }
 
 /**
  * Implementation of LoggerService using Pino
  */
 export class PinoLoggerService implements LoggerService {
-  private logger: pino.Logger;
+  public readonly logger: pino.Logger;
 
   /**
    * Create a new PinoLoggerService instance
    *
    * @param context - Context to add to all log messages
-   * @param options - Logger configuration options
+   * @param options - Logger configuration options, including optional existingLogger
    */
   constructor(context: string | LogContext, options: PinoLoggerOptions = {}) {
-    // Normalize the context parameter
     const logContext = typeof context === 'string' ? { component: context } : context;
 
-    // Create the base logger with default options
-    const loggerOptions: pino.LoggerOptions = {
-      level: options.level || process.env.LOG_LEVEL || 'info',
-      redact: {
-        paths: Array.isArray(baseRedactFields) ? baseRedactFields : [],
-        censor: '[REDACTED]',
-        remove: true,
-      },
-      base: {
-        env: process.env.NODE_ENV,
-        app: 'next-firebase-psql-template',
-      },
-      timestamp: () => `,"time":"${new Date().toISOString()}"`,
-      formatters: {
-        level: label => {
-          return { level: label };
-        },
-      },
-      ...options.baseOptions,
-    };
+    let baseLogger: pino.Logger;
 
-    // Add pretty printing for development if requested
-    if (options.pretty) {
-      loggerOptions.transport = {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: true,
-          ignore: 'pid,hostname',
+    if (options.existingLogger) {
+      // Use the provided logger instance
+      baseLogger = options.existingLogger;
+    } else {
+      // Create a new base logger instance
+      const loggerOptions: pino.LoggerOptions = {
+        level: options.level || process.env.LOG_LEVEL || 'info',
+        redact: {
+          paths: Array.isArray(baseRedactFields) ? baseRedactFields : [],
+          censor: '[REDACTED]',
+          remove: true,
         },
+        base: {
+          env: process.env.NODE_ENV,
+          app: 'next-firebase-psql-template',
+        },
+        timestamp: () => `,"time":"${new Date().toISOString()}"`,
+        formatters: {
+          level: label => {
+            return { level: label };
+          },
+        },
+        ...options.baseOptions,
       };
-    } else if (options.transport) {
-      loggerOptions.transport = options.transport;
+
+      if (options.pretty) {
+        loggerOptions.transport = {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: true,
+            ignore: 'pid,hostname',
+          },
+        };
+      } else if (options.transport) {
+        loggerOptions.transport = options.transport;
+      }
+      baseLogger = pino(loggerOptions);
     }
 
-    // Create the logger and add context
-    this.logger = pino(loggerOptions).child(logContext);
+    // Apply context by creating a child logger
+    // This ensures context is applied even when injecting an existing logger
+    this.logger = baseLogger.child(logContext);
   }
 
   info(obj: object | string, msg?: string): void {
@@ -103,7 +117,6 @@ export class PinoLoggerService implements LoggerService {
   }
 
   trace(obj: object | string, msg?: string): void {
-    // Pino doesn't have a distinct trace level by default, map to debug
     this.logger.debug(obj, msg);
   }
 
@@ -111,16 +124,12 @@ export class PinoLoggerService implements LoggerService {
    * Create a child logger with additional context
    */
   child(bindings: Record<string, unknown>): LoggerService {
-    const childLogger = this.logger.child(bindings);
-
-    // Create a new service that wraps the child logger
-    const childService = new PinoLoggerService('', {});
-    // Replace the internal logger with the child
-    Object.defineProperty(childService, 'logger', {
-      value: childLogger,
-      writable: false,
-    });
-
+    // Create a child directly from the internal logger
+    const childPinoLogger = this.logger.child(bindings);
+    // Wrap the pino child logger in a new service instance, injecting it
+    // Pass empty context ('') and the child logger instance
+    // The constructor will then apply its empty context (no-op) via child()
+    const childService = new PinoLoggerService('', { existingLogger: childPinoLogger });
     return childService;
   }
 }
@@ -129,19 +138,25 @@ export class PinoLoggerService implements LoggerService {
  * Create a logger service with a component context
  */
 export function createContextLogger(
-  context: string,
-  options: PinoLoggerOptions = {}
+  context: string | LogContext,
+  options: PinoLoggerOptions = {},
+  baseLogger?: pino.Logger // Optional base logger
 ): LoggerService {
-  return new PinoLoggerService({ component: context }, options);
+  // Pass the baseLogger via options
+  return new PinoLoggerService({ component: context }, { ...options, existingLogger: baseLogger });
 }
 
 /**
  * Create a logger for development with pretty printing
  */
-export function createDevLogger(context: string | LogContext): LoggerService {
+export function createDevLogger(
+  context: string | LogContext,
+  baseLogger?: pino.Logger // Optional base logger
+): LoggerService {
   return new PinoLoggerService(context, {
     level: 'debug',
     pretty: true,
+    existingLogger: baseLogger // Pass it here
   });
 }
 
@@ -152,7 +167,8 @@ export function createRequestLogger(
   reqId: string,
   path: string,
   method: string,
-  options: PinoLoggerOptions = {}
+  options: PinoLoggerOptions = {},
+  baseLogger?: pino.Logger // Optional base logger
 ): LoggerService {
   return new PinoLoggerService(
     {
@@ -161,25 +177,32 @@ export function createRequestLogger(
       path,
       method,
     },
-    options
+    { ...options, existingLogger: baseLogger } // Pass it via options
   );
 }
 
 /**
  * Create a logger with file transport for production
  */
-export function createFileLogger(context: string | LogContext): LoggerService {
+export function createFileLogger(
+  context: string | LogContext,
+  baseLogger?: pino.Logger // Optional base logger
+): LoggerService {
   return new PinoLoggerService(context, {
     transport: {
       target: 'pino/file',
       options: { destination: process.env.LOG_FILE || 'logs/app.log' },
     },
+    existingLogger: baseLogger // Pass it here
   });
 }
 
 /**
  * Factory function to create a LoggerService instance (backward compatibility)
  */
-export function createLoggerService(context: string): LoggerService {
-  return new PinoLoggerService({ component: context });
+export function createLoggerService(
+  context: string | LogContext,
+  baseLogger?: pino.Logger // Optional base logger
+): LoggerService {
+  return new PinoLoggerService({ component: context }, { existingLogger: baseLogger });
 }
