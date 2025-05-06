@@ -139,9 +139,9 @@ describe('authorizeLogic', () => {
       safeParse: jest.fn().mockReturnValue({ success: false, error: new z.ZodError([]) }),
     };
     localMockDependencies.validator = mockValidator as unknown as typeof CredentialsSchema;
-    await expect(authorizeLogic({ email: '', password: '' }, localMockDependencies)).rejects.toThrow(
-      'Invalid credentials provided.'
-    );
+    await expect(
+      authorizeLogic({ email: '', password: '' }, localMockDependencies)
+    ).rejects.toThrow('Invalid credentials provided.');
     expect(mockValidator.safeParse).toHaveBeenCalledTimes(1);
     // Check logger call *within* _validateCredentials (indirectly tested)
     expect(logger.warn).toHaveBeenCalledWith(

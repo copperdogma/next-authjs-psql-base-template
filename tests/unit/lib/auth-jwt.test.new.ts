@@ -6,7 +6,8 @@ import { logger } from '@/lib/logger';
 // Import the real types needed from auth-helpers
 import type { AuthUserInternal, ValidateSignInResult } from '@/lib/auth/auth-helpers';
 // Import the functions under test
-import { handleJwtSignIn, handleJwtUpdate, type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt';
+import { handleJwtSignIn, handleJwtUpdate } from '@/lib/auth/auth-jwt';
+import { type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt-types';
 // Removed unused AdapterAccount import
 // import { AdapterAccount } from '@auth/core/adapters';
 // Import UserRole directly from prisma, remove unused PrismaUser, PrismaAccount

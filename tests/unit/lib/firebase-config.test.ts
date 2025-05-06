@@ -186,7 +186,7 @@ describe('Firebase Config', () => {
         const mockLoggerError = jest.requireMock('@/lib/logger').logger.error;
         expect(mockLoggerError).toHaveBeenCalledWith(
           expect.objectContaining({
-            err: expect.any(Error)
+            err: expect.any(Error),
           }),
           'Failed to connect to Auth emulator'
         );
@@ -217,7 +217,7 @@ describe('Firebase Config', () => {
         const mockLoggerError = jest.requireMock('@/lib/logger').logger.error;
         expect(mockLoggerError).toHaveBeenCalledWith(
           expect.objectContaining({
-            err: expect.any(Error)
+            err: expect.any(Error),
           }),
           'Failed to connect to Firestore emulator'
         );
@@ -250,7 +250,7 @@ describe('Firebase Config', () => {
         expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
       });
 
-      // Cleanup - env will be restored by afterEach      
+      // Cleanup - env will be restored by afterEach
       restoreWindow();
     });
 
@@ -373,7 +373,6 @@ describe('Firebase Config', () => {
         // NOTE: The current code does not explicitly log an error via clientLogger
         // if essential config is missing. Firebase SDK might log internally.
         // Removed assertion for clientLogger.error.
-
       });
 
       // Cleanup
@@ -404,7 +403,7 @@ describe('Firebase Config', () => {
         expect(mockClientLoggerDebug).toHaveBeenCalledWith(
           '[firebase-config] Client-side init check',
           expect.objectContaining({
-            envVar: 'true'
+            envVar: 'true',
           })
         );
 
@@ -413,7 +412,7 @@ describe('Firebase Config', () => {
           expect.objectContaining({
             shouldUseEmulator: true,
             envVar: 'true',
-            nodeEnv: 'development'
+            nodeEnv: 'development',
           })
         );
       });

@@ -18,7 +18,8 @@ import {
   validateSignInInputs,
 } from './auth/auth-helpers'; // Use correct path
 // Import JWT handlers
-import { handleJwtSignIn, handleJwtUpdate, type HandleJwtSignInArgs } from './auth/auth-jwt'; // Use correct path
+import { handleJwtSignIn, handleJwtUpdate } from './auth/auth-jwt'; // Use correct path
+import { type HandleJwtSignInArgs } from './auth/auth-jwt-types'; // Corrected import path
 
 // ====================================
 // Interfaces (Should be minimal or none)

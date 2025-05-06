@@ -156,7 +156,7 @@ export function createDevLogger(
   return new PinoLoggerService(context, {
     level: 'debug',
     pretty: true,
-    existingLogger: baseLogger // Pass it here
+    existingLogger: baseLogger, // Pass it here
   });
 }
 
@@ -164,18 +164,16 @@ export function createDevLogger(
  * Create a logger for request handling with request context
  */
 export function createRequestLogger(
-  reqId: string,
-  path: string,
-  method: string,
+  requestContext: { reqId: string; path: string; method: string },
   options: PinoLoggerOptions = {},
   baseLogger?: pino.Logger // Optional base logger
 ): LoggerService {
   return new PinoLoggerService(
     {
       component: 'api',
-      requestId: reqId,
-      path,
-      method,
+      requestId: requestContext.reqId,
+      path: requestContext.path,
+      method: requestContext.method,
     },
     { ...options, existingLogger: baseLogger } // Pass it via options
   );
@@ -193,7 +191,7 @@ export function createFileLogger(
       target: 'pino/file',
       options: { destination: process.env.LOG_FILE || 'logs/app.log' },
     },
-    existingLogger: baseLogger // Pass it here
+    existingLogger: baseLogger, // Pass it here
   });
 }
 

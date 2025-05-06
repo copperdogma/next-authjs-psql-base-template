@@ -12,4 +12,4 @@ Initial project setup completed:
 - E2E tests (Playwright)
 - CI/CD configuration
 
-See the [project-structure.md](./project-structure.md) for details on the architecture and file organization. 
+See the [project-structure.md](./project-structure.md) for details on the architecture and file organization.

@@ -31,7 +31,7 @@ export function createMockPinoLogger(
   const levelNames = Object.keys(levels);
 
   // Create mock functions for each standard log level
-  levelNames.forEach((level) => {
+  levelNames.forEach(level => {
     mockLogFunctions[level as pino.Level] = jest.fn();
   });
 
@@ -48,7 +48,7 @@ export function createMockPinoLogger(
       const childMock = createLoggerMock(newBindings);
 
       // Override child's log methods to call the *parent's* mocks with combined bindings
-      levelNames.forEach((level) => {
+      levelNames.forEach(level => {
         childMock[level as pino.Level] = jest.fn((...args: any[]) => {
           // Combine message object if present, otherwise prepend bindings
           let logObject = {};
@@ -67,7 +67,7 @@ export function createMockPinoLogger(
     });
 
     // Ensure base logger also uses the same mock functions directly
-    levelNames.forEach((level) => {
+    levelNames.forEach(level => {
       loggerMock[level as pino.Level] = jest.fn((...args: any[]) => {
         let logObject = {};
         let messageArgs = [...args];
@@ -81,9 +81,8 @@ export function createMockPinoLogger(
       });
     });
 
-
     return loggerMock as MockPinoLogger;
   };
 
   return createLoggerMock(initialBindings);
-} 
+}

@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import pino from 'pino';
+import { logger } from './logger'; // Import the actual logger
 
 // Get the root logger instance
 // import { logger as rootLogger } from '@/lib/logger'; // Avoid importing logger here if possible to reduce cycles
@@ -124,68 +125,127 @@ function performInitialization(config: FirebaseAdminConfig): admin.app.App {
 
 // --- Main Initialization Function ---
 
+// Use a symbol for unique global storage key
+const FIREBASE_ADMIN_APP_KEY = Symbol.for('firebaseAdminApp');
+
+// Define the type for the global object potentially holding our app
+type GlobalWithFirebase = typeof globalThis & {
+  [FIREBASE_ADMIN_APP_KEY]?: admin.app.App;
+};
+
+// Exported variables (will be assigned after initialization)
 let adminApp: admin.app.App | undefined;
 let adminAuth: admin.auth.Auth | undefined;
 let adminDb: admin.firestore.Firestore | undefined;
 
-/**
- * Initializes the Firebase Admin SDK based on provided configuration.
- * Ensures singleton pattern (only initializes once).
- */
-// eslint-disable-next-line max-statements -- Statements slightly high after refactor, deemed acceptable
-export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
-  // Check if Admin SDK is already initialized (e.g., in another function)
-  if (admin.apps.length > 0) {
-    moduleLogger.warn('Firebase Admin already initialized. Skipping re-initialization.');
-    // Return existing services (or attempt to retrieve them)
+// --- Helper: Get or Create App ---
+function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitResult {
+  // 1. Check if app exists (global for dev, module cache for prod)
+  const existingApp =
+    config.nodeEnv !== 'production'
+      ? (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY]
+      : admin.apps.length > 0
+        ? admin.app() // Get default app if already initialized in prod
+        : undefined;
+
+  if (existingApp) {
+    logger.warn('Firebase Admin already initialized. Returning existing instance.');
     try {
-      const existingApp = admin.app(); // Get default app
       const existingAuth = admin.auth(existingApp);
       const existingDb = admin.firestore(existingApp);
+      // Assign to exported variables as well
+      adminApp = existingApp;
+      adminAuth = existingAuth;
+      adminDb = existingDb;
       return { app: existingApp, auth: existingAuth, db: existingDb };
     } catch (error) {
-      moduleLogger.error(
-        { error: error instanceof Error ? error.message : String(error) },
-        'Failed to retrieve Auth/Firestore services from initialized app.'
+      // This catch block now handles errors from both admin.auth() and admin.firestore()
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { error: errorMsg },
+        'Failed to retrieve Auth or Firestore services from existing initialized app.'
       );
+
+      // Log details for debugging
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Error getting services from existing app:', error);
+      }
+
+      // Attempt to return the app even if services fail
       return {
-        error: `Failed to retrieve Auth/Firestore services from initialized app. Error: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        app: existingApp,
+        error: `Failed to retrieve Auth/Firestore services from existing app: ${errorMsg}`,
       };
     }
   }
 
-  // 2. Validate Configuration
+  // 2. Validate Configuration if creating new app
   const validationError = validateConfig(config);
   if (validationError) {
-    moduleLogger.warn(
-      'Firebase Admin SDK not initialized due to missing configuration in non-production environment.'
-    );
-    return { error: `Initialization failed: Invalid configuration state.` }; // Return generic error
+    logger.warn('Firebase Admin SDK not initialized due to missing configuration in non-production environment.');
+    return { error: `Initialization failed: ${validationError}` };
   }
 
   // 3. Initialize App
   try {
-    // Delegate actual initialization to helper
     const app = performInitialization(config);
-    moduleLogger.info('Firebase Admin SDK initialized successfully.');
+    logger.info('Firebase Admin SDK initialized successfully.');
+
+    // Store globally in dev
+    if (config.nodeEnv !== 'production') {
+      (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY] = app;
+    }
 
     // 4. Get Services
     const servicesResult = getFirebaseServices(app);
+    if (servicesResult.error) {
+      // Log the error but still return the app instance if initialization itself succeeded
+      logger.error(
+        `Failed to get Firebase services after app initialization: ${servicesResult.error}`
+      );
+    }
 
-    // 5. Store Singleton Instances
+    // 5. Assign Singleton Instances to exported variables
     adminApp = app;
-    if (servicesResult.auth) adminAuth = servicesResult.auth;
-    if (servicesResult.db) adminDb = servicesResult.db;
+    adminAuth = servicesResult.auth; // Will be undefined if getFirebaseServices failed
+    adminDb = servicesResult.db; // Will be undefined if getFirebaseServices failed
 
-    return { app, ...servicesResult };
+    return { app, auth: adminAuth, db: adminDb, error: servicesResult.error }; // Return potentially undefined services
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    moduleLogger.error({ error: errorMsg }, 'Firebase Admin SDK initialization failed.');
-    return { error: errorMsg };
+    logger.error({ error: errorMsg }, 'Firebase Admin SDK initialization failed.');
+    return { error: `Initialization failed: ${errorMsg}` };
   }
 }
 
+/**
+ * Initializes the Firebase Admin SDK based on provided configuration.
+ * Ensures singleton pattern (only initializes once), using globalThis in dev.
+ * This function now primarily acts as a wrapper around getOrCreateFirebaseAdminApp
+ * and ensures the exported variables `adminApp`, `adminAuth`, `adminDb` are set.
+ */
+export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
+  // The actual logic is now in getOrCreateFirebaseAdminApp
+  // This call ensures the singleton logic runs and exported variables are populated
+  const result = getOrCreateFirebaseAdminApp(config);
+
+  // Log the final outcome for clarity
+  if (result.error && !result.app) {
+    // Only log fatal error if app itself couldn't be initialized/retrieved
+    logger.error(`Firebase Admin initialization check failed: ${result.error}`);
+  } else if (result.error) {
+    // Log warning if app exists but services failed
+    logger.warn(
+      `Firebase Admin app initialized/retrieved, but failed to get services: ${result.error}`
+    );
+  } else {
+    logger.info('Firebase Admin initialization check completed successfully.');
+  }
+
+  // Return the result containing app, auth, db, and potential error
+  return result;
+}
+
 // Export the initialized services (potentially undefined if init failed)
+// These are assigned within getOrCreateFirebaseAdminApp
 export { adminApp, adminAuth, adminDb };

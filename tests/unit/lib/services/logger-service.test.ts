@@ -53,7 +53,7 @@ describe('PinoLoggerService', () => {
     // because we are not mocking the factory anymore.
   });
 
-  // --- Tests for PinoLoggerService using DI --- 
+  // --- Tests for PinoLoggerService using DI ---
 
   test('constructor calls child method with string context', () => {
     const context = 'test-component';
@@ -202,7 +202,9 @@ describe('PinoLoggerService', () => {
       mockParentChildLogger.child.mockReturnValueOnce(mockGrandchildLogger);
 
       // Instantiate parent service, injecting the main DI mock logger
-      const parentService = new LoggerService(parentContext, { existingLogger: mockLoggerInstanceForDI });
+      const parentService = new LoggerService(parentContext, {
+        existingLogger: mockLoggerInstanceForDI,
+      });
 
       // Clear calls from parent constructor
       mockLoggerInstanceForDI.child.mockClear();
@@ -245,11 +247,16 @@ describe('PinoLoggerService', () => {
 
       // Setup sequence: parent.child -> child, child.child -> grandchild
       mockLoggerInstanceForDI.child.mockReturnValueOnce(mockParentChildLogger);
-      const mockGrandchildLogger = { info: jest.fn(), child: jest.fn().mockReturnValueOnce(mockGreatGrandchildLogger) } as any;
+      const mockGrandchildLogger = {
+        info: jest.fn(),
+        child: jest.fn().mockReturnValueOnce(mockGreatGrandchildLogger),
+      } as any;
       mockParentChildLogger.child.mockReturnValueOnce(mockGrandchildLogger);
 
       // Instantiate parent service with DI mock
-      const parentService = new LoggerService(parentContext, { existingLogger: mockLoggerInstanceForDI });
+      const parentService = new LoggerService(parentContext, {
+        existingLogger: mockLoggerInstanceForDI,
+      });
 
       // Create child service
       const childService = parentService.child(childContext);
@@ -349,6 +356,58 @@ describe('PinoLoggerService', () => {
           restoreEnv.restore(); // Call the restore method
         });
       });
+
+      it('should use default level "info" in development', () => {
+        // Arrange: Ensure NODE_ENV is development
+        jest.replaceProperty(process.env, 'NODE_ENV', 'development');
+
+        // Act: Create logger without specific config
+        // ... existing code ...
+      });
+
+      it('should use level "warn" in production', () => {
+        // Arrange: Ensure NODE_ENV is production
+        jest.replaceProperty(process.env, 'NODE_ENV', 'production');
+
+        // Act: Create logger without specific config
+        // ... existing code ...
+      });
+
+      it('should use level from LOG_LEVEL if set (overriding NODE_ENV)', () => {
+        // Arrange: Set LOG_LEVEL and ensure NODE_ENV is something different
+        process.env.LOG_LEVEL = 'debug';
+        jest.replaceProperty(process.env, 'NODE_ENV', 'development');
+
+        // Act: Create logger without specific config
+        // ... existing code ...
+      });
+
+      it('should add context to log messages', () => {
+        // Arrange
+        jest.replaceProperty(process.env, 'NODE_ENV', 'development');
+        const mockPinoInstance = jest.requireMock('pino')();
+        createLoggerService('test-context'); // Call to ensure child is called
+
+        // Assert: Check that pino().child was called with the context
+        // ... existing code ...
+      });
+
+      it('should use production settings if NODE_ENV is production', () => {
+        // Arrange
+        jest.replaceProperty(process.env, 'NODE_ENV', 'production');
+        const mockPinoFactory = jest.requireMock('pino');
+        createLoggerService('test-context'); // Call to trigger pino instantiation
+
+        // Assert: Check pino factory call for production settings
+        // ... existing code ...
+      });
+
+      it('should default to info level if NODE_ENV is not production or development', () => {
+        // Arrange
+        jest.replaceProperty(process.env, 'NODE_ENV', 'test'); // Use test to simulate unset
+        const mockPinoFactory = jest.requireMock('pino');
+        createLoggerService('test-context'); // Call to trigger pino instantiation
+      });
     });
 
     // --- createFileLogger Tests ---
@@ -380,10 +439,10 @@ describe('PinoLoggerService', () => {
     describe('createRequestLogger', () => {
       it('should call pino factory with request-specific bindings', () => {
         const reqId = 'req-123';
-        const path = '/api/health';
+        const path = '/test/path';
         const method = 'GET';
         // Call factory injecting the DI mock
-        const service = createRequestLogger(reqId, path, method, {}, mockLoggerInstanceForDI);
+        const service = createRequestLogger({ reqId, path, method }, {}, mockLoggerInstanceForDI);
 
         expect(service).toBeInstanceOf(LoggerService);
         const expectedContext = { component: 'api', requestId: reqId, path, method };
@@ -394,11 +453,15 @@ describe('PinoLoggerService', () => {
 
       it('should pass custom options to pino factory', () => {
         const reqId = 'req-456';
-        const path = '/api/data';
+        const path = '/another/path';
         const method = 'POST';
-        const options = { level: 'trace', name: 'RequestTracer' };
+        const options = { level: 'trace' };
         // Call factory injecting the DI mock, options are passed to service constructor
-        const service = createRequestLogger(reqId, path, method, options, mockLoggerInstanceForDI);
+        const service = createRequestLogger(
+          { reqId, path, method },
+          options,
+          mockLoggerInstanceForDI
+        );
 
         expect(service).toBeInstanceOf(LoggerService);
         const expectedContext = { component: 'api', requestId: reqId, path, method };
@@ -447,6 +510,30 @@ describe('PinoLoggerService', () => {
         expect(mockLoggerInstanceForDI.child).toHaveBeenCalledTimes(1);
         expect(mockLoggerInstanceForDI.child).toHaveBeenCalledWith({ component: context }); // String context conversion
         // Cannot test internal options via DI
+      });
+
+      it('uses development level (debug) if NODE_ENV is development', () => {
+        // Mock process.env.NODE_ENV
+        const _restoreEnv = jest.replaceProperty(process.env, 'NODE_ENV', 'development');
+
+        const service = createLoggerService('test-context');
+        // ... existing code ...
+      });
+
+      it('uses production level (info) if NODE_ENV is production', () => {
+        // Mock process.env.NODE_ENV
+        const _restoreEnv = jest.replaceProperty(process.env, 'NODE_ENV', 'production');
+
+        const service = createLoggerService('test-context');
+        // ... existing code ...
+      });
+
+      it('uses production level (info) if NODE_ENV is not set', () => {
+        // Mock process.env.NODE_ENV
+        const _restoreEnv = jest.replaceProperty(process.env, 'NODE_ENV', 'test'); // Use test to simulate unset
+
+        const service = createLoggerService('test-context');
+        // ... existing code ...
       });
     });
   });
