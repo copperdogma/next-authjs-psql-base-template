@@ -69,6 +69,48 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
 };
 
 /**
+ * Handle Credentials sign-in flow for JWT creation.
+ */
+const _handleCredentialsSignIn = async (
+  params: {
+    user: any; // Using any here to match existing behavior
+    tokenWithJti: JWT;
+    correlationId: string;
+  }
+): Promise<JwtInput> => {
+  const { user, tokenWithJti, correlationId } = params;
+  const sharedLogData = { correlationId };
+
+  // Build the credentials user object
+  const credentialsUser = buildAuthUserInternalFromCredentials(user, correlationId);
+
+  if (!credentialsUser) {
+    logger.error(
+      { ...sharedLogData, userId: user?.id },
+      'Failed to build internal auth user for JWT during credentials sign-in.'
+    );
+    throw new Error('Could not prepare user data for session token during credentials sign-in.');
+  }
+
+  logger.info(
+    { ...sharedLogData, userId: credentialsUser.id },
+    'Successfully created JWT for credentials sign-in'
+  );
+
+  // Return the final JWT
+  return {
+    ...tokenWithJti,
+    sub: credentialsUser.id,
+    name: credentialsUser.name,
+    email: credentialsUser.email,
+    picture: credentialsUser.image,
+    role: credentialsUser.role,
+    userId: credentialsUser.id,
+    userRole: credentialsUser.role,
+  };
+};
+
+/**
  * Handles the logic for the JWT `callback` (sign-in).
  */
 export const handleJwtSignIn: AuthJwtCallback<HandleJwtSignInArgs, JwtInput> = async (
@@ -91,31 +133,7 @@ export const handleJwtSignIn: AuthJwtCallback<HandleJwtSignInArgs, JwtInput> = a
 
     // Credentials Sign-in Path (or fallback if OAuth args missing)
     logger.debug(sharedLogData, 'Starting Credentials JWT Sign-in');
-    const credentialsUser = buildAuthUserInternalFromCredentials(user, correlationId);
-
-    if (!credentialsUser) {
-      logger.error(
-        { ...sharedLogData, userId: user?.id },
-        'Failed to build internal auth user for JWT during credentials sign-in.'
-      );
-      throw new Error('Could not prepare user data for session token during credentials sign-in.');
-    }
-
-    logger.info(
-      { ...sharedLogData, userId: credentialsUser.id },
-      'Successfully created JWT for credentials sign-in'
-    );
-
-    return {
-      ...tokenWithJti,
-      sub: credentialsUser.id,
-      name: credentialsUser.name,
-      email: credentialsUser.email,
-      picture: credentialsUser.image,
-      role: credentialsUser.role,
-      userId: credentialsUser.id,
-      userRole: credentialsUser.role,
-    };
+    return await _handleCredentialsSignIn({ user, tokenWithJti, correlationId });
   } catch (error) {
     logger.error(
       { ...sharedLogData, error: (error as Error).message },

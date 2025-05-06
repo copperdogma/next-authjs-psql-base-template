@@ -99,11 +99,52 @@ function getFirebaseServices(app: admin.app.App): {
     const db = admin.firestore(app);
     return { auth, db };
   } catch (error: unknown) {
-    const errorMessage = `Failed to retrieve Auth/Firestore services from initialized app.`;
+    // Return the raw error message without wrapping it
     const errorMsg = error instanceof Error ? error.message : String(error);
-    moduleLogger.error({ error: errorMsg }, errorMessage);
-    return { error: `${errorMessage} Error: ${errorMsg}` };
+    moduleLogger.error({ error: errorMsg }, 'Failed to retrieve Auth or Firestore services from existing initialized app.');
+    return { error: errorMsg };
   }
+}
+
+/**
+ * Attempts to retrieve an existing Firebase Admin app instance.
+ * Checks globalThis in non-production and admin.apps in production.
+ */
+function getExistingFirebaseAdminApp(nodeEnv: FirebaseAdminConfig['nodeEnv']): {
+  app?: admin.app.App;
+  auth?: admin.auth.Auth;
+  db?: admin.firestore.Firestore;
+  error?: string;
+} {
+  const existingApp =
+    nodeEnv !== 'production'
+      ? (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY]
+      : admin.apps.length > 0
+        ? admin.app() // Get default app if already initialized in prod
+        : undefined;
+
+  if (existingApp) {
+    logger.warn('Firebase Admin already initialized. Returning existing instance.');
+    const servicesResult = getFirebaseServices(existingApp);
+    if (servicesResult.error) {
+      logger.error(
+        { error: servicesResult.error },
+        'Failed to retrieve Auth or Firestore services from existing initialized app.'
+      );
+      // Return the app even if services fail, along with the error
+      return {
+        app: existingApp,
+        error: `Failed to retrieve Auth/Firestore services from existing app: ${servicesResult.error}`,
+      };
+    }
+    // Assign to exported variables as well
+    adminApp = existingApp;
+    adminAuth = servicesResult.auth;
+    adminDb = servicesResult.db;
+    return { app: existingApp, auth: servicesResult.auth, db: servicesResult.db };
+  }
+
+  return {}; // No existing app found
 }
 
 /**
@@ -140,43 +181,11 @@ let adminDb: admin.firestore.Firestore | undefined;
 
 // --- Helper: Get or Create App ---
 function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitResult {
-  // 1. Check if app exists (global for dev, module cache for prod)
-  const existingApp =
-    config.nodeEnv !== 'production'
-      ? (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY]
-      : admin.apps.length > 0
-        ? admin.app() // Get default app if already initialized in prod
-        : undefined;
-
-  if (existingApp) {
-    logger.warn('Firebase Admin already initialized. Returning existing instance.');
-    try {
-      const existingAuth = admin.auth(existingApp);
-      const existingDb = admin.firestore(existingApp);
-      // Assign to exported variables as well
-      adminApp = existingApp;
-      adminAuth = existingAuth;
-      adminDb = existingDb;
-      return { app: existingApp, auth: existingAuth, db: existingDb };
-    } catch (error) {
-      // This catch block now handles errors from both admin.auth() and admin.firestore()
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      logger.error(
-        { error: errorMsg },
-        'Failed to retrieve Auth or Firestore services from existing initialized app.'
-      );
-
-      // Log details for debugging
-      if (process.env.NODE_ENV !== 'test') {
-        console.error('Error getting services from existing app:', error);
-      }
-
-      // Attempt to return the app even if services fail
-      return {
-        app: existingApp,
-        error: `Failed to retrieve Auth/Firestore services from existing app: ${errorMsg}`,
-      };
-    }
+  // 1. Attempt to retrieve existing app
+  const existingResult = getExistingFirebaseAdminApp(config.nodeEnv);
+  if (existingResult.app) {
+    // If an app was found (even with service errors), return it
+    return existingResult;
   }
 
   // 2. Validate Configuration if creating new app
