@@ -29,11 +29,7 @@ async function clearEmulatorService(name, url) {
     console.log(`✅ ${name} data cleared. Status: ${response.status}`);
   } catch (error) {
     console.warn(`⚠️ Failed to clear ${name} data: ${error.message}`);
-    console.warn(
-      name === 'Firestore'
-        ? 'This is not critical if you are not using Firestore in your tests'
-        : 'This may cause tests to fail if they depend on specific auth states'
-    );
+    console.warn('This may cause tests to fail if they depend on specific auth states');
   }
 }
 

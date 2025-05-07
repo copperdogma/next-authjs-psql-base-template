@@ -15,7 +15,7 @@ This project employs a comprehensive testing strategy combining unit tests, inte
   - Configuration in `playwright.config.ts`.
   - Includes features like automatic server startup (`webServer` option), authentication state management (`global-setup.ts`), and accessibility checks (`@axe-core/playwright`).
   - Uses custom scripts (`scripts/run-e2e-with-checks.js`) for enhanced execution, including server log scanning for errors.
-- **Firebase Emulators:** Used for testing Firebase Auth and Firestore interactions locally.
+- **Firebase Emulators:** Used for testing Firebase Auth interactions locally.
   - Configuration in `firebase.json`.
   - Scripts in `package.json` manage emulator startup, data seeding (`firebase-seed-data/`), and cleanup.
 

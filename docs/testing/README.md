@@ -18,7 +18,7 @@ This project uses Playwright for end-to-end testing. There are several scripts a
 
 The E2E tests are automatically configured to work with Firebase emulators:
 
-- Firebase Auth and Firestore emulators are started automatically when running `npm run test:e2e`
+- Firebase Auth emulator is started automatically when running `npm run test:e2e`
 - A test user is automatically created in the Auth emulator
 - Emulator data is persisted in the `firebase-seed-data` directory
 - To manually export emulator data: `npm run firebase:emulators:export`
@@ -40,7 +40,6 @@ All tests use the built-in `webServer` functionality to start a Next.js server a
 Before running tests, the system performs comprehensive health checks:
 
 - Verifies the Firebase Auth emulator is running
-- Verifies the Firestore emulator is running
 - Confirms the application server is responding
 - Checks the health endpoint returns the expected status
 
@@ -59,7 +58,6 @@ Test environment configuration is stored in `.env.test`. When running E2E tests:
 
 - The server runs on port 3777 (configured in `.env.test` as TEST_PORT)
 - Firebase Auth emulator runs on port 9099
-- Firestore emulator runs on port 8080
 
 ## Development Testing
 

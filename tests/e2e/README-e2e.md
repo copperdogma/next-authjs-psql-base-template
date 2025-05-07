@@ -76,7 +76,7 @@ The tests are organized into several projects within the Playwright configuratio
 
 ## Firebase Emulator Integration
 
-Tests utilize local Firebase emulators for Auth and Firestore, which provides several benefits:
+Tests utilize local Firebase emulators for Auth, which provides several benefits:
 
 - No interaction with production Firebase resources
 - Consistent, deterministic test environment
@@ -92,7 +92,7 @@ The Firebase emulators are automatically started before tests run and shut down 
 1. **Port conflicts**: If tests fail with port-in-use errors, ensure no previous test processes are running:
 
    ```
-   npx kill-port 3777 9099 8080
+   npx kill-port 3777 9099
    ```
 
 2. **Authentication issues**: If tests can't access protected routes:

@@ -1,7 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from '@firebase/app';
 import { getAuth, connectAuthEmulator, Auth } from '@firebase/auth';
-import { getFirestore, connectFirestoreEmulator, Firestore } from '@firebase/firestore';
 import { logger } from '@/lib/logger'; // Import server logger
 import { clientLogger } from '@/lib/client-logger'; // Import client logger
 
@@ -26,11 +25,9 @@ const firebaseConfig = {
 // Initialize Firebase
 let firebaseApp;
 let auth;
-let firestore;
 
 // Track emulator connection status to avoid double connections
 let authEmulatorConnected = false;
-let firestoreEmulatorConnected = false;
 
 /**
  * Connect to Firebase Auth emulator if configured
@@ -52,28 +49,9 @@ function connectToAuthEmulator(auth: Auth): void {
 }
 
 /**
- * Connect to Firestore emulator if configured
- */
-function connectToFirestoreEmulator(firestore: Firestore): void {
-  if (!process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || firestoreEmulatorConnected) {
-    return;
-  }
-
-  // Format: "localhost:8080"
-  const [host, port] = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST.split(':');
-  try {
-    logger.info(`🔸 Connecting to Firestore emulator at ${host}:${port}`);
-    connectFirestoreEmulator(firestore, host, parseInt(port, 10));
-    firestoreEmulatorConnected = true;
-  } catch (error) {
-    logger.error({ err: error }, 'Failed to connect to Firestore emulator');
-  }
-}
-
-/**
  * Setup Firebase emulators when in development or test mode
  */
-function setupEmulators(auth: Auth, firestore: Firestore): void {
+function setupEmulators(auth: Auth): void {
   const shouldUseEmulator =
     process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
 
@@ -89,7 +67,6 @@ function setupEmulators(auth: Auth, firestore: Firestore): void {
   }
 
   connectToAuthEmulator(auth);
-  connectToFirestoreEmulator(firestore);
   logger.info('🔸 Firebase emulator mode active');
 }
 
@@ -109,17 +86,15 @@ if (typeof window !== 'undefined') {
     nodeEnv: process.env.NODE_ENV,
   });
 
-  // Initialize auth and firestore
+  // Initialize auth
   auth = getAuth(firebaseApp);
-  firestore = getFirestore(firebaseApp);
 
   // Connect to emulators if needed (Restored original logic)
-  setupEmulators(auth, firestore);
+  setupEmulators(auth);
 } else {
   // Provide placeholders for SSR context that won't be used
   firebaseApp = undefined;
   auth = undefined;
-  firestore = undefined;
 }
 
-export { firebaseApp, auth, firestore };
+export { firebaseApp, auth };

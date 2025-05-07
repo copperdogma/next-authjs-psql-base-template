@@ -25,7 +25,6 @@ console.log('🔧 E2E Auth Setup Environment Info:');
 console.log(`BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777'}`);
 console.log(`USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
 console.log(`AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
-console.log(`FIRESTORE_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST}`);
 console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 

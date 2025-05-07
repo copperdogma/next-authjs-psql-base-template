@@ -14,11 +14,6 @@ jest.mock('@firebase/auth', () => ({
   connectAuthEmulator: jest.fn(),
 }));
 
-jest.mock('@firebase/firestore', () => ({
-  getFirestore: jest.fn(() => 'mockedFirestore'),
-  connectFirestoreEmulator: jest.fn(),
-}));
-
 // Mock the loggers
 jest.mock('@/lib/logger', () => ({
   logger: {
@@ -63,8 +58,6 @@ describe('Firebase Config', () => {
       getApp: require('@firebase/app').getApp,
       getAuth: require('@firebase/auth').getAuth,
       connectAuthEmulator: require('@firebase/auth').connectAuthEmulator,
-      getFirestore: require('@firebase/firestore').getFirestore,
-      connectFirestoreEmulator: require('@firebase/firestore').connectFirestoreEmulator,
     }));
 
     // Clear mocks
@@ -115,7 +108,6 @@ describe('Firebase Config', () => {
         })
       );
       expect(require('@firebase/auth').getAuth).toHaveBeenCalled();
-      expect(require('@firebase/firestore').getFirestore).toHaveBeenCalled();
 
       // Cleanup
       restoreWindow();
@@ -145,7 +137,6 @@ describe('Firebase Config', () => {
 
       // Set emulator environment variables
       process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
-      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST = 'localhost:8080';
       process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
       // We're already in test environment, which should connect to emulators
 
@@ -158,7 +149,6 @@ describe('Firebase Config', () => {
 
         // Verify emulator connections were attempted
         expect(require('@firebase/auth').connectAuthEmulator).toHaveBeenCalled();
-        expect(require('@firebase/firestore').connectFirestoreEmulator).toHaveBeenCalled();
       });
 
       // Cleanup
@@ -196,37 +186,6 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should handle errors when connecting to Firestore emulator', () => {
-      // Setup client environment
-      const restoreWindow = createMockWindow();
-
-      // Set emulator environment variables
-      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
-
-      // Mock connectFirestoreEmulator to throw an error
-      require('@firebase/firestore').connectFirestoreEmulator.mockImplementation(() => {
-        throw new Error('Firestore emulator connection failed');
-      });
-
-      // Import the module, which should catch the error
-      jest.isolateModules(() => {
-        require('../../../lib/firebase-config');
-
-        // Verify the error was logged
-        const mockLoggerError = jest.requireMock('@/lib/logger').logger.error;
-        expect(mockLoggerError).toHaveBeenCalledWith(
-          expect.objectContaining({
-            err: expect.any(Error),
-          }),
-          'Failed to connect to Firestore emulator'
-        );
-      });
-
-      // Cleanup
-      restoreWindow();
-    });
-
     test('should not connect to emulators when not in development or test mode', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
@@ -237,7 +196,6 @@ describe('Firebase Config', () => {
         NODE_ENV: 'production',
         // Configure emulator hosts to ensure they're not used
         NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
-        NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: 'localhost:8080',
         NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'false',
       };
 
@@ -247,7 +205,6 @@ describe('Firebase Config', () => {
 
         // Verify emulator connections were not attempted
         expect(require('@firebase/auth').connectAuthEmulator).not.toHaveBeenCalled();
-        expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
       });
 
       // Cleanup - env will be restored by afterEach
@@ -281,33 +238,6 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should not try to reconnect to Firestore emulator if already connected', () => {
-      // Setup client environment
-      const restoreWindow = createMockWindow();
-
-      // Set emulator environment variables
-      process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR = 'true';
-
-      // Import the module twice to test the connection flag
-      jest.isolateModules(() => {
-        // First import - should connect
-        require('../../../lib/firebase-config'); // Use require, don't assign to unused var
-
-        // Reset the connectFirestoreEmulator mock to verify it's not called again
-        require('@firebase/firestore').connectFirestoreEmulator.mockClear();
-
-        // Second import - should not connect again due to the flag
-        require('../../../lib/firebase-config'); // Use require, don't assign to unused var
-
-        // Verify the second import didn't attempt to connect
-        expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
-      });
-
-      // Cleanup
-      restoreWindow();
-    });
-
     test('should not connect if emulator flag is set but hosts are missing', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
@@ -319,7 +249,6 @@ describe('Firebase Config', () => {
         NODE_ENV: 'test', // or could use NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'true'
         // Ensure hosts are undefined
         NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: undefined,
-        NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: undefined,
       };
 
       // Import the module
@@ -328,7 +257,6 @@ describe('Firebase Config', () => {
 
         // Verify emulator connections were not attempted due to missing hosts
         expect(require('@firebase/auth').connectAuthEmulator).not.toHaveBeenCalled();
-        expect(require('@firebase/firestore').connectFirestoreEmulator).not.toHaveBeenCalled();
       });
 
       // Cleanup

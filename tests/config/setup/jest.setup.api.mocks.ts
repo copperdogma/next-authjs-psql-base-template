@@ -113,6 +113,5 @@ beforeEach(() => {
 // --- Optional mock setup for Firebase Admin --- //
 // jest.mock('@/lib/firebase-admin', () => ({
 //   auth: jest.fn(),
-//   firestore: jest.fn(),
 //   // Add other Firebase Admin services you use
 // }));

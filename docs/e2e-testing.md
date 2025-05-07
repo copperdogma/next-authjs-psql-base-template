@@ -93,7 +93,7 @@ The testing framework is configured in several key files:
 
 2. **firebase.json**:
 
-   - Configures Firebase emulators (Auth, Firestore)
+   - Configures Firebase auth emulator
    - Defines ports and settings for emulators
 
 3. **.env.test**:
@@ -282,7 +282,6 @@ test('authenticated user can access dashboard', async ({ page }) => {
 We use Firebase emulators to provide a consistent, isolated testing environment:
 
 - **Auth Emulator**: Port 9099
-- **Firestore Emulator**: Port 8080
 - **Emulator UI**: Port 4000
 
 A test user is automatically created using `scripts/setup-test-user.js` with:

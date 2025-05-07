@@ -8,7 +8,6 @@ const DEFAULT_ENV = {
   NEXTAUTH_SECRET: 'test-secret-key',
   ALLOW_TEST_ENDPOINTS: 'true',
   FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
-  FIRESTORE_EMULATOR_HOST: 'localhost:8080',
 };
 
 // Setup the default environment

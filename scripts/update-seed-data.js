@@ -32,14 +32,7 @@ try {
   console.log('Starting Firebase emulators...');
   const emulatorProcess = require('child_process').spawn(
     'npx',
-    [
-      'firebase',
-      'emulators:start',
-      '--only',
-      'auth,firestore',
-      '--project',
-      'next-firebase-base-template',
-    ],
+    ['firebase', 'emulators:start', '--only', 'auth', '--project', 'next-firebase-base-template'],
     { detached: true, stdio: 'ignore' }
   );
 

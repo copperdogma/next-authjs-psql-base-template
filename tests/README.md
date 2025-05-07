@@ -170,10 +170,10 @@ For testing authentication flows, this project uses Firebase Auth Emulators to a
 To run E2E tests with Firebase Emulators:
 
 ```bash
-# Run E2E tests with Firebase Emulators (auth + firestore)
+# Run E2E tests with Firebase Auth Emulator
 npm run test:e2e:emulators
 
-# Start just the Firebase Emulators (in a separate terminal)
+# Start just the Firebase Emulator (in a separate terminal)
 npm run firebase:emulators
 
 # Create a test user in the running emulator

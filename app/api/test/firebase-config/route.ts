@@ -23,13 +23,11 @@ export async function GET() {
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       useEmulator: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR,
       authEmulatorHost: process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST,
-      firestoreEmulatorHost: process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST,
     },
     // Server-side configs
     serverConfig: {
       useEmulator: process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR, // Use public flag
       authEmulatorHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
-      firestoreEmulatorHost: process.env.FIRESTORE_EMULATOR_HOST,
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       // Private key is intentionally omitted for security

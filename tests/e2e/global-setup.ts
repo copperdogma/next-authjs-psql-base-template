@@ -224,7 +224,6 @@ async function startAndWaitForEmulators() {
   // Check if ports are available
   const authPort = parseInt(AUTH_EMULATOR_HOST.split(':')[1] || '9099', 10);
   const authHost = AUTH_EMULATOR_HOST.split(':')[0] || 'localhost';
-  // Removed Firestore emulator wait as it's not used in global setup
   await waitForPort(authPort, authHost);
   console.log('✅ Auth emulator port is ready.');
   console.log('------------------------------------------');

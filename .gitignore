@@ -95,11 +95,6 @@ next-env.d.ts
 # Test screenshots
 # Removed duplicate: tests/e2e/screenshots/
 
-# Add firestore-debug.log to ignored files
-firestore-debug.log
-# Removed duplicate: firestore-debug.log
-# Removed duplicate: tests/e2e/auth.setup.json
-
 # Firebase Admin SDK Credentials
 serviceAccountKey.json
 

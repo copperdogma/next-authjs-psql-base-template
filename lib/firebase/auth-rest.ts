@@ -103,7 +103,7 @@ export async function verifyPassword(email: string, password: string) {
       emailVerified: data.emailVerified || false,
       displayName: data.displayName || null,
       // Note: The REST API doesn't return roles or custom claims directly.
-      // You would typically manage roles in your own database (e.g., Firestore/Prisma).
+      // You would typically manage roles in your own database (e.g., PostgreSQL).
     };
   } catch (error) {
     logger.error({

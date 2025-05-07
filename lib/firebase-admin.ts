@@ -28,7 +28,6 @@ export interface FirebaseAdminConfig {
 export interface FirebaseInitResult {
   app?: admin.app.App;
   auth?: admin.auth.Auth;
-  db?: admin.firestore.Firestore;
   error?: string;
 }
 
@@ -67,7 +66,6 @@ function validateConfig(config: FirebaseAdminConfig): string | null {
  */
 function setupEmulator(): void {
   moduleLogger.info('Configuring Firebase Admin SDK for EMULATOR use.');
-  process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080'; // Default Firestore emulator host
   process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099'; // Default Auth emulator host
 }
 
@@ -87,23 +85,21 @@ function createCredentials(config: FirebaseAdminConfig): FirebaseCredentials {
 }
 
 /**
- * Retrieves Firebase services (Auth, Firestore) from the app instance.
+ * Retrieves Firebase services (Auth) from the app instance.
  */
 function getFirebaseServices(app: admin.app.App): {
   auth?: admin.auth.Auth;
-  db?: admin.firestore.Firestore;
   error?: string;
 } {
   try {
     const auth = admin.auth(app);
-    const db = admin.firestore(app);
-    return { auth, db };
+    return { auth };
   } catch (error: unknown) {
     // Return the raw error message without wrapping it
     const errorMsg = error instanceof Error ? error.message : String(error);
     moduleLogger.error(
       { err: new Error(errorMsg) },
-      'Failed to retrieve Auth or Firestore services from existing initialized app.'
+      'Failed to retrieve Auth service from existing initialized app.'
     );
     return { error: errorMsg };
   }
@@ -116,7 +112,6 @@ function getFirebaseServices(app: admin.app.App): {
 function getExistingFirebaseAdminApp(nodeEnv: FirebaseAdminConfig['nodeEnv']): {
   app?: admin.app.App;
   auth?: admin.auth.Auth;
-  db?: admin.firestore.Firestore;
   error?: string;
 } {
   const existingApp =
@@ -131,20 +126,19 @@ function getExistingFirebaseAdminApp(nodeEnv: FirebaseAdminConfig['nodeEnv']): {
     const servicesResult = getFirebaseServices(existingApp);
     if (servicesResult.error) {
       logger.error(
-        { err: new Error(servicesResult.error) }, // Assuming servicesResult.error is a string message
-        'Failed to retrieve Auth or Firestore services from existing initialized app.'
+        { err: new Error(servicesResult.error) },
+        'Failed to retrieve Auth service from existing initialized app.'
       );
       // Return the app even if services fail, along with the error
       return {
         app: existingApp,
-        error: `Failed to retrieve Auth/Firestore services from existing app: ${servicesResult.error}`,
+        error: `Failed to retrieve Auth service from existing app: ${servicesResult.error}`,
       };
     }
     // Assign to exported variables as well
     adminApp = existingApp;
     adminAuth = servicesResult.auth;
-    adminDb = servicesResult.db;
-    return { app: existingApp, auth: servicesResult.auth, db: servicesResult.db };
+    return { app: existingApp, auth: servicesResult.auth };
   }
 
   return {}; // No existing app found
@@ -161,7 +155,6 @@ function performInitialization(config: FirebaseAdminConfig): admin.app.App {
     const credentials = createCredentials(config);
     const credential = admin.credential.cert(credentials);
     // Ensure emulator hosts are unset if using credentials
-    delete process.env.FIRESTORE_EMULATOR_HOST;
     delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
     return admin.initializeApp({ credential });
   }
@@ -180,7 +173,6 @@ type GlobalWithFirebase = typeof globalThis & {
 // Exported variables (will be assigned after initialization)
 let adminApp: admin.app.App | undefined;
 let adminAuth: admin.auth.Auth | undefined;
-let adminDb: admin.firestore.Firestore | undefined;
 
 // --- Helper: Get or Create App ---
 // eslint-disable-next-line max-statements
@@ -216,7 +208,7 @@ function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitR
     if (servicesResult.error) {
       // Log the error but still return the app instance if initialization itself succeeded
       logger.error(
-        { err: new Error(servicesResult.error) }, // Assuming servicesResult.error is a string message
+        { err: new Error(servicesResult.error) },
         'Failed to get Firebase services after app initialization'
       );
     }
@@ -224,9 +216,8 @@ function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitR
     // 5. Assign Singleton Instances to exported variables
     adminApp = app;
     adminAuth = servicesResult.auth; // Will be undefined if getFirebaseServices failed
-    adminDb = servicesResult.db; // Will be undefined if getFirebaseServices failed
 
-    return { app, auth: adminAuth, db: adminDb, error: servicesResult.error }; // Return potentially undefined services
+    return { app, auth: adminAuth, error: servicesResult.error };
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.error({ err: new Error(errorMsg) }, 'Firebase Admin SDK initialization failed.');
@@ -259,10 +250,9 @@ export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseIn
     logger.info('Firebase Admin initialization check completed successfully.');
   }
 
-  // Return the result containing app, auth, db, and potential error
+  // Return the result containing app, auth, and potential error
   return result;
 }
 
-// Export the initialized services (potentially undefined if init failed)
-// These are assigned within getOrCreateFirebaseAdminApp
-export { adminApp, adminAuth, adminDb };
+// Export the initialized instances for direct use
+export { adminApp, adminAuth };
