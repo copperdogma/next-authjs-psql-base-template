@@ -12,26 +12,23 @@
 // navigation and verify the resulting behavior in a browser context.
 // =============================================================================
 
-import { auth } from '@/lib/auth-edge'; // Import from edge config
+import NextAuth from 'next-auth';
+import { authConfigEdge } from '@/lib/auth-edge';
 
-// Config for route matching
+// Initialize NextAuth with the edge-compatible configuration
+const { auth } = NextAuth(authConfigEdge);
+
+// Export the auth middleware as the default export for Next.js to pick up.
+// This will use the `authorized` callback within authConfigEdge for route protection.
+export default auth;
+
+// Config for route matching: apply this middleware to all routes except for
+// Next.js internals (_next), static assets (favicon.ico), and NextAuth API routes (/api/auth).
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next (static files, image optimization files)
-     * - api/auth (Auth.js API routes)
-     * - favicon.ico (favicon file)
-     * Other assets (e.g., /icon-*.png) are typically ignored by default.
-     */
-    '/((?!api/auth|_next|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
 };
 
-// Note: All previous complex middleware logic (route checks, redirects)
-// has been removed as it's now handled by the `authorized` callback
-// within the Auth.js configuration (`lib/auth.config.ts`).
-
-// Re-export auth from auth-edge.ts to be used as middleware
-// This automatically uses the `authorized` callback in authConfigEdge for route protection.
-export default auth;
+// Note: Custom rate-limiting logic for specific API endpoints (e.g., /api/log/client)
+// will be handled within those individual route handlers to avoid complexities with
+// chaining or manually invoking the NextAuth.js middleware handler, which has proven
+// problematic due to type signature mismatches in this context.
