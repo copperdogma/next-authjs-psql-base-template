@@ -5,6 +5,13 @@ import { NextResponse } from 'next/server';
  * IMPORTANT: Never expose sensitive credentials like the private key here.
  */
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { message: 'Forbidden: This endpoint is not available in production.' },
+      { status: 403 }
+    );
+  }
+
   return NextResponse.json({
     message: 'Firebase Configuration',
     clientConfig: {
