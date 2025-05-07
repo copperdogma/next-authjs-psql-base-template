@@ -51,7 +51,7 @@ function validateConfig(config: FirebaseAdminConfig): string | null {
       const message = `Missing Firebase Admin SDK config value for: ${key}`;
       // Throw in production to prevent startup with invalid config
       if (config.nodeEnv === 'production') {
-        moduleLogger.error(message);
+        moduleLogger.error({ err: new Error(message) }, message);
         throw new Error(message);
       }
       // Return error message for non-production environments (when not using emulator)
@@ -101,7 +101,10 @@ function getFirebaseServices(app: admin.app.App): {
   } catch (error: unknown) {
     // Return the raw error message without wrapping it
     const errorMsg = error instanceof Error ? error.message : String(error);
-    moduleLogger.error({ error: errorMsg }, 'Failed to retrieve Auth or Firestore services from existing initialized app.');
+    moduleLogger.error(
+      { err: new Error(errorMsg) },
+      'Failed to retrieve Auth or Firestore services from existing initialized app.'
+    );
     return { error: errorMsg };
   }
 }
@@ -128,7 +131,7 @@ function getExistingFirebaseAdminApp(nodeEnv: FirebaseAdminConfig['nodeEnv']): {
     const servicesResult = getFirebaseServices(existingApp);
     if (servicesResult.error) {
       logger.error(
-        { error: servicesResult.error },
+        { err: new Error(servicesResult.error) }, // Assuming servicesResult.error is a string message
         'Failed to retrieve Auth or Firestore services from existing initialized app.'
       );
       // Return the app even if services fail, along with the error
@@ -180,6 +183,7 @@ let adminAuth: admin.auth.Auth | undefined;
 let adminDb: admin.firestore.Firestore | undefined;
 
 // --- Helper: Get or Create App ---
+// eslint-disable-next-line max-statements
 function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitResult {
   // 1. Attempt to retrieve existing app
   const existingResult = getExistingFirebaseAdminApp(config.nodeEnv);
@@ -191,7 +195,9 @@ function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitR
   // 2. Validate Configuration if creating new app
   const validationError = validateConfig(config);
   if (validationError) {
-    logger.warn('Firebase Admin SDK not initialized due to missing configuration in non-production environment.');
+    logger.warn(
+      'Firebase Admin SDK not initialized due to missing configuration in non-production environment.'
+    );
     return { error: `Initialization failed: ${validationError}` };
   }
 
@@ -210,7 +216,8 @@ function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitR
     if (servicesResult.error) {
       // Log the error but still return the app instance if initialization itself succeeded
       logger.error(
-        `Failed to get Firebase services after app initialization: ${servicesResult.error}`
+        { err: new Error(servicesResult.error) }, // Assuming servicesResult.error is a string message
+        'Failed to get Firebase services after app initialization'
       );
     }
 
@@ -222,7 +229,7 @@ function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitR
     return { app, auth: adminAuth, db: adminDb, error: servicesResult.error }; // Return potentially undefined services
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    logger.error({ error: errorMsg }, 'Firebase Admin SDK initialization failed.');
+    logger.error({ err: new Error(errorMsg) }, 'Firebase Admin SDK initialization failed.');
     return { error: `Initialization failed: ${errorMsg}` };
   }
 }
@@ -241,11 +248,12 @@ export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseIn
   // Log the final outcome for clarity
   if (result.error && !result.app) {
     // Only log fatal error if app itself couldn't be initialized/retrieved
-    logger.error(`Firebase Admin initialization check failed: ${result.error}`);
+    logger.error({ err: new Error(result.error) }, 'Firebase Admin initialization check failed'); // Assuming result.error is string
   } else if (result.error) {
     // Log warning if app exists but services failed
     logger.warn(
-      `Firebase Admin app initialized/retrieved, but failed to get services: ${result.error}`
+      { err: new Error(result.error) }, // Assuming result.error is string
+      'Firebase Admin app initialized/retrieved, but failed to get services'
     );
   } else {
     logger.info('Firebase Admin initialization check completed successfully.');

@@ -208,7 +208,7 @@ describe('Firebase Admin SDK Initialization (Config Validation & Setup)', () => 
     // Set up admin.apps to indicate there's already an app
     Object.defineProperty(adminMock, '_apps', {
       value: [mockExistingAppInstance],
-      writable: true
+      writable: true,
     });
 
     // Setup admin.app() to return our mock app
@@ -226,10 +226,10 @@ describe('Firebase Admin SDK Initialization (Config Validation & Setup)', () => 
 
     // Assert - focus on the behavior, not just the logging
     expect(adminMock.initializeApp).not.toHaveBeenCalled(); // Should NOT call initializeApp
-    expect(result.app).toBe(mockExistingAppInstance);       // Should return the existing app
-    expect(result.auth).toBeDefined();                      // Should have auth
-    expect(result.db).toBeDefined();                        // Should have db
-    expect(result.error).toBeUndefined();                   // Should not have error
+    expect(result.app).toBe(mockExistingAppInstance); // Should return the existing app
+    expect(result.auth).toBeDefined(); // Should have auth
+    expect(result.db).toBeDefined(); // Should have db
+    expect(result.error).toBeUndefined(); // Should not have error
   });
 
   it('should return error object if getAuth fails', async () => {
@@ -249,13 +249,11 @@ describe('Firebase Admin SDK Initialization (Config Validation & Setup)', () => 
 
     // Assert: Check error log and returned error object
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'Failed to get Auth service' }),
+      expect.objectContaining({ err: expect.any(Error) }),
       'Failed to retrieve Auth or Firestore services from existing initialized app.'
     );
     // Adjust the expected error message to include the underlying error
-    expect(result.error).toBe(
-      'Failed to get Auth service'
-    );
+    expect(result.error).toBe('Failed to get Auth service');
     expect(result.app).toBeDefined(); // App might initialize successfully
     expect(result.auth).toBeUndefined(); // Auth failed
     expect(result.db).toBeUndefined(); // Firestore likely not attempted or failed too
@@ -288,7 +286,7 @@ describe('Firebase Admin SDK Initialization (Config Validation & Setup)', () => 
 
     // Assert: Check error log format and returned error object
     expect(loggerMock.error).toHaveBeenCalledWith(
-      { error: 'Failed to get Firestore service' },
+      { err: expect.any(Error) },
       'Failed to retrieve Auth or Firestore services from existing initialized app.'
     );
 
@@ -441,7 +439,7 @@ describe('Development Mode Singleton Behavior (globalThis)', () => {
       'Firebase Admin already initialized. Returning existing instance.'
     );
     expect(loggerMock.error).toHaveBeenCalledWith(
-      { error: retrievalError.message },
+      { err: expect.any(Error) },
       'Failed to retrieve Auth or Firestore services from existing initialized app.'
     );
     expect(result).toEqual({

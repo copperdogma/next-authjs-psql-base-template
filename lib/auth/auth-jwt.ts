@@ -1,5 +1,5 @@
 import { type JWT } from 'next-auth/jwt';
-import { type Account, type Session } from 'next-auth';
+import { type Account, type Session, type User as NextAuthUser } from 'next-auth';
 import { logger } from '@/lib/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -71,13 +71,11 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
 /**
  * Handle Credentials sign-in flow for JWT creation.
  */
-const _handleCredentialsSignIn = async (
-  params: {
-    user: any; // Using any here to match existing behavior
-    tokenWithJti: JWT;
-    correlationId: string;
-  }
-): Promise<JwtInput> => {
+const _handleCredentialsSignIn = async (params: {
+  user: NextAuthUser;
+  tokenWithJti: JWT;
+  correlationId: string;
+}): Promise<JwtInput> => {
   const { user, tokenWithJti, correlationId } = params;
   const sharedLogData = { correlationId };
 

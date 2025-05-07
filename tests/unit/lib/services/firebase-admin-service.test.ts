@@ -82,7 +82,7 @@ describe('FirebaseAdminService', () => {
       await expect(service.verifyIdToken(testToken)).rejects.toThrow(testError);
       expect(mockVerifyIdToken).toHaveBeenCalledWith(testToken);
       expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: testError.message },
+        { err: testError },
         'Firebase ID token verification failed'
       );
     });
@@ -137,7 +137,7 @@ describe('FirebaseAdminService', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.objectContaining({
           email: testEmail,
-          error: { message: testError.message, code: 'unknown' },
+          err: testError,
         }),
         'Error getting Firebase user by email'
       );
@@ -171,7 +171,7 @@ describe('FirebaseAdminService', () => {
 
       expect(mockUpdateUser).toHaveBeenCalledWith(testUid, updateData);
       expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.objectContaining({ uid: testUid, error: testError.message }),
+        expect.objectContaining({ uid: testUid, err: testError }),
         'Error updating Firebase user'
       );
     });
@@ -242,7 +242,7 @@ describe('FirebaseAdminService', () => {
       expect(mockCreateUser).toHaveBeenCalledWith(userProps);
       expect(mockLogger.error).toHaveBeenCalledWith(
         {
-          err: { message: testError.message, code: (testError as any).code },
+          err: testError,
           email: userProps.email,
         },
         'Failed to create user in Firebase Auth'
@@ -274,7 +274,7 @@ describe('FirebaseAdminService', () => {
         {
           uid: testUid,
           claims: claims,
-          error: testError.message,
+          err: testError,
         },
         'Error setting Firebase custom claims'
       );
@@ -314,7 +314,7 @@ describe('FirebaseAdminService', () => {
         {
           maxResults: maxResults,
           pageToken: pageToken,
-          error: testError.message,
+          err: testError,
         },
         'Error listing Firebase users'
       );

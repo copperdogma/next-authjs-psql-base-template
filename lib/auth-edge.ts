@@ -52,6 +52,7 @@ if (!process.env.NEXTAUTH_SECRET) {
     process.env.NEXTAUTH_SECRET = 'edge-default-secret-needs-replacement'; // Default for dev/test ONLY
   } else {
     logger.error(
+      { err: new Error('NEXTAUTH_SECRET_NOT_SET_IN_PRODUCTION') },
       '[Auth Edge] FATAL ERROR: NEXTAUTH_SECRET environment variable is not set in PRODUCTION.'
     );
     // Potentially throw, depending on desired fail behavior

@@ -99,12 +99,10 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
     try {
       return await this.auth().getUserByEmail(email);
     } catch (error: unknown) {
-      const errorObj =
-        error instanceof Error
-          ? { message: error.message, code: isFirebaseError(error) ? error.code : 'unknown' }
-          : String(error);
-
-      this.logger.error({ email, error: errorObj }, 'Error getting Firebase user by email');
+      this.logger.error(
+        { err: error instanceof Error ? error : new Error(String(error)), email },
+        'Error getting Firebase user by email'
+      );
       throw error;
     }
   }
@@ -123,7 +121,7 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
       return await this.auth().updateUser(uid, userData);
     } catch (error: unknown) {
       this.logger.error(
-        { uid, error: error instanceof Error ? error.message : String(error) },
+        { err: error instanceof Error ? error : new Error(String(error)), uid },
         'Error updating Firebase user'
       );
       throw error;
@@ -145,7 +143,7 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
       return decodedToken;
     } catch (error) {
       this.logger.error(
-        { err: error instanceof Error ? error.message : String(error) },
+        { err: error instanceof Error ? error : new Error(String(error)) },
         'Firebase ID token verification failed'
       );
       // Re-throw the error to be handled by the caller
@@ -179,13 +177,7 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
       return userRecord;
     } catch (error: unknown) {
       this.logger.error(
-        {
-          err:
-            error instanceof Error
-              ? { message: error.message, code: isFirebaseError(error) ? error.code : 'unknown' }
-              : String(error),
-          email: properties.email,
-        },
+        { err: error instanceof Error ? error : new Error(String(error)), email: properties.email },
         'Failed to create user in Firebase Auth'
       );
       // Re-throw the error for the caller (e.g., the server action) to handle
@@ -204,11 +196,7 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
       return await this.auth().listUsers(maxResults, pageToken);
     } catch (error: unknown) {
       this.logger.error(
-        {
-          error: error instanceof Error ? error.message : String(error),
-          maxResults,
-          pageToken,
-        },
+        { err: error instanceof Error ? error : new Error(String(error)), maxResults, pageToken },
         'Error listing Firebase users'
       );
       throw error;
@@ -226,11 +214,7 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
       this.logger.info({ uid, claims }, 'Firebase custom claims updated');
     } catch (error: unknown) {
       this.logger.error(
-        {
-          uid,
-          claims,
-          error: error instanceof Error ? error.message : String(error),
-        },
+        { err: error instanceof Error ? error : new Error(String(error)), uid, claims },
         'Error setting Firebase custom claims'
       );
       throw error;
@@ -240,13 +224,3 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
 
 // Removed default instance export - will be created centrally
 // export const defaultFirebaseAdminService = new FirebaseAdminService();
-
-// Custom type for FirebaseError to avoid using 'any'
-interface FirebaseError extends Error {
-  code: string;
-}
-
-// Helper to check if an error is a Firebase error
-function isFirebaseError(error: Error): error is FirebaseError {
-  return 'code' in error;
-}

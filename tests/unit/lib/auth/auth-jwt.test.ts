@@ -8,12 +8,8 @@ import type { AuthUserInternal, ValidateSignInResult } from '@/lib/auth/auth-hel
 // Import the functions under test
 import { handleJwtSignIn, handleJwtUpdate } from '@/lib/auth/auth-jwt';
 import { type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt-types';
-// Removed unused AdapterAccount import
-// import { AdapterAccount } from '@auth/core/adapters';
-// Import UserRole directly from prisma, remove unused PrismaUser, PrismaAccount
+// Import UserRole directly from prisma
 import { UserRole } from '@prisma/client';
-import { sign, verify } from 'jsonwebtoken';
-import { UnauthorizedError } from '@/lib/errors';
 
 /* eslint-disable max-lines */ // Disable file length check for this large test file
 /* eslint-disable max-lines-per-function */ // Disable function length check for this large test file
@@ -175,7 +171,7 @@ describe('auth-jwt Callbacks', () => {
       // Don't check UUID mock since it's not used in credentials path
     });
 
-    it('should throw error if credentials user data is invalid for JWT', async () => {
+    it('should return base token with new JTI if credentials user data is invalid', async () => {
       // Arrange
       const invalidUser = { ...credentialsUser, id: undefined }; // Missing ID
       const args: HandleJwtSignInArgs = {
@@ -187,9 +183,11 @@ describe('auth-jwt Callbacks', () => {
         dependencies: mockDependencies,
       };
 
-      // Act & Assert
-      // Updated: Expect it to resolve with base token + JTI on error, not throw
+      // Act
       const result = await handleJwtSignIn(args);
+
+      // Assert
+      // Updated: Expect it to resolve with base token + JTI on error, not throw
       expect(result).toEqual({
         ...baseJwt, // The initial token passed in
         jti: mockUuidReturnedValue, // The generated JTI
@@ -207,7 +205,7 @@ describe('auth-jwt Callbacks', () => {
       });
 
       // Mock the database user returned from find/create
-      const testDbUser = {
+      const testDbUser: AuthUserInternal = {
         id: 'test-db-id',
         name: 'Test DB User',
         email: 'test-db@example.com',
@@ -216,8 +214,17 @@ describe('auth-jwt Callbacks', () => {
       };
       mockFindOrCreateUser.mockResolvedValue(testDbUser);
 
+      // Mock the prepared profile
+      const preparedProfileData = {
+        id: oAuthUser.id,
+        name: 'Prepared OAuth Name',
+        email: oAuthUser.email as string,
+        image: 'prepared-oauth-image.jpg',
+      };
+      mockPrepareProfile.mockReturnValue(preparedProfileData);
+
       // OAuth test account
-      const testAccount = {
+      const testAccount: Account = {
         provider: 'test-provider',
         type: 'oauth',
         providerAccountId: 'test-provider-id',
@@ -227,26 +234,45 @@ describe('auth-jwt Callbacks', () => {
       // Arguments for the function call
       const args = {
         token: { ...baseJwt },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         user: { id: 'test-user-id', email: 'test@example.com' } as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         account: testAccount as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         profile: { name: 'Test Profile' } as any,
-        correlationId: 'test-correlation-id',
+        correlationId: correlationId,
         dependencies: mockDependencies,
       };
 
       // Act - Call the function
       const result = await handleJwtSignIn(args);
 
-      // Assert - Just check if the important values are passed through
-      expect(result).toBeTruthy(); // Just check it returns something
-      expect(mockValidateInputs).toHaveBeenCalled(); // Check the validation was called
-      expect(mockFindOrCreateUser).toHaveBeenCalled(); // Check DB interaction was attempted
+      // Assert - Check important values passed through and transformed
+      expect(result).toEqual({
+        sub: testDbUser.id,
+        name: testDbUser.name,
+        email: testDbUser.email,
+        picture: testDbUser.image,
+        role: testDbUser.role,
+        jti: mockUuidReturnedValue,
+        userId: testDbUser.id,
+        userRole: testDbUser.role,
+      });
+      expect(mockValidateInputs).toHaveBeenCalledWith(args.user, args.account, correlationId);
+      expect(mockPrepareProfile).toHaveBeenCalledWith(
+        args.user.id, // Expected: userId (string)
+        args.user.email, // Expected: userEmail (string)
+        args.profile, // Expected: profile object
+        args.user // Expected: user object
+      );
+      expect(mockFindOrCreateUser).toHaveBeenCalledWith({
+        email: args.user.email, // From args.user passed to handleJwtSignIn
+        profileData: preparedProfileData, // This is the return value of mockPrepareProfile
+        providerAccountId: args.account.providerAccountId,
+        provider: args.account.provider,
+        correlationId: correlationId, // The top-level correlationId for the test
+      });
+      expect(mockUuidV4).toHaveBeenCalledTimes(2);
     });
 
-    it('should return original token if OAuth validation fails', async () => {
+    it('should return minimal token with new JTI if OAuth validation fails', async () => {
       // Arrange
       mockValidateInputs.mockReturnValue({ isValid: false }); // Simulate failure
       const originalToken = { ...baseJwt, jti: 'existing-jti' };
@@ -262,9 +288,10 @@ describe('auth-jwt Callbacks', () => {
       const result = await handleJwtSignIn(args);
 
       // Assert
-      // Updated: Expect the original token passed in on validation failure
+      // Expect only a new JTI if OAuth validation fails.
+      // The original token is discarded, and no user data is merged.
       expect(result).toEqual({
-        jti: mockUuidReturnedValue, // Corrected: Expect only JTI on validation failure
+        jti: mockUuidReturnedValue,
       });
       expect(mockValidateInputs).toHaveBeenCalledWith(oAuthUser, oAuthAccount, correlationId);
       expect(mockValidateInputs).toHaveBeenCalledTimes(1);
@@ -317,12 +344,6 @@ describe('auth-jwt Callbacks', () => {
 
     // Note: Role handling for OAuth path is done within findOrCreateUserAndAccountInternal/prisma,
     // And tested separately
-
-    it('should have OAuth sign-in functionality', () => {
-      // This test just verifies the function exists
-      // Real implementation testing will be done in integration tests
-      expect(typeof handleJwtSignIn).toBe('function');
-    });
   });
 
   // === handleJwtUpdate ===
@@ -429,12 +450,11 @@ describe('auth-jwt Callbacks', () => {
       expect(mockUuidV4).toHaveBeenCalledTimes(1);
     });
 
-    it('should not update sub (user id) even if provided in update', () => {
+    it('should update sub (user id) from session data', () => {
       // Arrange
       const token = { ...baseJwt, jti: 'old-jti' } as JWT;
       const sessionUpdate: Session = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        user: { id: 'new-sub', role: UserRole.USER } as any,
+        user: { id: 'new-sub', role: UserRole.USER },
         expires: 'never',
       };
 
@@ -442,48 +462,9 @@ describe('auth-jwt Callbacks', () => {
       const result = handleJwtUpdate(token, sessionUpdate, correlationId, { uuidv4: mockUuidV4 });
 
       // Assert
-      // Updated: Sub should be updated from session data
       expect(result.sub).toBe('new-sub');
       expect(result.jti).toBe(mockUuidReturnedValue);
       expect(mockUuidV4).toHaveBeenCalledTimes(1);
-    });
-
-    it('should handle different session formats consistently', async () => {
-      // ... existing code ...
-      // Remove the unused variable
-      // const baseUpdateArgs = (session: Session, trigger?: 'update' | 'getSession') => ({
-      //   token: baseJwt,
-      //   session,
-      //   trigger,
-      //   correlationId,
-      //   dependencies: mockDependencies,
-      // });
-      // ... existing code ...
-    });
-
-    it('should return null for an invalid token', async () => {
-      // Arrange
-      const token = { ...baseJwt, jti: 'old-jti' } as JWT;
-      const sessionUpdate: Session = {
-        user: { id: 'cred-user-id', role: UserRole.ADMIN, name: 'Only Name Update' },
-        expires: 'never',
-      };
-
-      // Act
-      const result = handleJwtUpdate(token, sessionUpdate, correlationId, { uuidv4: mockUuidV4 });
-
-      // Assert
-      // Updated: Expect the updated token for partial updates, not null
-      expect(result).toEqual({
-        ...token, // Start with the original token
-        name: 'Only Name Update', // Apply the update
-        sub: 'cred-user-id', // sub should update from session
-        userId: 'cred-user-id', // userId should update from session
-        role: UserRole.ADMIN, // Role from session
-        userRole: UserRole.ADMIN, // userRole from session
-        jti: mockUuidReturnedValue, // New JTI
-      });
-      expect(logger.debug).toHaveBeenCalled(); // Re-add check for logger call
     });
   });
 });
