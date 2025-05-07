@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+// Removed Link from 'next/link' as MUI Button with href will handle it
 import { clientLogger } from '@/lib/client-logger';
+import PageLayout from '@/components/layouts/PageLayout'; // Added PageLayout
+import { Typography, Button, Paper, Box, Container } from '@mui/material'; // Added MUI components
+import { ErrorOutline } from '@mui/icons-material'; // Added MUI icon
 
 // Log the error as soon as the boundary catches it
 let loggedError = false; // Prevent logging multiple times on re-renders
@@ -12,7 +15,8 @@ interface ErrorComponentProps {
   reset: () => void;
 }
 
-// ErrorBoundary function - Removed the disable comment entirely
+/* eslint-disable max-lines-per-function */ // Acceptable for error boundary components
+// which often contain detailed fallback UI and recovery logic within a single file for clarity.
 const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   // Log the error immediately on the client, sending it to the server
   if (!loggedError) {
@@ -21,47 +25,75 @@ const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
         message: error.message,
         name: error.name,
         stack: error.stack,
-        digest: error.digest, // Next.js specific digest for server errors
+        digest: error.digest,
       },
       location: 'app/error.tsx',
     });
     loggedError = true;
   }
 
-  // Reset loggedError flag if component remounts (e.g., after reset)
   useEffect(() => {
-    loggedError = false; // Reset on mount
+    loggedError = false;
     return () => {
-      loggedError = false; // Reset on unmount
+      loggedError = false;
     };
   }, []);
 
   return (
-    <html>
-      <body>
-        <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-          <h2 className="text-3xl font-bold text-red-600 mb-4">Something went wrong!</h2>
-          <p className="text-gray-600 mb-8 max-w-md">
+    // Using PageLayout for consistency, assuming a title isn't strictly needed or can be generic
+    <PageLayout title="Error" subtitle="Something Went Wrong">
+      <Container component="main" maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            borderRadius: 2,
+            // Assuming theme variables are available for background and text
+            // bgcolor: 'background.paper', // Or use var(--mui-palette-background-paper)
+            // color: 'text.primary', // Or use var(--mui-palette-text-primary)
+          }}
+          // className="theme-aware-paper" // Add if you have specific global styles for themed paper
+        >
+          <ErrorOutline
+            sx={{
+              fontSize: 60, // Adjusted size
+              color: 'error.main', // Using theme error color
+              mb: 2,
+            }}
+          />
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'medium' }}>
+            Something went wrong!
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            paragraph
+            sx={{ maxWidth: 450, mx: 'auto', mb: 3 }}
+          >
             {error.message || 'An unexpected error occurred. We apologize for the inconvenience.'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={() => reset()}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
-            >
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
+            <Button variant="contained" onClick={() => reset()} size="large">
               Try again
-            </button>
-            <Link
+            </Button>
+            <Button
+              variant="outlined" // Changed to outlined for secondary action
               href="/"
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded"
+              size="large"
+              // component={Link} // Not needed if href is used directly with MUI Button + Next.js
             >
-              Return to home
-            </Link>
-          </div>
-        </div>
-      </body>
-    </html>
+              Return to Home
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
+    </PageLayout>
   );
 };
+/* eslint-enable max-lines-per-function */
 
 export default ErrorBoundary;
