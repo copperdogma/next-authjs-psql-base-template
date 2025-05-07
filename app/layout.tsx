@@ -64,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>{/* <script dangerouslySetInnerHTML={{ __html: themeScript }} /> */}</head>
+      <head></head>
       <body className={roboto.className}>
         {/* Visually hidden H1 moved inside main container */}
         <FirebaseClientInitializer />
