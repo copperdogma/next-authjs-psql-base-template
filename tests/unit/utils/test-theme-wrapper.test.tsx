@@ -9,8 +9,7 @@ import {
   type ThemeContextValue,
 } from '../../../tests/utils/test-theme-wrapper';
 
-// Skip these tests due to persistent tooling/linting issues and reliance on E2E for coverage.
-describe.skip('ThemeWrapper', () => {
+describe('ThemeWrapper', () => {
   test('renders children correctly with default theme', () => {
     // Arrange & Act
     render(
@@ -46,8 +45,7 @@ describe.skip('ThemeWrapper', () => {
   });
 });
 
-// Skip these tests due to persistent tooling/linting issues and reliance on E2E for coverage.
-describe.skip('renderWithTheme', () => {
+describe('renderWithTheme', () => {
   test('returns UI wrapped in ThemeWrapper with default theme', () => {
     // Arrange
     const TestComponent = () => <div data-testid="test-component">Test Content</div>;
@@ -105,8 +103,7 @@ describe.skip('renderWithTheme', () => {
   });
 });
 
-// Skip these tests due to persistent tooling/linting issues and reliance on E2E for coverage.
-describe.skip('MockThemeContext', () => {
+describe('MockThemeContext', () => {
   test('provides default theme context values', () => {
     // Arrange
     const TestConsumer = () => {
@@ -128,8 +125,7 @@ describe.skip('MockThemeContext', () => {
   });
 });
 
-// Skip these tests due to persistent tooling/linting issues and reliance on E2E for coverage.
-describe.skip('useTheme hook', () => {
+describe('useTheme hook', () => {
   test('returns default theme context values', () => {
     // Arrange
     const TestComponent = () => {

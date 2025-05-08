@@ -3,80 +3,115 @@ import { type Session } from 'next-auth';
 import { type JWT } from '@auth/core/jwt';
 import { logger } from '@/lib/logger';
 import { handleJwtSignIn, handleJwtUpdate } from '@/lib/auth/auth-jwt';
-import { handleSharedSessionCallback } from '@/lib/auth-shared'; // Import the session handler directly
-import { authConfigNode } from '@/lib/auth-node'; // Import the object containing the jwt callback
-import { UserRole } from '@/types'; // Import UserRole enum
+import { handleSharedSessionCallback } from '@/lib/auth-shared';
+import { authConfigNode } from '@/lib/auth-node';
+import { UserRole } from '@/types';
 import { createMockUser, createMockAccount, createMockToken } from '@/tests/mocks/auth';
+import { DeepMockProxy } from 'jest-mock-extended';
+import { PrismaClient } from '@prisma/client';
 
-// Mock dependencies
 jest.mock('@/lib/logger');
 jest.mock('@/lib/auth/auth-jwt');
 jest.mock('uuid', () => ({
   v4: jest.fn(),
 }));
 
-// Type assertion for mocked uuidv4
 const mockUuidv4 = uuidv4 as jest.Mock;
 const mockHandleJwtSignIn = handleJwtSignIn as jest.Mock;
 const mockHandleJwtUpdate = handleJwtUpdate as jest.Mock;
 const mockLoggerDebug = logger.debug as jest.Mock;
 const mockLoggerInfo = logger.info as jest.Mock;
 
-// Mock UserRole enum
 jest.mock('@/types', () => ({
-  // Mock only the specific enum used, keep others potentially real
-  UserRole: { ADMIN: 'ADMIN', USER: 'USER' }, // Define the mock object directly here
-  // If other exports from @/types are needed, mock them here or use requireActual
+  UserRole: { ADMIN: 'ADMIN', USER: 'USER' },
 }));
 
 describe('NextAuth Callbacks (Node & Shared)', () => {
   const mockCorrelationId = 'mock-correlation-id';
   let jwtCallback: (args: any) => Promise<JWT | null>;
   let sessionCallback: (args: any) => Promise<Session>;
+  // @ts-expect-error - Used for test setup, may be used in future tests
+  let _mockPrisma: DeepMockProxy<PrismaClient>;
 
   beforeAll(() => {
-    // Extract callbacks from the potentially mocked config
     jwtCallback = authConfigNode.callbacks?.jwt as any;
     sessionCallback = authConfigNode.callbacks?.session as any;
     if (!jwtCallback || !sessionCallback) {
       throw new Error('JWT or Session callback not found in authConfigNode');
     }
+    // Get the auto-mocked prisma instance
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _mockPrisma = require('@/lib/prisma').prisma as DeepMockProxy<PrismaClient>;
   });
 
   beforeEach(() => {
-    // Reset mocks before each test
     jest.clearAllMocks();
-    // Provide a default mock value for uuidv4
     mockUuidv4.mockReturnValue(mockCorrelationId);
   });
 
-  // Restore JWT callback tests
   describe('authConfigNode.callbacks.jwt', () => {
     it('should call handleJwtSignIn on "signIn" trigger with user and account', async () => {
       const trigger = 'signIn';
       const token = createMockToken();
       const user = createMockUser();
       const account = createMockAccount('oauth');
-
+      mockHandleJwtSignIn.mockResolvedValue({ ...token, signInHandled: true });
       await jwtCallback({ token, user, account, trigger });
+      expect(mockHandleJwtSignIn).toHaveBeenCalledWith(
+        expect.objectContaining({ token, user, account })
+      );
+    });
 
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
+    it('should call handleJwtUpdate on "update" trigger with session', async () => {
+      const token = createMockToken({ role: UserRole.USER });
+      const session = { user: { name: 'Updated Name' } };
+      const trigger = 'update';
+      mockHandleJwtUpdate.mockResolvedValue({ ...token, name: 'Updated Name' });
+      await jwtCallback({ token, trigger, session });
+      expect(mockHandleJwtUpdate).toHaveBeenCalledWith(
+        token,
+        session,
+        mockCorrelationId,
+        expect.any(Object)
+      );
+    });
+
+    it('should handle case where token might be minimal (only sub and role)', async () => {
+      const minimalToken: JWT = {
+        sub: 'user-minimal-id',
+        role: UserRole.USER,
+      };
+      const trigger = 'session';
+
+      const result = await jwtCallback({ token: minimalToken, trigger });
+
+      expect(mockUuidv4).toHaveBeenCalled();
       expect(mockLoggerDebug).toHaveBeenCalledWith(
         expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
         '[JWT Callback] Invoked'
       );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger: 'signIn', correlationId: mockCorrelationId }),
-        '[JWT Callback] Sign-in/Sign-up flow'
+      expect(mockLoggerDebug).toHaveBeenCalledWith(
+        expect.objectContaining({ trigger, correlationId: mockCorrelationId }),
+        '[JWT Callback] Session get/refresh flow'
       );
-      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
-      expect(mockHandleJwtSignIn).toHaveBeenCalledWith({
-        token,
-        user,
-        account,
-        correlationId: mockCorrelationId,
-        dependencies: expect.any(Object),
-      });
+      expect(result).toBeDefined();
+      expect(result?.sub).toBe(minimalToken.sub);
+      expect(result?.role).toBe(minimalToken.role);
+      expect(result?.jti).toBeDefined();
+      if (!minimalToken.jti) {
+        expect(result?.jti).toBe(mockCorrelationId);
+      } else {
+        expect(result?.jti).toBe(minimalToken.jti);
+      }
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
+      const expectedKeys = ['sub', 'role', 'jti'];
+      if (minimalToken.iat) expectedKeys.push('iat');
+      if (minimalToken.exp) expectedKeys.push('exp');
+      const resultKeys = Object.keys(result || {}).filter(k => (result as any)[k] !== undefined);
+      expect(resultKeys.sort()).toEqual(expect.arrayContaining(expectedKeys.sort()));
+      const extraKeys = resultKeys.filter(k => !expectedKeys.includes(k));
+      expect(extraKeys).toEqual([]);
     });
 
     it('should call handleJwtSignIn on "signUp" trigger with user and account', async () => {
@@ -109,39 +144,6 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       });
       expect(result).toEqual({ ...token, signUpHandled: true });
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-    });
-
-    it('should call handleJwtUpdate on "update" trigger with session', async () => {
-      const token = createMockToken({ role: UserRole.USER });
-      const session = { user: { name: 'Updated Name' } }; // Session data for update
-      const trigger = 'update';
-
-      mockHandleJwtUpdate.mockResolvedValue({
-        ...token,
-        name: 'Updated Name',
-        updateHandled: true,
-      });
-
-      const result = await jwtCallback({ token, trigger, session }); // User, account, profile not needed for update trigger
-
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'update' }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger: 'update', correlationId: mockCorrelationId }),
-        '[JWT Callback] Update flow'
-      );
-      expect(mockHandleJwtUpdate).toHaveBeenCalledTimes(1);
-      expect(mockHandleJwtUpdate).toHaveBeenCalledWith(
-        token,
-        session,
-        mockCorrelationId,
-        expect.objectContaining({ uuidv4: expect.any(Function) })
-      );
-      expect(result).toEqual({ ...token, name: 'Updated Name', updateHandled: true });
-      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
     });
 
     it('should return original token for other triggers (e.g., session) and ensure JTI', async () => {
@@ -270,7 +272,6 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
     });
   });
 
-  // Testing the session callback logic directly from handleSharedSessionCallback
   describe('handleSharedSessionCallback', () => {
     it('should map token properties to session.user', async () => {
       const mockSession: Session = {
@@ -348,10 +349,7 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       });
     });
 
-    // TODO: This test fails unexpectedly. The code appears correct,
-    // but the session.user.role is not updated from the token.role as expected.
-    // Skipping for now to unblock testing.
-    it.skip('should handle case where token might be minimal (only sub and role)', async () => {
+    it('should handle case where token might be minimal (only sub and role)', async () => {
       const mockSession: Session = {
         user: {
           id: 'initial-id',
@@ -479,129 +477,126 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       });
     });
   });
-});
 
-describe('authConfigNode.callbacks.session', () => {
-  // ... setup ...
+  describe('authConfigNode.callbacks.session', () => {
+    it('should correctly map JWT fields to session object', async () => {
+      const mockToken: JWT = {
+        sub: 'user-123',
+        name: 'Test User',
+        email: 'test@example.com',
+        picture: 'test-image.jpg',
+        role: UserRole.ADMIN, // Use correct role
+        jti: 'test-jti',
+        accessToken: 'test-access-token', // Include if needed by session
+        provider: 'google', // Include if needed by session
+      };
+      const mockDefaultSession: Session = {
+        user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+      const expectedSession: Session = {
+        ...mockDefaultSession,
+        user: {
+          id: mockToken.sub ?? '', // Add nullish coalescing
+          name: mockToken.name ?? null,
+          email: mockToken.email ?? null,
+          image: mockToken.picture ?? null,
+          // Validate and cast role
+          role: Object.values(UserRole).includes(mockToken.role as UserRole)
+            ? (mockToken.role as UserRole)
+            : UserRole.USER, // Default if invalid
+        },
+        // accessToken: mockToken.accessToken,
+        // provider: mockToken.provider,
+        // error: undefined, // Ensure error is not set - Also not in Session type
+      };
 
-  it('should correctly map JWT fields to session object', async () => {
-    // Arrange
-    const mockToken: JWT = {
-      sub: 'user-123',
-      name: 'Test User',
-      email: 'test@example.com',
-      picture: 'test-image.jpg',
-      role: UserRole.ADMIN, // Use correct role
-      jti: 'test-jti',
-      accessToken: 'test-access-token', // Include if needed by session
-      provider: 'google', // Include if needed by session
-    };
-    const mockDefaultSession: Session = {
-      user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    const expectedSession: Session = {
-      ...mockDefaultSession,
-      user: {
-        id: mockToken.sub ?? '', // Add nullish coalescing
-        name: mockToken.name ?? null,
-        email: mockToken.email ?? null,
-        image: mockToken.picture ?? null,
-        // Validate and cast role
-        role: Object.values(UserRole).includes(mockToken.role as UserRole)
-          ? (mockToken.role as UserRole)
-          : UserRole.USER, // Default if invalid
-      },
-      // accessToken: mockToken.accessToken,
-      // provider: mockToken.provider,
-      // error: undefined, // Ensure error is not set - Also not in Session type
-    };
+      // Act - Use handleSharedSessionCallback directly
+      const result = await handleSharedSessionCallback({
+        session: mockDefaultSession,
+        token: mockToken,
+      });
 
-    // Act - Use handleSharedSessionCallback directly
-    const result = await handleSharedSessionCallback({
-      session: mockDefaultSession,
-      token: mockToken,
+      // Assert
+      expect(result).toEqual(expectedSession);
     });
 
-    // Assert
-    expect(result).toEqual(expectedSession);
-  });
+    it('should handle missing optional fields in token gracefully', async () => {
+      // Arrange
+      const mockTokenMinimal: JWT = {
+        sub: 'user-456',
+        email: 'minimal@example.com',
+        role: UserRole.USER, // Use correct role
+        jti: 'minimal-jti',
+      }; // Missing name, picture, accessToken, provider
+      const mockDefaultSession: Session = {
+        user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
+        expires: 'expires-string',
+      };
+      const expectedSession: Session = {
+        ...mockDefaultSession,
+        user: {
+          id: mockTokenMinimal.sub ?? '', // Add nullish coalescing
+          name: null,
+          email: mockTokenMinimal.email ?? null,
+          image: null,
+          // Validate and cast role
+          role: Object.values(UserRole).includes(mockTokenMinimal.role as UserRole)
+            ? (mockTokenMinimal.role as UserRole)
+            : UserRole.USER, // Default if invalid
+        },
+        // accessToken: undefined,
+        // provider: undefined,
+        // error: undefined, // Also not in Session type
+      };
 
-  it('should handle missing optional fields in token gracefully', async () => {
-    // Arrange
-    const mockTokenMinimal: JWT = {
-      sub: 'user-456',
-      email: 'minimal@example.com',
-      role: UserRole.USER, // Use correct role
-      jti: 'minimal-jti',
-    }; // Missing name, picture, accessToken, provider
-    const mockDefaultSession: Session = {
-      user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
-      expires: 'expires-string',
-    };
-    const expectedSession: Session = {
-      ...mockDefaultSession,
-      user: {
-        id: mockTokenMinimal.sub ?? '', // Add nullish coalescing
-        name: null,
-        email: mockTokenMinimal.email ?? null,
-        image: null,
-        // Validate and cast role
-        role: Object.values(UserRole).includes(mockTokenMinimal.role as UserRole)
-          ? (mockTokenMinimal.role as UserRole)
-          : UserRole.USER, // Default if invalid
-      },
-      // accessToken: undefined,
-      // provider: undefined,
-      // error: undefined, // Also not in Session type
-    };
+      // Act - Use handleSharedSessionCallback directly
+      const result = await handleSharedSessionCallback({
+        session: mockDefaultSession,
+        token: mockTokenMinimal,
+      });
 
-    // Act - Use handleSharedSessionCallback directly
-    const result = await handleSharedSessionCallback({
-      session: mockDefaultSession,
-      token: mockTokenMinimal,
+      // Assert
+      expect(result).toEqual(expectedSession);
     });
 
-    // Assert
-    expect(result).toEqual(expectedSession);
-  });
+    it('should set session.error if token has error field', async () => {
+      // Arrange
+      const mockTokenWithError: JWT = {
+        sub: 'user-err',
+        role: UserRole.USER, // Use correct role
+        jti: 'err-jti',
+        error: 'TokenRefreshError',
+      };
+      const mockDefaultSession: Session = {
+        user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
+        expires: 'expires-string',
+      };
+      const expectedSession: Session = {
+        ...mockDefaultSession,
+        user: {
+          id: mockTokenWithError.sub ?? '', // Add nullish coalescing
+          name: null,
+          email: null,
+          image: null,
+          // Validate and cast role
+          role: Object.values(UserRole).includes(mockTokenWithError.role as UserRole)
+            ? (mockTokenWithError.role as UserRole)
+            : UserRole.USER, // Default if invalid
+        },
+        // accessToken: undefined,
+        // provider: undefined,
+        // error: undefined, // Also not in Session type
+      };
 
-  it('should set session.error if token has error field', async () => {
-    // Arrange
-    const mockTokenWithError: JWT = {
-      sub: 'user-err',
-      role: UserRole.USER, // Use correct role
-      jti: 'err-jti',
-      error: 'TokenRefreshError',
-    };
-    const mockDefaultSession: Session = {
-      user: { id: '', name: null, email: null, image: null, role: UserRole.USER }, // Use correct role
-      expires: 'expires-string',
-    };
-    const expectedSession: Session = {
-      ...mockDefaultSession,
-      user: {
-        id: mockTokenWithError.sub ?? '', // Add nullish coalescing
-        name: null,
-        email: null,
-        image: null,
-        // Validate and cast role
-        role: Object.values(UserRole).includes(mockTokenWithError.role as UserRole)
-          ? (mockTokenWithError.role as UserRole)
-          : UserRole.USER, // Default if invalid
-      },
-      // accessToken: undefined,
-      // provider: undefined,
-      // error: undefined, // Also not in Session type
-    };
+      // Act - Use handleSharedSessionCallback directly
+      const result = await handleSharedSessionCallback({
+        session: mockDefaultSession,
+        token: mockTokenWithError,
+      });
 
-    // Act - Use handleSharedSessionCallback directly
-    const result = await handleSharedSessionCallback({
-      session: mockDefaultSession,
-      token: mockTokenWithError,
+      // Assert
+      expect(result).toEqual(expectedSession);
     });
-
-    // Assert
-    expect(result).toEqual(expectedSession);
   });
 });

@@ -2,6 +2,7 @@
 // Manual mock for the Prisma client singleton
 //
 
+import { mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
 import { jest } from '@jest/globals';
 
@@ -21,7 +22,8 @@ const createMockWithPromise = () => {
 };
 
 // Create a properly mocked Prisma client that supports Jest mocking methods
-const mockPrisma = {
+// @ts-expect-error - Keep as reference for how to create test mocks
+const _mockPrisma = {
   session: {
     deleteMany: createMockWithPromise(),
     findFirst: createMockWithPromise(),
@@ -43,8 +45,15 @@ const mockPrisma = {
   $disconnect: jest.fn(),
 };
 
-// Export mock as prisma
-export const prisma = mockPrisma as unknown as PrismaClient;
+// Create and export the mock Prisma client instance
+const mockInstance = mockDeep<PrismaClient>();
+
+export const prisma = mockInstance;
+
+// If the original lib/prisma.ts has a default export, provide one here too.
+// Assuming it might, to be safe, though often it's just a named export.
+// Check actual lib/prisma.ts if this causes issues.
+export default mockInstance;
 
 // Function to reset all mocks
 export const resetPrismaMock = () => {

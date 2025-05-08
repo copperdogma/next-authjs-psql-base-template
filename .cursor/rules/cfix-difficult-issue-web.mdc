@@ -12,12 +12,12 @@ Take a step back and analyze the situation and code. Look for root causes.
 - What versions are we using of everything? Are we sure we're adhering to that version's syntax and best practices?
 - If you're confident the code being tested is correct, can you add debug statements to the test to see what output we should be expecting?
 
+## Do Web Research
+- Use the MCP tool "deepwiki fetch" to get docs on anything you need
+- Search the web: Is this a known issue? Are there known solutions?
+
 ## Make Hypotheses
 Make at least three hypothesis as to what the true reason behind this issue could be, then start checking each hypothesis vs the code to verify or disprove your thesis.
-
-If you feel it may help:
-- Search the web for assistance. (If I didn't grant you web tool access, request it.)
-- Use the MCP tool "deepwiki fetch" to get docs on anything you need
 
 Update [scratchpad.md](mdc:scratchpad.md) with your findings.
 
