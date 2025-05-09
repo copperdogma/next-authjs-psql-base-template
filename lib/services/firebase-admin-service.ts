@@ -34,6 +34,60 @@ export class FirebaseAdminService implements FirebaseAdminServiceInterface {
   }
 
   /**
+   * Check if Firebase Admin SDK is initialized
+   */
+  isInitialized(): boolean {
+    return !!this.app;
+  }
+
+  /**
+   * Get the Firebase Auth instance
+   */
+  getAuth(): admin.auth.Auth {
+    return this.auth();
+  }
+
+  /**
+   * Get the Firebase Firestore instance
+   */
+  getFirestore(): admin.firestore.Firestore {
+    return this.app.firestore();
+  }
+
+  /**
+   * Get the Firebase Storage instance
+   */
+  getStorage(): admin.storage.Storage {
+    return this.app.storage();
+  }
+
+  /**
+   * Get a user by their Firebase UID
+   * @param uid Firebase user ID
+   */
+  async getUser(uid: string): Promise<admin.auth.UserRecord> {
+    return this.getUserByUid(uid);
+  }
+
+  /**
+   * Delete a Firebase user
+   * @param uid Firebase user ID to delete
+   */
+  async deleteUser(uid: string): Promise<void> {
+    this.logger.debug({ uid }, 'Deleting Firebase user');
+    try {
+      await this.auth().deleteUser(uid);
+      this.logger.info({ uid }, 'Successfully deleted Firebase user');
+    } catch (error: unknown) {
+      this.logger.error(
+        { err: error instanceof Error ? error : new Error(String(error)), uid },
+        'Error deleting Firebase user'
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Creates a test instance with mock implementations for unit testing
    * @param mockAuth Optional mock Auth instance
    * @param mockLogger Optional mock logger

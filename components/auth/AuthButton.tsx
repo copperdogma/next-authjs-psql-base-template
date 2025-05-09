@@ -8,23 +8,33 @@ interface AuthButtonProps {
   isSignedIn: boolean;
   theme: string | undefined;
   onClick: () => void;
+  className?: string;
 }
 
-export default function AuthButton({ isLoading, isSignedIn, theme, onClick }: AuthButtonProps) {
+const AuthButton: React.FC<AuthButtonProps> = ({
+  onClick,
+  isLoading = false,
+  isSignedIn = false,
+  theme,
+  className,
+  ...props
+}) => {
   return (
     <Button
+      variant="contained"
       onClick={onClick}
       color={isSignedIn ? 'error' : 'primary'}
-      variant="contained"
       data-testid="auth-button"
-      data-loading={isLoading ? 'true' : 'false'}
-      data-theme={theme} // Add theme data attribute for testing
+      data-loading={String(isLoading)}
+      data-theme={theme}
       disabled={isLoading}
       startIcon={!isLoading ? isSignedIn ? <LogoutIcon /> : <GoogleIcon /> : undefined}
       sx={{
         minWidth: '160px',
         position: 'relative',
       }}
+      className={className}
+      {...props}
     >
       {isLoading && (
         <CircularProgress
@@ -45,4 +55,6 @@ export default function AuthButton({ isLoading, isSignedIn, theme, onClick }: Au
           : 'Sign In with Google'}
     </Button>
   );
-}
+};
+
+export default AuthButton;

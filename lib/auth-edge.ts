@@ -117,7 +117,7 @@ export const authConfigEdge: NextAuthConfig = {
   ...sharedAuthConfig,
 
   // Edge does NOT use Prisma adapter
-  // adapter: undefined, // Explicitly undefined or omit
+  adapter: undefined, // Explicitly undefined
 
   // Providers are inherited from sharedAuthConfig, provide fallback
   providers: sharedAuthConfig.providers ?? [],
@@ -137,7 +137,8 @@ export const authConfigEdge: NextAuthConfig = {
     // csrfToken: { ... } // Example if needed
   },
   session: {
-    ...sharedAuthConfig.session,
+    ...sharedAuthConfig.session, // Inherits JWT strategy and other shared session settings
+    strategy: 'jwt' as const, // Ensure JWT strategy is explicit for Edge
     maxAge: 30 * 24 * 60 * 60, // 30 days session timeout (align with Node?)
     // updateAge behavior might differ or be irrelevant in Edge middleware context?
   },

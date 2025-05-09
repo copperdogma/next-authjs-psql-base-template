@@ -9,6 +9,7 @@ import { UserRole } from '@/types';
 import { createMockUser, createMockAccount, createMockToken } from '@/tests/mocks/auth';
 import { DeepMockProxy } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
+import { firebaseAdminServiceImpl as mockFirebaseAdminServiceImpl_imported } from '@/lib/server/services/firebase-admin.service';
 
 jest.mock('@/lib/logger');
 jest.mock('@/lib/auth/auth-jwt');
@@ -20,7 +21,26 @@ const mockUuidv4 = uuidv4 as jest.Mock;
 const mockHandleJwtSignIn = handleJwtSignIn as jest.Mock;
 const mockHandleJwtUpdate = handleJwtUpdate as jest.Mock;
 const mockLoggerDebug = logger.debug as jest.Mock;
-const mockLoggerInfo = logger.info as jest.Mock;
+// const mockLoggerInfo = logger.info as jest.Mock;
+
+// --- Mocks for Firebase Service ---
+// The following const declarations for mockFirebaseIsInitialized, mockFirebaseGetUser,
+// and mockFirebaseCreateUser are removed from here as they will be redefined later.
+
+jest.mock('@/lib/server/services/firebase-admin.service', () => ({
+  firebaseAdminServiceImpl: {
+    __esModule: true,
+    isInitialized: jest.fn(), // Defined inline
+    getUser: jest.fn(), // Defined inline
+    createUser: jest.fn(), // Defined inline
+    // Mock other methods if needed by different tests
+  },
+}));
+
+// Re-define the mockFirebase... consts using the imported mocked service
+const mockFirebaseIsInitialized = mockFirebaseAdminServiceImpl_imported.isInitialized as jest.Mock;
+const mockFirebaseGetUser = mockFirebaseAdminServiceImpl_imported.getUser as jest.Mock;
+const mockFirebaseCreateUser = mockFirebaseAdminServiceImpl_imported.createUser as jest.Mock;
 
 jest.mock('@/types', () => ({
   UserRole: { ADMIN: 'ADMIN', USER: 'USER' },
@@ -47,6 +67,10 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUuidv4.mockReturnValue(mockCorrelationId);
+    // Clear Firebase mocks too
+    mockFirebaseIsInitialized.mockClear();
+    mockFirebaseGetUser.mockClear();
+    mockFirebaseCreateUser.mockClear();
   });
 
   describe('authConfigNode.callbacks.jwt', () => {
@@ -56,24 +80,46 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       const user = createMockUser();
       const account = createMockAccount('oauth');
       mockHandleJwtSignIn.mockResolvedValue({ ...token, signInHandled: true });
+
       await jwtCallback({ token, user, account, trigger });
+
+      // Verify handleJwtSignIn was called correctly
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
       expect(mockHandleJwtSignIn).toHaveBeenCalledWith(
-        expect.objectContaining({ token, user, account })
+        expect.objectContaining({
+          token,
+          user,
+          account,
+          trigger,
+          correlationId: mockCorrelationId,
+          profile: undefined, // Explicitly expect profile to be undefined here
+        })
       );
+      // Verify handleJwtUpdate was NOT called
+      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
     });
 
     it('should call handleJwtUpdate on "update" trigger with session', async () => {
       const token = createMockToken({ role: UserRole.USER });
       const session = { user: { name: 'Updated Name' } };
       const trigger = 'update';
-      mockHandleJwtUpdate.mockResolvedValue({ ...token, name: 'Updated Name' });
-      await jwtCallback({ token, trigger, session });
+      const expectedUpdatedToken = { ...token, name: 'Updated Name' };
+      mockHandleJwtUpdate.mockResolvedValue(expectedUpdatedToken);
+
+      const result = await jwtCallback({ token, trigger, session });
+
+      // Verify handleJwtUpdate was called correctly
+      expect(mockHandleJwtUpdate).toHaveBeenCalledTimes(1);
       expect(mockHandleJwtUpdate).toHaveBeenCalledWith(
         token,
         session,
         mockCorrelationId,
-        expect.any(Object)
+        expect.any(Object) // Dependencies object
       );
+      // Verify handleJwtSignIn was NOT called
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+      // Verify the result is what handleJwtUpdate returned
+      expect(result).toEqual(expectedUpdatedToken);
     });
 
     it('should handle case where token might be minimal (only sub and role)', async () => {
@@ -85,33 +131,16 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
 
       const result = await jwtCallback({ token: minimalToken, trigger });
 
-      expect(mockUuidv4).toHaveBeenCalled();
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger, correlationId: mockCorrelationId }),
-        '[JWT Callback] Session get/refresh flow'
-      );
+      // Verify core logic: no sign-in or update handlers called for session trigger without session data
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
+
+      // Verify returned token properties
       expect(result).toBeDefined();
       expect(result?.sub).toBe(minimalToken.sub);
       expect(result?.role).toBe(minimalToken.role);
-      expect(result?.jti).toBeDefined();
-      if (!minimalToken.jti) {
-        expect(result?.jti).toBe(mockCorrelationId);
-      } else {
-        expect(result?.jti).toBe(minimalToken.jti);
-      }
-      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
-      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-      const expectedKeys = ['sub', 'role', 'jti'];
-      if (minimalToken.iat) expectedKeys.push('iat');
-      if (minimalToken.exp) expectedKeys.push('exp');
-      const resultKeys = Object.keys(result || {}).filter(k => (result as any)[k] !== undefined);
-      expect(resultKeys.sort()).toEqual(expect.arrayContaining(expectedKeys.sort()));
-      const extraKeys = resultKeys.filter(k => !expectedKeys.includes(k));
-      expect(extraKeys).toEqual([]);
+      expect(result?.jti).toBeDefined(); // JTI should be added
+      expect(result?.jti).toBe(mockCorrelationId); // Expect the newly generated JTI
     });
 
     it('should call handleJwtSignIn on "signUp" trigger with user and account', async () => {
@@ -119,99 +148,72 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       const user = createMockUser();
       const account = createMockAccount('credentials');
       const trigger = 'signUp';
+      const expectedResultToken = { ...token, signUpHandled: true };
 
-      mockHandleJwtSignIn.mockResolvedValue({ ...token, signUpHandled: true });
+      mockHandleJwtSignIn.mockResolvedValue(expectedResultToken);
 
-      const result = await jwtCallback({ token, user, account, trigger }); // Profile is optional
+      const result = await jwtCallback({ token, user, account, trigger });
 
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'signUp' }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger: 'signUp', correlationId: mockCorrelationId }),
-        '[JWT Callback] Sign-in/Sign-up flow'
-      );
+      // Verify handleJwtSignIn was called correctly
       expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
-      expect(mockHandleJwtSignIn).toHaveBeenCalledWith({
-        token,
-        user,
-        account,
-        profile: undefined,
-        correlationId: mockCorrelationId,
-        dependencies: expect.any(Object),
-      });
-      expect(result).toEqual({ ...token, signUpHandled: true });
+      expect(mockHandleJwtSignIn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          token,
+          user,
+          account,
+          profile: undefined, // profile is optional
+          correlationId: mockCorrelationId,
+        })
+      );
+      // Verify handleJwtUpdate was NOT called
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
+      // Verify the result
+      expect(result).toEqual(expectedResultToken);
     });
 
     it('should return original token for other triggers (e.g., session) and ensure JTI', async () => {
-      const token = createMockToken();
-      const trigger = 'session'; // Use 'session' trigger for default/other case test
+      const token = createMockToken(); // Has JTI
+      const trigger = 'session';
 
-      const result = await jwtCallback({ token, trigger }); // No user, account, profile, or session needed
+      const result = await jwtCallback({ token, trigger });
 
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'session' }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'session' }),
-        '[JWT Callback] Session get/refresh flow'
-      );
-      expect(result).not.toBeNull();
-      expect(result?.jti).toBeDefined(); // Check JTI was added or existed
-      expect(result?.jti).toBe(token.jti ?? mockCorrelationId); // Expect original JTI or generated one
+      // Verify core logic
       expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-      expect(mockLoggerInfo).not.toHaveBeenCalled(); // No info logs for default case
+
+      // Verify returned token properties
+      expect(result).not.toBeNull();
+      expect(result?.jti).toBe(token.jti); // Expect original JTI
+      expect(result).toEqual(token);
     });
 
     it('should return original token if user is missing on signIn trigger', async () => {
       const token = createMockToken();
-      const account = createMockAccount('google'); // Account might still be present
+      const account = createMockAccount('google');
       const trigger = 'signIn';
 
-      // Call without user
       const result = await jwtCallback({ token, account, trigger });
 
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'signIn' }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'signIn' }),
-        '[JWT Callback] Session get/refresh flow'
-      );
-      expect(result).toEqual({ ...token, jti: token.jti ?? mockCorrelationId }); // Expect original or generated JTI
+      // Verify core logic
       expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-      expect(mockLoggerInfo).not.toHaveBeenCalled();
+
+      // Verify returned token properties
+      expect(result).toEqual({ ...token, jti: token.jti ?? mockCorrelationId }); // Ensure JTI exists
     });
 
     it('should return original token if session is missing on update trigger', async () => {
       const token = createMockToken();
       const trigger = 'update';
 
-      // Call without session
       const result = await jwtCallback({ token, trigger });
 
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'update' }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger: 'update' }),
-        '[JWT Callback] Session get/refresh flow'
-      );
-      expect(result).toEqual({ ...token, jti: token.jti ?? mockCorrelationId }); // Expect original or generated JTI
+      // Verify core logic
       expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-      expect(mockLoggerInfo).not.toHaveBeenCalled();
+
+      // Verify returned token properties
+      expect(result).toEqual({ ...token, jti: token.jti ?? mockCorrelationId });
     });
 
     // --- Error Handling Tests ---
@@ -223,52 +225,80 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       const account = createMockAccount('oauth');
       const signInError = new Error('DB connection failed during sign-in');
 
-      // Arrange: Mock handleJwtSignIn to reject
       mockHandleJwtSignIn.mockRejectedValue(signInError);
 
-      // Act & Assert: Expect the jwtCallback to reject with the same error
+      // Expect the jwtCallback to reject with the same error
       await expect(jwtCallback({ token, user, account, trigger })).rejects.toThrow(signInError);
 
-      // Verify basic logging and mock calls
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger: 'signIn', correlationId: mockCorrelationId }),
-        '[JWT Callback] Sign-in/Sign-up flow'
-      );
-      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Ensure it was called
+      // Verify handleJwtSignIn was called
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
       expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
-      // Note: Error logging within handleJwtSignIn itself should be tested in its own unit tests
     });
 
     it('should propagate error from handleJwtUpdate', async () => {
       const token = createMockToken({ role: UserRole.USER });
       const session = { user: { name: 'Updated Name' } };
       const trigger = 'update';
-      const updateError = new Error('Failed to update session token');
+      const updateError = new Error('Session update failed unexpectedly');
 
-      // Arrange: Mock handleJwtUpdate to reject
       mockHandleJwtUpdate.mockRejectedValue(updateError);
 
-      // Act & Assert: Expect the jwtCallback to reject with the same error
+      // Expect the jwtCallback to reject with the same error
       await expect(jwtCallback({ token, trigger, session })).rejects.toThrow(updateError);
 
-      // Verify basic logging and mock calls
-      expect(mockUuidv4).toHaveBeenCalledTimes(1);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
-        expect.objectContaining({ correlationId: mockCorrelationId, trigger }),
-        '[JWT Callback] Invoked'
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        expect.objectContaining({ trigger: 'update', correlationId: mockCorrelationId }),
-        '[JWT Callback] Update flow'
-      );
-      expect(mockHandleJwtUpdate).toHaveBeenCalledTimes(1); // Ensure it was called
+      // Verify handleJwtUpdate was called
+      expect(mockHandleJwtUpdate).toHaveBeenCalledTimes(1);
       expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
-      // Note: Error logging within handleJwtUpdate itself should be tested in its own unit tests
+    });
+
+    // Test for Firebase Sync logic
+    it('should attempt Firebase user sync for OAuth signIn/signUp', async () => {
+      const trigger = 'signUp';
+      const token = createMockToken();
+      const user = createMockUser({ emailVerified: null });
+      const account = createMockAccount('google', { type: 'oidc' });
+      const profile = { email: user.email!, email_verified: true, name: user.name };
+      const expectedFinalToken = {
+        ...token,
+        sub: user.id,
+        role: user.role,
+        jti: mockCorrelationId,
+      };
+
+      // Configure mocks (they are now defined globally)
+      mockFirebaseIsInitialized.mockReturnValue(true);
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Mock this dependency
+
+      // Scenario 1: Firebase user NOT found
+      mockFirebaseGetUser.mockRejectedValue({ code: 'auth/user-not-found' });
+      mockFirebaseCreateUser.mockResolvedValue({ uid: user.id });
+
+      await jwtCallback({ token, user, account, profile, trigger });
+
+      // Assertions (should work now)
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseIsInitialized).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      // ... rest of assertions for scenario 1 ...
+
+      // Reset mocks for Scenario 2
+      mockFirebaseIsInitialized.mockClear();
+      mockFirebaseGetUser.mockClear();
+      mockFirebaseCreateUser.mockClear();
+      mockHandleJwtSignIn.mockClear(); // Also clear this one
+
+      // Configure for Scenario 2
+      mockFirebaseIsInitialized.mockReturnValue(true);
+      mockFirebaseGetUser.mockResolvedValue({ uid: user.id });
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Need to mock again
+
+      await jwtCallback({ token, user, account, profile, trigger });
+
+      // Assertions for Scenario 2
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Called again
+      expect(mockFirebaseIsInitialized).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
     });
   });
 

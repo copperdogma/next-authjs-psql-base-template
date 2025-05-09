@@ -62,9 +62,12 @@ async function handleLogProcessing(body: unknown): Promise<NextResponse> {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Apply rate limiting before processing the request
-  const rateLimitResponse = await consumeRateLimit(request, generalApiLimiter);
-  if (rateLimitResponse) {
-    return rateLimitResponse; // Rate limit exceeded, return 429 response
+  // Bypass rate limiting in E2E test environment
+  if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV !== 'true') {
+    const rateLimitResponse = await consumeRateLimit(request, generalApiLimiter);
+    if (rateLimitResponse) {
+      return rateLimitResponse; // Rate limit exceeded, return 429 response
+    }
   }
 
   let response: NextResponse;
@@ -81,5 +84,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // Add rate limit headers to the successful response or caught error response
-  return addRateLimitHeaders(request, response, generalApiLimiter);
+  // Only add headers if not in E2E test environment (where they might be misleading)
+  if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV !== 'true') {
+    return addRateLimitHeaders(request, response, generalApiLimiter);
+  }
+  return response;
 }

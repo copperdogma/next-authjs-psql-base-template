@@ -7,14 +7,14 @@
 
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import pino from 'pino';
 
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import type { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
-import { firebaseAdminService } from '@/lib/server/services';
+import { firebaseAdminServiceImpl } from '@/lib/server/services/firebase-admin.service';
 import { signIn } from '@/lib/auth-node';
 
 // Constants
@@ -125,6 +125,38 @@ async function _createPrismaUser(
   }
 }
 
+// Helper to handle Prisma user creation failure and attempt Firebase user rollback
+async function _handlePrismaCreateFailure(
+  firebaseUser: admin.auth.UserRecord, // Must be non-null here
+  fbService: FirebaseAdminServiceInterface,
+  baseLogContext: { email?: string | null },
+  originalDbError: unknown // Keep a reference to the original DB error for context if needed
+): Promise<never> {
+  // This function always throws
+  actionLogger.warn(
+    { ...baseLogContext, firebaseUid: firebaseUser.uid, dbError: originalDbError },
+    '_createUser: Prisma user creation failed after Firebase user was created. Attempting to roll back Firebase user.'
+  );
+  try {
+    await fbService.deleteUser(firebaseUser.uid);
+    actionLogger.info(
+      { ...baseLogContext, firebaseUid: firebaseUser.uid },
+      '_createUser: Successfully rolled back (deleted) Firebase user.'
+    );
+    // Throw a specific error indicating DB failure and successful rollback
+    throw new Error('Database user creation failed. Associated Firebase user was rolled back.');
+  } catch (rollbackError) {
+    actionLogger.error(
+      { ...baseLogContext, firebaseUid: firebaseUser.uid, error: rollbackError },
+      '_createUser: FAILED to roll back (delete) Firebase user. Manual cleanup may be required.'
+    );
+    // Throw a specific error indicating DB failure AND rollback failure
+    throw new Error(
+      'Database user creation failed, AND failed to roll back Firebase user. Manual cleanup required.'
+    );
+  }
+}
+
 async function _createUser(
   data: RegistrationInput,
   db: RegisterUserDbClient,
@@ -133,15 +165,32 @@ async function _createUser(
 ): Promise<User> {
   const { email, password } = data;
   const baseLogContext = { email };
-  const firebaseUser = await _createFirebaseUser(data, fbService, baseLogContext);
-  const prismaLogContext = { email: firebaseUser.email, uid: firebaseUser.uid };
-  const prismaUser = await _createPrismaUser(
-    firebaseUser,
-    password,
-    { db, hasher },
-    prismaLogContext
-  );
-  return prismaUser;
+  let firebaseUser: admin.auth.UserRecord | null = null;
+
+  try {
+    firebaseUser = await _createFirebaseUser(data, fbService, baseLogContext);
+    const prismaLogContext = { email: firebaseUser.email, uid: firebaseUser.uid };
+    const prismaUser = await _createPrismaUser(
+      firebaseUser,
+      password,
+      { db, hasher },
+      prismaLogContext
+    );
+    return prismaUser;
+  } catch (error) {
+    actionLogger.error(
+      { ...baseLogContext, error, firebaseUidAttempted: firebaseUser?.uid },
+      '_createUser: Error during user creation process.'
+    );
+    if (firebaseUser) {
+      // Prisma creation failed after Firebase user was made. Delegate to rollback handler.
+      // This function always throws, so _createUser effectively throws here too.
+      return await _handlePrismaCreateFailure(firebaseUser, fbService, baseLogContext, error);
+    } else {
+      // Error occurred during Firebase user creation itself, or before firebaseUser was assigned.
+      throw error; // Re-throw the original error for upstream translation.
+    }
+  }
 }
 
 interface PrismaErrorWithCodeAndMeta {
@@ -272,11 +321,20 @@ export async function registerUserLogic(
   formData: FormData,
   deps?: RegisterUserOptionalDeps
 ): Promise<RegistrationResult> {
+  const currentLogger = deps?.logger ?? actionLogger.child({ email: '?' }); // Default child logger
+  currentLogger.info('registerUserLogic: Starting registration attempt...');
+
+  // Default dependencies
+  const defaultDbService: RegisterUserDbClient = prisma;
+  const defaultHasher: Hasher = { hash };
+  // Use the correctly imported implementation instance
+  const defaultFbService: FirebaseAdminServiceInterface = firebaseAdminServiceImpl;
+
   // Correct return type
   const validationResult = _validateRegistrationInput(formData);
 
   if (!validationResult.success) {
-    actionLogger.warn(
+    currentLogger.warn(
       { errors: validationResult.error.flatten() },
       'registerUserLogic: Invalid form data'
     );
@@ -289,30 +347,12 @@ export async function registerUserLogic(
 
   const validatedData = validationResult.data;
   const logContext = { email: validatedData.email };
-  actionLogger.info(logContext, 'registerUserLogic: Starting registration attempt...');
-
-  // Resolve dependencies: Use injected or default
-  const currentDbService: RegisterUserDbClient = deps?.db || {
-    user: {
-      findUnique: prisma.user.findUnique,
-      create: prisma.user.create,
-    },
-  };
-  const currentHasher: Hasher = deps?.hasher || { hash };
-  const currentFbService: FirebaseAdminServiceInterface | undefined =
-    deps?.fbService || firebaseAdminService;
-
-  // *** Check Firebase Service Availability ***
-  if (!currentFbService) {
-    actionLogger.fatal('Firebase Admin Service is unavailable. Check server configuration.');
-    return { success: false, error: 'Server configuration error [Auth]' };
-  }
 
   // Prepare dependencies for the core logic, now knowing fbService is defined
   const coreDeps: PerformRegistrationDeps = {
-    db: currentDbService,
-    hasher: currentHasher,
-    fbService: currentFbService, // Pass the defined service
+    db: defaultDbService,
+    hasher: defaultHasher,
+    fbService: defaultFbService, // Pass the defined service
   };
 
   return _performRegistrationAttempt(validatedData, coreDeps, logContext);

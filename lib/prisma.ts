@@ -49,3 +49,6 @@ export async function disconnectPrisma(): Promise<void> {
     await globalForPrisma.prisma.$disconnect();
   }
 }
+
+// Re-export PrismaClient type for use in other modules
+export type { PrismaClient };

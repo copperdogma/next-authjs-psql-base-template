@@ -60,16 +60,49 @@ export interface LoggerService {
  */
 export interface FirebaseAdminService {
   /**
+   * Check if Firebase Admin SDK is initialized
+   */
+  isInitialized(): boolean;
+
+  /**
+   * Get the Firebase Auth instance
+   */
+  getAuth(): admin.auth.Auth;
+
+  /**
+   * Get the Firebase Firestore instance
+   */
+  getFirestore(): admin.firestore.Firestore;
+
+  /**
+   * Get the Firebase Storage instance
+   */
+  getStorage(): admin.storage.Storage;
+
+  /**
    * Verify a Firebase ID token
    * @param token Firebase ID token to verify
+   * @param checkRevoked Whether to check if the token has been revoked
    */
-  verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken>;
+  verifyIdToken(token: string, checkRevoked?: boolean): Promise<admin.auth.DecodedIdToken>;
 
   /**
    * Get a user by their Firebase UID
    * @param uid Firebase user ID
    */
-  getUserByUid(uid: string): Promise<admin.auth.UserRecord>;
+  getUser(uid: string): Promise<admin.auth.UserRecord>;
+
+  /**
+   * Get a user by their email address
+   * @param email User's email address
+   */
+  getUserByEmail(email: string): Promise<admin.auth.UserRecord>;
+
+  /**
+   * Delete a Firebase user
+   * @param uid Firebase user ID to delete
+   */
+  deleteUser(uid: string): Promise<void>;
 
   /**
    * Update a user's profile in Firebase Auth

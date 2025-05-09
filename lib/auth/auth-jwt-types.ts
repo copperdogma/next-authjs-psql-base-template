@@ -29,6 +29,7 @@ export interface HandleJwtSignInArgs {
   user: NextAuthUser | AdapterUser;
   account: Account | null;
   profile?: Profile;
+  trigger?: 'signIn' | 'signUp' | 'update' | 'session' | string;
   correlationId: string;
   dependencies?: {
     findOrCreateUser: typeof findOrCreateUserAndAccountInternal;

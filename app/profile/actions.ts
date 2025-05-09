@@ -18,8 +18,13 @@ import 'server-only';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth-edge'; // Use edge-compatible auth
 import { logger } from '@/lib/logger';
-import { profileService } from '@/lib/server/services'; // Import potentially undefined service
+// Import implementation directly and instantiate
+import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
+import { prisma } from '@/lib/prisma'; // Need prisma to instantiate
 import pino from 'pino'; // Import pino
+
+// Instantiate the service locally
+const profileService = new ProfileServiceImpl(prisma);
 
 export type NameUpdateState = {
   message: string;
@@ -144,5 +149,6 @@ export async function updateUserName(
     return { success: false, message: validation.message || 'Invalid name.', updatedName: null };
   }
 
+  currentLogger.info({ userId, name }, 'Proceeding to _performNameUpdate'); // Diagnostic log
   return _performNameUpdate(userId, name, currentLogger);
 }

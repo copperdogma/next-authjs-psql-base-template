@@ -159,11 +159,11 @@ const config: PlaywrightTestConfig = defineConfig({
 
   webServer: {
     // Enhanced command that:
-    // 1. Clears ports
+    // 1. Clears ports (including app port 3777)
     // 2. Removes .next directory
     // 3. Starts Firebase emulators with seed data
     // 4. Runs the dev:test script which captures logs
-    command: `npx kill-port 8080 9099 || true && rm -rf .next && ./scripts/run-e2e-server.sh`,
+    command: `npx kill-port 3777 8080 9099 || true && rm -rf .next && ./scripts/run-e2e-server.sh`,
     url: BASE_URL,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for emulators + server
     reuseExistingServer: !process.env.CI,
