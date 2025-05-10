@@ -3,7 +3,11 @@ import { User, Account } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { authConfigNode } from '@/lib/auth-node';
 import { UserRole } from '@/types';
-import '@/lib/__mocks__/prisma';
+// Jest environment node is typically set via Jest config, but can be specified here if needed
+// /**
+//  * @jest-environment node
+//  */
+// import '@/lib/__mocks__/prisma';
 
 // Mock prisma client
 jest.mock('@/lib/prisma', () => ({

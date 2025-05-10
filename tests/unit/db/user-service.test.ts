@@ -8,7 +8,7 @@ import {
 // import { prisma } from '../../../lib/prisma';
 
 // Import the singleton mock
-import { prismaMock, resetPrismaMock } from '../../mocks/db/prisma-mock';
+import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks';
 
 /**
  * DB User Service Unit Tests

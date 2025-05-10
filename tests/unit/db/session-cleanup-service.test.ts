@@ -13,7 +13,7 @@ import { jest } from '@jest/globals';
 // jest.mock('../../../lib/prisma');
 
 // Import the singleton mock
-import { prismaMock, resetPrismaMock } from '../../mocks/db/prisma-mock';
+import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks';
 
 // Mock logger
 jest.mock('../../../lib/logger', () => ({

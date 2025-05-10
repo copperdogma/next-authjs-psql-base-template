@@ -7,6 +7,10 @@
  * allowing tests to import from either location as needed without creating import cycles.
  */
 
+import { jest } from '@jest/globals';
+
+import { mockSession } from './tests/mocks/data/mockData';
+
 /**
  * Create the Request class constructor
  */
@@ -74,12 +78,16 @@ export function createResponseMock() {
       this._body = body;
       this.status = init.status || 200;
       this.statusText = init.statusText || '';
-      this.headers = new Headers(init.headers || {});
+      this.headers = new (createHeadersMock())(init.headers || {});
       this.ok = this.status >= 200 && this.status < 300;
     }
 
     async json() {
       return typeof this._body === 'string' ? JSON.parse(this._body) : this._body;
+    }
+
+    async text() {
+      return typeof this._body === 'string' ? this._body : JSON.stringify(this._body);
     }
   };
 }
@@ -100,37 +108,76 @@ export function createNextRequestMock() {
  * Create NextResponse object with json and redirect methods
  */
 export function createNextResponseMock() {
+  const MockedResponse = createResponseMock();
+
   return {
     json: (body, init = {}) => {
       const jsonBody = typeof body === 'string' ? body : JSON.stringify(body);
-      const response = new global.Response(jsonBody, {
+      const response = new MockedResponse(jsonBody, {
         ...init,
         headers: {
-          ...init?.headers,
+          ...(init?.headers || {}),
           'content-type': 'application/json',
         },
       });
 
-      // Add cookies functionality
       response.cookies = {
         set: jest.fn(),
-        get: jest.fn(),
+        get: jest.fn(name =>
+          name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+            ? { name, value: mockSession.sessionToken }
+            : undefined
+        ),
         delete: jest.fn(),
+        getAll: jest.fn(name =>
+          name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+            ? [{ name, value: mockSession.sessionToken }]
+            : []
+        ),
+        has: jest.fn(
+          name => name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+        ),
       };
 
       return response;
     },
-    redirect: jest.fn(url => {
-      return {
-        url,
-        status: 302,
-        headers: new Headers({ location: url }),
+    redirect: jest.fn((url, init = {}) => {
+      const status = init.status || 302;
+      const responseHeaders = new (createHeadersMock())({
+        location: url.toString(),
+        ...(init.headers || {}),
+      });
+
+      const redirectResponse = {
+        url: url.toString(),
+        status: status,
+        headers: responseHeaders,
+        ok: status >= 200 && status < 400,
+        body: null,
+        bodyUsed: true,
+        json: jest.fn(() => Promise.resolve({})),
+        text: jest.fn(() => Promise.resolve('')),
         cookies: {
           set: jest.fn(),
-          get: jest.fn(),
+          get: jest.fn(name =>
+            name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+              ? { name, value: mockSession.sessionToken }
+              : undefined
+          ),
           delete: jest.fn(),
+          getAll: jest.fn(name =>
+            name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+              ? [{ name, value: mockSession.sessionToken }]
+              : []
+          ),
+          has: jest.fn(
+            name =>
+              name === 'next-auth.session-token' || name === '__Secure-next-auth.session-token'
+          ),
         },
       };
+
+      return redirectResponse;
     }),
   };
 }
@@ -162,9 +209,15 @@ afterEach(() => {
 });
 
 // Ensure these are assigned before tests run
-const fetch = require('node-fetch');
-global.fetch = fetch;
-global.Request = fetch.Request;
-global.Response = fetch.Response;
+// const fetch = require('node-fetch');
+// global.fetch = fetch;
+// global.Request = fetch.Request;
+// global.Response = fetch.Response;
+
+// If node-fetch is strictly for Node environment API tests, it might be okay.
+// For jsdom, relying on its built-in fetch or msw is more common.
+// Consider if these global overrides are always desired or conflict with Jest's own env.
+// For now, commenting out the direct node-fetch overrides to avoid potential conflicts
+// if Jest environment (jsdom/node) already provides these.
 
 // Add any other Node-specific setup here

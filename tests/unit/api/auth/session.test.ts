@@ -8,11 +8,19 @@ import {
   HTTP_STATUS,
   /* API_ENDPOINTS, */ AUTH /* TEST_DOMAINS */,
 } from '../../../utils/test-constants';
+// import {
+//   mockUser, // Will be imported from mockData
+//   mockSessionCookie, // Will be imported from adminMocks
+//   createFirebaseAdminMocks, // Old import, to be removed
+// } from '../../../utils/firebase-mocks';
+import { mockUser } from '../../../mocks/data/mockData'; // Import mockUser
 import {
-  mockUser,
-  mockSessionCookie,
-  createFirebaseAdminMocks,
-} from '../../../utils/firebase-mocks';
+  adminAuthMock, // Import the main adminAuth mock object
+  mockSessionCookie, // Import the mockSessionCookie constant
+  type MockAdminApp, // Import the exported type
+} from '../../../mocks/firebase/adminMocks'; // Import from new centralized admin mocks
+// import { NextRequest } from 'next/server'; // Unused
+// import { logger } from '@/lib/logger'; // Unused, as the module is mocked globally
 
 // Mock NextResponse
 const mockJson = jest.fn();
@@ -32,18 +40,36 @@ class MockResponse {
     response.status = init.status || 200;
     return response;
   }
+
+  static redirect(_url: string, init: any = {}) {
+    const response = new MockResponse();
+    response.status = init.status || 302;
+    return response;
+  }
 }
 
-// Setup Firebase Admin mocks
-const { verifyIdTokenMock, createSessionCookieMock } = createFirebaseAdminMocks();
-
-// Create direct admin auth mock
-const adminAuth = {
-  verifyIdToken: verifyIdTokenMock,
-  createSessionCookie: createSessionCookieMock,
-};
+// Create direct admin auth mock - this instance will be used by the test
+// The adminAuthMock from adminMocks.ts is a jest.fn() that returns the actual mock instance.
+// We call it once to get that instance for use in tests.
+// Cast the return of adminAuthMock() to the expected shape of the auth service mock
+const adminAuth = adminAuthMock() as MockAdminApp;
 
 // No need to mock or import @/lib/firebase-admin
+
+jest.mock('next/server', () => ({
+  NextResponse: MockResponse,
+}));
+
+// Mock logger to prevent console output during tests
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+  },
+}));
 
 describe('Auth Session API', () => {
   // Define a simple request mock that simulates the structure we need
@@ -65,7 +91,7 @@ describe('Auth Session API', () => {
         }
 
         try {
-          // Call mocked functions
+          // Call mocked functions using the adminAuth instance
           await adminAuth.verifyIdToken(body.token);
           const sessionCookie = await adminAuth.createSessionCookie(body.token, {
             expiresIn: 5 * 24 * 60 * 60 * 1000, // 5 days
@@ -132,13 +158,16 @@ describe('Auth Session API', () => {
     mockCookies.set.mockClear();
     mockCookies.get.mockClear();
 
-    // Setup default Firebase Admin mocks
-    (adminAuth.verifyIdToken as jest.Mock).mockResolvedValue({
-      uid: mockUser.uid,
-      email: mockUser.email,
-    });
-
-    (adminAuth.createSessionCookie as jest.Mock).mockResolvedValue(mockSessionCookie);
+    // Setup default Firebase Admin mocks using the correctly typed adminAuth
+    if (adminAuth && adminAuth.verifyIdToken) {
+      (adminAuth.verifyIdToken as jest.Mock).mockResolvedValue({
+        uid: mockUser.id,
+        email: mockUser.email,
+      });
+    }
+    if (adminAuth && adminAuth.createSessionCookie) {
+      (adminAuth.createSessionCookie as jest.Mock).mockResolvedValue(mockSessionCookie);
+    }
 
     // Setup cookie mock for successful responses
     mockCookies.get.mockImplementation(name => {
@@ -250,15 +279,15 @@ describe('Auth Session API', () => {
   });
 
   describe('DELETE /api/auth/session', () => {
-    test('should delete session successfully', async () => {
+    test('should clear the session cookie successfully', async () => {
       // Act
       const response = await handleSession.DELETE();
 
-      // Assert
+      // Assert response
       expect(response.status).toBe(HTTP_STATUS.OK);
       expect(mockJson).toHaveBeenCalledWith({ status: 'success' });
 
-      // Verify session cookie is cleared
+      // Verify cookie is cleared
       expect(mockCookies.set).toHaveBeenCalledWith(
         expect.objectContaining({
           name: AUTH.COOKIE_NAME,
@@ -266,11 +295,27 @@ describe('Auth Session API', () => {
           maxAge: 0,
         })
       );
+    });
 
-      const sessionCookie = mockCookies.get(AUTH.COOKIE_NAME);
-      expect(sessionCookie).toBeDefined();
-      expect(sessionCookie.value).toBe('');
-      expect(sessionCookie.maxAge).toBeLessThanOrEqual(0);
+    test('should still return success even if cookie was not initially present', async () => {
+      // Arrange: Simulate no cookie being present initially
+      mockCookies.get.mockReturnValue(undefined);
+
+      // Act
+      const response = await handleSession.DELETE();
+
+      // Assert
+      expect(response.status).toBe(HTTP_STATUS.OK);
+      expect(mockJson).toHaveBeenCalledWith({ status: 'success' });
+
+      // Cookie "clearing" should still be attempted
+      expect(mockCookies.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: AUTH.COOKIE_NAME,
+          value: '',
+          maxAge: 0,
+        })
+      );
     });
   });
 });

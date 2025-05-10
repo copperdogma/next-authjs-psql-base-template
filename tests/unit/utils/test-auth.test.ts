@@ -8,6 +8,7 @@ import {
   getTestUserFromCookies,
 } from '../../utils/test-auth';
 import { TEST_USER } from '../../utils/test-constants';
+import { mockUser } from '../../mocks/data/mockData';
 
 // Mock Page and BrowserContext objects
 const mockPage = {
@@ -107,15 +108,22 @@ describe('test-auth.ts utilities', () => {
 
   describe('getTestUserFromCookies', () => {
     test('should return user data from cookies', async () => {
-      const userData = { id: 'test-id', name: 'Test User', email: 'test@example.com' };
       mockPage.evaluate.mockImplementation(() => {
-        return `__playwright_test_user=${encodeURIComponent(JSON.stringify(userData))}`;
+        return `__playwright_test_user=${encodeURIComponent(JSON.stringify(mockUser))}`;
       });
 
       const result = await getTestUserFromCookies(mockPage as any);
 
       expect(mockPage.evaluate).toHaveBeenCalled();
-      expect(result).toEqual(userData);
+      // Adjust mockUser to have date strings for comparison, as JSON stringify/parse converts Dates to ISO strings
+      const comparableMockUser = {
+        ...mockUser,
+        createdAt: mockUser.createdAt.toISOString(),
+        updatedAt: mockUser.updatedAt.toISOString(),
+        emailVerified: mockUser.emailVerified ? mockUser.emailVerified.toISOString() : null,
+        lastSignedInAt: mockUser.lastSignedInAt ? mockUser.lastSignedInAt.toISOString() : null,
+      };
+      expect(result).toEqual(comparableMockUser);
     });
 
     test('should return null if no user cookie is found', async () => {

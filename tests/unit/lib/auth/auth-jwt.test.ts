@@ -10,6 +10,7 @@ import { handleJwtSignIn, handleJwtUpdate } from '@/lib/auth/auth-jwt';
 import { type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt-types';
 // Import UserRole directly from prisma
 import { UserRole } from '@prisma/client';
+import { mockUser } from '../../../mocks/data/mockData'; // Added import
 
 /* eslint-disable max-lines */ // Disable file length check for this large test file
 /* eslint-disable max-lines-per-function */ // Disable function length check for this large test file
@@ -61,20 +62,20 @@ const baseJwt: JWT = {
 };
 
 const credentialsUser: NextAuthUser = {
-  id: 'cred-user-id',
-  name: 'Credentials User',
-  email: 'credentials@example.com',
-  image: null,
-  role: UserRole.ADMIN,
+  id: mockUser.id || 'cred-user-id',
+  name: mockUser.name,
+  email: mockUser.email as string,
+  image: mockUser.image,
+  role: mockUser.role || UserRole.ADMIN,
 };
 
 const oAuthUser: AdapterUser = {
-  id: 'oauth-user-id',
-  name: 'OAuth User',
-  email: 'oauth@example.com',
-  image: 'oauth-image.jpg',
+  id: mockUser.id || 'oauth-user-id',
+  name: mockUser.name,
+  email: mockUser.email as string,
+  image: mockUser.image,
   emailVerified: null,
-  role: UserRole.USER,
+  role: mockUser.role || UserRole.USER,
 };
 
 const oAuthAccount: Account = {
@@ -87,6 +88,7 @@ const oAuthAccount: Account = {
   scope: 'openid profile email',
   id_token: 'mock-id-token',
   session_state: 'mock-session-state',
+  iat: 0,
 };
 
 const oAuthProfile: Profile = {
@@ -101,11 +103,11 @@ const oAuthProfile: Profile = {
 };
 
 const mockDbUserInternal: AuthUserInternal = {
-  id: 'oauth-db-user-id',
-  name: 'OAuth DB User',
-  email: 'oauth-db@example.com',
-  image: 'oauth-db-image.jpg',
-  role: UserRole.USER,
+  id: mockUser.id || 'oauth-db-user-id',
+  name: mockUser.name,
+  email: mockUser.email as string,
+  image: mockUser.image,
+  role: mockUser.role || UserRole.USER,
 };
 
 const mockPreparedProfileData = {
@@ -206,11 +208,12 @@ describe('auth-jwt Callbacks', () => {
 
       // Mock the database user returned from find/create
       const testDbUser: AuthUserInternal = {
+        ...mockUser, // Spread mockUser first to get all its properties
         id: 'test-db-id',
         name: 'Test DB User',
-        email: 'test-db@example.com',
+        email: 'test-db@example.com' as string, // ensure string type for email
         image: 'test-image.jpg',
-        role: UserRole.USER,
+        role: UserRole.USER, // Specific role for this test case
       };
       mockFindOrCreateUser.mockResolvedValue(testDbUser);
 

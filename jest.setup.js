@@ -1,63 +1,32 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+import path from 'path';
 
-// Mock environment variables for tests
-const DEFAULT_ENV = {
-  NODE_ENV: 'test',
-  EXPERIMENTAL_VM_MODULES: 'true',
-  NEXTAUTH_SECRET: 'test-secret-key',
-  ALLOW_TEST_ENDPOINTS: 'true',
-  FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
-};
+import dotenv from 'dotenv';
 
-// Setup the default environment
-const originalEnv = { ...process.env };
-Object.keys(DEFAULT_ENV).forEach(key => {
-  process.env[key] = DEFAULT_ENV[key];
-});
+import { resetPrismaMock } from './tests/mocks/db/prismaMocks';
+import { resetFirebaseAdminMocks } from './tests/mocks/firebase/adminMocks';
+import { resetFirebaseClientMocks } from './tests/mocks/firebase/clientMocks';
 
-// Helper to reset environment between tests
-global.resetTestEnv = () => {
-  Object.keys(DEFAULT_ENV).forEach(key => {
-    process.env[key] = DEFAULT_ENV[key];
-  });
-};
+// Basic setup for mock environment
+process.env.NODE_ENV = 'test';
+process.env.NEXTAUTH_SECRET = 'test-secret-key';
+process.env.ALLOW_TEST_ENDPOINTS = 'true';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
 
-// Helper to mock environment variables temporarily
-global.withMockedEnv = async (mockEnv, callback) => {
-  const originalValues = {};
+// Optional: Load environment variables from .env.test if it exists
+try {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+} catch (error) {
+  console.warn('Warning: Could not load .env.test file');
+}
 
-  // Save original values
-  Object.keys(mockEnv).forEach(key => {
-    originalValues[key] = process.env[key];
-    process.env[key] = mockEnv[key];
-  });
-
-  try {
-    // Run the callback with mocked environment
-    return await callback();
-  } finally {
-    // Restore original values
-    Object.keys(mockEnv).forEach(key => {
-      if (originalValues[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = originalValues[key];
-      }
-    });
-  }
-};
-
-// Restore original environment after all tests
-afterAll(() => {
-  Object.keys(process.env).forEach(key => {
-    if (!(key in originalEnv)) {
-      delete process.env[key];
-    } else {
-      process.env[key] = originalEnv[key];
-    }
-  });
-});
+// Polyfill for TextEncoder and TextDecoder if not available
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
 
 // Mock window.matchMedia only in jsdom environment
 if (typeof window !== 'undefined') {
@@ -67,8 +36,8 @@ if (typeof window !== 'undefined') {
       matches: false,
       media: query,
       onchange: null,
-      addListener: jest.fn(), // deprecated
-      removeListener: jest.fn(), // deprecated
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
       dispatchEvent: jest.fn(),
@@ -79,36 +48,19 @@ if (typeof window !== 'undefined') {
 // Reset all mocks after each test
 afterEach(() => {
   jest.clearAllMocks();
-  global.resetTestEnv();
+  resetFirebaseClientMocks();
+  resetFirebaseAdminMocks();
+  resetPrismaMock();
 });
 
-// Throw errors when a `console.error` or `console.warn` happens
-// by overriding the functions.
-// See: https://www.benmvp.com/blog/catch-warnings-jest-tests/
-
+// Comment out console overrides to help debugging
+/*
 const CONSOLE_FAIL_TYPES = ['error', 'warn'];
-
 CONSOLE_FAIL_TYPES.forEach(type => {
-  // eslint-disable-next-line no-console
-  const originalConsole = console[type]; // Store original console method
-
-  // eslint-disable-next-line no-console
+  const originalConsole = console[type];
   console[type] = (...args) => {
-    // Allow specific warnings/errors if needed in the future by checking args[0]
-    // Example: if (typeof args[0] === 'string' && args[0].includes('Specific warning to ignore')) {
-    //   originalConsole(...args); // Log without failing
-    //   return;
-    // }
-
-    // The actual console call (or throw) happens here
-    throw new Error(
-      `Failing test due to unexpected console.${type} call.\n\n${args
-        .map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg))
-        .join(' ')}`
-    );
+    originalConsole(...args);
+    throw new Error(`Unexpected console.${type} call: ${args.join(', ')}`);
   };
-
-  // Restore original console methods after all tests are done (optional but good practice)
-  // Note: This might require jest.restoreAllMocks() or similar depending on exact setup
-  // For simplicity in this initial implementation, we'll rely on Jest test isolation.
 });
+*/

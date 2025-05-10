@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { prismaMock, resetPrismaMock } from '../../mocks/db/prisma-mock'; // Adjust path if needed
+import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks'; // Updated path
 
 // Mock the Prisma client module to return our singleton mock
 // IMPORTANT: Adjust the path '../../../lib/prisma' if your actual Prisma client export is located elsewhere.
