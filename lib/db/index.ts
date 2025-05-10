@@ -13,9 +13,4 @@ export * from './utils';
 export * from './user-service';
 export * from './raw-query-service';
 // Export functions, not the class
-export {
-  cleanupExpiredSessions,
-  cleanupUserSessions,
-  scheduleSessionCleanup,
-} from './session-cleanup-service-di';
 export * from './query-optimizer';
