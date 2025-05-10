@@ -84,6 +84,7 @@ describe('Auth Helpers', () => {
         role: 'USER', // Prisma enum value
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
         accounts: [], // No existing account for this provider
       };
 
@@ -131,6 +132,7 @@ describe('Auth Helpers', () => {
         role: 'ADMIN', // Prisma enum value
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
         accounts: [{ provider: mockProvider, providerAccountId: mockProviderAccountId }], // Account exists
       };
 
@@ -270,6 +272,7 @@ describe('Auth Helpers', () => {
         role: 'USER',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
         accounts: [],
       };
 

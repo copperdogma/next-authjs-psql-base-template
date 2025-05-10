@@ -1,16 +1,7 @@
-// --- Mocks ---
-// const mockUuid = 'mock-correlation-id'; // Mock value defined elsewhere
-/* jest.mock('uuid', ... */ // Removed: Now uses manual mock in __mocks__/uuid.ts -> Reverting to doMock
-
-// Define the expected mock value for assertions
-// const mockUuid = 'mock-correlation-id'; // Will define in describe block
-
 import { jest } from '@jest/globals';
 import bcrypt from 'bcryptjs';
-// Import the whole module for mocking
-// import * as uuid from 'uuid';
-import type { User } from '@prisma/client'; // Use correct Prisma types
-import { UserRole } from '@/types'; // Use correct types
+import type { User } from '@prisma/client';
+import { UserRole } from '@/types';
 import {
   authorizeLogic,
   CredentialsSchema,
@@ -18,8 +9,6 @@ import {
 } from '@/lib/auth/auth-credentials';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
-// Remove unused import
-// import type { Prisma } from '@prisma/client';
 
 // Mock logger directly
 jest.mock('@/lib/logger', () => ({
@@ -74,7 +63,7 @@ const mockPrismaUser: User = {
   role: UserRole.USER,
   createdAt: new Date(),
   updatedAt: new Date(),
-  lastSignedInAt: null,
+  lastSignedInAt: null, // Add the new field
 };
 
 // Define the expected return type more accurately based on authorizeLogic
@@ -110,9 +99,15 @@ describe('authorizeLogic', () => {
     uuidv4: mockUuidV4,
   });
 
+  // Create a mock logContext
+  const mockLogContext = {
+    correlationId: mockUuid,
+    credentialType: 'object',
+  };
+
   it('should return user object on successful authentication', async () => {
     const localMockDependencies = createMockDependencies();
-    const user = await authorizeLogic(validCredentials, localMockDependencies);
+    const user = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
 
     // Assert
     expect(user).toEqual(expectedNextAuthUser);
@@ -151,7 +146,7 @@ describe('authorizeLogic', () => {
     };
     localMockDependencies.validator = mockValidator as unknown as typeof CredentialsSchema;
     await expect(
-      authorizeLogic({ email: '', password: '' }, localMockDependencies)
+      authorizeLogic({ email: '', password: '' }, localMockDependencies, mockLogContext)
     ).rejects.toThrow('Invalid credentials provided.');
     expect(mockValidator.safeParse).toHaveBeenCalledTimes(1);
     // Check logger call *within* _validateCredentials (indirectly tested)
@@ -167,7 +162,7 @@ describe('authorizeLogic', () => {
     const localMockDependencies = createMockDependencies();
     // Override the mock value for this test case
     mockDbUserFindUnique.mockResolvedValue(null);
-    const user = await authorizeLogic(validCredentials, localMockDependencies);
+    const user = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
     expect(user).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -197,7 +192,7 @@ describe('authorizeLogic', () => {
       ...mockPrismaUser,
       hashedPassword: null,
     });
-    const user = await authorizeLogic(validCredentials, localMockDependencies);
+    const user = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
     expect(user).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -213,7 +208,7 @@ describe('authorizeLogic', () => {
     const localMockDependencies = createMockDependencies();
     // Ensure findUnique mock is set (it is by beforeEach)
     mockHasherCompare.mockResolvedValue(false);
-    const result = await authorizeLogic(validCredentials, localMockDependencies);
+    const result = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
     expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -230,7 +225,7 @@ describe('authorizeLogic', () => {
     const dbError = new Error('Database connection lost');
     // Override with mockRejectedValue for this test case
     mockDbUserFindUnique.mockRejectedValue(dbError);
-    const result = await authorizeLogic(validCredentials, localMockDependencies);
+    const result = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
     expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -241,9 +236,8 @@ describe('authorizeLogic', () => {
         correlationId: mockUuid,
         err: dbError, // Check the error object
         email: validCredentials.email, // Check email context
-        provider: 'credentials', // Add the provider field
       }),
-      '[Credentials Helper] Error finding or verifying user'
+      '[Credentials Helper] Error finding or verifying user' // Updated message
     );
   });
 
@@ -252,7 +246,7 @@ describe('authorizeLogic', () => {
     const compareError = new Error('Bcrypt internal error');
     // Ensure findUnique mock is set (it is by beforeEach)
     mockHasherCompare.mockRejectedValue(compareError);
-    const result = await authorizeLogic(validCredentials, localMockDependencies);
+    const result = await authorizeLogic(validCredentials, localMockDependencies, mockLogContext);
     expect(result).toBeNull();
     expect(mockUuidV4).toHaveBeenCalledTimes(1);
     expect(mockDbUserFindUnique).toHaveBeenCalledTimes(1);
@@ -263,9 +257,8 @@ describe('authorizeLogic', () => {
         correlationId: mockUuid,
         err: compareError, // Check the error object
         email: validCredentials.email, // Check email context
-        provider: 'credentials', // Add the provider field
       }),
-      '[Credentials Helper] Error finding or verifying user'
+      '[Credentials Helper] Error finding or verifying user' // Updated message
     );
   });
 });

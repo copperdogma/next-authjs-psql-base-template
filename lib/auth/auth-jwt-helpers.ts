@@ -3,132 +3,29 @@ import { type AdapterUser } from 'next-auth/adapters';
 import { type Account, type Profile, type Session, type User as NextAuthUser } from 'next-auth';
 import { logger } from '@/lib/logger';
 import { UserRole } from '@/types';
+import { type AuthUserInternal } from './auth-helpers';
+import { defaultDependencies, type DbUserStepResult } from './auth-jwt-types';
+import { prisma } from '@/lib/prisma';
 import {
-  prepareProfileDataForDb,
-  validateSignInInputs,
-  type AuthUserInternal,
-} from './auth-helpers';
-import { defaultDependencies, type OAuthDbUser, type DbUserStepResult } from './auth-jwt-types';
+  validateOAuthInputs,
+  performDbFindOrCreateUser,
+  findOrCreateOAuthDbUser,
+  validateOAuthSignInInputs,
+  validateOAuthRequestInputs,
+  createFallbackToken,
+  createOAuthJwtPayload,
+} from './oauth-helpers';
 
-/**
- * Validates the essential user and account details for OAuth user creation.
- */
-export function validateOAuthInputs(
-  user: NextAuthUser | AdapterUser | null | undefined,
-  account: Account | null | undefined,
-  correlationId: string
-): { isValid: boolean; userId?: string; userEmail?: string } {
-  const userId = user?.id;
-  const userEmail = user?.email;
-
-  if (!userId || !userEmail || !account) {
-    logger.error({
-      correlationId,
-      userId: userId,
-      userEmail: userEmail,
-      accountId: account?.providerAccountId,
-      provider: account?.provider,
-      msg: 'User ID, email, or account is missing, cannot proceed with findOrCreateUser.',
-    });
-    return { isValid: false };
-  }
-  return { isValid: true, userId, userEmail };
-}
-
-/**
- * Interacts with the database to find or create a user based on OAuth details.
- */
-export async function performDbFindOrCreateUser(params: {
-  email: string;
-  profileData: ReturnType<typeof prepareProfileDataForDb> | { id: string; email: string };
-  providerAccountId: string;
-  provider: string;
-  correlationId: string;
-  dependencies: {
-    findOrCreateUser: typeof defaultDependencies.findOrCreateUser;
-  };
-}): Promise<AuthUserInternal | null> {
-  const { email, profileData, providerAccountId, provider, correlationId, dependencies } = params;
-  try {
-    const dbUser = await dependencies.findOrCreateUser({
-      email,
-      profileData,
-      providerAccountId,
-      provider,
-      correlationId,
-    });
-
-    if (!dbUser || !dbUser.id || !dbUser.email) {
-      logger.error(
-        { correlationId, provider },
-        'Failed to find or create user during OAuth DB operation'
-      );
-      return null;
-    }
-    return dbUser;
-  } catch (error) {
-    logger.error(
-      {
-        correlationId,
-        error: error instanceof Error ? error.message : String(error),
-        provider,
-      },
-      'Error during database find or create user operation'
-    );
-    return null;
-  }
-}
-
-/**
- * Finds or creates a user in the database from OAuth data.
- * Orchestrates validation, profile preparation, and DB interaction.
- */
-export async function findOrCreateOAuthDbUser(params: {
-  user: NextAuthUser | AdapterUser;
-  account: Account;
-  profile?: Profile;
-  correlationId: string;
-  dependencies?: typeof defaultDependencies;
-}): Promise<OAuthDbUser | null> {
-  const { user, account, profile, correlationId, dependencies } = params;
-  const deps = dependencies || defaultDependencies;
-
-  // 1. Validate Inputs
-  const validationResult = validateOAuthInputs(user, account, correlationId);
-  if (!validationResult.isValid) {
-    return null;
-  }
-  const { userId, userEmail } = validationResult as { userId: string; userEmail: string }; // Type assertion after validation
-
-  // 2. Prepare Profile Data
-  const preparedProfile = profile
-    ? deps.prepareProfile(userId, userEmail, profile, user)
-    : { id: userId, email: userEmail }; // Minimal profile if original is absent
-
-  // 3. Perform DB Operation
-  const dbUser = await performDbFindOrCreateUser({
-    email: userEmail,
-    profileData: preparedProfile,
-    providerAccountId: account.providerAccountId,
-    provider: account.provider,
-    correlationId,
-    dependencies: { findOrCreateUser: deps.findOrCreateUser }, // Pass only necessary dependency
-  });
-
-  if (!dbUser) {
-    // Error already logged in performDbFindOrCreateUser
-    return null;
-  }
-
-  // 4. Format and Return Result
-  return {
-    userId: dbUser.id,
-    userEmail: dbUser.email,
-    name: dbUser.name ?? undefined,
-    image: dbUser.image ?? undefined,
-    role: (dbUser.role as UserRole) ?? undefined,
-  } as OAuthDbUser;
-}
+// Re-export for backward compatibility
+export {
+  validateOAuthInputs,
+  performDbFindOrCreateUser,
+  findOrCreateOAuthDbUser,
+  validateOAuthSignInInputs,
+  validateOAuthRequestInputs,
+  createFallbackToken,
+  createOAuthJwtPayload,
+};
 
 /**
  * Helper to safely extract user role or default to USER
@@ -182,37 +79,6 @@ export function buildAuthUserInternalFromCredentials(
 }
 
 /**
- * Validates inputs for the OAuth JWT Sign-in process.
- */
-export function validateOAuthSignInInputs(
-  user: NextAuthUser | AdapterUser,
-  account: Account | null,
-  correlationId: string,
-  dependencies: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  }
-): { isValid: boolean; errorToken?: JWT } {
-  // Check for null account first
-  if (!account) {
-    logger.error({ correlationId }, 'Cannot process OAuth sign-in with null account');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
-  }
-
-  // Perform main validation
-  const validationResult = dependencies.validateInputs(user, account, correlationId);
-
-  // Check validation result
-  if (!validationResult.isValid) {
-    logger.error({ correlationId, provider: account.provider }, 'Failed JWT OAuth validation');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
-  }
-
-  // Inputs are valid
-  return { isValid: true };
-}
-
-/**
  * Updates the JWT token fields based on the provided session user data.
  */
 export function updateTokenFieldsFromSession(
@@ -249,20 +115,19 @@ export function updateTokenFieldsFromSession(
 }
 
 /**
- * Attempts to find or create a database user for OAuth sign-in.
- * Returns the user if successful, or a fallback token if failed.
+ * Finds or creates a user in the database from OAuth data and prepares the result.
  */
 export async function findOrCreateOAuthDbUserStep(params: {
   user: NextAuthUser | AdapterUser;
   account: Account;
   profile?: Profile;
   correlationId: string;
-  baseToken: JWT; // Needed for fallback return
+  _baseToken: JWT; // Changed from baseToken to _baseToken
   dependencies: typeof defaultDependencies;
 }): Promise<DbUserStepResult> {
-  const { user, account, profile, correlationId, baseToken, dependencies } = params;
+  const { user, account, profile, correlationId, _baseToken, dependencies } = params;
 
-  // Try to find or create the database user
+  // Perform the database operation to find or create user
   const dbUser = await findOrCreateOAuthDbUser({
     user,
     account,
@@ -271,92 +136,84 @@ export async function findOrCreateOAuthDbUserStep(params: {
     dependencies,
   });
 
-  // If database operation failed, prepare a fallback token
+  // Check if the operation failed
   if (!dbUser) {
-    logger.warn(
-      { correlationId, provider: account.provider },
-      'DB user find/create failed, preparing fallback token.'
-    );
+    // Return fallback token for error case
     return {
       success: false,
-      fallbackToken: { ...baseToken, jti: dependencies.uuidv4() },
+      fallbackToken: createFallbackToken(_baseToken, dependencies.uuidv4),
     };
   }
 
-  // Return the successful result
-  return { success: true, dbUser };
-}
-
-/**
- * Creates a fallback JWT token for error cases
- */
-export function createFallbackToken(baseToken: JWT, jtiGenerator: () => string): JWT {
-  return { ...baseToken, jti: jtiGenerator() };
-}
-
-/**
- * Creates the final JWT payload after successful OAuth sign-in and DB user processing.
- */
-export function createOAuthJwtPayload(params: {
-  baseToken: JWT;
-  dbUser: OAuthDbUser;
-  provider: string;
-  correlationId: string;
-  dependencies: { uuidv4: typeof defaultDependencies.uuidv4 };
-}): JWT {
-  const { baseToken, dbUser, provider, correlationId, dependencies } = params;
-  logger.info(
-    { correlationId, userId: dbUser.userId, provider },
-    'Successfully created JWT payload for OAuth sign-in'
-  );
+  // Return successful result with the found/created user
   return {
-    ...baseToken,
-    jti: dependencies.uuidv4(),
-    sub: dbUser.userId,
-    name: dbUser.name,
-    email: dbUser.userEmail,
-    picture: dbUser.image,
-    role: dbUser.role,
-    userId: dbUser.userId,
-    userRole: dbUser.role,
+    success: true,
+    dbUser,
   };
 }
 
 /**
- * Performs OAuth validation and returns a result object with success status and either
- * the validated account or a fallback token.
+ * Updates the lastSignedInAt timestamp for a user
  */
-export function validateOAuthRequestInputs(params: {
-  user: NextAuthUser | AdapterUser;
-  account: Account | null;
-  correlationId: string;
-  baseToken: JWT;
-  dependencies: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  };
-}): {
-  isValid: boolean;
-  validAccount?: Account;
-  fallbackToken?: JWT;
-} {
-  const { user, account, correlationId, baseToken, dependencies } = params;
+export async function updateLastSignedInAt(userId: string, logContext?: Record<string, unknown>) {
+  try {
+    // Use updateMany instead of update to avoid errors if column doesn't exist
+    // updateMany will return successfully even if 0 rows were updated
+    await prisma.$executeRaw`
+      UPDATE "User" 
+      SET "lastSignedInAt" = NOW() 
+      WHERE "id" = ${userId}
+      AND EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'User' 
+        AND column_name = 'lastSignedInAt'
+      )
+    `;
+    logger.info(
+      { ...logContext, userId },
+      '[JWT Callback] Successfully updated or skipped lastSignedInAt for user.'
+    );
+  } catch (error) {
+    logger.warn(
+      { ...logContext, userId, error },
+      '[JWT Callback] Error updating lastSignedInAt for user. Field may not exist in schema.'
+    );
+    // Proceed anyway - lastSignedInAt is not critical for auth to work
+  }
+}
 
-  // Validate using the internal helper
-  const validationResult = validateOAuthSignInInputs(user, account, correlationId, dependencies);
+/**
+ * Handle session refresh operations when a user signs in
+ */
+export async function handleSessionRefreshFlow(
+  userId: string,
+  logContext: Record<string, unknown>
+): Promise<void> {
+  // Update the last signed in timestamp
+  await updateLastSignedInAt(userId, logContext);
 
-  // If validation failed, return the error token or a new fallback token
-  if (!validationResult.isValid) {
-    return {
-      isValid: false,
-      fallbackToken:
-        validationResult.errorToken || createFallbackToken(baseToken, dependencies.uuidv4),
-    };
+  // Could add additional session refresh operations here
+  // e.g., clean up old sessions, update other user data, etc.
+}
+
+/**
+ * Ensures that a JWT token has a valid JTI (JWT ID) claim
+ */
+export function ensureJtiExists(
+  token: JWT,
+  correlationId: string,
+  logContext: Record<string, unknown>
+): JWT {
+  // If token already has a JTI, return it unchanged
+  if (token.jti) {
+    return token;
   }
 
-  // Validation succeeded, account is guaranteed non-null at this point
+  // If no JTI, create a new one with UUID
+  logger.debug({ correlationId, ...logContext }, 'JWT missing JTI claim, generating a new one');
+
   return {
-    isValid: true,
-    validAccount: account as Account,
+    ...token,
+    jti: defaultDependencies.uuidv4(), // Use the default implementation
   };
 }

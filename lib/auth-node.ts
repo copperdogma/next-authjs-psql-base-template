@@ -12,9 +12,14 @@ import {
   type AuthorizeDependencies,
 } from './auth/auth-credentials';
 import { handleJwtSignIn, handleJwtUpdate } from './auth/auth-jwt';
-import { firebaseAdminServiceImpl } from '@/lib/server/services/firebase-admin.service';
-import { type FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
-import type { Account, Profile, User as NextAuthUser } from 'next-auth';
+import {
+  updateLastSignedInAt,
+  handleSessionRefreshFlow,
+  ensureJtiExists,
+} from './auth/auth-jwt-helpers';
+import { syncFirebaseUserForOAuth } from './auth/auth-firebase-sync';
+import type { Account, Profile, User as NextAuthUser, Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 
 // ====================================
 // Interfaces (Should be minimal or none)
@@ -23,14 +28,8 @@ import type { Account, Profile, User as NextAuthUser } from 'next-auth';
 // AuthorizeDependencies interface moved to auth-credentials.ts
 
 // ====================================
-// Auth Helper Functions (None should remain)
+// Auth Helper Functions
 // ====================================
-// authorizeLogic moved to auth-credentials.ts
-
-// ====================================
-// Node-Specific Auth Configuration (Core Purpose of this file now)
-// ====================================
-// CredentialsSchema moved to auth-credentials.ts
 
 // Prepare dependencies for authorizeLogic
 const dependencies: AuthorizeDependencies = {
@@ -48,195 +47,88 @@ const dependencies: AuthorizeDependencies = {
   uuidv4: uuidv4,
 };
 
-// Prepare dependencies for handleJwtSignIn
-// const jwtSignInDependencies = { // Removed unused variable
-//   findOrCreateUser: findOrCreateUserAndAccountInternal,
-//   prepareProfile: prepareProfileDataForDb,
-//   validateInputs: validateSignInInputs,
-//   uuidv4: uuidv4,
-// };
-
-// Interface for the new auth context object
-interface SyncFirebaseUserAuthContext {
-  trigger: string | undefined;
-  account: Account;
+// Handle auth flow for sign-in/sign-up
+async function _handleSignInSignUpFlow(params: {
+  processedToken: JWT;
   user: NextAuthUser;
-  profile: Profile | undefined;
-}
+  account: Account;
+  profile?: Profile;
+  trigger: 'signIn' | 'signUp';
+  correlationId: string;
+}) {
+  const { processedToken, user, account, profile, trigger, correlationId } = params;
+  const baseLogContext = { trigger, correlationId };
 
-// Helper function to determine if Firebase user sync should occur
-function shouldSyncFirebaseUser(
-  trigger: string | undefined,
-  accountType: string | undefined
-): boolean {
-  return (
-    (trigger === 'signIn' || trigger === 'signUp') &&
-    (accountType === 'oauth' || accountType === 'oidc')
-  );
-}
+  logger.info(baseLogContext, '[JWT Callback] Entering Sign-in/Sign-up flow logic block...');
 
-// Helper to get a display name from available sources
-function getDisplayName(profile: Profile | undefined, user: NextAuthUser): string {
-  return profile?.name || user.name || user.email || 'User';
-}
+  // Process the token with user/account data
+  const updatedToken = await handleJwtSignIn({
+    token: processedToken,
+    user,
+    account,
+    profile,
+    trigger,
+    correlationId,
+  });
 
-// Helper to get a photo URL from available sources
-function getPhotoUrl(profile: Profile | undefined, user: NextAuthUser): string | undefined {
-  return profile?.picture || user.image || undefined;
-}
+  logger.info(baseLogContext, '[JWT Callback] handleJwtSignIn completed.');
 
-// Helper function to prepare Firebase user data
-function prepareFirebaseUserData(
-  userId: string,
-  profile: Profile | undefined,
-  user: NextAuthUser
-): {
-  uid: string;
-  email: string;
-  displayName: string;
-  photoURL: string | undefined;
-  emailVerified: boolean;
-} | null {
-  let isEmailVerified = false;
-  if (profile?.email_verified === true) {
-    isEmailVerified = true;
-  } else if ('emailVerified' in user && user.emailVerified instanceof Date) {
-    isEmailVerified = true;
+  // Update lastSignedInAt for new sign-in/sign-up
+  if ((trigger === 'signIn' || trigger === 'signUp') && user.id) {
+    await updateLastSignedInAt(user.id, baseLogContext);
   }
 
-  const emailForFirebase = profile?.email || user.email;
-  if (!emailForFirebase) {
-    return null; // Email is essential
-  }
+  // Call the imported helper function for Firebase sync
+  await syncFirebaseUserForOAuth({ trigger, account, user, profile }, baseLogContext);
 
-  return {
-    uid: userId,
-    email: emailForFirebase,
-    displayName: getDisplayName(profile, user),
-    photoURL: getPhotoUrl(profile, user),
-    emailVerified: isEmailVerified,
-  };
+  return updatedToken;
 }
 
-// Type for the successfully prepared Firebase user payload
-type FirebaseUserPayload = NonNullable<ReturnType<typeof prepareFirebaseUserData>>;
+// Process token based on the current flow
+async function _processTokenForFlow(
+  initialToken: JWT,
+  params: {
+    user?: NextAuthUser | null;
+    account?: Account | null;
+    profile?: Profile | undefined;
+    trigger?: string;
+    session?: Session;
+  },
+  correlationId: string
+): Promise<JWT> {
+  const { user, account, profile, trigger, session } = params;
+  const baseLogContext = { trigger, correlationId };
 
-// Helper function to ensure Firebase user exists
-async function ensureFirebaseUserExists(
-  userId: string, // Retained as it's key for getUser and logging
-  firebaseUserPayload: FirebaseUserPayload, // Combined profile and user info
-  currentFbService: FirebaseAdminServiceInterface,
-  logContext: Record<string, unknown>
-): Promise<void> {
-  try {
-    await currentFbService.getUser(userId); // userId is still directly available
-    logger.info(logContext, '[JWT Callback - Firebase Sync] Firebase user already exists.');
-  } catch (error: unknown) {
-    let errorCode: string | undefined = undefined;
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      typeof error.code === 'string'
-    ) {
-      errorCode = error.code;
-    }
-    logger.warn(
-      { ...logContext, error },
-      '[JWT Callback - Firebase Sync] Error during getUser check'
-    );
+  // Start with a copy of the original token
+  let processedToken = { ...initialToken };
 
-    if (errorCode === 'auth/user-not-found') {
-      logger.info(
-        logContext,
-        '[JWT Callback - Firebase Sync] Firebase user not found. Attempting creation...'
-      );
-      // firebaseUserPayload is already prepared and validated (for email) before calling this function
-      try {
-        await currentFbService.createUser(firebaseUserPayload);
-        logger.info(
-          logContext,
-          '[JWT Callback - Firebase Sync] Successfully created Firebase user.'
-        );
-      } catch (creationError: unknown) {
-        logger.error(
-          { ...logContext, error: creationError },
-          '[JWT Callback - Firebase Sync] Error during Firebase user creation.'
-        );
-      }
-    } else {
-      logger.error(
-        { ...logContext, error },
-        '[JWT Callback - Firebase Sync] Unexpected Error checking Firebase user existence.'
-      );
-    }
-  }
-}
-
-// Extracted helper to attempt the actual Firebase sync if admin SDK is initialized
-async function attemptFirebaseUserSync(
-  userId: string,
-  firebaseUserPayload: FirebaseUserPayload,
-  currentFbService: FirebaseAdminServiceInterface | undefined, // Can be undefined here
-  oauthLogContext: Record<string, unknown>
-): Promise<void> {
-  const isAdminInitialized = currentFbService && currentFbService.isInitialized();
-  logger.info(
-    { ...oauthLogContext, isAdminInitialized },
-    '[JWT Callback - Firebase Sync] Checking Firebase Admin SDK initialization status'
-  );
-
-  if (isAdminInitialized && currentFbService) {
-    logger.info(
-      oauthLogContext,
-      '[JWT Callback - Firebase Sync] Admin SDK Initialized. Proceeding with user sync...'
-    );
-    await ensureFirebaseUserExists(userId, firebaseUserPayload, currentFbService, oauthLogContext);
+  // Handle different flows based on parameters
+  if (user && account) {
+    // 1. Sign-in/Sign-up flow (user and account are present)
+    processedToken = await _handleSignInSignUpFlow({
+      processedToken,
+      user: user as NextAuthUser,
+      account,
+      profile,
+      trigger: trigger as 'signIn' | 'signUp',
+      correlationId,
+    });
+  } else if (trigger === 'update' && session) {
+    // 2. Session update flow (trigger = 'update')
+    logger.info(baseLogContext, '[JWT Callback] Update flow');
+    processedToken = await handleJwtUpdate(processedToken, session, correlationId, { uuidv4 });
+  } else if (trigger === 'signIn' && processedToken.sub) {
+    // 3. Session get flow or subsequent OAuth sign-in for existing user
+    await handleSessionRefreshFlow(processedToken.sub, baseLogContext);
   } else {
-    logger.error(
-      oauthLogContext,
-      '[JWT Callback - Firebase Sync] Firebase Admin Service NOT initialized. Skipping user sync.'
-    );
-  }
-}
-
-// Helper function to sync Firebase user for OAuth
-async function _syncFirebaseUserForOAuth(
-  authContext: SyncFirebaseUserAuthContext,
-  baseLogContext: { trigger: string | undefined; correlationId: string }
-): Promise<void> {
-  const { trigger, account, user, profile } = authContext;
-
-  logger.info(baseLogContext, '[JWT Callback] Checking conditions for Firebase OAuth Sync...');
-  logger.info(
-    { ...baseLogContext, trigger, accountType: account?.type, userId: user?.id },
-    '[JWT Callback] Firebase OAuth Sync Condition Values'
-  );
-
-  if (!shouldSyncFirebaseUser(trigger, account?.type) || !user?.id) {
-    logger.warn(
-      baseLogContext,
-      '[JWT Callback] CONDITIONS NOT MET for Firebase OAuth Sync or user ID missing.'
-    );
-    return;
+    // 4. Other flow (no specific action needed)
+    logger.debug(baseLogContext, '[JWT Callback] Other flow (no specific update action needed).');
   }
 
-  logger.info(baseLogContext, '[JWT Callback] CONDITIONS MET for Firebase OAuth Sync.');
-  const userId = user.id;
-  const oauthLogContext = { ...baseLogContext, userId, provider: account.provider };
+  // Ensure JTI exists on token
+  processedToken = ensureJtiExists(processedToken, correlationId, baseLogContext);
 
-  const firebaseUserPayload = prepareFirebaseUserData(userId, profile, user);
-  if (!firebaseUserPayload) {
-    logger.error(
-      { ...oauthLogContext, userId },
-      '[JWT Callback - Firebase Sync] Cannot prepare Firebase user data: email is missing.'
-    );
-    return;
-  }
-
-  const currentFbService: FirebaseAdminServiceInterface | undefined = firebaseAdminServiceImpl;
-  // Call the new extracted helper
-  await attemptFirebaseUserSync(userId, firebaseUserPayload, currentFbService, oauthLogContext);
+  return processedToken;
 }
 
 // Extend the shared config with node-specific parts
@@ -248,36 +140,35 @@ export const authConfigNode: NextAuthConfig = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'jsmith@example.com' },
+        email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        logger.debug(
-          { provider: 'credentials' },
-          '[Credentials Provider] Authorize function invoked'
-        );
+        const logContext = {
+          credentialType: typeof credentials,
+          correlationId: uuidv4(), // Generate a correlation ID for this request
+        };
+        logger.info(logContext, '[CredentialsProvider] Authorize method called with credentials.');
         try {
-          const user = await authorizeLogic(credentials, dependencies);
+          // Delegate to the standalone authorizeLogic function
+          const user = await authorizeLogic(credentials, dependencies, logContext);
           if (user) {
             logger.info(
-              { provider: 'credentials', userId: user.id },
-              '[Credentials Provider] Authorization successful'
+              { ...logContext, userId: user.id },
+              '[CredentialsProvider] User authorized successfully.'
             );
             return user;
           } else {
             logger.warn(
-              { provider: 'credentials', email: credentials?.email },
-              '[Credentials Provider] Authorization failed (null user returned)'
+              logContext,
+              '[CredentialsProvider] Authorization failed, user not found or password mismatch.'
             );
             return null;
           }
-        } catch (error: unknown) {
+        } catch (error) {
           logger.error(
-            {
-              provider: 'credentials',
-              err: error instanceof Error ? error.message : String(error),
-            },
-            '[Credentials Provider] Error during authorization'
+            { ...logContext, error },
+            '[CredentialsProvider] Error during authorization.'
           );
           return null;
         }
@@ -285,13 +176,16 @@ export const authConfigNode: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    ...sharedAuthConfig.callbacks,
+    ...sharedAuthConfig.callbacks, // Inherit shared session callback
+
     async jwt({ token, user, account, profile, trigger, session }) {
       const correlationId = uuidv4();
+      const baseLogContext = { trigger, correlationId };
+
+      // Log initial state for debugging
       logger.info(
         {
-          trigger,
-          correlationId,
+          ...baseLogContext,
           hasToken: !!token,
           hasUser: !!user,
           hasAccount: !!account,
@@ -303,49 +197,25 @@ export const authConfigNode: NextAuthConfig = {
         '[JWT Callback] Invoked - Detailed Initial State'
       );
 
-      const baseLogContext = { trigger, correlationId };
-      let processedToken = { ...token };
-
-      if (user && account) {
-        logger.info(baseLogContext, '[JWT Callback] Entering Sign-in/Sign-up flow logic block...');
-        processedToken = await handleJwtSignIn({
-          token: processedToken,
-          user,
-          account,
-          profile,
-          trigger,
-          correlationId,
-        });
-        logger.info(baseLogContext, '[JWT Callback] handleJwtSignIn completed.');
-
-        // Call the extracted helper function with the new signature
-        await _syncFirebaseUserForOAuth(
-          { trigger, account, user, profile }, // Pass grouped auth context
-          baseLogContext
-        );
-      }
-      // 2. Session update flow (trigger = 'update')
-      else if (trigger === 'update' && session) {
-        logger.info(baseLogContext, '[JWT Callback] Update flow');
-        processedToken = await handleJwtUpdate(processedToken, session, correlationId, { uuidv4 });
-      }
-      // 3. Session get flow (no specific trigger or only token available)
-      else {
-        logger.debug(baseLogContext, '[JWT Callback] Session get/refresh flow');
-      }
-
-      // Ensure JTI exists on final token if not already present
-      if (!processedToken.jti) {
-        processedToken.jti = uuidv4();
-      }
-
-      return processedToken;
+      // Process the token through the appropriate flow
+      return _processTokenForFlow(
+        token,
+        { user, account, profile, trigger, session },
+        correlationId
+      );
     },
+    // Session callback is inherited from sharedAuthConfig
   },
-  events: {
-    ...sharedAuthConfig.events,
+  // Other configurations like pages, adapter etc.
+  session: {
+    strategy: 'jwt', // Explicitly JWT for Node.js, though shared should also be JWT
   },
 };
 
-// Initialize NextAuth with the final configuration
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfigNode);
+// logger.info('[Auth Node] Auth configuration initialized.');
+
+// Legacy/Helper User Service (Consider for refactoring or removal if adapter handles all)
+// This is primarily for internal use by auth logic, not a general-purpose user service.
+// ... (rest of the file, e.g., findOrCreateUserAndAccountInternal, etc.)
+// export { findOrCreateUserAndAccountInternal }; // Not exporting as it's internal

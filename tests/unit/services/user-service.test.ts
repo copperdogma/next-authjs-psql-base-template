@@ -39,6 +39,7 @@ describe('UserService', () => {
         hashedPassword: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
       };
 
       mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUser);
@@ -91,6 +92,7 @@ describe('UserService', () => {
         hashedPassword: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
       };
 
       mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUser);
@@ -144,6 +146,7 @@ describe('UserService', () => {
         hashedPassword: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignedInAt: null,
       };
 
       mockPrismaUserDelegate.update.mockResolvedValue(mockUpdatedUser);

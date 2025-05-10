@@ -26,12 +26,13 @@ const createMockUser = (overrides: Partial<PrismaUser> = {}): PrismaUser => ({
   id: 'default-id',
   name: 'Default Name',
   email: 'default@example.com',
-  emailVerified: new Date(),
+  emailVerified: null,
   image: null,
   hashedPassword: null,
-  role: UserRole.USER,
+  role: 'USER' as const,
   createdAt: new Date(),
   updatedAt: new Date(),
+  lastSignedInAt: null,
   ...overrides,
 });
 

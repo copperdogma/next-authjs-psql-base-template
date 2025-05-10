@@ -49,6 +49,7 @@ const createMockUser = (overrides: Partial<PrismaUser>): PrismaUser => ({
   role: UserRole.USER, // Explicitly set default role
   createdAt: new Date(),
   updatedAt: new Date(),
+  lastSignedInAt: null,
   ...overrides,
 });
 

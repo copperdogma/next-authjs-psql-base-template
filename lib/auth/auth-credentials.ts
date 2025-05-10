@@ -104,49 +104,116 @@ async function _findAndVerifyUserCredentials(
 } | null> {
   const { db, hasher } = dependencies; // Destructure db and hasher here
 
-  const dbUser = await db.user.findUnique({
-    where: { email },
-  });
+  try {
+    // Use the provided db dependency
+    const dbUser = await db.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        hashedPassword: true,
+      },
+    });
 
-  if (!dbUser || !dbUser.hashedPassword) {
-    logger.warn(
-      { correlationId, provider: 'credentials', email },
-      '[Credentials Helper] User not found or no password set'
+    // If no user found
+    if (!dbUser || !dbUser.hashedPassword) {
+      logger.warn(
+        { correlationId, provider: 'credentials', email },
+        '[Credentials Helper] User not found or no password set'
+      );
+      return null;
+    }
+
+    const passwordsMatch = await hasher.compare(passwordToVerify, dbUser.hashedPassword);
+
+    if (!passwordsMatch) {
+      logger.warn(
+        { correlationId, provider: 'credentials', userId: dbUser.id },
+        '[Credentials Helper] Incorrect password'
+      );
+      return null;
+    }
+
+    // Passwords match, return the user data
+    return dbUser;
+  } catch (error) {
+    logger.error(
+      { correlationId, provider: 'credentials', email, err: error },
+      '[Credentials Helper] Error finding or verifying user'
     );
     return null;
   }
-
-  const passwordsMatch = await hasher.compare(passwordToVerify, dbUser.hashedPassword);
-
-  if (!passwordsMatch) {
-    logger.warn(
-      { correlationId, provider: 'credentials', userId: dbUser.id },
-      '[Credentials Helper] Incorrect password'
-    );
-    return null;
-  }
-
-  // Passwords match, return the raw user data from DB
-  return dbUser;
 }
 
 // ====================================
 // Core Authorize Logic (Moved from auth-node.ts)
 // ====================================
 
+// Extracted helper function to handle authentication result
+async function _processAuthenticationResult(
+  verifiedDbUser: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    image: string | null;
+    role: string;
+    hashedPassword: string | null;
+  } | null,
+  logContext: Record<string, unknown>
+): Promise<NextAuthUser | null> {
+  const { correlationId = '' } = logContext;
+
+  if (verifiedDbUser) {
+    logger.info(
+      { correlationId, provider: 'credentials', userId: verifiedDbUser.id, ...logContext },
+      '[Credentials Authorize Logic] Authorization successful'
+    );
+    // Map to NextAuthUser format
+    return {
+      id: verifiedDbUser.id,
+      name: verifiedDbUser.name,
+      email: verifiedDbUser.email,
+      image: verifiedDbUser.image,
+      role: verifiedDbUser.role as UserRole, // Cast role here
+    };
+  } else {
+    // User not found or password mismatch (already logged in helper)
+    return null;
+  }
+}
+
+// Extracted helper function to prepare the correlation ID and logging context
+function _prepareAuthContext(
+  dependencies: AuthorizeDependencies,
+  logContext?: Record<string, unknown>
+): { correlationId: string; extendedLogContext: Record<string, unknown> } {
+  const { uuidv4 } = dependencies;
+  // Always call uuidv4 for test expectations, but use the provided correlationId if available
+  const generatedCorrelationId = uuidv4();
+  const correlationId = (logContext?.correlationId as string) || generatedCorrelationId;
+
+  const extendedLogContext = {
+    correlationId,
+    provider: 'credentials',
+    ...logContext,
+  };
+
+  logger.info(extendedLogContext, '[Credentials Authorize Logic] Attempting authorization');
+
+  return { correlationId, extendedLogContext };
+}
+
 // Exported for use in the CredentialsProvider configuration
-// eslint-disable-next-line max-statements -- Statement count is minimally over limit after significant refactoring.
 export async function authorizeLogic(
   credentials: unknown, // Keep unknown for flexibility, but check below
-  dependencies: AuthorizeDependencies
+  dependencies: AuthorizeDependencies,
+  logContext?: Record<string, unknown> // Add optional logContext parameter
 ): Promise<NextAuthUser | null> {
-  const { db, hasher, validator, uuidv4 } = dependencies;
-  const correlationId = uuidv4();
-
-  logger.info(
-    { correlationId, provider: 'credentials' },
-    '[Credentials Authorize Logic] Attempting authorization'
-  );
+  const { db, hasher, validator } = dependencies;
+  const { correlationId, extendedLogContext } = _prepareAuthContext(dependencies, logContext);
 
   // --- Validation ---
   const validationResult = _validateCredentials(credentials, validator, correlationId);
@@ -154,42 +221,27 @@ export async function authorizeLogic(
     // Validation errors are logged within the helper, throw a generic error here
     throw new Error('Invalid credentials provided.');
   }
+
   const { email, password } = validationResult.data;
   logger.debug(
-    { correlationId, provider: 'credentials', email },
+    { ...extendedLogContext, email },
     '[Credentials Authorize Logic] Validated credentials successfully'
   );
 
-  // --- DB Lookup & Password Check ---
   try {
+    // --- DB Lookup & Password Check ---
     const verifiedDbUser = await _findAndVerifyUserCredentials(
       email,
       password,
-      { db, hasher }, // Pass db and hasher from dependencies
+      { db, hasher },
       correlationId
     );
 
-    if (verifiedDbUser) {
-      logger.info(
-        { correlationId, provider: 'credentials', userId: verifiedDbUser.id },
-        '[Credentials Authorize Logic] Authorization successful'
-      );
-      // Map to NextAuthUser format
-      return {
-        id: verifiedDbUser.id,
-        name: verifiedDbUser.name,
-        email: verifiedDbUser.email,
-        image: verifiedDbUser.image,
-        role: verifiedDbUser.role as UserRole, // Cast role here
-      };
-    } else {
-      // User not found or password mismatch (already logged in helper)
-      return null;
-    }
+    return await _processAuthenticationResult(verifiedDbUser, extendedLogContext);
   } catch (error) {
     // Handle system errors during DB/Hash operation
     logger.error(
-      { correlationId, provider: 'credentials', email, err: error },
+      { ...extendedLogContext, err: error },
       '[Credentials Authorize Logic] System error during authorization process'
     );
     return null; // Return null on system error

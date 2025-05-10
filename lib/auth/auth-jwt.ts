@@ -32,8 +32,11 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
     user,
     account,
     correlationId,
-    baseToken: token,
-    dependencies: { validateInputs: deps.validateInputs, uuidv4: deps.uuidv4 },
+    _baseToken: token,
+    dependencies: {
+      validateInputs: deps.validateInputs,
+      uuidv4: deps.uuidv4,
+    },
   });
 
   if (!validationResult.isValid) {
@@ -49,7 +52,7 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
     account: validAccount as Account, // Type assertion is safe because we checked isValid
     profile,
     correlationId,
-    baseToken: token,
+    _baseToken: token,
     dependencies: deps,
   });
 
@@ -60,7 +63,7 @@ const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> =>
 
   // Step 3: Create JWT payload with successful DB user
   return createOAuthJwtPayload({
-    baseToken: token,
+    _baseToken: token,
     dbUser: dbStepResult.dbUser,
     provider: validAccount?.provider || 'unknown', // Use optional chaining with fallback
     correlationId,
