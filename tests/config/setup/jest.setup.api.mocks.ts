@@ -1,6 +1,37 @@
 import { jest } from '@jest/globals';
 import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks'; // Updated path
 
+// --- Global Pino Mock ---
+export const mockPinoInstanceFromGlobalSetup = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
+  fatal: jest.fn(),
+  silent: jest.fn(),
+  child: jest.fn().mockReturnThis(),
+  level: 'info',
+  isLevelEnabled: jest.fn().mockReturnValue(true),
+  levels: {
+    values: { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 },
+    labels: {},
+  },
+};
+export const actualMockPinoFactoryFnFromGlobalSetup = jest.fn(() => {
+  console.log('GLOBAL SETUP MOCK: actualMockPinoFactoryFnFromGlobalSetup CALLED');
+  return mockPinoInstanceFromGlobalSetup;
+});
+
+jest.mock('pino', () => {
+  console.log('GLOBAL SETUP MOCK: jest.mock for pino EXECUTED');
+  return {
+    __esModule: true,
+    default: actualMockPinoFactoryFnFromGlobalSetup,
+  };
+});
+// --- End Global Pino Mock ---
+
 // Mock the Prisma client module to return our singleton mock
 // IMPORTANT: Adjust the path '../../../lib/prisma' if your actual Prisma client export is located elsewhere.
 jest.mock('../../../lib/prisma', () => ({
@@ -10,7 +41,7 @@ jest.mock('../../../lib/prisma', () => ({
 }));
 
 // Import the type for the actual module
-import * as ActualLoggerModule from '@/lib/logger';
+// import * as ActualLoggerModule from '@/lib/logger'; // No longer needed if not using requireActual
 
 // Mock logger globally for API tests
 const mockApiLoggerInstance = {
@@ -27,7 +58,7 @@ const mockApiLoggerInstance = {
 };
 jest.mock('@/lib/logger', () => {
   // Explicitly type the result of requireActual
-  const actualLoggerModule = jest.requireActual('@/lib/logger') as typeof ActualLoggerModule;
+  // const actualLoggerModule = jest.requireActual('@/lib/logger') as typeof ActualLoggerModule; // REMOVED
 
   return {
     __esModule: true,
@@ -83,9 +114,9 @@ jest.mock('@/lib/logger', () => {
         child: jest.fn().mockReturnThis(),
       },
     },
-    // Export ACTUAL implementations using the typed variable
-    createLogger: actualLoggerModule.createLogger,
-    getRequestId: actualLoggerModule.getRequestId,
+    // Provide basic jest.fn() for previously actual implementations
+    createLogger: jest.fn(() => mockApiLoggerInstance), // Return a basic mock logger
+    getRequestId: jest.fn(() => 'mock-request-id'), // Return a mock value
   };
 });
 

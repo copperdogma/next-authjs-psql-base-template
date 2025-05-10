@@ -7,14 +7,16 @@ import { type AuthUserInternal } from './auth-helpers';
 import { defaultDependencies, type DbUserStepResult } from './auth-jwt-types';
 import { prisma } from '@/lib/prisma';
 import {
-  validateOAuthInputs,
   performDbFindOrCreateUser,
   findOrCreateOAuthDbUser,
+  createOAuthJwtPayload,
+} from './oauth-helpers';
+import {
+  validateOAuthInputs,
   validateOAuthSignInInputs,
   validateOAuthRequestInputs,
   createFallbackToken,
-  createOAuthJwtPayload,
-} from './oauth-helpers';
+} from './oauth-validation-helpers';
 
 // Re-export for backward compatibility
 export {

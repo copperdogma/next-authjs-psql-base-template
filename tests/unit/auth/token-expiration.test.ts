@@ -1,49 +1,38 @@
-// Mock the session module to avoid actual Firebase Admin imports
-jest.mock('../../../tests/mocks/lib/auth/session', () => {
-  // Constants defined in session.ts
-  const DEFAULT_SESSION_EXPIRATION = 3600; // 1 hour in seconds
-  const MAX_SESSION_EXPIRATION = 14 * 24 * 60 * 60; // 14 days in seconds
+import { authConfigEdge } from '../../../lib/auth-edge';
+import { authConfigNode } from '../../../lib/auth-node';
 
-  return {
-    DEFAULT_SESSION_EXPIRATION_SECONDS: DEFAULT_SESSION_EXPIRATION,
-    MAX_SESSION_EXPIRATION_SECONDS: MAX_SESSION_EXPIRATION,
-    getSessionCookieOptions: jest.fn((maxAge = DEFAULT_SESSION_EXPIRATION) => ({
-      maxAge,
-      httpOnly: true,
-      secure: true,
-      path: '/',
-      sameSite: 'lax',
-    })),
-  };
-});
+describe('NextAuth.js Session and Cookie Expiration', () => {
+  describe('Edge Configuration (authConfigEdge)', () => {
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
 
-import {
-  DEFAULT_SESSION_EXPIRATION_SECONDS,
-  MAX_SESSION_EXPIRATION_SECONDS,
-  getSessionCookieOptions,
-} from '../../../tests/mocks/lib/auth/session';
+    it('should set sessionToken cookie maxAge to 30 days', () => {
+      expect(authConfigEdge.cookies?.sessionToken?.options?.maxAge).toBe(thirtyDaysInSeconds);
+    });
 
-describe('Token and Session Expiration', () => {
-  test('should use the correct default expiration time', () => {
-    expect(DEFAULT_SESSION_EXPIRATION_SECONDS).toBe(3600); // 1 hour
-    const options = getSessionCookieOptions();
-    expect(options.maxAge).toBe(3600);
+    it('should set JWT session maxAge to 30 days', () => {
+      expect(authConfigEdge.session?.maxAge).toBe(thirtyDaysInSeconds);
+    });
   });
 
-  test('should enforce maximum expiration time', () => {
-    expect(MAX_SESSION_EXPIRATION_SECONDS).toBe(14 * 24 * 60 * 60); // 14 days
+  describe('Node Configuration (authConfigNode)', () => {
+    it('should not explicitly set sessionToken cookie maxAge (relying on NextAuth.js defaults)', () => {
+      // authConfigNode inherits from sharedAuthConfig where sessionToken.options.maxAge is not set.
+      // NextAuth.js typically defaults this to be the same as the session.maxAge or has its own default.
+      expect(authConfigNode.cookies?.sessionToken?.options?.maxAge).toBeUndefined();
+    });
+
+    it('should not explicitly set JWT session maxAge (relying on NextAuth.js default of 30 days)', () => {
+      // authConfigNode.session does not override maxAge from sharedSessionConfig, where it's also not set.
+      // NextAuth.js defaults to 30 days for JWT expiration if session.maxAge is not provided.
+      expect(authConfigNode.session?.maxAge).toBeUndefined();
+    });
+
+    // Note: Testing the *effective* default maxAge applied by NextAuth.js when these are undefined
+    // would require a more integrated test setup. These tests verify our explicit configuration.
   });
 
-  test('should allow custom expiration within bounds', () => {
-    const customExpiration = 7200; // 2 hours
-    const options = getSessionCookieOptions(customExpiration);
-    expect(options.maxAge).toBe(customExpiration);
-  });
-
-  test('should handle very large expiration values', () => {
-    const veryLargeExpiration = MAX_SESSION_EXPIRATION_SECONDS * 2;
-    const options = getSessionCookieOptions(veryLargeExpiration);
-    expect(options.maxAge).toBe(veryLargeExpiration);
-    // Note: In a real implementation, we would likely cap this at MAX_SESSION_EXPIRATION_SECONDS
-  });
+  // The constants DEFAULT_SESSION_EXPIRATION_SECONDS and MAX_SESSION_EXPIRATION_SECONDS
+  // from the old mock file are not used in the actual application configuration.
+  // If such specific, shorter or different bounded expirations are needed, they should be
+  // defined and used within the NextAuthConfig objects.
 });

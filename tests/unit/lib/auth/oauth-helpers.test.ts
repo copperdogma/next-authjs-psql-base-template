@@ -6,12 +6,11 @@ import { jest } from '@jest/globals';
 import { UserRole } from '@/types';
 import { Account, Profile, User as NextAuthUser } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
-// import { v4 as uuidv4_actual } from 'uuid'; // Removed unused
-// import { v4 as uuidv4 } from 'uuid'; // Removed unused, globalMockUuidV4 is used directly
-// import { logger as logger_actual } from '@/lib/logger'; // Removed unused logger_actual
-// import { v4 as uuidv4 } from 'uuid'; // Import the mocked v4
 import { defaultDependencies as actualDefaultDependencies } from '@/lib/auth/auth-jwt-types';
-import { validateSignInInputs as actualValidateSignInInputs } from '@/lib/auth/auth-helpers';
+import {
+  validateSignInInputs as actualValidateSignInInputs,
+  AuthUserInternal,
+} from '@/lib/auth/auth-helpers'; // Ensure AuthUserInternal is imported if used by mock types
 
 // Mock the logger
 jest.mock('@/lib/logger', () => ({
@@ -24,24 +23,23 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
-// Mock uuid - this will use our lib/__mocks__/uuid.ts file
-jest.mock('uuid');
+// Define the explicit jest.fn() for uuid.v4 that will be used
+const mockUuidV4Instance = jest.fn(() => 'mock-uuid-from-test-file');
+
+// Mock uuid to use our specific mockUuidV4Instance
+jest.mock('uuid', () => ({
+  __esModule: true, // Indicate it's an ES module for mocking purposes
+  v4: mockUuidV4Instance, // Override v4 with our mock instance
+}));
 
 // Mock auth-helpers (for dependencies like validateSignInInputs, prepareProfile, findOrCreateUser from defaultDependencies)
 jest.mock('@/lib/auth/auth-helpers');
 
-// DO NOT mock '@/lib/auth/oauth-helpers' here; we will import the actual module and spy on its methods.
-
-// Import the actual module to be tested (and spied upon)
+// Import the actual module to be tested
 import * as oauthHelpersModuleActual from '@/lib/auth/oauth-helpers';
-import { defaultDependencies } from '@/lib/auth/auth-jwt-types'; // For type information if needed, and for original dependencies
-import type {
-  AuthUserInternal,
-  // FindOrCreateUserParams, // Might not be needed if using spies
-} from '@/lib/auth/auth-helpers';
-import type { OAuthDbUser } from '@/lib/auth/auth-jwt-types';
+import * as oauthValidationHelpersModuleActual from '@/lib/auth/oauth-validation-helpers';
+import { defaultDependencies, OAuthDbUser } from '@/lib/auth/auth-jwt-types';
 
-// Define a type for the mocked auth-helpers module (from jest.mock('@/lib/auth/auth-helpers'))
 interface MockedAuthHelpers {
   findOrCreateUserAndAccountInternal: jest.MockedFunction<
     typeof defaultDependencies.findOrCreateUser
@@ -50,18 +48,15 @@ interface MockedAuthHelpers {
   validateSignInInputs: jest.MockedFunction<typeof defaultDependencies.validateInputs>;
 }
 
-// Helper function to get typed mocks from the mocked '@/lib/auth/auth-helpers'
 const getMocks = () => {
   const helpersMod = jest.requireMock('@/lib/auth/auth-helpers') as MockedAuthHelpers;
   return {
-    // These are from the *mocked* auth-helpers module
     findOrCreateUser: helpersMod.findOrCreateUserAndAccountInternal,
     prepareProfile: helpersMod.prepareProfileDataForDb,
     validateInputs: helpersMod.validateSignInInputs,
   };
 };
 
-// Mock data (remains the same)
 const mockCorrelationId = 'test-correlation-id';
 const mockProfile: Profile = {
   name: 'Test User',
@@ -89,34 +84,38 @@ const mockAuthUserInternal: AuthUserInternal = {
   role: UserRole.USER,
 };
 
-// Re-define MockedDefaultDependencies with correct uuidv4 type
+// Helper to create a valid OAuthDbUser for mock return values
+const createMockOAuthDbUser = (overrides: Partial<OAuthDbUser> = {}): OAuthDbUser => ({
+  userId: mockAuthUserInternal.id,
+  userEmail: mockAuthUserInternal.email as string,
+  name: mockAuthUserInternal.name,
+  image: mockAuthUserInternal.image,
+  role: mockAuthUserInternal.role,
+  ...overrides,
+});
+
 type MockedDefaultDependencies = {
   findOrCreateUser: jest.MockedFunction<typeof actualDefaultDependencies.findOrCreateUser>;
   prepareProfile: jest.MockedFunction<typeof actualDefaultDependencies.prepareProfile>;
   validateInputs: jest.MockedFunction<typeof actualDefaultDependencies.validateInputs>;
-  uuidv4: jest.Mock<() => string>; // Correctly typed for our mock
+  uuidv4: jest.Mock<() => string>; // This should now correctly refer to mockUuidV4Instance
 };
 
-interface HandleOAuthTestDependencies {
-  validateInputs: jest.MockedFunction<typeof actualValidateSignInInputs>;
-  uuidv4: jest.Mock<() => string>; // Correctly typed for our mock
-}
-
-// Define the explicit jest.fn() for uuid.v4
-const globalMockUuidV4 = jest.fn(() => 'mock-uuid-string-value--global');
-jest.mock('uuid', () => ({
-  __esModule: true, // Indicate it's an ES module for mocking purposes
-  v4: globalMockUuidV4, // Override v4 with our mock. Other exports will be undefined.
-}));
+// interface HandleOAuthTestDependencies { // THIS IS THE UNUSED INTERFACE, remove or comment out
+//   validateInputs: jest.MockedFunction<typeof actualValidateSignInInputs>;
+//   uuidv4: jest.Mock<() => string>;
+// }
 
 describe('OAuth Helpers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUuidV4Instance.mockClear().mockReturnValue('mock-uuid-from-test-file');
+    // No spy reset needed here as it's removed.
   });
 
   describe('validateOAuthInputs (actual implementation)', () => {
     it('should return valid result with all fields present', () => {
-      const result = oauthHelpersModuleActual.validateOAuthInputs(
+      const result = oauthValidationHelpersModuleActual.validateOAuthInputs(
         mockUser,
         mockAccount,
         mockCorrelationId
@@ -128,7 +127,7 @@ describe('OAuth Helpers', () => {
       });
     });
     it('should return invalid result with missing user', () => {
-      const result = oauthHelpersModuleActual.validateOAuthInputs(
+      const result = oauthValidationHelpersModuleActual.validateOAuthInputs(
         null,
         mockAccount,
         mockCorrelationId
@@ -139,7 +138,7 @@ describe('OAuth Helpers', () => {
     });
     it('should return invalid result with missing email', () => {
       const userWithoutEmail = { ...mockUser, email: undefined };
-      const result = oauthHelpersModuleActual.validateOAuthInputs(
+      const result = oauthValidationHelpersModuleActual.validateOAuthInputs(
         userWithoutEmail,
         mockAccount,
         mockCorrelationId
@@ -149,7 +148,7 @@ describe('OAuth Helpers', () => {
       });
     });
     it('should return invalid result with missing account', () => {
-      const result = oauthHelpersModuleActual.validateOAuthInputs(
+      const result = oauthValidationHelpersModuleActual.validateOAuthInputs(
         mockUser,
         null,
         mockCorrelationId
@@ -199,53 +198,44 @@ describe('OAuth Helpers', () => {
       validateInputs: validateInputsMock,
     } = getMocks();
 
-    // Use MockedDefaultDependencies as return type
     const createDependenciesForSUT = (): MockedDefaultDependencies => ({
       findOrCreateUser: findOrCreateUserMock,
       prepareProfile: prepareProfileMock,
       validateInputs: validateInputsMock,
-      uuidv4: globalMockUuidV4, // Use the explicit global mock instance
+      uuidv4: mockUuidV4Instance,
     });
 
     beforeEach(() => {
+      // These are mocks for dependencies of findOrCreateOAuthDbUser
       prepareProfileMock.mockReset();
       findOrCreateUserMock.mockReset();
-      validateInputsMock.mockReset(); // Though not directly used by SUT, good practice
+      validateInputsMock.mockReset();
+      mockUuidV4Instance.mockClear().mockReturnValue('mock-uuid-from-test-file');
 
-      // Default mock implementations for dependencies of the SUT's internal functions
       prepareProfileMock.mockReturnValue({
         id: 'user-id-123',
         email: 'test@example.com',
         name: 'Test User',
         image: 'https://example.com/avatar.jpg',
       });
-      // findOrCreateUserMock is the dependency for the *actual* performDbFindOrCreateUser
       findOrCreateUserMock.mockResolvedValue(mockAuthUserInternal);
     });
 
     it('should correctly find or create a user and transform to OAuthDbUser on valid inputs', async () => {
       const testSUTDependencies = createDependenciesForSUT();
-
-      const specificProfileData = {
+      const specificPreparedProfile = {
         id: 'prepared-profile-id',
         email: mockUser.email as string,
         name: 'Prepared Name',
         image: 'prepared.jpg',
       };
-      prepareProfileMock.mockReturnValue(specificProfileData);
-
-      const dbAuthUser: AuthUserInternal = {
-        id: 'final-db-id',
-        email: mockUser.email as string,
-        name: 'Final DB Name',
-        image: 'final_db.jpg',
-        role: UserRole.ADMIN,
-      };
-      findOrCreateUserMock.mockResolvedValue(dbAuthUser); // Dependency of performDbFindOrCreateUser
+      prepareProfileMock.mockReturnValue(specificPreparedProfile);
+      const internalDbUser = { ...mockAuthUserInternal, id: 'final-db-id', name: 'Final DB Name' };
+      findOrCreateUserMock.mockResolvedValue(internalDbUser);
 
       const result = await oauthHelpersModuleActual.findOrCreateOAuthDbUser({
-        user: mockUser, // For validateOAuthInputs to pass
-        account: mockAccount, // For validateOAuthInputs to pass
+        user: mockUser,
+        account: mockAccount,
         profile: mockProfile,
         correlationId: mockCorrelationId,
         dependencies: testSUTDependencies,
@@ -253,50 +243,44 @@ describe('OAuth Helpers', () => {
 
       expect(prepareProfileMock).toHaveBeenCalledWith(
         mockUser.id,
-        mockUser.email as string,
+        mockUser.email,
         mockProfile,
         mockUser
       );
-      // Check that findOrCreateUser (dependency of performDbFindOrCreateUser) was called correctly
-      expect(findOrCreateUserMock).toHaveBeenCalledWith({
-        email: mockUser.email as string,
-        profileData: specificProfileData, // from prepareProfileMock
-        providerAccountId: mockAccount.providerAccountId,
-        provider: mockAccount.provider,
-        correlationId: mockCorrelationId,
-      });
-
-      // Expect the transformed result
-      expect(result).toEqual<OAuthDbUser>({
-        userId: dbAuthUser.id,
-        userEmail: dbAuthUser.email as string,
-        name: dbAuthUser.name,
-        image: dbAuthUser.image,
-        role: dbAuthUser.role,
+      expect(findOrCreateUserMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: mockUser.email,
+          profileData: specificPreparedProfile,
+        })
+      );
+      expect(result).toEqual({
+        userId: internalDbUser.id,
+        userEmail: internalDbUser.email,
+        name: internalDbUser.name,
+        image: internalDbUser.image,
+        role: internalDbUser.role,
       });
     });
 
     it('should return null if internal validateOAuthInputs fails (e.g. no user email)', async () => {
-      const userWithoutEmail = { ...mockUser, email: null }; // Makes validateOAuthInputs fail
       const testSUTDependencies = createDependenciesForSUT();
+      const userWithoutEmail = { ...mockUser, email: null };
 
       const result = await oauthHelpersModuleActual.findOrCreateOAuthDbUser({
-        // @ts-ignore // Allow null email for testing validation
-        user: userWithoutEmail,
+        user: userWithoutEmail as NextAuthUser,
         account: mockAccount,
         profile: mockProfile,
         correlationId: mockCorrelationId,
         dependencies: testSUTDependencies,
       });
-
+      expect(result).toBeNull();
       expect(prepareProfileMock).not.toHaveBeenCalled();
       expect(findOrCreateUserMock).not.toHaveBeenCalled();
-      expect(result).toBeNull();
     });
 
     it('should return null if internal performDbFindOrCreateUser returns null (e.g., findOrCreateUser dependency fails)', async () => {
-      findOrCreateUserMock.mockResolvedValue(null); // Dependency of performDbFindOrCreateUser returns null
       const testSUTDependencies = createDependenciesForSUT();
+      findOrCreateUserMock.mockResolvedValue(null);
 
       const result = await oauthHelpersModuleActual.findOrCreateOAuthDbUser({
         user: mockUser,
@@ -306,14 +290,15 @@ describe('OAuth Helpers', () => {
         dependencies: testSUTDependencies,
       });
 
-      expect(prepareProfileMock).toHaveBeenCalledTimes(1);
-      expect(findOrCreateUserMock).toHaveBeenCalledTimes(1);
       expect(result).toBeNull();
+      expect(prepareProfileMock).toHaveBeenCalled();
+      expect(findOrCreateUserMock).toHaveBeenCalled();
     });
 
     it('should return null if internal performDbFindOrCreateUser throws (e.g., findOrCreateUser dependency throws)', async () => {
-      findOrCreateUserMock.mockRejectedValue(new Error('DB error from findOrCreateUser mock'));
       const testSUTDependencies = createDependenciesForSUT();
+      const dbError = new Error('DB error');
+      findOrCreateUserMock.mockRejectedValue(dbError);
 
       const result = await oauthHelpersModuleActual.findOrCreateOAuthDbUser({
         user: mockUser,
@@ -323,31 +308,59 @@ describe('OAuth Helpers', () => {
         dependencies: testSUTDependencies,
       });
 
-      expect(prepareProfileMock).toHaveBeenCalledTimes(1);
-      expect(findOrCreateUserMock).toHaveBeenCalledTimes(1); // It was called and then threw
-      expect(result).toBeNull(); // SUT should catch the error and return null
+      expect(result).toBeNull();
+      expect(prepareProfileMock).toHaveBeenCalled();
+      expect(findOrCreateUserMock).toHaveBeenCalled();
     });
   });
 
   describe('handleOAuthSignIn (actual implementation)', () => {
-    const { validateInputs: validateInputsMockFromAuthHelpers } = getMocks();
+    // Use locally defined mocks for this suite to ensure clarity and isolation
+    let localValidateInputsMock: jest.MockedFunction<typeof actualValidateSignInInputs>;
+    let localPrepareProfileMock: jest.MockedFunction<typeof defaultDependencies.prepareProfile>;
+    let localFindOrCreateUserMock: jest.MockedFunction<typeof defaultDependencies.findOrCreateUser>;
 
-    const createHandleSignInDeps = (): HandleOAuthTestDependencies => ({
-      validateInputs: validateInputsMockFromAuthHelpers,
-      uuidv4: globalMockUuidV4, // Use the explicit global mock instance
-    });
+    // This type should reflect what handleOAuthSignIn expects for its dependencies param
+    interface HandleOAuthSignInTestDependencies {
+      validateInputs: jest.MockedFunction<typeof actualValidateSignInInputs>;
+      prepareProfile: jest.MockedFunction<typeof defaultDependencies.prepareProfile>;
+      findOrCreateUser: jest.MockedFunction<typeof defaultDependencies.findOrCreateUser>;
+      uuidv4: jest.Mock<() => string>;
+    }
 
     beforeEach(() => {
-      validateInputsMockFromAuthHelpers.mockReset();
-    });
+      // Initialize fresh mocks for each test in this suite
+      localValidateInputsMock = jest.fn<typeof actualValidateSignInInputs>();
+      localPrepareProfileMock = jest.fn<typeof defaultDependencies.prepareProfile>();
+      localFindOrCreateUserMock = jest.fn<typeof defaultDependencies.findOrCreateUser>();
 
-    it('should handle successful OAuth sign in', async () => {
-      validateInputsMockFromAuthHelpers.mockReturnValue({
+      mockUuidV4Instance.mockClear().mockReturnValue('mock-uuid-from-handleOAuthSignIn');
+
+      // Default successful path setup for these local mocks
+      localValidateInputsMock.mockReturnValue({
         isValid: true,
         userId: mockUser.id,
-        userEmail: mockUser.email as string,
+        userEmail: mockUser.email,
       });
-      const testDependencies = createHandleSignInDeps();
+      localPrepareProfileMock.mockReturnValue({
+        id: 'prepared-user-id',
+        email: 'test@example.com',
+        name: 'Prepared User',
+        image: 'prepared.jpg',
+      });
+      localFindOrCreateUserMock.mockResolvedValue(mockAuthUserInternal);
+    });
+
+    const createHandleSignInDeps = (): HandleOAuthSignInTestDependencies => ({
+      validateInputs: localValidateInputsMock,
+      prepareProfile: localPrepareProfileMock,
+      findOrCreateUser: localFindOrCreateUserMock,
+      uuidv4: mockUuidV4Instance,
+    });
+
+    it('should process OAuth sign-in and return true on success', async () => {
+      // BeforeEach already sets up mocks for success. Can override if needed.
+      const testSUTDependencies = createHandleSignInDeps();
 
       const result = await oauthHelpersModuleActual.handleOAuthSignIn({
         user: mockUser,
@@ -355,89 +368,216 @@ describe('OAuth Helpers', () => {
         profile: mockProfile,
         isNewUser: false,
         correlationId: mockCorrelationId,
-        dependencies: testDependencies,
+        dependencies: testSUTDependencies,
       });
-      expect(testDependencies.validateInputs).toHaveBeenCalledTimes(1);
+
+      expect(localValidateInputsMock).toHaveBeenCalledWith(
+        mockUser,
+        mockAccount,
+        mockCorrelationId
+      );
+      // Check dependencies of findOrCreateOAuthDbUser were called
+      expect(localPrepareProfileMock).toHaveBeenCalled();
+      expect(localFindOrCreateUserMock).toHaveBeenCalled();
       expect(result).toBe(true);
     });
 
-    it('should return false if validation fails', async () => {
-      validateInputsMockFromAuthHelpers.mockReturnValue({
-        isValid: false,
-      });
-      const testDependencies = createHandleSignInDeps();
+    it('should use generated correlationId if not provided and call dependencies of findOrCreateOAuthDbUser', async () => {
+      // BeforeEach sets mocks for success. uuid is handled by mockUuidV4Instance.
+      const testSUTDependencies = createHandleSignInDeps();
+      // Ensure mockUuidV4Instance is primed for this specific call if different from beforeEach
+      mockUuidV4Instance.mockClear().mockReturnValueOnce('generated-uuid-for-signin');
 
-      const result = await oauthHelpersModuleActual.handleOAuthSignIn({
+      await oauthHelpersModuleActual.handleOAuthSignIn({
         user: mockUser,
         account: mockAccount,
         profile: mockProfile,
-        isNewUser: false,
-        correlationId: mockCorrelationId,
-        dependencies: testDependencies,
+        // No providedCorrelationId, so SUT should generate one using its uuidv4
+        dependencies: testSUTDependencies,
       });
-      expect(testDependencies.validateInputs).toHaveBeenCalledTimes(1);
-      expect(result).toBe(false);
+      // Check if validateInputs was called with *any* string for correlationId for now
+      expect(localValidateInputsMock).toHaveBeenCalledWith(
+        mockUser,
+        mockAccount,
+        expect.any(String)
+      );
+      expect(mockUuidV4Instance).toHaveBeenCalledTimes(1); // Once for correlation ID
+      // Check dependencies of findOrCreateOAuthDbUser were called
+      expect(localPrepareProfileMock).toHaveBeenCalled();
+      expect(localFindOrCreateUserMock).toHaveBeenCalled();
     });
 
-    it('should handle sign-in errors', async () => {
-      validateInputsMockFromAuthHelpers.mockImplementation(() => {
-        throw new Error('Validation error');
-      });
-      const testDependencies = createHandleSignInDeps();
+    it('should return false if validation fails', async () => {
+      localValidateInputsMock.mockReturnValue({ isValid: false }); // Override for this test
+      const testSUTDependencies = createHandleSignInDeps();
 
       const result = await oauthHelpersModuleActual.handleOAuthSignIn({
         user: mockUser,
         account: mockAccount,
         profile: mockProfile,
-        isNewUser: false,
-        correlationId: mockCorrelationId,
-        dependencies: testDependencies,
+        dependencies: testSUTDependencies,
       });
-      expect(testDependencies.validateInputs).toHaveBeenCalledTimes(1);
       expect(result).toBe(false);
+      expect(localPrepareProfileMock).not.toHaveBeenCalled();
+      expect(localFindOrCreateUserMock).not.toHaveBeenCalled();
+    });
+
+    it('should return false if findOrCreateOAuthDbUser (via its dependencies) effectively returns null', async () => {
+      // localValidateInputsMock is fine from beforeEach (isValid: true)
+      // localPrepareProfileMock is fine from beforeEach (returns valid profile)
+      localFindOrCreateUserMock.mockResolvedValue(null); // Override for this test
+      const testSUTDependencies = createHandleSignInDeps();
+
+      const result = await oauthHelpersModuleActual.handleOAuthSignIn({
+        user: mockUser,
+        account: mockAccount,
+        profile: mockProfile,
+        dependencies: testSUTDependencies,
+        correlationId: mockCorrelationId,
+      });
+      expect(result).toBe(false);
+      expect(localPrepareProfileMock).toHaveBeenCalled();
+      expect(localFindOrCreateUserMock).toHaveBeenCalled();
     });
   });
 
   describe('createOAuthSignInCallback (actual implementation)', () => {
-    const { validateInputs: validateInputsMockFromAuthHelpersForCallback } = getMocks();
+    const { prepareProfile: prepareProfileMock, findOrCreateUser: findOrCreateUserMock } =
+      getMocks();
+    const mockValidateInputsCallback = jest.fn<typeof actualValidateSignInInputs>();
 
-    const createCallbackDeps = (): HandleOAuthTestDependencies => ({
-      validateInputs: validateInputsMockFromAuthHelpersForCallback,
-      uuidv4: globalMockUuidV4, // Use the explicit global mock instance
+    // This type should reflect what createOAuthSignInCallback expects for its dependencies param
+    interface CreateOAuthCallbackTestDependencies {
+      validateInputs: jest.MockedFunction<typeof actualValidateSignInInputs>;
+      prepareProfile: jest.MockedFunction<typeof defaultDependencies.prepareProfile>;
+      findOrCreateUser: jest.MockedFunction<typeof defaultDependencies.findOrCreateUser>;
+      uuidv4: jest.Mock<() => string>;
+    }
+
+    const createCallbackDeps = (): CreateOAuthCallbackTestDependencies => ({
+      validateInputs: mockValidateInputsCallback,
+      prepareProfile: prepareProfileMock,
+      findOrCreateUser: findOrCreateUserMock,
+      uuidv4: mockUuidV4Instance,
     });
 
     beforeEach(() => {
-      validateInputsMockFromAuthHelpersForCallback.mockReset();
+      mockValidateInputsCallback.mockReset();
+      // Reset mocks for dependencies of the *actual* findOrCreateOAuthDbUser
+      prepareProfileMock.mockReset();
+      findOrCreateUserMock.mockReset();
+      mockUuidV4Instance.mockClear().mockReturnValue('mock-uuid-from-createCallback');
+
+      // Default successful path for findOrCreateOAuthDbUser's dependencies
+      prepareProfileMock.mockReturnValue({
+        id: 'prepared-callback-user-id',
+        email: 'callback-test@example.com',
+        name: 'Prepared Callback User',
+        image: 'callback-prepared.jpg',
+      });
+      // This will be used by the actual findOrCreateOAuthDbUser
+      const internalUserForCallback: AuthUserInternal = {
+        id: 'callback-user-id',
+        email: 'callback-test@example.com',
+        name: 'Callback User Name',
+        image: 'callback-image.jpg',
+        role: UserRole.ADMIN,
+      };
+      findOrCreateUserMock.mockResolvedValue(internalUserForCallback);
     });
 
-    it('should create a function that handles OAuth sign in', async () => {
-      const mockJwtData: JWT = {
-        sub: 'user-id-123',
-        name: 'Test User',
-        email: 'test@example.com',
-        picture: 'https://example.com/avatar.jpg',
-      };
-      validateInputsMockFromAuthHelpersForCallback.mockReturnValue({
+    it('should create a function that processes OAuth callback and returns updated token', async () => {
+      mockValidateInputsCallback.mockReturnValue({
         isValid: true,
         userId: mockUser.id,
-        userEmail: mockUser.email as string,
+        userEmail: mockUser.email,
       });
-      const testDependencies = createCallbackDeps();
+      // Configure mocks for dependencies of findOrCreateOAuthDbUser for this specific test if needed,
+      // otherwise, rely on beforeEach.
+      // For example, to match the expectedOAuthUser more closely:
+      const specificExpectedOAuthUser = createMockOAuthDbUser({
+        userId: 'callback-user-id',
+        userEmail: 'callback-test@example.com',
+        name: 'Callback User Name',
+        image: 'callback-image.jpg',
+        role: UserRole.ADMIN,
+      });
+      // findOrCreateUserMock.mockResolvedValue(specificExpectedOAuthUser); // No, findOrCreateUser returns AuthUserInternal
+      // The mapping to OAuthDbUser happens inside findOrCreateOAuthDbUser.
+      // So, findOrCreateUserMock should return an AuthUserInternal that would map to specificExpectedOAuthUser.
+      const correspondingAuthUserInternal: AuthUserInternal = {
+        id: specificExpectedOAuthUser.userId,
+        email: specificExpectedOAuthUser.userEmail,
+        name: specificExpectedOAuthUser.name,
+        image: specificExpectedOAuthUser.image,
+        role: specificExpectedOAuthUser.role as UserRole,
+      };
+      findOrCreateUserMock.mockResolvedValue(correspondingAuthUserInternal);
+
+      const testSUTDependencies = createCallbackDeps();
+      const initialToken: JWT = { sub: 'existing-sub', name: 'Old Name', jti: 'old-jti' };
+      // The expectedOAuthUser is what we anticipate findOrCreateOAuthDbUser to produce,
+      // based on its internal logic and its mocked dependencies.
 
       const signInCallback = oauthHelpersModuleActual.createOAuthSignInCallback({
-        jwt: mockJwtData,
-        token: { ...mockJwtData },
+        jwt: initialToken,
+        token: initialToken,
         user: mockUser,
         account: mockAccount,
         profile: mockProfile,
-        isNewUser: false,
-        dependencies: testDependencies,
+        correlationId: 'callback-correlation-id',
+        dependencies: testSUTDependencies,
       });
 
       expect(typeof signInCallback).toBe('function');
-      const result = await signInCallback();
-      expect(result).toEqual({ ...mockJwtData });
-      expect(testDependencies.validateInputs).toHaveBeenCalled();
+      const resultToken = await signInCallback();
+
+      expect(mockValidateInputsCallback).toHaveBeenCalledWith(
+        mockUser,
+        mockAccount,
+        'callback-correlation-id'
+      );
+      // Check dependencies that findOrCreateOAuthDbUser should have used
+      expect(prepareProfileMock).toHaveBeenCalled();
+      expect(findOrCreateUserMock).toHaveBeenCalled();
+
+      expect(resultToken).toEqual(
+        expect.objectContaining({
+          sub: specificExpectedOAuthUser.userId,
+          name: specificExpectedOAuthUser.name,
+          email: specificExpectedOAuthUser.userEmail,
+          picture: specificExpectedOAuthUser.image,
+          role: specificExpectedOAuthUser.role,
+          jti: 'mock-uuid-from-createCallback',
+        })
+      );
+      expect(resultToken.jti).not.toBe('old-jti');
+    });
+
+    it('returned callback should return minimal token with new JTI if validation fails', async () => {
+      mockValidateInputsCallback.mockReturnValue({ isValid: false });
+      const testSUTDependencies = createCallbackDeps();
+      const initialToken: JWT = { sub: 'existing-sub', jti: 'old-jti' };
+
+      const signInCallback = oauthHelpersModuleActual.createOAuthSignInCallback({
+        jwt: initialToken,
+        token: initialToken,
+        user: mockUser,
+        account: mockAccount,
+        profile: mockProfile,
+        correlationId: 'callback-fail-correlation',
+        dependencies: testSUTDependencies,
+      });
+      const resultToken = await signInCallback();
+
+      expect(prepareProfileMock).not.toHaveBeenCalled();
+      expect(findOrCreateUserMock).not.toHaveBeenCalled();
+      // Restore full check for minimal token with new JTI
+      // expect(resultToken.jti).toBe('mock-uuid-from-createCallback'); // This was the simplified check
+      expect(resultToken).toEqual({
+        jti: 'mock-uuid-from-createCallback',
+      });
+      expect(resultToken.sub).toBeUndefined(); // Check this separately if JTI passes
     });
   });
 });

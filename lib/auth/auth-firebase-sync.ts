@@ -1,5 +1,8 @@
 import { logger } from '@/lib/logger';
-import { firebaseAdminServiceImpl } from '@/lib/server/services/firebase-admin.service';
+import {
+  firebaseAdminServiceImpl,
+  isFirebaseAdminServiceReady,
+} from '@/lib/server/firebase-admin-singleton';
 import type { Account, Profile, User as NextAuthUser } from 'next-auth';
 
 // Helper function to determine if Firebase user sync should occur
@@ -13,16 +16,11 @@ export function shouldSyncFirebaseUser(
   );
 }
 
-// Check if Firebase Admin service is initialized
-function isFirebaseAdminReady(
-  adminService: typeof firebaseAdminServiceImpl,
-  logContext: Record<string, unknown>
-): boolean {
-  if (!adminService || !adminService.isInitialized()) {
-    logger.error(
-      logContext,
-      '[JWT Callback] Firebase Admin Service not initialized. Skipping user sync'
-    );
+// Check if Firebase Admin service is ready using the imported check
+function checkFirebaseAdminStatus(logContext: Record<string, unknown>): boolean {
+  if (!isFirebaseAdminServiceReady()) {
+    // Use the imported readiness check
+    logger.error(logContext, '[JWT Callback] Firebase Admin Service not ready. Skipping user sync');
     return false;
   }
   return true;
@@ -89,13 +87,12 @@ async function createFirebaseUserIfNeeded(
     photoURL?: string;
     emailVerified: boolean;
   },
-  adminService: typeof firebaseAdminServiceImpl,
   logContext: Record<string, unknown>
 ): Promise<void> {
   const userId = userPayload.uid;
 
   try {
-    await adminService.getUser(userId);
+    await firebaseAdminServiceImpl.getUser(userId); // Use imported singleton
     logger.info(logContext, '[JWT Callback] Firebase user already exists');
   } catch (error: unknown) {
     const errorCode =
@@ -108,7 +105,7 @@ async function createFirebaseUserIfNeeded(
 
     if (errorCode === 'auth/user-not-found') {
       try {
-        await adminService.createUser(userPayload);
+        await firebaseAdminServiceImpl.createUser(userPayload); // Use imported singleton
         logger.info(logContext, '[JWT Callback] Successfully created Firebase user');
       } catch (creationError) {
         logger.error(
@@ -150,9 +147,8 @@ export async function syncFirebaseUserForOAuth(
   const oauthLogContext = { ...baseLogContext, userId, provider: account.provider };
   logger.info(oauthLogContext, '[JWT Callback] Conditions met for Firebase OAuth Sync');
 
-  // Get Firebase admin service
-  const adminService = firebaseAdminServiceImpl;
-  if (!isFirebaseAdminReady(adminService, oauthLogContext)) {
+  // Check Firebase admin status using the new function
+  if (!checkFirebaseAdminStatus(oauthLogContext)) {
     return;
   }
 
@@ -162,6 +158,6 @@ export async function syncFirebaseUserForOAuth(
     return;
   }
 
-  // Create or update user in Firebase
-  await createFirebaseUserIfNeeded(userPayload, adminService, oauthLogContext);
+  // Create or update user in Firebase, using the imported singleton directly
+  await createFirebaseUserIfNeeded(userPayload, oauthLogContext);
 }

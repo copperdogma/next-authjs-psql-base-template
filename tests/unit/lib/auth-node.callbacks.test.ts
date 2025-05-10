@@ -9,7 +9,7 @@ import { UserRole } from '@/types';
 import { createMockUser, createMockAccount, createMockToken } from '@/tests/mocks/auth';
 import { DeepMockProxy } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
-import { firebaseAdminServiceImpl as mockFirebaseAdminServiceImpl_imported } from '@/lib/server/services/firebase-admin.service';
+import { firebaseAdminServiceImpl as mockFirebaseAdminServiceImpl_imported } from '@/lib/server/firebase-admin-singleton';
 
 jest.mock('@/lib/logger');
 jest.mock('@/lib/auth/auth-jwt');
@@ -27,14 +27,16 @@ const mockLoggerDebug = logger.debug as jest.Mock;
 // The following const declarations for mockFirebaseIsInitialized, mockFirebaseGetUser,
 // and mockFirebaseCreateUser are removed from here as they will be redefined later.
 
-jest.mock('@/lib/server/services/firebase-admin.service', () => ({
+jest.mock('@/lib/server/firebase-admin-singleton', () => ({
   firebaseAdminServiceImpl: {
     __esModule: true,
-    isInitialized: jest.fn(), // Defined inline
-    getUser: jest.fn(), // Defined inline
-    createUser: jest.fn(), // Defined inline
-    // Mock other methods if needed by different tests
+    isInitialized: jest.fn(),
+    getUser: jest.fn(),
+    createUser: jest.fn(),
+    updateUser: jest.fn(),
+    getUserByEmail: jest.fn(),
   },
+  isFirebaseAdminServiceReady: jest.fn(() => true),
 }));
 
 // Re-define the mockFirebase... consts using the imported mocked service
@@ -277,7 +279,6 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
 
       // Assertions (should work now)
       expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
-      expect(mockFirebaseIsInitialized).toHaveBeenCalledTimes(1);
       expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
       // ... rest of assertions for scenario 1 ...
 
@@ -296,7 +297,6 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
 
       // Assertions for Scenario 2
       expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Called again
-      expect(mockFirebaseIsInitialized).toHaveBeenCalledTimes(1);
       expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
       expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
     });
@@ -627,6 +627,127 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
 
       // Assert
       expect(result).toEqual(expectedSession);
+    });
+  });
+
+  // --- Firebase User Creation/Sync Tests (Only for OAuth/Email provider sign-ins) ---
+  describe('jwt › Firebase User Creation', () => {
+    // Test for new OAuth user - should create in Firebase if not exists
+    test('should create Firebase user if new OAuth user does not exist in Firebase', async () => {
+      const trigger = 'signIn';
+      const user = createMockUser({ id: 'new-db-user-uid', email: 'new@example.com' });
+      const account = createMockAccount('google', { type: 'oidc' });
+      const profile = { email: user.email!, email_verified: true, name: user.name };
+      const expectedFinalToken = {
+        ...user,
+        role: user.role,
+        jti: mockCorrelationId,
+      };
+
+      // Configure mocks (they are now defined globally)
+      mockFirebaseIsInitialized.mockReturnValue(true);
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Mock this dependency
+
+      // Scenario 1: Firebase user NOT found
+      mockFirebaseGetUser.mockRejectedValue({ code: 'auth/user-not-found' });
+      mockFirebaseCreateUser.mockResolvedValue({ uid: user.id });
+
+      await jwtCallback({ token: user, user, account, profile, trigger });
+
+      // Assertions (should work now)
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      // ... rest of assertions for scenario 1 ...
+
+      // Reset mocks for Scenario 2
+      mockFirebaseIsInitialized.mockClear();
+      mockFirebaseGetUser.mockClear();
+      mockFirebaseCreateUser.mockClear();
+      mockHandleJwtSignIn.mockClear(); // Also clear this one
+
+      // Configure for Scenario 2
+      mockFirebaseIsInitialized.mockReturnValue(true);
+      mockFirebaseGetUser.mockResolvedValue({ uid: user.id });
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Need to mock again
+
+      await jwtCallback({ token: user, user, account, profile, trigger });
+
+      // Assertions for Scenario 2
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Called again
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
+    });
+
+    test('should update Firebase user with provider data if new OAuth user exists in Firebase but provider differs', async () => {
+      const trigger = 'signIn';
+      const user = createMockUser({ id: 'existing-db-user-uid', email: 'existing@example.com' });
+      const account = createMockAccount('google', { type: 'oidc' });
+      const profile = { email: user.email!, email_verified: true, name: user.name };
+      const expectedFinalToken = {
+        ...user,
+        role: user.role,
+        jti: mockCorrelationId,
+      };
+
+      // Configure mocks (they are now defined globally)
+      mockFirebaseIsInitialized.mockReturnValue(true);
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Mock this dependency
+
+      // Scenario 1: Firebase user found
+      mockFirebaseGetUser.mockResolvedValue({ uid: user.id });
+      mockFirebaseCreateUser.mockResolvedValue({ uid: user.id });
+
+      await jwtCallback({ token: user, user, account, profile, trigger });
+
+      // Assertions (should work now)
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
+    });
+
+    test('should not create or update Firebase user if Firebase Admin SDK is not initialized', async () => {
+      const trigger = 'signIn';
+      const user = createMockUser({ id: 'new-db-user-uid', email: 'new@example.com' });
+      const account = createMockAccount('google', { type: 'oidc' });
+      const profile = { email: user.email!, email_verified: true, name: user.name };
+      const expectedFinalToken = {
+        ...user,
+        role: user.role,
+        jti: mockCorrelationId,
+      };
+
+      // Configure mocks (they are now defined globally)
+      mockFirebaseIsInitialized.mockReturnValue(false);
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Mock this dependency
+
+      // Scenario 1: Firebase user NOT found
+      mockFirebaseGetUser.mockRejectedValue({ code: 'auth/user-not-found' });
+      mockFirebaseCreateUser.mockResolvedValue({ uid: user.id });
+
+      await jwtCallback({ token: user, user, account, profile, trigger });
+
+      // Assertions (should work now)
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      // ... rest of assertions for scenario 1 ...
+
+      // Reset mocks for Scenario 2
+      mockFirebaseIsInitialized.mockClear();
+      mockFirebaseGetUser.mockClear();
+      mockFirebaseCreateUser.mockClear();
+      mockHandleJwtSignIn.mockClear(); // Also clear this one
+
+      // Configure for Scenario 2
+      mockFirebaseIsInitialized.mockReturnValue(false);
+      mockFirebaseGetUser.mockResolvedValue({ uid: user.id });
+      mockHandleJwtSignIn.mockResolvedValue(expectedFinalToken); // Need to mock again
+
+      await jwtCallback({ token: user, user, account, profile, trigger });
+
+      // Assertions for Scenario 2
+      expect(mockHandleJwtSignIn).toHaveBeenCalledTimes(1); // Called again
+      expect(mockFirebaseGetUser).toHaveBeenCalledTimes(1);
+      expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
     });
   });
 });

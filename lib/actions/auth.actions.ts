@@ -14,7 +14,7 @@ import pino from 'pino';
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import type { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
-import { firebaseAdminServiceImpl } from '@/lib/server/services/firebase-admin.service';
+import { firebaseAdminServiceImpl } from '@/lib/server/firebase-admin-singleton';
 import { signIn } from '@/lib/auth-node';
 
 // Constants

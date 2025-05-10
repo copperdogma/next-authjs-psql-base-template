@@ -3,37 +3,9 @@ import { type AdapterUser } from 'next-auth/adapters';
 import { type Account, type Profile, type User as NextAuthUser } from 'next-auth';
 import { logger } from '@/lib/logger';
 import { UserRole } from '@/types';
-import {
-  prepareProfileDataForDb,
-  validateSignInInputs,
-  type AuthUserInternal,
-} from './auth-helpers';
+import { prepareProfileDataForDb, type AuthUserInternal } from './auth-helpers';
 import { defaultDependencies, type OAuthDbUser } from './auth-jwt-types';
-
-/**
- * Validates the essential user and account details for OAuth user creation.
- */
-export function validateOAuthInputs(
-  user: NextAuthUser | AdapterUser | null | undefined,
-  account: Account | null | undefined,
-  correlationId: string
-): { isValid: boolean; userId?: string; userEmail?: string } {
-  const userId = user?.id;
-  const userEmail = user?.email;
-
-  if (!userId || !userEmail || !account) {
-    logger.error({
-      correlationId,
-      userId: userId,
-      userEmail: userEmail,
-      accountId: account?.providerAccountId,
-      provider: account?.provider,
-      msg: 'User ID, email, or account is missing, cannot proceed with findOrCreateUser.',
-    });
-    return { isValid: false };
-  }
-  return { isValid: true, userId, userEmail };
-}
+import { validateOAuthInputs } from './oauth-validation-helpers';
 
 /**
  * Interacts with the database to find or create a user based on OAuth details.
@@ -131,89 +103,6 @@ export async function findOrCreateOAuthDbUser(params: {
 }
 
 /**
- * Validates inputs for the OAuth JWT Sign-in process.
- */
-export function validateOAuthSignInInputs(
-  user: NextAuthUser | AdapterUser,
-  account: Account | null,
-  correlationId: string,
-  dependencies: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  }
-): { isValid: boolean; errorToken?: JWT } {
-  // Check for null account first
-  if (!account) {
-    logger.error({ correlationId }, 'Cannot process OAuth sign-in with null account');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
-  }
-
-  // Perform main validation
-  const validationResult = dependencies.validateInputs(user, account, correlationId);
-
-  // Check validation result
-  if (!validationResult.isValid) {
-    logger.error({ correlationId, provider: account.provider }, 'Failed JWT OAuth validation');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
-  }
-
-  // Inputs are valid
-  return { isValid: true };
-}
-
-/**
- * Validates OAuth request inputs and returns validation result.
- */
-export function validateOAuthRequestInputs(params: {
-  user: NextAuthUser | AdapterUser;
-  account: Account | null;
-  correlationId: string;
-  _baseToken: JWT;
-  dependencies: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  };
-}): {
-  isValid: boolean;
-  validAccount?: Account;
-  fallbackToken?: JWT;
-} {
-  const { user, account, correlationId, _baseToken, dependencies } = params;
-
-  // Check for null account
-  if (!account) {
-    logger.error({ correlationId }, 'Cannot process OAuth sign-in with null account');
-    return {
-      isValid: false,
-      fallbackToken: createFallbackToken(_baseToken, dependencies.uuidv4),
-    };
-  }
-
-  // Perform main validation
-  const validationResult = dependencies.validateInputs(user, account, correlationId);
-
-  // Check validation result
-  if (!validationResult.isValid) {
-    logger.error({ correlationId, provider: account.provider }, 'Failed JWT OAuth validation');
-    return {
-      isValid: false,
-      fallbackToken: createFallbackToken(_baseToken, dependencies.uuidv4),
-    };
-  }
-
-  // Inputs are valid
-  return { isValid: true, validAccount: account };
-}
-
-/**
- * Creates a fallback token when OAuth authentication fails.
- */
-export function createFallbackToken(_baseToken: JWT, jtiGenerator: () => string): JWT {
-  // For failed OAuth, return just a minimal token with new JTI
-  return { jti: jtiGenerator() };
-}
-
-/**
  * Creates the JWT payload for an OAuth authentication.
  */
 export function createOAuthJwtPayload(params: {
@@ -257,100 +146,176 @@ export async function handleOAuthSignIn(params: {
   profile: Profile;
   isNewUser?: boolean;
   correlationId?: string;
-  dependencies?: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  };
+  dependencies?: Partial<typeof defaultDependencies>;
 }): Promise<boolean> {
-  try {
-    const { user, account, correlationId = 'oauth-signin', dependencies } = params;
-    const deps = dependencies || {
-      validateInputs: defaultDependencies.validateInputs,
-      uuidv4: defaultDependencies.uuidv4,
-    };
+  const {
+    user,
+    account,
+    profile,
+    correlationId: providedCorrelationId,
+    dependencies = {},
+  } = params;
+  const localDeps = { ...defaultDependencies, ...dependencies };
+  const correlationId = providedCorrelationId || localDeps.uuidv4();
 
-    // Validate inputs
-    const validationResult = deps.validateInputs(user, account, correlationId);
+  // Validate inputs
+  const validationResult = localDeps.validateInputs(user, account, correlationId);
 
-    if (!validationResult.isValid) {
-      logger.warn({ correlationId, provider: account.provider }, 'OAuth sign-in validation failed');
-      return false;
-    }
+  if (!validationResult.isValid) {
+    logger.warn({ correlationId, provider: account.provider }, 'OAuth sign-in validation failed');
+    return false;
+  }
 
-    // Log successful validation
-    logger.info(
-      { correlationId, userId: user.id, provider: account.provider },
-      'OAuth sign-in successful'
-    );
+  // Find or create user in DB
+  const dbUser = await findOrCreateOAuthDbUser({
+    user,
+    account,
+    profile,
+    correlationId,
+    dependencies: {
+      findOrCreateUser: localDeps.findOrCreateUser,
+      prepareProfile: localDeps.prepareProfile,
+      uuidv4: localDeps.uuidv4,
+      validateInputs: localDeps.validateInputs,
+    },
+  });
 
-    return true;
-  } catch (error) {
+  if (!dbUser) {
     logger.error(
-      {
-        error: error instanceof Error ? error.message : String(error),
-        correlationId: params.correlationId,
-      },
-      'Error during OAuth sign-in'
+      { correlationId, provider: account.provider },
+      'Failed to find or create OAuth user in DB during sign-in'
     );
     return false;
   }
+
+  // Log successful validation and DB processing
+  logger.info(
+    { correlationId, userId: dbUser.userId, provider: account.provider },
+    'OAuth sign-in successful and user processed in DB'
+  );
+  return true;
 }
 
 /**
- * Creates a callback function for OAuth sign-in.
- * This function returns a function that will be called during the OAuth flow.
+ * Processes the OAuth user data, interacts with the database, and creates a JWT.
+ * This is a helper function for the OAuth sign-in callback.
  */
+async function processOauthUserAndCreateJwt(params: {
+  user: NextAuthUser | AdapterUser;
+  account: Account; // Account is guaranteed non-null by the caller
+  profile?: Profile;
+  correlationId: string;
+  localDeps: typeof defaultDependencies & Partial<typeof defaultDependencies>; // Combined type
+  baseJwt: JWT; // The original JWT to spread if successful
+}): Promise<JWT> {
+  const { user, account, profile, correlationId, localDeps, baseJwt } = params;
+
+  // Proceed to find or create user
+  const dbUser = await findOrCreateOAuthDbUser({
+    user,
+    account,
+    profile,
+    correlationId,
+    dependencies: {
+      findOrCreateUser: localDeps.findOrCreateUser,
+      prepareProfile: localDeps.prepareProfile,
+      uuidv4: localDeps.uuidv4,
+      validateInputs: localDeps.validateInputs, // Though not directly used here, keep for consistency if findOrCreateOAuthDbUser evolves
+    },
+  });
+
+  if (!dbUser) {
+    logger.error(
+      { correlationId, provider: account.provider },
+      'OAuth callback failed to get DB user'
+    );
+    return { jti: localDeps.uuidv4() }; // Minimal token on DB error
+  }
+
+  // Successfully processed, create new JWT payload
+  logger.info({
+    correlationId,
+    userId: dbUser.userId,
+    provider: account.provider,
+    msg: 'OAuth callback successful, creating new JWT payload',
+  });
+
+  return {
+    ...baseJwt,
+    sub: dbUser.userId,
+    name: dbUser.name,
+    email: dbUser.userEmail,
+    picture: dbUser.image,
+    role: dbUser.role || UserRole.USER,
+    jti: localDeps.uuidv4(),
+    userId: dbUser.userId,
+    userRole: dbUser.role || UserRole.USER,
+  };
+}
+
+/**
+ * Creates an OAuth sign-in callback that returns a function for the OAuth flow.
+ */
+// eslint-disable-next-line max-lines-per-function
 export function createOAuthSignInCallback(params: {
   jwt: JWT;
   token: JWT;
   user: NextAuthUser | AdapterUser;
   account: Account | null;
   profile?: Profile;
-  isNewUser?: boolean;
   correlationId?: string;
-  dependencies?: {
-    validateInputs: typeof validateSignInInputs;
-    uuidv4: typeof defaultDependencies.uuidv4;
-  };
+  dependencies?: Partial<typeof defaultDependencies>;
 }): () => Promise<JWT> {
-  const { token, user, account, correlationId = 'oauth-callback', dependencies } = params;
-  const deps = dependencies || {
-    validateInputs: defaultDependencies.validateInputs,
-    uuidv4: defaultDependencies.uuidv4,
-  };
+  const {
+    jwt,
+    token,
+    user,
+    account,
+    profile,
+    correlationId: providedCorrelationId,
+    dependencies = {},
+  } = params;
+  const localDeps = { ...defaultDependencies, ...dependencies };
+  const callbackExecutionCorrelationId = providedCorrelationId || localDeps.uuidv4();
 
-  // Return a function that will be called during OAuth flow
-  return async () => {
+  return async (): Promise<JWT> => {
     try {
-      // If account is null, we can't proceed with OAuth validation
       if (!account) {
-        logger.warn({ correlationId }, 'OAuth callback received null account');
-        return token;
+        logger.warn(
+          { correlationId: callbackExecutionCorrelationId },
+          'OAuth callback received null account, returning original token'
+        );
+        return token; // Return original token if account is null
       }
-
-      // Validate the inputs
-      const validationResult = deps.validateInputs(user, account, correlationId);
-
+      const validationResult = localDeps.validateInputs(
+        user,
+        account,
+        callbackExecutionCorrelationId
+      );
       if (!validationResult.isValid) {
         logger.warn(
-          { correlationId, provider: account.provider },
+          { correlationId: callbackExecutionCorrelationId, provider: account.provider },
           'OAuth callback validation failed'
         );
-        return token;
+        return { jti: localDeps.uuidv4() }; // Minimal token on validation failure
       }
-
-      // For successful validation, return the token
-      // In a real implementation, you might want to enhance the token here
-      return token;
+      return await processOauthUserAndCreateJwt({
+        user,
+        account, // account is now guaranteed non-null here
+        profile,
+        correlationId: callbackExecutionCorrelationId,
+        localDeps,
+        baseJwt: jwt, // Pass the JWT to be enriched
+      });
     } catch (error) {
       logger.error(
         {
           error: error instanceof Error ? error.message : String(error),
-          correlationId,
+          correlationId: callbackExecutionCorrelationId,
         },
         'Error in OAuth sign-in callback'
       );
-      return token;
+      return { jti: localDeps.uuidv4() }; // Minimal token on catch
     }
   };
 }

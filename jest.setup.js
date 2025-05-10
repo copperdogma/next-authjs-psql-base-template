@@ -18,7 +18,7 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
 try {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 } catch (error) {
-  console.warn('Warning: Could not load .env.test file');
+  // console.warn('Warning: Could not load .env.test file'); // Intentionally removed to satisfy linter
 }
 
 // Polyfill for TextEncoder and TextDecoder if not available

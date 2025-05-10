@@ -15,9 +15,12 @@ import {
 // } from '../../../utils/firebase-mocks';
 import { mockUser } from '../../../mocks/data/mockData'; // Import mockUser
 import {
-  adminAuthMock, // Import the main adminAuth mock object
+  // adminAuthMock, // REMOVED
   mockSessionCookie, // Import the mockSessionCookie constant
-  type MockAdminApp, // Import the exported type
+  // type MockAdminApp, // REMOVED
+  // Import individual method mocks directly:
+  verifyIdTokenMock, // ADDED
+  createSessionCookieMock, // ADDED
 } from '../../../mocks/firebase/adminMocks'; // Import from new centralized admin mocks
 // import { NextRequest } from 'next/server'; // Unused
 // import { logger } from '@/lib/logger'; // Unused, as the module is mocked globally
@@ -47,12 +50,6 @@ class MockResponse {
     return response;
   }
 }
-
-// Create direct admin auth mock - this instance will be used by the test
-// The adminAuthMock from adminMocks.ts is a jest.fn() that returns the actual mock instance.
-// We call it once to get that instance for use in tests.
-// Cast the return of adminAuthMock() to the expected shape of the auth service mock
-const adminAuth = adminAuthMock() as MockAdminApp;
 
 // No need to mock or import @/lib/firebase-admin
 
@@ -91,9 +88,9 @@ describe('Auth Session API', () => {
         }
 
         try {
-          // Call mocked functions using the adminAuth instance
-          await adminAuth.verifyIdToken(body.token);
-          const sessionCookie = await adminAuth.createSessionCookie(body.token, {
+          // Use imported mocks directly
+          await verifyIdTokenMock(body.token);
+          const sessionCookieVal = await createSessionCookieMock(body.token, {
             expiresIn: 5 * 24 * 60 * 60 * 1000, // 5 days
           });
 
@@ -103,7 +100,7 @@ describe('Auth Session API', () => {
           // Set cookie
           response.cookies.set({
             name: AUTH.COOKIE_NAME,
-            value: sessionCookie,
+            value: sessionCookieVal,
             maxAge: 5 * 24 * 60 * 60,
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -158,16 +155,12 @@ describe('Auth Session API', () => {
     mockCookies.set.mockClear();
     mockCookies.get.mockClear();
 
-    // Setup default Firebase Admin mocks using the correctly typed adminAuth
-    if (adminAuth && adminAuth.verifyIdToken) {
-      (adminAuth.verifyIdToken as jest.Mock).mockResolvedValue({
-        uid: mockUser.id,
-        email: mockUser.email,
-      });
-    }
-    if (adminAuth && adminAuth.createSessionCookie) {
-      (adminAuth.createSessionCookie as jest.Mock).mockResolvedValue(mockSessionCookie);
-    }
+    // Setup default Firebase Admin mocks using individual mocks
+    verifyIdTokenMock.mockResolvedValue({
+      uid: mockUser.id,
+      email: mockUser.email,
+    });
+    createSessionCookieMock.mockResolvedValue(mockSessionCookie);
 
     // Setup cookie mock for successful responses
     mockCookies.get.mockImplementation(name => {
@@ -197,11 +190,8 @@ describe('Auth Session API', () => {
       expect(mockJson).toHaveBeenCalledWith({ status: 'success' });
 
       // Verify mocks were called correctly
-      expect(adminAuth.verifyIdToken).toHaveBeenCalledWith(AUTH.MOCK_TOKEN);
-      expect(adminAuth.createSessionCookie).toHaveBeenCalledWith(
-        AUTH.MOCK_TOKEN,
-        expect.any(Object)
-      );
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(AUTH.MOCK_TOKEN);
+      expect(createSessionCookieMock).toHaveBeenCalledWith(AUTH.MOCK_TOKEN, expect.any(Object));
 
       // Verify cookie is set
       expect(mockCookies.set).toHaveBeenCalledWith(
@@ -225,14 +215,14 @@ describe('Auth Session API', () => {
       expect(mockJson).toHaveBeenCalledWith({ error: 'No token provided' });
 
       // Verify Firebase Admin functions weren't called
-      expect(adminAuth.verifyIdToken).not.toHaveBeenCalled();
-      expect(adminAuth.createSessionCookie).not.toHaveBeenCalled();
+      expect(verifyIdTokenMock).not.toHaveBeenCalled();
+      expect(createSessionCookieMock).not.toHaveBeenCalled();
     });
 
     test('should handle token verification failure', async () => {
       // Arrange
       const request = createRequestMock({ token: AUTH.INVALID_TOKEN });
-      (adminAuth.verifyIdToken as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+      verifyIdTokenMock.mockRejectedValue(new Error('Invalid token'));
 
       // Temporarily suppress console.error for this specific test
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -248,16 +238,14 @@ describe('Auth Session API', () => {
       expect(mockJson).toHaveBeenCalledWith({ error: 'Invalid token' });
 
       // Verify verifyIdToken was called but createSessionCookie wasn't
-      expect(adminAuth.verifyIdToken).toHaveBeenCalledWith(AUTH.INVALID_TOKEN);
-      expect(adminAuth.createSessionCookie).not.toHaveBeenCalled();
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(AUTH.INVALID_TOKEN);
+      expect(createSessionCookieMock).not.toHaveBeenCalled();
     });
 
     test('should handle session cookie creation failure', async () => {
       // Arrange
       const request = createRequestMock({ token: AUTH.MOCK_TOKEN });
-      (adminAuth.createSessionCookie as jest.Mock).mockRejectedValue(
-        new Error('Failed to create session')
-      );
+      createSessionCookieMock.mockRejectedValue(new Error('Failed to create session'));
 
       // Temporarily suppress console.error for this specific test
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -273,8 +261,8 @@ describe('Auth Session API', () => {
       expect(mockJson).toHaveBeenCalledWith({ error: 'Invalid token' });
 
       // Verify both Firebase Admin functions were called
-      expect(adminAuth.verifyIdToken).toHaveBeenCalledWith(AUTH.MOCK_TOKEN);
-      expect(adminAuth.createSessionCookie).toHaveBeenCalled();
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(AUTH.MOCK_TOKEN);
+      expect(createSessionCookieMock).toHaveBeenCalled();
     });
   });
 

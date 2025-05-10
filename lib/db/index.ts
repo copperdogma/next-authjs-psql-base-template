@@ -17,5 +17,5 @@ export {
   cleanupExpiredSessions,
   cleanupUserSessions,
   scheduleSessionCleanup,
-} from './session-cleanup-service';
+} from './session-cleanup-service-di';
 export * from './query-optimizer';

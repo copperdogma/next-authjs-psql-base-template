@@ -4,6 +4,8 @@
 
 // Don't try to mock the internals of pino, just test the exported functionality
 
+import pino from 'pino'; // Import pino for type usage
+
 describe('Logger', () => {
   // Static test for expected sensitive fields
   describe('redactFields', () => {
@@ -39,7 +41,21 @@ describe('Logger', () => {
   });
 
   // Direct import of logger for testing
-  const { logger, createLogger, loggers, getRequestId } = require('@/lib/logger');
+  // const { logger, createLogger, loggers, getRequestId } = require('@/lib/logger');
+  // Instead, use ESM import:
+  let logger: pino.Logger;
+  let createLogger: (context: string, data?: Record<string, unknown>) => pino.Logger;
+  let loggers: { [key: string]: pino.Logger };
+  let getRequestId: () => string;
+
+  beforeAll(async () => {
+    // const importedModule = await import('@/lib/logger'); // Old way
+    const actualLoggerModule = jest.requireActual('@/lib/logger');
+    logger = actualLoggerModule.logger;
+    createLogger = actualLoggerModule.createLogger;
+    loggers = actualLoggerModule.loggers;
+    getRequestId = actualLoggerModule.getRequestId; // Should now be the real one
+  });
 
   describe('logger', () => {
     it('should be properly initialized with expected methods', () => {
@@ -120,6 +136,7 @@ describe('Logger', () => {
       const id1 = getRequestId();
       const id2 = getRequestId();
 
+      // console.log('>>>> DEBUG: id1 from getRequestId:', id1); // Keep this commented for now
       expect(typeof id1).toBe('string');
       expect(id1.startsWith('req_')).toBe(true);
 

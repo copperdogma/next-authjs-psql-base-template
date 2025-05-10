@@ -1,13 +1,8 @@
 /**
  * @jest-environment node
  */
-import {
-  describe,
-  expect,
-  it,
-  jest,
-  beforeEach /*, afterEach // Removed unused */,
-} from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { ProfileService } from '../../../lib/services/profile-service';
 import { UserService } from '../../../lib/services/user-service';
 import { FirebaseAdminService } from '../../../lib/services/firebase-admin-service';
@@ -17,11 +12,12 @@ import { User as PrismaUser, UserRole } from '@prisma/client';
 import type { UserRecord } from 'firebase-admin/auth';
 import { Logger } from 'pino';
 
-// Mocks
+// Mocks for the service modules themselves
 jest.mock('../../../lib/services/user-service');
 jest.mock('../../../lib/services/firebase-admin-service');
 
-// Mock Logger
+// Create a basic logger mock that satisfies our testing needs
+// Using a simpler approach than mockDeep<Logger>() to avoid type conflicts
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -31,13 +27,19 @@ const mockLogger = {
   trace: jest.fn(),
   silent: jest.fn(),
   level: 'info',
-  child: jest.fn().mockReturnThis(),
+  child: jest.fn().mockReturnThis(), // Returns itself for chained calls
 } as unknown as Logger;
 
+// Mock the logger module
 jest.mock('@/lib/logger', () => ({
   logger: mockLogger,
   loggers: {
     profile: mockLogger,
+    auth: mockLogger,
+    api: mockLogger,
+    db: mockLogger,
+    middleware: mockLogger,
+    ui: mockLogger,
   },
 }));
 
@@ -62,7 +64,6 @@ const createMockFirebaseUser = (overrides: Partial<UserRecord> = {}): UserRecord
   email: 'test@example.com',
   emailVerified: true,
   displayName: 'Test User',
-  // Add other necessary UserRecord properties with default mock values
   photoURL: null,
   phoneNumber: null,
   disabled: false,
@@ -76,124 +77,195 @@ const createMockFirebaseUser = (overrides: Partial<UserRecord> = {}): UserRecord
   passwordSalt: null,
   tokensValidAfterTime: null,
   tenantId: null,
-  toJSON: () => ({ ...createMockFirebaseUser(overrides) }), // Simple JSON representation
+  toJSON: () => ({ ...createMockFirebaseUser(overrides) }),
   ...overrides,
 });
 
 describe('ProfileService', () => {
   let profileService: ProfileService;
-  let mockUserService: jest.Mocked<UserService>;
-  let mockFirebaseAdminService: jest.Mocked<FirebaseAdminService>;
+  let mockUserService: DeepMockProxy<UserService>;
+  let mockFirebaseAdminService: DeepMockProxy<FirebaseAdminService>;
 
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks();
 
-    // Create mock implementations for UserService
-    mockUserService = {
-      findUserById: jest.fn(),
-      updateUserName: jest.fn(),
-    } as any;
+    // Use jest-mock-extended for service mocks to get type safety
+    mockUserService = mockDeep<UserService>();
+    mockFirebaseAdminService = mockDeep<FirebaseAdminService>();
 
-    // Create mock for FirebaseAdminService
-    mockFirebaseAdminService = {
-      getUserByEmail: jest.fn(),
-      updateUser: jest.fn(),
-    } as any;
-
-    // Set up profileService with mocked dependencies and logger
-    profileService = new ProfileService(mockUserService, mockFirebaseAdminService, mockLogger);
+    // ProfileService uses a default logger parameter that pulls from the mocked module
+    profileService = new ProfileService(
+      mockUserService,
+      mockFirebaseAdminService,
+      mockLogger // Explicitly pass the mockLogger
+    );
   });
 
   describe('updateUserName', () => {
-    const userId = 'user-123';
-    const name = 'New Name';
-    const email = 'user@example.com';
-    const mockDbUser = createMockUser({ id: userId, email: email });
-    const mockFbUser = createMockFirebaseUser({ uid: 'fb-uid-for-user-123', email: email });
-    const firebaseError = new Error('Firebase error');
+    const userId = 'test-user-123';
+    const oldName = 'Old Name';
+    const newName = 'New Sparkly Name';
+    const userEmail = 'user@example.com';
+    const firebaseUid = 'firebase-uid-abc';
 
-    it('should update name in DB and Firebase successfully', async () => {
-      mockUserService.findUserById.mockResolvedValue(mockDbUser);
-      mockFirebaseAdminService.getUserByEmail.mockResolvedValue(mockFbUser);
-      mockFirebaseAdminService.updateUser.mockResolvedValue(createMockFirebaseUser());
-      mockUserService.updateUserName.mockResolvedValue(createMockUser({ id: userId, name }));
+    const mockInitialUser = createMockUser({ id: userId, name: oldName, email: userEmail });
+    const mockUpdatedUser = createMockUser({ ...mockInitialUser, name: newName });
 
-      const result = await profileService.updateUserName(userId, name);
+    it('should successfully update username in DB and Firebase, and return success', async () => {
+      // Arrange: DB and Firebase operations succeed
+      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
+      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser); // User has email
+      mockFirebaseAdminService.getUserByEmail.mockResolvedValue({ uid: firebaseUid } as UserRecord);
+      mockFirebaseAdminService.updateUser.mockResolvedValue({
+        uid: firebaseUid,
+        displayName: newName,
+      } as UserRecord);
 
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
+
+      // Assert
       expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, name);
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
       expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).toHaveBeenCalledWith(email);
-      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(mockFbUser.uid, {
-        displayName: name,
+      expect(mockFirebaseAdminService.getUserByEmail).toHaveBeenCalledWith(userEmail);
+      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(firebaseUid, {
+        displayName: newName,
       });
-      expect(mockLogger.info).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId, firebaseUid }),
+        'Firebase user displayName updated'
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'User name updated successfully'
+      );
+      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should update DB only if user has no email', async () => {
-      const userWithoutEmail = createMockUser({ id: userId, email: null });
-      mockUserService.findUserById.mockResolvedValue(userWithoutEmail);
-      mockUserService.updateUserName.mockResolvedValue(
-        createMockUser({ id: userId, name, email: null })
-      );
+    it('should return success if DB update succeeds, even if Firebase getUserByEmail fails', async () => {
+      // Arrange: DB succeeds, Firebase getUserByEmail fails
+      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
+      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser);
+      const firebaseGetError = new Error('Firebase getUserByEmail failed');
+      mockFirebaseAdminService.getUserByEmail.mockRejectedValue(firebaseGetError);
 
-      const result = await profileService.updateUserName(userId, name);
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
 
+      // Assert: Overall success, Firebase issue logged as warning
       expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, name);
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
+      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled(); // updateUser should not be called
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ userId, error: firebaseGetError.message }),
+        'Could not update Firebase user - continuing'
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'User name updated successfully'
+      );
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should return success if DB update succeeds, even if Firebase updateUser fails', async () => {
+      // Arrange: DB succeeds, Firebase updateUser fails
+      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
+      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser);
+      mockFirebaseAdminService.getUserByEmail.mockResolvedValue({ uid: firebaseUid } as UserRecord);
+      const firebaseUpdateError = new Error('Firebase updateUser failed');
+      mockFirebaseAdminService.updateUser.mockRejectedValue(firebaseUpdateError);
+
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
+
+      // Assert: Overall success, Firebase issue logged as warning
+      expect(result).toEqual({ success: true });
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
+      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(firebaseUid, {
+        displayName: newName,
+      });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ userId, error: firebaseUpdateError.message }),
+        'Could not update Firebase user - continuing'
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'User name updated successfully'
+      );
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    it('should return success if DB update succeeds and user has no email (skips Firebase)', async () => {
+      // Arrange: User has no email
+      const userWithoutEmail = createMockUser({ id: userId, name: oldName, email: null });
+      const updatedUserWithoutEmail = { ...userWithoutEmail, name: newName };
+      mockUserService.updateUserName.mockResolvedValue(updatedUserWithoutEmail);
+      mockUserService.findUserById.mockResolvedValue(updatedUserWithoutEmail);
+
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
+
+      // Assert
+      expect(result).toEqual({ success: true });
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
       expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
       expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
       expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'User name updated successfully (no Firebase update needed)'
+      );
+      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should update DB only and log error if Firebase getUserByEmail fails', async () => {
-      mockUserService.findUserById.mockResolvedValue(mockDbUser);
-      mockFirebaseAdminService.getUserByEmail.mockRejectedValue(firebaseError);
-      mockUserService.updateUserName.mockResolvedValue(createMockUser({ id: userId, name }));
+    it('should return failure if userService.findUserById returns null after DB update', async () => {
+      // Arrange
+      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser); // DB update itself succeeds
+      mockUserService.findUserById.mockResolvedValue(null); // But then user is not found
 
-      const result = await profileService.updateUserName(userId, name);
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
 
-      expect(result).toEqual({ success: true }); // Still succeeds overall
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, name);
+      // Assert
+      expect(result).toEqual({ success: true }); // Still success, but with specific log
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
       expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).toHaveBeenCalledWith(email);
-      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled();
-      expect(mockLogger.warn).toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalled();
+      expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId }),
+        'User name updated successfully (no Firebase update needed)' // Because user or user.email was null
+      );
+      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should update DB only and log error if Firebase updateUser fails', async () => {
-      mockUserService.findUserById.mockResolvedValue(mockDbUser);
-      mockFirebaseAdminService.getUserByEmail.mockResolvedValue(mockFbUser);
-      mockFirebaseAdminService.updateUser.mockRejectedValue(firebaseError);
-      mockUserService.updateUserName.mockResolvedValue(createMockUser({ id: userId, name }));
-
-      const result = await profileService.updateUserName(userId, name);
-
-      expect(result).toEqual({ success: true }); // Still succeeds overall
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, name);
-      expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).toHaveBeenCalledWith(email);
-      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(mockFbUser.uid, {
-        displayName: name,
-      });
-      expect(mockLogger.warn).toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalled();
-    });
-
-    it('should return error if DB update fails', async () => {
+    it('should return failure if DB update (userService.updateUserName) fails', async () => {
+      // Arrange: DB update fails
       const dbError = new Error('DB update failed');
       mockUserService.updateUserName.mockRejectedValue(dbError);
 
-      const result = await profileService.updateUserName(userId, name);
+      // Act
+      const result = await profileService.updateUserName(userId, newName);
 
-      expect(result).toEqual({ success: false, error: 'DB update failed' });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, name);
-      expect(mockUserService.findUserById).not.toHaveBeenCalled();
+      // Assert
+      expect(result).toEqual({ success: false, error: dbError.message });
+      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
+      expect(mockUserService.findUserById).not.toHaveBeenCalled(); // Should not proceed to this
       expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: 'Error updating user name in database',
+          error: dbError.message,
+          userId,
+        })
+        // The service implementation doesn't pass a second string arg to logger.error when error is Error instance
+      );
+      expect(mockLogger.info).not.toHaveBeenCalled();
+      expect(mockLogger.warn).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,7 +1,19 @@
+/**
+ * @jest-environment node
+ */
 import { jest } from '@jest/globals';
 
 // Import pino types first, as they are used in mock interfaces
 import type pino from 'pino';
+
+// Import the global pino mock functions/instances for assertions
+import {
+  actualMockPinoFactoryFnFromGlobalSetup,
+  mockPinoInstanceFromGlobalSetup,
+} from '../../../config/setup/jest.setup.api.mocks'; // Adjust path if needed
+
+// Ensure actual timers are used, which should provide setImmediate
+jest.requireActual('timers'); // UNCOMMENTED
 
 // --- Setup & Teardown ---
 const originalEnv = { ...process.env };
@@ -34,10 +46,9 @@ import {
 
 describe('PinoLoggerService', () => {
   beforeEach(() => {
-    // Restore process.env first
+    jest.resetModules();
     process.env = { ...originalEnv };
-    // Clear all mocks defined with jest.fn()
-    jest.restoreAllMocks(); // Resets mock state AND implementation
+    jest.clearAllMocks(); // This will clear global mocks like actualMockPinoFactoryFnFromGlobalSetup
 
     // Clear the methods on the DI mock instance
     mockLoggerInstanceForDI.info.mockClear();
@@ -45,12 +56,21 @@ describe('PinoLoggerService', () => {
     mockLoggerInstanceForDI.error.mockClear();
     mockLoggerInstanceForDI.debug.mockClear();
     mockLoggerInstanceForDI.trace.mockClear();
-    mockLoggerInstanceForDI.child.mockClear();
-    // Reset DI mock child implementation
-    mockLoggerInstanceForDI.child.mockReturnThis();
+    mockLoggerInstanceForDI.child.mockClear().mockReturnThis();
 
-    // NOTE: No need to clear mockPinoInstance methods here,
-    // because we are not mocking the factory anymore.
+    // Clear the GLOBAL pino factory mock and its instance methods for each test
+    actualMockPinoFactoryFnFromGlobalSetup.mockClear();
+    (mockPinoInstanceFromGlobalSetup.info as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.warn as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.error as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.debug as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.trace as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.fatal as jest.Mock).mockClear();
+    (mockPinoInstanceFromGlobalSetup.silent as jest.Mock).mockClear();
+    (
+      (mockPinoInstanceFromGlobalSetup.child as jest.Mock).mockClear() as jest.Mock
+    ).mockReturnThis();
+    (mockPinoInstanceFromGlobalSetup.isLevelEnabled as jest.Mock).mockClear().mockReturnValue(true);
   });
 
   // --- Tests for PinoLoggerService using DI ---
@@ -64,7 +84,7 @@ describe('PinoLoggerService', () => {
     expect(mockLoggerInstanceForDI.child).toHaveBeenCalledTimes(1);
     expect(mockLoggerInstanceForDI.child).toHaveBeenCalledWith({ component: context });
     // Ensure pino factory was NOT called for DI case
-    // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+    expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
   });
 
   test('constructor calls child method with object context', () => {
@@ -76,7 +96,7 @@ describe('PinoLoggerService', () => {
     expect(mockLoggerInstanceForDI.child).toHaveBeenCalledTimes(1);
     expect(mockLoggerInstanceForDI.child).toHaveBeenCalledWith(context);
     // Ensure pino factory was NOT called for DI case
-    // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+    expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
   });
 
   test('constructor uses existingLogger and calls child on it', () => {
@@ -103,7 +123,7 @@ describe('PinoLoggerService', () => {
     expect(existingLoggerMock.info).toHaveBeenCalledTimes(1);
     expect(existingLoggerMock.info).toHaveBeenCalledWith('Test message', undefined); // Pino format
     // Ensure pino factory was NOT called for DI case
-    // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+    expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -135,7 +155,7 @@ describe('PinoLoggerService', () => {
     // Ensure child wasn't called again
     expect(mockLoggerInstanceForDI.child).not.toHaveBeenCalled();
     // Ensure pino factory was NOT called for DI case
-    // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+    expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -166,7 +186,7 @@ describe('PinoLoggerService', () => {
     // Ensure child wasn't called again
     expect(mockLoggerInstanceForDI.child).not.toHaveBeenCalled();
     // Ensure pino factory was NOT called for DI case
-    // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+    expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
   });
 
   // --- Refactor test for child logger ---
@@ -226,7 +246,7 @@ describe('PinoLoggerService', () => {
       expect(mockGrandchildLogger.child).toHaveBeenCalledWith({ component: '' }); // Empty string context maps to {component: ''}
 
       // Ensure pino factory was NOT called for DI case
-      // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+      expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
     });
 
     it('child service proxies calls to the correct (grandchild) mock instance', () => {
@@ -272,7 +292,7 @@ describe('PinoLoggerService', () => {
       expect(mockParentChildLogger.info).not.toHaveBeenCalled();
       expect(mockGrandchildLogger.info).not.toHaveBeenCalled();
       // Ensure pino factory was NOT called for DI case
-      // expect(mockedPinoFactory).not.toHaveBeenCalled(); // REMOVED - No factory mock
+      expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
     });
   });
 
@@ -493,6 +513,212 @@ describe('PinoLoggerService', () => {
         const service = createLoggerService('test-context', mockLoggerInstanceForDI);
         expect(service).toBeInstanceOf(LoggerService);
         expect(mockLoggerInstanceForDI.child).toHaveBeenCalledWith({ component: 'test-context' });
+      });
+    });
+  });
+
+  // --- Tests for PinoLoggerService - Internal Instance Creation ---
+  describe('PinoLoggerService - Internal Instance Creation', () => {
+    test('constructor (no DI) calls pino factory and instance methods', () => {
+      const context = 'internal-creation';
+      const service = new LoggerService(context);
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: context });
+
+      service.info({ data: 1 }, 'test internal info');
+      expect(mockPinoInstanceFromGlobalSetup.info).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.info).toHaveBeenCalledWith(
+        { data: 1 },
+        'test internal info'
+      );
+
+      service.error('test internal error');
+      expect(mockPinoInstanceFromGlobalSetup.error).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.error).toHaveBeenCalledWith(
+        'test internal error',
+        undefined
+      );
+
+      service.trace({ data: 1 }, 'test internal trace');
+      expect(mockPinoInstanceFromGlobalSetup.debug).toHaveBeenCalledTimes(1); // Trace maps to debug
+      expect(mockPinoInstanceFromGlobalSetup.debug).toHaveBeenCalledWith(
+        { data: 1 },
+        'test internal trace'
+      );
+    });
+
+    test('constructor (no DI) with custom transport option calls pino factory with it', () => {
+      const context = 'custom-transport-test';
+      const customTransportOptions = {
+        target: 'pino/file',
+        options: { destination: 'mock-transport.log' },
+      };
+      // eslint-disable-next-line no-new
+      new LoggerService(context, { transport: customTransportOptions });
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transport: customTransportOptions,
+        })
+      );
+      // Child is still called on the resulting instance
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: context });
+    });
+
+    test('constructor (no DI) with explicit false pretty and undefined transport uses defaults', () => {
+      const context = 'explicit-defaults-test';
+      // eslint-disable-next-line no-new
+      new LoggerService(context, { pretty: false, transport: undefined });
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+
+      const mockCalls = actualMockPinoFactoryFnFromGlobalSetup.mock.calls;
+      if (mockCalls.length > 0 && mockCalls[0] !== undefined) {
+        // @ts-ignore TS seems unable to infer safety here despite checks
+        const firstCallArgs = mockCalls[0] as any; // Cast to any
+        expect(firstCallArgs.length).toBeGreaterThan(0);
+        const factoryArgs = firstCallArgs[0];
+
+        expect(factoryArgs).toEqual(
+          expect.objectContaining({
+            level: 'info',
+            base: expect.any(Object),
+            timestamp: expect.any(Function),
+            formatters: expect.any(Object),
+            redact: expect.any(Object),
+          })
+        );
+        // @ts-ignore TS seems unable to infer safety here despite checks
+        expect(factoryArgs.transport).toBeUndefined();
+      } else {
+        throw new Error('Pino factory mock was not called or had no arguments as expected.');
+      }
+
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: context });
+    });
+
+    test('child method on internally created service instance works', () => {
+      const parentContext = 'parent-internal';
+      const parentService = new LoggerService(parentContext);
+
+      actualMockPinoFactoryFnFromGlobalSetup.mockClear();
+      (
+        (mockPinoInstanceFromGlobalSetup.child as jest.Mock).mockClear() as jest.Mock
+      ).mockReturnThis();
+      (mockPinoInstanceFromGlobalSetup.info as jest.Mock).mockClear();
+
+      const childBindings = { module: 'child-module' };
+      const childService = parentService.child(childBindings);
+
+      expect((mockPinoInstanceFromGlobalSetup.child as jest.Mock).mock.calls.length).toBe(2);
+      expect((mockPinoInstanceFromGlobalSetup.child as jest.Mock).mock.calls[0][0]).toEqual(
+        childBindings
+      );
+      expect((mockPinoInstanceFromGlobalSetup.child as jest.Mock).mock.calls[1][0]).toEqual({
+        component: '',
+      });
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
+
+      childService.info('hello from child');
+      expect(mockPinoInstanceFromGlobalSetup.info).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.info).toHaveBeenCalledWith(
+        'hello from child',
+        undefined
+      );
+    });
+
+    test('createContextLogger (no DI) uses pino factory', () => {
+      const context = 'factory-context';
+      const service = createContextLogger(context);
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: context });
+
+      service.warn('factory warning');
+      expect(mockPinoInstanceFromGlobalSetup.warn).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.warn).toHaveBeenCalledWith(
+        'factory warning',
+        undefined
+      );
+    });
+  });
+
+  // --- Tests for Factory Functions (createContextLogger, createDevLogger, etc.) ---
+  describe('Factory Functions (createContextLogger, createDevLogger, etc.)', () => {
+    test('createContextLogger creates a service and calls pino factory if no baseLogger', () => {
+      const context = 'factory-context';
+      createContextLogger(context, { level: 'trace' });
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'trace' })
+      );
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: context });
+    });
+
+    test('createContextLogger uses existingLogger if provided and does not call pino factory', () => {
+      const context = 'factory-di';
+      const existingLogger = { ...mockLoggerInstanceForDI, child: jest.fn().mockReturnThis() };
+      createContextLogger(context, { level: 'info' }, existingLogger);
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
+      expect(existingLogger.child).toHaveBeenCalledTimes(1);
+      // The context passed to PinoLoggerService is { component: 'factory-di' }
+      // This is then passed to existingLogger.child()
+      expect(existingLogger.child).toHaveBeenCalledWith({ component: context }); // Corrected assertion
+    });
+
+    test('createDevLogger calls pino factory with pretty print options if no baseLogger', () => {
+      createDevLogger('dev-test');
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'debug',
+          transport: expect.objectContaining({ target: 'pino-pretty' }),
+        })
+      );
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({ component: 'dev-test' });
+    });
+
+    test('createDevLogger uses existingLogger and sets level and pretty via options for child context', () => {
+      const existingLogger = { ...mockLoggerInstanceForDI, child: jest.fn().mockReturnThis() };
+      createDevLogger('dev-di', existingLogger);
+
+      expect(actualMockPinoFactoryFnFromGlobalSetup).not.toHaveBeenCalled();
+      expect(existingLogger.child).toHaveBeenCalledTimes(1);
+      expect(existingLogger.child).toHaveBeenCalledWith({ component: 'dev-di' });
+    });
+
+    test('createRequestLogger (no base) calls pino factory and applies request context', () => {
+      const reqContext = { reqId: 'req1', path: '/test', method: 'GET' };
+      createRequestLogger(reqContext);
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({
+        component: 'api',
+        requestId: reqContext.reqId,
+        path: reqContext.path,
+        method: reqContext.method,
+      });
+    });
+
+    test('createFileLogger (no base) calls pino factory with file transport', () => {
+      process.env.LOG_FILE = 'test-logs/app.log';
+      createFileLogger('file-log-test');
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledTimes(1);
+      expect(actualMockPinoFactoryFnFromGlobalSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transport: { target: 'pino/file', options: { destination: 'test-logs/app.log' } },
+        })
+      );
+      expect(mockPinoInstanceFromGlobalSetup.child).toHaveBeenCalledWith({
+        component: 'file-log-test',
       });
     });
   });
