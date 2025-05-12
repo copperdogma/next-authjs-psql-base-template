@@ -100,6 +100,9 @@ describe('env module', () => {
 
     it('returns success: true and parsed data when all required variables are present', () => {
       setValidRequiredEnv();
+      // Ensure specific numeric string values for transformable env vars
+      process.env.RATE_LIMIT_REGISTER_MAX_ATTEMPTS = '10';
+      process.env.RATE_LIMIT_REGISTER_WINDOW_SECONDS = '3600';
 
       const result = validateEnv();
       expect(result.success).toBe(true);

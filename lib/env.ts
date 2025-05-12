@@ -39,7 +39,41 @@ const envSchema = z.object({
     required_error: 'DATABASE_URL is required',
     invalid_type_error: 'DATABASE_URL must be a string',
   }),
-  REDIS_URL: z.string().optional(), // Assuming Redis is optional for now
+  REDIS_URL: z.preprocess(
+    val => (val === '' ? undefined : val), // Treat empty string as undefined
+    z
+      .string()
+      .url({
+        message:
+          'If REDIS_URL is provided, it must be a valid Redis connection URI (e.g., redis://localhost:6379).',
+      })
+      .refine(url => url.startsWith('redis://') || url.startsWith('rediss://'), {
+        message: 'If REDIS_URL is provided, it must start with redis:// or rediss://',
+      })
+      .optional()
+  ),
+  RATE_LIMIT_REGISTER_MAX_ATTEMPTS: z.preprocess(
+    val => (val === '' ? undefined : val), // Treat empty string as undefined
+    z
+      .string()
+      .optional()
+      .default('10')
+      .transform(val => parseInt(val, 10))
+      .refine(val => !isNaN(val) && val > 0, {
+        message: 'RATE_LIMIT_REGISTER_MAX_ATTEMPTS must be a positive number.',
+      })
+  ),
+  RATE_LIMIT_REGISTER_WINDOW_SECONDS: z.preprocess(
+    val => (val === '' ? undefined : val), // Treat empty string as undefined
+    z
+      .string()
+      .optional()
+      .default('3600') // 1 hour
+      .transform(val => parseInt(val, 10))
+      .refine(val => !isNaN(val) && val > 0, {
+        message: 'RATE_LIMIT_REGISTER_WINDOW_SECONDS must be a positive number.',
+      })
+  ),
 
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string({
@@ -77,7 +111,9 @@ export const requiredEnvVars = [
 
   // Database
   'DATABASE_URL',
-  'REDIS_URL',
+  // 'REDIS_URL', // No longer strictly required for app startup if optional
+  'RATE_LIMIT_REGISTER_MAX_ATTEMPTS',
+  'RATE_LIMIT_REGISTER_WINDOW_SECONDS',
 
   // Google OAuth
   'GOOGLE_CLIENT_ID',

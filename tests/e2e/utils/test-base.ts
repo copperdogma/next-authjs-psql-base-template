@@ -33,6 +33,11 @@ function shouldIgnoreError(errorText: string): boolean {
     return true;
   }
 
+  // Ignore failures from the client logger trying to send logs via fetch
+  if (errorText.includes('Client Logger: Failed to send log entry via fetch')) {
+    return true;
+  }
+
   // Add other error patterns to ignore here if needed
 
   return false;

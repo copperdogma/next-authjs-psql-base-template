@@ -64,10 +64,10 @@ describe('RegistrationForm', () => {
 
     await waitFor(() => {
       expect(mockRegisterUserAction).toHaveBeenCalledTimes(1);
-      const formData = mockRegisterUserAction.mock.calls[0][0] as FormData;
+      const formData = mockRegisterUserAction.mock.calls[0][1] as FormData;
       expect(formData.get('email')).toBe('new@example.com');
       expect(formData.get('password')).toBe('password123');
-      expect(formData.has('confirmPassword')).toBe(false);
+      expect(formData.get('confirmPassword')).toBeNull();
     });
   });
 
@@ -111,8 +111,12 @@ describe('RegistrationForm', () => {
   });
 
   it('should display default error message if action returns success: false without a message', async () => {
-    // Mock returns success: false but no specific message
-    mockRegisterUserAction.mockResolvedValue({ success: false, message: undefined });
+    // Mock returns status: 'error' but no specific message at the top level or in error.message
+    // to trigger the fallback "Registration failed."
+    mockRegisterUserAction.mockResolvedValue({
+      status: 'error',
+      error: { code: 'GenericErrorWithoutMessage' }, // error.message will be undefined
+    });
     render(<RegistrationForm />);
 
     await userEvent.type(screen.getByLabelText(/email address/i), 'test@example.com');
@@ -120,9 +124,13 @@ describe('RegistrationForm', () => {
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
     await userEvent.click(screen.getByRole('button', { name: /register/i }));
 
-    // Expect the default fallback message from the hook
-    expect(await screen.findByText('Registration failed')).toBeInTheDocument();
-    expect(mockRegisterUserAction).toHaveBeenCalledTimes(1);
+    // Wait for the action to be called and then check for the text
+    await waitFor(() => {
+      expect(mockRegisterUserAction).toHaveBeenCalledTimes(1);
+      // After the action is processed, the error state should update and the message appear
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('Registration failed');
+    });
   });
 
   it('should display error message if registerUserAction action throws an error', async () => {

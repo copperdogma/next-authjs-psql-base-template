@@ -22,6 +22,37 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+// Standardized Service Error class
+export class ServiceError extends Error {
+  public readonly cause?: unknown;
+  public readonly code?: string; // Application-specific error code or key
+
+  constructor(code?: string, message?: string, cause?: unknown) {
+    super(message);
+    this.name = 'ServiceError'; // Consistent error name
+    this.code = code;
+    this.cause = cause;
+    // For Node.js environments, you might want to capture the stack trace properly:
+    // if (typeof Error.captureStackTrace === 'function') {
+    //   Error.captureStackTrace(this, this.constructor);
+    // }
+  }
+}
+
+// Standardized Service Response interface
+export interface ServiceResponse<TData = unknown, TErrorDetails = unknown> {
+  status: 'success' | 'error';
+  message?: string;
+  data?: TData;
+  error?: {
+    message: string; // User-facing error message
+    code?: string; // Application-specific error code
+    details?: TErrorDetails; // Detailed error information, stack, or original error
+    isServiceError?: boolean; // Flag to indicate if it's a ServiceError instance
+  };
+  errors?: Record<string, string[]>; // For field-specific validation errors from Zod, etc.
+}
+
 // HTTP Status Codes enum for consistent usage across the application
 export enum HttpStatusCode {
   // 2xx Success

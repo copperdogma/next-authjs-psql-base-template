@@ -8,6 +8,7 @@ import { registerUserAction } from '@/lib/actions/auth.actions';
 import { logger } from '@/lib/logger';
 import { useRouter } from 'next/navigation';
 import { useSession, SessionContextValue } from 'next-auth/react';
+import type { ServiceResponse } from '@/types';
 
 // Hook for handling the redirect effect on success
 const useSuccessRedirectEffect = (
@@ -64,12 +65,18 @@ export function useRegistrationForm() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Helper function to process the action result
-  const processActionResult = (result: { success: boolean; message?: string | null }) => {
-    if (result.success) {
+  const processActionResult = (result: ServiceResponse<null, unknown>) => {
+    if (result.status === 'success') {
       setSuccess(result.message || 'Registration successful!');
       logger.info('Success result received, state updated.');
     } else {
-      setError(result.message || 'Registration failed');
+      // Use result.error.message for detailed error, or result.message as fallback
+      const mainError = result.error?.message || result.message || 'Registration failed.';
+      setError(mainError);
+      // If there are field-specific errors from Zod (e.g., result.errors from action),
+      // you might want to set them in a state to display next to fields.
+      // For example, if action returns: { status: 'error', errors: { field: ['message'] } }
+      // setFieldErrors(result.errors || {}); // Assuming `errors` is part of your ServiceResponse error payload for validation
     }
   };
 
@@ -94,7 +101,7 @@ export function useRegistrationForm() {
       formData.append('email', validatedData.email);
       formData.append('password', validatedData.password);
 
-      const result = await registerUserAction(formData);
+      const result = await registerUserAction(null, formData);
 
       // Call the helper function to process the result
       processActionResult(result);

@@ -33,13 +33,52 @@ const mockCredentialsConfig: CredentialsConfig = {
     email: { label: 'Email', type: 'email' },
     password: { label: 'Password', type: 'password' },
   } as Record<string, CredentialInput>,
-  authorize: jest.fn(
-    async (credentials: Partial<Record<string, unknown>>, req: Request): Promise<User | null> => {
-      // Basic mock implementation, can be expanded if needed for tests
-      console.log('mockAuthorize called with', credentials, req);
+  authorize: async (
+    credentialsUntyped: Partial<Record<string, unknown>> | undefined,
+    req: Request
+  ): Promise<User | null> => {
+    mockLogger.info('[Credentials Authorize Logic] Attempting authorization', {
+      provider: 'credentials',
+      credentialType: typeof credentialsUntyped,
+    });
+
+    if (!credentialsUntyped) {
+      mockLogger.warn('[Credentials Authorize Logic] Credentials object is undefined or null.');
       return null;
     }
-  ),
+
+    const parsedCredentials: { success: boolean; data?: any; error?: any } =
+      mockCredentialsSchema.safeParse(credentialsUntyped);
+    if (!parsedCredentials.success) {
+      mockLogger.warn('[Credentials Authorize Logic] Invalid credentials format', {
+        error: parsedCredentials.error,
+      });
+      return null;
+    }
+
+    const credentials = parsedCredentials.data;
+
+    try {
+      const user = await mockAuthorizeLogic(credentials, req);
+      if (user) {
+        mockLogger.info('[Credentials Authorize Logic] Authorization successful', {
+          userId: user.id,
+        });
+        return user;
+      } else {
+        mockLogger.warn('[Credentials Authorize Logic] Authorization failed (null user returned)', {
+          email: credentials?.email,
+        });
+        return null;
+      }
+    } catch (error) {
+      mockLogger.error('[Credentials Authorize Logic] Authorization error', {
+        email: credentials?.email,
+        error,
+      });
+      throw error; // Re-throw the error to be caught by the caller if necessary
+    }
+  },
 };
 
 // Mock CredentialsProvider with proper types
@@ -102,9 +141,10 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 // Mock the auth modules
-const mockAuthorizeLogic = jest.fn();
+const mockAuthorizeLogic =
+  jest.fn<(credentials: Record<string, any>, req: Request) => Promise<User | null>>();
 const mockCredentialsSchema = {
-  safeParse: jest.fn(),
+  safeParse: jest.fn() as jest.MockedFunction<typeof import('zod').ZodSchema.prototype.safeParse>,
 };
 
 jest.mock('@/lib/auth/auth-credentials', () => ({
@@ -287,36 +327,89 @@ describe('auth-node.ts', () => {
   });
 
   describe('CredentialsProvider authorize function', () => {
-    let credentialsProvider;
-    // @ts-expect-error credentialsProviderConfig is used in skipped tests
-    let credentialsProviderConfig;
+    let credentialsProviderConfig: CredentialsConfig;
 
     beforeEach(() => {
-      // Get the first call arguments to mock credentials provider
-      credentialsProvider = mockCredentialsProvider.mock.calls[0];
-      if (credentialsProvider) {
-        credentialsProviderConfig = credentialsProvider[0];
-      } else {
-        // If no calls yet, use the mock config directly
+      // Ensure mockCredentialsProvider has been called (e.g., during authConfigNode initialization)
+      // If not, call it to populate mock.calls
+      if (mockCredentialsProvider.mock.calls.length === 0) {
         mockCredentialsProvider(mockCredentialsConfig);
-        credentialsProviderConfig = mockCredentialsConfig;
       }
+      const firstCallArgs = mockCredentialsProvider.mock.calls[0];
+      if (!firstCallArgs || !firstCallArgs[0]) {
+        throw new Error(
+          'mockCredentialsProvider was not called with expected config or config is undefined'
+        );
+      }
+      credentialsProviderConfig = firstCallArgs[0];
     });
 
-    // Skip tests for now since they're difficult to set up correctly
-    it.skip('should call authorizeLogic with credentials', async () => {
-      // This test is skipped intentionally
-      expect(true).toBe(true);
+    it('should call authorizeLogic with credentials', async () => {
+      const credentials = { email: 'test@example.com', password: 'password' };
+      const request = {} as Request;
+      const expectedUser = { id: 'user1', email: 'test@example.com' };
+      // Ensure mocks are reset for this test
+      mockCredentialsSchema.safeParse
+        .mockReset()
+        .mockReturnValue({ success: true, data: credentials });
+      mockAuthorizeLogic.mockReset().mockResolvedValue(expectedUser as User);
+      mockLogger.info.mockReset(); // Reset logger mock for specific checks
+
+      const result = await credentialsProviderConfig.authorize(credentials, request);
+
+      expect(mockCredentialsSchema.safeParse).toHaveBeenCalledWith(credentials);
+      expect(mockAuthorizeLogic).toHaveBeenCalledWith(credentials, request);
+      expect(result).toEqual(expectedUser);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('[Credentials Authorize Logic] Authorization successful'),
+        { userId: expectedUser.id }
+      );
     });
 
-    it.skip('should return null on failed authorization', async () => {
-      // This test is skipped intentionally
-      expect(true).toBe(true);
+    it('should return null on failed authorization', async () => {
+      const credentials = { email: 'test@example.com', password: 'wrongpassword' };
+      const request = {} as Request;
+      // Ensure mocks are reset for this test
+      mockCredentialsSchema.safeParse
+        .mockReset()
+        .mockReturnValue({ success: true, data: credentials });
+      mockAuthorizeLogic.mockReset().mockResolvedValue(null);
+      mockLogger.warn.mockReset(); // Reset logger mock
+
+      const result = await credentialsProviderConfig.authorize(credentials, request);
+
+      expect(mockCredentialsSchema.safeParse).toHaveBeenCalledWith(credentials);
+      expect(mockAuthorizeLogic).toHaveBeenCalledWith(credentials, request);
+      expect(result).toBeNull();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '[Credentials Authorize Logic] Authorization failed (null user returned)'
+        ),
+        { email: credentials.email }
+      );
     });
 
-    it.skip('should handle authorization errors', async () => {
-      // This test is skipped intentionally
-      expect(true).toBe(true);
+    it('should handle authorization errors', async () => {
+      const credentials = { email: 'test@example.com', password: 'password' };
+      const request = {} as Request;
+      const authError = new Error('Auth system error');
+      // Ensure mocks are reset for this test
+      mockCredentialsSchema.safeParse
+        .mockReset()
+        .mockReturnValue({ success: true, data: credentials });
+      mockAuthorizeLogic.mockReset().mockRejectedValue(authError);
+      mockLogger.error.mockReset(); // Reset logger mock
+
+      await expect(credentialsProviderConfig.authorize(credentials, request)).rejects.toThrow(
+        authError
+      );
+
+      expect(mockCredentialsSchema.safeParse).toHaveBeenCalledWith(credentials);
+      expect(mockAuthorizeLogic).toHaveBeenCalledWith(credentials, request);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('[Credentials Authorize Logic] Authorization error'),
+        { email: credentials.email, error: authError }
+      );
     });
   });
 });
