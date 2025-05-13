@@ -23,40 +23,6 @@ export const metadata: Metadata = {
   description: 'A Next.js starter template with NextAuth.js Authentication and PostgreSQL database',
 };
 
-// This script runs before page renders to prevent theme flashing
-// It is minimal and only handles the initial render before React hydration
-const themeScript = `
-(function() {
-  try {
-    // Prevent transitions during theme initialization
-    document.documentElement.classList.add('prevent-transition');
-    
-    // Get stored theme preference or use system default
-    let theme = localStorage.getItem('theme-preference') || 'system';
-    
-    // Resolve system preference if needed
-    if (theme === 'system') {
-      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    
-    // Apply theme class to html element
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-    document.documentElement.style.colorScheme = theme;
-    
-    // Set data attribute on body for client hydration
-    document.body.dataset.initialTheme = theme;
-    
-    // Remove transition prevention after a minimal delay
-    setTimeout(function() {
-      document.documentElement.classList.remove('prevent-transition');
-    }, 0);
-  } catch (e) {
-    console.error('Theme initialization error:', e);
-  }
-})()
-`;
-
 // RootLayout needs to be async to fetch the session server-side
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Fetch the session on the server
@@ -89,8 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </ThemeRegistry>
           </ThemeProvider>
         </SessionProviderWrapper>
-        {/* Moved theme script here to ensure body exists */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Custom theme script removed as next-themes handles FOUC */}
       </body>
     </html>
   );
