@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
 // import { UserRole } from '@/types'; // Unused import removed
 import { sharedAuthConfig } from './auth-shared'; // Import shared config
+import { logRequestResponse } from '@/middleware/request-logger'; // Corrected import path
+import { type NextRequest, NextResponse } from 'next/server';
 
 // Extend session types (already done in auth-shared.ts, no need to repeat declare module)
 
@@ -151,30 +153,70 @@ export const authConfigEdge: NextAuthConfig = {
     ...sharedAuthConfig.callbacks,
 
     // --- authorized callback (Edge-specific logic) ---
+    // eslint-disable-next-line complexity
     async authorized({ auth, request }) {
       const { nextUrl } = request;
       const pathname = nextUrl.pathname;
       const isLoggedIn = !!auth;
       const userId = auth?.user?.id;
       const logContext = createLogContext(request, isLoggedIn, userId);
+      const startTime = Date.now();
 
       logger.debug('[Auth Edge Callback] authorized check running', logContext);
 
-      // --- ADDED CHECK for icon patterns ---
       const isIcon = pathname.startsWith('/icon-');
 
+      // Decision variable
+      let allowAccess = false;
+      let response: Response | undefined = undefined;
+
       if (isPublicRoute(pathname) || isApiRoute(pathname) || isIcon) {
-        // Added isIcon check
         logger.debug('[Auth Edge] Allowing public, API, or icon route', {
           ...logContext,
           pathname,
         });
-        return true;
+        allowAccess = true;
+        // For allowed routes without explicit response, log with a generic 200
+        logRequestResponse(
+          request as NextRequest,
+          new Response(null, { status: 200 }) as NextResponse,
+          startTime
+        );
+      } else if (isAuthRoute(pathname)) {
+        const authRouteDecision = handleAuthRoute(isLoggedIn, nextUrl);
+        if (typeof authRouteDecision === 'boolean') {
+          allowAccess = authRouteDecision;
+        } else {
+          response = authRouteDecision;
+        }
+        // Log the actual response if one is generated
+        logRequestResponse(
+          request as NextRequest,
+          response ?? (new Response(null, { status: allowAccess ? 200 : 401 }) as NextResponse),
+          startTime
+        );
+      } else {
+        // Protected route
+        const protectedRouteDecision = handleProtectedRoute(
+          isLoggedIn,
+          pathname,
+          nextUrl,
+          logContext
+        );
+        if (typeof protectedRouteDecision === 'boolean') {
+          allowAccess = protectedRouteDecision;
+        } else {
+          response = protectedRouteDecision;
+        }
+        // Log the actual response if one is generated
+        logRequestResponse(
+          request as NextRequest,
+          response ?? (new Response(null, { status: allowAccess ? 200 : 401 }) as NextResponse),
+          startTime
+        );
       }
-      if (isAuthRoute(pathname)) {
-        return handleAuthRoute(isLoggedIn, nextUrl);
-      }
-      return handleProtectedRoute(isLoggedIn, pathname, nextUrl, logContext);
+
+      return response ?? allowAccess; // Return Response object or boolean
     },
 
     // --- jwt callback (Edge-specific, potentially simplified) ---

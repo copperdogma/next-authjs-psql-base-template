@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import baseLogger from '@/lib/logger'; // Remove Pino import
+import { createLogger } from '@/lib/logger'; // Use the createLogger function
 import { z } from 'zod';
 import {
   generalApiLimiter,
@@ -18,30 +19,21 @@ const ClientLogSchema = z.object({
 // Infer the type from the schema
 // type ClientLogEntry = z.infer<typeof ClientLogSchema>; // Removed unused type alias
 
-// Helper to get console logging function based on level
-const getConsoleMethod = (
-  level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
-): ((...data: unknown[]) => void) => {
-  const levelMap: Record<typeof level, (...data: unknown[]) => void> = {
-    trace: console.trace,
-    debug: console.debug,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    fatal: console.error, // Map fatal to error
-  };
-  return levelMap[level] || console.log;
-};
+// Create a logger instance for this API route
+const logger = createLogger('client-log-api');
 
 async function handleLogProcessing(body: unknown): Promise<NextResponse> {
   const result = ClientLogSchema.safeParse(body);
 
   if (!result.success) {
-    // Log validation error using console.warn
-    console.warn('Invalid client log entry received:', {
-      validationErrors: result.error.format(),
-      location: 'client-log-api-validation',
-    });
+    // Log validation error using the logger
+    logger.warn(
+      {
+        validationErrors: result.error.format(),
+        location: 'client-log-api-validation',
+      },
+      'Invalid client log entry received'
+    );
     return NextResponse.json(
       { error: 'Invalid log entry', details: result.error.format() },
       { status: 400 }
@@ -49,13 +41,16 @@ async function handleLogProcessing(body: unknown): Promise<NextResponse> {
   }
 
   const { level, message, context: clientContext, timestamp: clientTimestamp } = result.data;
-  const logMethod = getConsoleMethod(level);
+  // const logMethod = getConsoleMethod(level); // Removed
 
-  // Log the message with context using console
-  logMethod(`[Client Log - ${level.toUpperCase()}] ${message}`, {
-    clientContext,
-    clientTimestamp,
-  });
+  // Log the message with context using the logger's level methods
+  logger[level](
+    {
+      clientContext,
+      clientTimestamp,
+    },
+    `[Client Log] ${message}` // Simplified prefix
+  );
 
   return NextResponse.json({ success: true }, { status: 200 });
 }
@@ -75,11 +70,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json();
     response = await handleLogProcessing(body);
   } catch (error) {
-    // Log the error during processing on the server using console.error
-    console.error('Error processing client log entry in POST handler:', {
-      err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
-      location: 'client-log-api-post-handler',
-    });
+    // Log the error during processing on the server using the logger
+    logger.error(
+      {
+        err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+        location: 'client-log-api-post-handler',
+      },
+      'Error processing client log entry in POST handler'
+    );
     response = NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 

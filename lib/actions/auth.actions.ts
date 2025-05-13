@@ -9,8 +9,9 @@ import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import type { User } from '@prisma/client';
 import * as admin from 'firebase-admin';
-import pino from 'pino';
 // import { redirect } from 'next/navigation'; // Removed unused import
+import type { Logger as PinoLogger } from 'pino'; // Import type explicitly
+// import pino from 'pino'; // Removed unused direct import
 
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
@@ -92,7 +93,7 @@ interface RegisterUserOptionalDeps {
   db?: RegisterUserDbClient;
   hasher?: Hasher;
   fbService?: FirebaseAdminService;
-  logger?: pino.Logger;
+  logger?: PinoLogger; // Use imported type
 }
 
 // --- Private Helper Functions --- //
@@ -246,7 +247,7 @@ async function _handlePrismaCreateFailure(
 async function _attemptPostRegistrationSignIn(
   email: string,
   passwordAttempt: string,
-  log: pino.Logger
+  log: PinoLogger // Use imported type
 ): Promise<RegistrationResult | null> {
   log.debug({ email }, '_attemptPostRegistrationSignIn: Attempting sign-in after registration...');
   try {
@@ -311,7 +312,8 @@ async function _attemptPostRegistrationSignIn(
 
 async function _handleMainRegistrationError(
   error: unknown,
-  context: string
+  context: string,
+  _log?: PinoLogger // Optional logger param, prefix with underscore if unused by design
 ): Promise<RegistrationResult> {
   const logContext = { error, registrationContext: context };
   actionLogger.error(
@@ -374,7 +376,7 @@ interface ExecuteRateLimitPipelineOptions {
 async function _executeRateLimitPipeline(
   redisClient: Redis, // Assumed to be non-null when this is called
   options: ExecuteRateLimitPipelineOptions,
-  log: pino.Logger
+  log: PinoLogger // Use imported type
 ): Promise<{ currentAttempts?: number; errorOccurred: boolean }> {
   const { key, windowSeconds, clientIp } = options;
   const logContext = { redisKey: key, clientIp };
@@ -431,7 +433,7 @@ async function _executeRateLimitPipeline(
 async function _checkRegistrationRateLimit(
   redisClient: Redis | null,
   clientIp: string,
-  log: pino.Logger
+  log: PinoLogger // Use imported type
 ): Promise<RateLimitResult> {
   const logContext = { clientIp };
   log.debug(logContext, 'Checking registration rate limit...');
@@ -602,7 +604,7 @@ async function _performRegistrationAttempt(
 
 // Helper function to resolve dependencies
 interface ResolvedRegisterDeps {
-  log: pino.Logger;
+  log: PinoLogger; // Use imported type
   fbService: FirebaseAdminService;
   db: RegisterUserDbClient;
   hasher: Hasher;
@@ -632,7 +634,7 @@ function _resolveRegisterDependencies(deps?: RegisterUserOptionalDeps): Resolved
 
 // Helper function to handle rate limiting check
 async function _handleRegistrationRateLimit(
-  log: pino.Logger,
+  log: PinoLogger, // Use imported type
   logContext: { email: string },
   clientIp: string | null | undefined
 ): Promise<RegistrationResult | null> {
@@ -668,7 +670,7 @@ async function _handleRegistrationRateLimit(
 
 // Helper function to check for existing Prisma user
 async function _checkExistingPrismaUser(
-  log: pino.Logger,
+  log: PinoLogger, // Use imported type
   logContext: { email: string },
   emailToCheck: string,
   db: RegisterUserDbClient

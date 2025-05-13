@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server';
 import type { Session, User as NextAuthUser } from 'next-auth'; // Import Session type
 import type { JWT } from 'next-auth/jwt';
 import { UserRole } from '@/types'; // Import UserRole if not automatically available
+import { jest } from '@jest/globals';
 
 // Top-level variable for captured redirect arguments
 let receivedRedirectArgs: any[] | undefined;
@@ -22,6 +23,26 @@ const mockLogger = {
 };
 jest.mock('@/lib/logger', () => ({
   logger: mockLogger,
+}));
+
+// Mock the logger used by auth-edge and its dependencies
+/* // Removed unused variable
+const mockLoggerInstance = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  fatal: jest.fn(),
+  trace: jest.fn(),
+  child: jest.fn().mockReturnThis(),
+};
+*/
+// Note: We rely on the global mock in jest.setup.api.mocks.ts for @/lib/logger
+// But we explicitly mock the request logger middleware here to ensure its dependencies
+// (like createLogger at the module level) don't cause issues during auth-edge tests.
+jest.mock('@/middleware/request-logger', () => ({
+  __esModule: true,
+  logRequestResponse: jest.fn(), // Provide a simple mock function
 }));
 
 const mockAuthSession = (
@@ -202,7 +223,7 @@ describe('authConfigEdge', () => {
 
   describe('authorized callback', () => {
     let authorizedCallback: any;
-    let redirectSpy: jest.SpyInstance;
+    let redirectSpy: any;
 
     beforeEach(async () => {
       receivedRedirectArgs = undefined; // Reset before each test
