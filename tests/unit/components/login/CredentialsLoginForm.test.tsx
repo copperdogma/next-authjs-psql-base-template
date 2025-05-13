@@ -1,151 +1,340 @@
 import React from 'react';
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import CredentialsLoginForm from '@/app/login/components/CredentialsLoginForm'; // Assuming rename happens
+import { CredentialsLoginForm } from '@/components/auth/CredentialsLoginForm';
+import { renderWithAuth } from '@/tests/utils/test-utils';
 
-// Mock the signIn function from next-auth/react
-const mockSignIn = jest.fn();
-// --- Remove unused state mocks ---
-// const mockSetIsLoading = jest.fn();
-// const mockSetError = jest.fn();
-// --- End mocks ---
+// Mock next-auth/react
+jest.mock('next-auth/react', () => {
+  const actualNextAuth = jest.requireActual('next-auth/react');
+  // Define the mock function *inside* the factory
+  const mockSignInInside = jest.fn();
+  return {
+    ...actualNextAuth,
+    signIn: mockSignInInside, // Export the mock function under the standard name
+    _mockSignIn: mockSignInInside, // Export it under a different name for test access
+  };
+});
 
-jest.mock('next-auth/react', () => ({
-  ...jest.requireActual('next-auth/react'),
-  signIn: (...args: any[]) => mockSignIn(...args),
+// Mocks for props (ensure these are defined before mockProps)
+const mockSetIsLoading = jest.fn();
+const mockSetError = jest.fn();
+
+// Mock next/navigation
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(), // Mock the hook itself
+  useSearchParams: jest.fn(), // Mock the hook itself
 }));
 
+// Mock logger
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(), // Mock child method if needed
+  },
+}));
+
+// Define mockProps to be reused
+const mockProps = {
+  isLoading: false,
+  setIsLoading: mockSetIsLoading,
+  error: null,
+  setError: mockSetError,
+};
+
 describe('CredentialsLoginForm', () => {
+  let mockSignIn: jest.Mock;
+  let mockRouterPush: jest.Mock;
+  let mockSearchParamsGet: jest.Mock;
+
   beforeEach(() => {
-    // Reset mocks before each test
+    mockSignIn = jest.requireMock('next-auth/react')._mockSignIn;
     mockSignIn.mockClear();
+    mockSetIsLoading.mockClear();
+    mockSetError.mockClear();
+
+    // Set up mock return values for the hooks
+    mockRouterPush = jest.fn();
+    (jest.requireMock('next/navigation').useRouter as jest.Mock).mockReturnValue({
+      push: mockRouterPush,
+    });
+
+    mockSearchParamsGet = jest.fn().mockReturnValue(null);
+    (jest.requireMock('next/navigation').useSearchParams as jest.Mock).mockReturnValue({
+      get: mockSearchParamsGet,
+    });
   });
 
-  it('should render email and password fields', () => {
-    // Remove props that the component doesn't accept
-    render(<CredentialsLoginForm />);
-
-    // Check for email input
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-
-    // Check for password input
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  it('should render the form correctly', () => {
+    renderWithAuth(<CredentialsLoginForm {...mockProps} />);
+    // Use selector option for specificity
+    expect(screen.getByLabelText(/email address/i, { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i, { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in with email/i })).toBeInTheDocument();
   });
 
-  it('should render a submit button for credentials', () => {
-    // Remove props that the component doesn't accept
-    render(<CredentialsLoginForm />);
+  it('should allow typing in email and password fields', async () => {
+    renderWithAuth(<CredentialsLoginForm {...mockProps} />);
+    // Use selector option for specificity
+    const emailInput = screen.getByLabelText(/email address/i, { selector: 'input' });
+    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' });
 
-    // Check for the credentials sign-in button
-    expect(
-      screen.getByRole('button', { name: /sign in with credentials|sign in with email/i })
-    ).toBeInTheDocument();
-  });
-
-  it('should call signIn with credentials when submitted', async () => {
-    // Remove props that the component doesn't accept
-    render(<CredentialsLoginForm />);
-
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /sign in with email/i });
-
-    // Simulate user input
     await userEvent.type(emailInput, 'test@example.com');
     await userEvent.type(passwordInput, 'password123');
 
-    // Simulate form submission
-    await userEvent.click(submitButton);
+    expect(emailInput).toHaveValue('test@example.com');
+    expect(passwordInput).toHaveValue('password123');
+  });
 
-    // Check if signIn was called correctly
-    expect(mockSignIn).toHaveBeenCalledTimes(1);
+  it('should call signIn with credentials on submit', async () => {
+    renderWithAuth(<CredentialsLoginForm {...mockProps} />);
+    // Use selector option for specificity
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'test@example.com'
+    );
+    await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
+    });
+
     expect(mockSignIn).toHaveBeenCalledWith('credentials', {
       redirect: false,
       email: 'test@example.com',
       password: 'password123',
     });
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+  });
+
+  it('should redirect to dashboard on successful login', async () => {
+    mockSignIn.mockResolvedValueOnce({ ok: true, error: null, url: '/dashboard' });
+
+    renderWithAuth(<CredentialsLoginForm {...mockProps} />);
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'test@example.com'
+    );
+    await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+    expect(mockSetError).toHaveBeenCalledWith(null);
+    const setErrorCalls = mockSetError.mock.calls;
+    const lastSetErrorCall = setErrorCalls[setErrorCalls.length - 1];
+    expect(lastSetErrorCall[0]).toBeNull();
+    expect(mockSetIsLoading).toHaveBeenLastCalledWith(true);
+  });
+
+  it('should redirect to callbackUrl on successful login if provided', async () => {
+    // Mock searchParams.get to return a value for this test
+    mockSearchParamsGet.mockReturnValue('/custom-path');
+    mockSignIn.mockResolvedValueOnce({ ok: true, error: null, url: '/dashboard' });
+
+    renderWithAuth(<CredentialsLoginForm {...mockProps} />);
+    // Use selector option for specificity
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'test@example.com'
+    );
+    await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/custom-path'); // Assert the mock push function
   });
 
   it('should display an error message on failed login', async () => {
-    // Mock signIn to return an error
-    mockSignIn.mockResolvedValueOnce({ error: 'CredentialsSignin', ok: false });
-
-    // Remove props that the component doesn't accept
-    render(<CredentialsLoginForm />);
-
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    // Get the form element
-    const form = emailInput.closest('form');
-    if (!form) throw new Error('Could not find form element');
-
-    // Simulate user input and submission via form submit event
-    await userEvent.type(emailInput, 'wrong@example.com');
-    await userEvent.type(passwordInput, 'wrongpassword');
-    // Trigger submit directly
-    await act(async () => {
-      fireEvent.submit(form);
+    mockSignIn.mockResolvedValueOnce({
+      ok: false,
+      error: 'CredentialsSignin',
+      url: null,
     });
 
-    // Check for error message display - Assert UI directly
-    expect(await screen.findByText('Invalid email or password.')).toBeInTheDocument();
+    let currentProps = { ...mockProps, isLoading: false, error: null };
+    const { rerender } = renderWithAuth(<CredentialsLoginForm {...currentProps} />);
+
+    // Override mocks to trigger rerender on state change
+    mockSetIsLoading.mockImplementation(loading => {
+      currentProps = { ...currentProps, isLoading: loading };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+    mockSetError.mockImplementation(err => {
+      currentProps = { ...currentProps, error: err };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'wrong@example.com'
+    );
+    await userEvent.type(
+      screen.getByLabelText(/password/i, { selector: 'input' }),
+      'wrongpassword'
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
+    });
+
+    // Assert mock calls
+    const expectedError = 'Invalid email or password.';
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false); // Should be called on failure
+    expect(mockSetError).toHaveBeenCalledWith(expectedError);
+
+    // Assert error message visibility after rerender
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(expectedError);
+  });
+
+  it('should display a generic error message for other signIn failures', async () => {
+    mockSignIn.mockResolvedValueOnce({
+      ok: false,
+      error: 'SomeOtherError',
+      url: null,
+    });
+
+    let currentProps = { ...mockProps, isLoading: false, error: null };
+    const { rerender } = renderWithAuth(<CredentialsLoginForm {...currentProps} />);
+
+    // Override mocks to trigger rerender
+    mockSetIsLoading.mockImplementation(loading => {
+      currentProps = { ...currentProps, isLoading: loading };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+    mockSetError.mockImplementation(err => {
+      currentProps = { ...currentProps, error: err };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'user@example.com'
+    );
+    await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
+    });
+
+    // Assert mock calls
+    const expectedError = 'Login failed. Please check your details or try another method.';
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    expect(mockSetError).toHaveBeenCalledWith(expectedError);
+
+    // Assert error message visibility after rerender
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(expectedError);
+  });
+
+  it('should display an unexpected error message if signIn throws', async () => {
+    const thrownError = new Error('Network Error');
+    mockSignIn.mockRejectedValueOnce(thrownError);
+
+    let currentProps = { ...mockProps, isLoading: false, error: null };
+    const { rerender } = renderWithAuth(<CredentialsLoginForm {...currentProps} />);
+
+    // Override mocks to trigger rerender
+    mockSetIsLoading.mockImplementation(loading => {
+      currentProps = { ...currentProps, isLoading: loading };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+    mockSetError.mockImplementation(err => {
+      currentProps = { ...currentProps, error: err };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+
+    await userEvent.type(
+      screen.getByLabelText(/email address/i, { selector: 'input' }),
+      'user@example.com'
+    );
+    await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
+
+    await act(async () => {
+      // Catch the expected rejection so the test doesn't fail
+      await userEvent
+        .click(screen.getByRole('button', { name: /sign in with email/i }))
+        .catch(() => {});
+    });
+
+    // Assert mock calls
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false); // Called in catch block
+    expect(mockSetError).toHaveBeenCalledWith(thrownError.message);
+
+    // Assert error message visibility after rerender
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(thrownError.message);
   });
 
   it('should disable inputs and show loading text during submission', async () => {
-    // Create a controllable promise for the mock
-    let resolveSignIn: (value: { ok: boolean; error?: string }) => void;
-    const signInPromise = new Promise<{ ok: boolean; error?: string }>(resolve => {
-      resolveSignIn = resolve;
-    });
-    mockSignIn.mockImplementation(() => signInPromise);
+    mockSignIn.mockImplementation(
+      () =>
+        new Promise(resolve =>
+          setTimeout(() => resolve({ ok: true, error: null, url: '/dashboard' }), 50)
+        )
+    );
 
-    // Remove props that the component doesn't accept
-    render(<CredentialsLoginForm />);
+    // Initial props
+    let currentProps = { ...mockProps, isLoading: false };
+    const { rerender } = renderWithAuth(<CredentialsLoginForm {...currentProps} />);
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const emailInput = screen.getByLabelText(/email address/i, { selector: 'input' });
+    const passwordInput = screen.getByLabelText(/password/i, { selector: 'input' });
     const submitButton = screen.getByRole('button', { name: /sign in with email/i });
 
-    // --- Simulate User Input ---
     await userEvent.type(emailInput, 'test@example.com');
     await userEvent.type(passwordInput, 'password123');
 
-    // Ensure button is enabled before click
-    expect(submitButton).not.toBeDisabled();
+    // Override mockSetIsLoading to allow us to capture the call and then rerender
+    mockSetIsLoading.mockImplementation(loading => {
+      currentProps = { ...currentProps, isLoading: loading };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
+    // Also override mockSetError for completeness, though not strictly needed for this specific test's primary path
+    mockSetError.mockImplementation(err => {
+      currentProps = { ...currentProps, error: err };
+      rerender(<CredentialsLoginForm {...currentProps} />);
+    });
 
-    // Get the form element
-    const form = emailInput.closest('form');
-    if (!form) throw new Error('Could not find form element');
-    // Trigger submit directly
     await act(async () => {
-      fireEvent.submit(form);
+      await userEvent.click(submitButton);
     });
 
-    // --- Assert Loading State Change - Check UI directly ---
-    await waitFor(() => {
-      const submitButton = screen.getByRole('button', { name: /signing in.../i });
-      expect(submitButton).toBeDisabled();
-      expect(screen.getByLabelText(/email/i)).toBeDisabled();
-      expect(screen.getByLabelText(/password/i)).toBeDisabled();
-    });
+    // By the time click promise resolves, mockSetIsLoading(true) should have been called,
+    // and the component rerendered with isLoading: true.
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
 
-    // --- Resolve the mock sign in ---
-    await act(async () => {
-      const originalError = console.error;
-      console.error = jest.fn(); // Suppress console error during controlled promise resolution
-      resolveSignIn({ ok: true }); // Simulate successful sign in
-      await signInPromise; // Wait for the promise to resolve
-      console.error = originalError;
-    });
+    // Assertions for loading state (inputs disabled, button text changes)
+    // These should now reflect the rerendered state
+    expect(emailInput).toBeDisabled();
+    expect(passwordInput).toBeDisabled();
+    expect(submitButton).toBeDisabled();
+    expect(submitButton).toHaveTextContent('Signing In...');
 
-    // --- Assert Final State UI - Check UI directly ---
-    await waitFor(() => {
-      const submitButton = screen.getByRole('button', { name: /sign in with email/i });
-      expect(submitButton).not.toBeDisabled();
-      expect(screen.getByLabelText(/email/i)).not.toBeDisabled();
-      expect(screen.getByLabelText(/password/i)).not.toBeDisabled();
-    });
+    // Wait for the signIn mock to resolve and subsequent actions (like router.push)
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard'));
+
+    // On success, setIsLoading(false) is NOT called by the component,
+    // so the component remains in its isLoading=true state visually until unmounted/redirected.
+    // The mockSetIsLoading.mock.calls will show [true].
+    expect(mockSetIsLoading).toHaveBeenCalledTimes(1);
+    expect(mockSetIsLoading).toHaveBeenLastCalledWith(true);
   });
 
   // Add more tests later for interaction and calling signIn

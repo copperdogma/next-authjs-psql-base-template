@@ -1,14 +1,13 @@
-import { Prisma, PrismaClient } from '@prisma/client';
-import { RawQueryService } from '../interfaces/services';
-import { prisma } from '../prisma';
-import * as pino from 'pino';
+import { PrismaClient, Prisma } from '@prisma/client';
+import pino from 'pino';
 import { logger as rootLogger } from '../logger';
+import { prisma } from '../prisma';
 
 /**
  * Implementation of RawQueryService with dependency injection
  * Provides optimized raw SQL queries for complex operations
  */
-export class RawQueryServiceImpl implements RawQueryService {
+export class RawQueryServiceImpl {
   constructor(
     private readonly prismaClient: PrismaClient = prisma,
     private readonly logger: pino.Logger = rootLogger.child({ component: 'db:raw-queries' })

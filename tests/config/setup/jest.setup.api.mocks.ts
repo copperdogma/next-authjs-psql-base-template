@@ -1,28 +1,33 @@
 import { jest } from '@jest/globals';
 import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks'; // Updated path
+import pino from 'pino';
 
 // --- Global Pino Mock ---
+
+// Create a simplified mock pino instance for global use
+// This instance's methods (.info, .warn, etc.) can be spied on by individual tests if needed.
 export const mockPinoInstanceFromGlobalSetup = {
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
-  trace: jest.fn(),
   fatal: jest.fn(),
+  trace: jest.fn(),
   silent: jest.fn(),
+  // Simplify child mock completely
   child: jest.fn().mockReturnThis(),
+  // Add level getters if needed by any code under test
   level: 'info',
-  isLevelEnabled: jest.fn().mockReturnValue(true),
-  levels: {
-    values: { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 },
-    labels: {},
-  },
+  isLevelEnabled: jest.fn(level => level === 'info'), // Example implementation
 };
+
+// Mock the pino *factory function* globally. It just returns the mock instance.
+// We are no longer focusing on intercepting the options passed *to* this factory.
 export const actualMockPinoFactoryFnFromGlobalSetup = jest.fn(() => {
-  console.log('GLOBAL SETUP MOCK: actualMockPinoFactoryFnFromGlobalSetup CALLED');
-  return mockPinoInstanceFromGlobalSetup;
+  return mockPinoInstanceFromGlobalSetup as unknown as pino.Logger; // Cast needed
 });
 
+// Mock the entire pino module to use our factory
 jest.mock('pino', () => {
   console.log('GLOBAL SETUP MOCK: jest.mock for pino EXECUTED');
   return {
@@ -115,7 +120,7 @@ jest.mock('@/lib/logger', () => {
       },
     },
     // Provide basic jest.fn() for previously actual implementations
-    createLogger: jest.fn(() => mockApiLoggerInstance), // Return a basic mock logger
+    createLogger: jest.fn((_context?: Record<string, unknown> | string) => mockApiLoggerInstance), // Return a basic mock logger
     getRequestId: jest.fn(() => 'mock-request-id'), // Return a mock value
   };
 });

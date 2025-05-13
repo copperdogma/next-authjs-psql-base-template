@@ -1,4 +1,4 @@
-import { createContextLogger } from '@/lib/services/logger-service';
+import { createLogger } from '@/lib/logger';
 
 // Remove unused logger import: import { logger } from '../logger';
 // Remove unused FIREBASE_REST_API_URL constant
@@ -30,7 +30,7 @@ interface FirebaseAuthErrorResponse {
 // Helper function to call the Firebase Auth REST API
 // eslint-disable-next-line max-statements -- Function encapsulates the steps for making a Firebase Auth REST API call, including setup, execution, and basic error handling.
 async function callFirebaseAuthApi(payload: object): Promise<FirebaseAuthSuccessResponse> {
-  const logger = createContextLogger('callFirebaseAuthApi');
+  const logger = createLogger('callFirebaseAuthApi');
   // Use specific type
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   if (!apiKey) {
@@ -78,7 +78,7 @@ async function callFirebaseAuthApi(payload: object): Promise<FirebaseAuthSuccess
  * @throws Throws an error if verification fails or API key is missing.
  */
 export async function verifyPassword(email: string, password: string) {
-  const logger = createContextLogger('verifyPassword');
+  const logger = createLogger('verifyPassword');
   logger.debug({ msg: 'Attempting password verification via REST API', email });
 
   if (!email || !password) {

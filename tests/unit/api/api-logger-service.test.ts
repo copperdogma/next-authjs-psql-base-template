@@ -3,6 +3,8 @@ const mockV4 = jest.fn<() => string>().mockReturnValue('mock-uuid-value');
 
 // Import the actual uuid module to require its actuals
 import * as uuid from 'uuid';
+import type pino from 'pino';
+import type { Mock } from 'jest-mock';
 
 // Mock the uuid module at the top level, overriding only v4
 jest.mock('uuid', () => ({
@@ -13,7 +15,7 @@ jest.mock('uuid', () => ({
 
 // Standard imports AFTER top-level mocks
 import { jest } from '@jest/globals';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Import ACTUAL functions from the module under test
 import {
@@ -22,22 +24,37 @@ import {
   getRequestPath,
   getRequestMethod,
   sanitizeHeaders,
-  createErrorResponse,
+  withApiLogger,
 } from '../../../lib/services/api-logger-service';
 
-// Mock logger BEFORE importing the service that uses it
-jest.mock('../../../lib/logger'); // Mock base logger dependency
-
-// Mock the module under test to control getRequestId
-const mockGetRequestId = jest.fn<() => string>();
-jest.mock('../../../lib/services/api-logger-service', () => {
-  // Cast to any to allow spreading
-  const actual = jest.requireActual('../../../lib/services/api-logger-service') as any;
+// Create a mock logger factory
+const createMockPinoLogger = (bindings = {}) => {
   return {
-    ...actual, // Keep actual implementations for other functions
-    getRequestId: mockGetRequestId, // Use our mock for getRequestId
-  };
-});
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    fatal: jest.fn(),
+    trace: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+    level: 'info',
+    bindings: jest.fn().mockReturnValue(bindings),
+  } as unknown as jest.Mocked<pino.Logger>;
+};
+
+// Set up a constant for our mock request ID
+const MOCK_REQUEST_ID = 'mock-request-id';
+
+// Mock the base logger module with a predictable getRequestId function
+jest.mock('../../../lib/logger', () => ({
+  createLogger: jest.fn((_name: string, context?: Record<string, unknown>) =>
+    createMockPinoLogger(context || {})
+  ),
+  getRequestId: jest.fn().mockImplementation(() => MOCK_REQUEST_ID),
+}));
+
+// Don't mock api-logger-service at all - test the real implementation
+jest.unmock('../../../lib/services/api-logger-service');
 
 // Mock next/server
 jest.mock('next/server', () => {
@@ -80,28 +97,22 @@ describe('API Logger Service', () => {
       });
       const id = getRequestId(mockReq);
       expect(id).toBe('header-test-id');
-      expect(mockV4).not.toHaveBeenCalled();
     });
 
-    // Test case where uuid.v4 *should* be called
-    it('should generate an ID when no header ID is present', () => {
+    it('should use the base getRequestId when no header is present', () => {
       const mockReq = new NextRequest('http://test.com');
       const id = getRequestId(mockReq);
-      expect(id).toEqual(expect.any(String));
-      expect(id.length).toBeGreaterThan(10); // Basic check for UUID-like string
+      expect(id).toBe('mock-request-id');
     });
 
-    // Test case where uuid.v4 *should* be called
-    it('should generate an ID when no request object is provided', () => {
-      const id = getRequestId(); // Call without request
-      expect(id).toEqual(expect.any(String));
-      expect(id.length).toBeGreaterThan(10);
+    it('should use the base getRequestId when no request is provided', () => {
+      const id = getRequestId();
+      expect(id).toBe('mock-request-id');
     });
   });
 
   // Test internal helpers directly
   describe('getRequestPath', () => {
-    // ... existing tests for getRequestPath ...
     it('should extract path from NextRequest', () => {
       const mockReq = new NextRequest('http://localhost:3000/api/test');
       const path = getRequestPath(mockReq);
@@ -110,7 +121,6 @@ describe('API Logger Service', () => {
   });
 
   describe('getRequestMethod', () => {
-    // ... existing tests for getRequestMethod ...
     it('should extract method from request', () => {
       const mockReq = new NextRequest('http://test.com', { method: 'POST' });
       const method = getRequestMethod(mockReq);
@@ -119,7 +129,6 @@ describe('API Logger Service', () => {
   });
 
   describe('sanitizeHeaders', () => {
-    // ... existing tests for sanitizeHeaders ...
     it('should redact sensitive headers', () => {
       const headers = new Headers({
         authorization: 'Bearer token123',
@@ -141,42 +150,121 @@ describe('API Logger Service', () => {
       const mockReq = new NextRequest('http://localhost:3000/api/data', {
         headers: { 'x-request-id': 'req-abc' },
       });
-      const logger = createApiLogger(mockReq);
+
+      const { logger } = createApiLogger(mockReq);
 
       expect(logger).toBeDefined();
-      expect(logger.context).toBeDefined();
-      expect(logger.context.requestId).toBe('req-abc'); // Header ID takes precedence
-      expect(logger.context.path).toBe('/api/data');
-      expect(mockV4).not.toHaveBeenCalled(); // Should not call uuid if header exists
+      // Verify our mock logger was created with the expected context
+      const mockCreateLogger = (jest.requireMock('../../../lib/logger') as any).createLogger;
+      expect(mockCreateLogger).toHaveBeenCalledWith(
+        'api',
+        expect.objectContaining({
+          requestId: 'req-abc',
+          path: '/api/data',
+        })
+      );
     });
 
     it('should return logger with context using generated ID when no header', () => {
       const mockReq = new NextRequest('http://localhost:3000/api/profile');
-      const logger = createApiLogger(mockReq);
+      const { logger, startTime } = createApiLogger(mockReq);
 
       expect(logger).toBeDefined();
-      expect(logger.context).toBeDefined();
-      expect(logger.context.path).toBe('/api/profile');
-      expect(logger.context.requestId).toEqual(expect.any(String));
-      expect(logger.context.requestId.length).toBeGreaterThan(10);
+      expect(startTime).toBeDefined();
+
+      // Verify our mock logger was created with the expected context
+      const mockCreateLogger = (jest.requireMock('../../../lib/logger') as any).createLogger;
+      expect(mockCreateLogger).toHaveBeenCalledWith(
+        'api',
+        expect.objectContaining({
+          requestId: 'mock-request-id', // Use our known mock value
+          path: '/api/profile',
+        })
+      );
+    });
+
+    it('should correctly extract path and method from request', () => {
+      const mockReq = new NextRequest('http://localhost:3000/api/test', {
+        method: 'POST',
+        headers: new Headers({ 'x-request-id': 'req-abc' }),
+      });
+
+      createApiLogger(mockReq);
+
+      // Verify our mock logger was created with the expected context
+      const mockCreateLogger = (jest.requireMock('../../../lib/logger') as any).createLogger;
+      expect(mockCreateLogger).toHaveBeenCalledWith(
+        'api',
+        expect.objectContaining({
+          requestId: 'req-abc',
+          path: '/api/test',
+          method: 'POST',
+        })
+      );
     });
   });
 
-  // Test the ACTUAL createErrorResponse function
-  describe('createErrorResponse', () => {
-    // ... existing tests for createErrorResponse ...
-    it('should create error response with Error object', async () => {
-      const error = new Error('Test error');
-      error.name = 'TestError';
-      const requestId = 'req-123';
-      const response = createErrorResponse(error, requestId, 400);
-      expect(response.status).toBe(400);
+  // Test the ACTUAL withApiLogger function
+  describe('withApiLogger', () => {
+    let mockPinoLogger: jest.Mocked<pino.Logger>;
+
+    beforeEach(() => {
+      // Set up mock pino logger instance for these tests
+      mockPinoLogger = createMockPinoLogger({ component: 'api', requestId: 'mock-req-id' });
+
+      // Mock createLogger to return our mock instance
+      const mockCreateLogger = (jest.requireMock('../../../lib/logger') as any)
+        .createLogger as Mock;
+      mockCreateLogger.mockReturnValue(mockPinoLogger);
+
+      // Mock Date.now to return consistent value
+      jest.spyOn(Date, 'now').mockReturnValue(1000);
+    });
+
+    it('should wrap handler, log start/completion, and call handler', async () => {
+      const mockReq = new NextRequest('http://localhost/api/test');
+
+      // Create a basic handler that returns a NextResponse
+      const successResponse = NextResponse.json({ success: true });
+      const mockHandler = jest
+        .fn<(req: NextRequest) => Promise<Response>>()
+        .mockResolvedValue(successResponse);
+
+      // Create a type assertion to help TypeScript understand the API
+      type ApiHandler = (req: NextRequest) => Promise<Response>;
+      const typedWithApiLogger = withApiLogger as unknown as (handler: ApiHandler) => ApiHandler;
+      const wrappedHandler = typedWithApiLogger(mockHandler);
+
+      await wrappedHandler(mockReq);
+
+      // Check handler was called
+      expect(mockHandler).toHaveBeenCalled();
+      expect(mockPinoLogger.info).toHaveBeenCalled();
+    });
+
+    it('should handle errors and return error response', async () => {
+      const mockReq = new NextRequest('http://localhost/api/error');
+      const error = new Error('Handler failed');
+
+      // Create a handler that throws
+      const mockHandler = jest
+        .fn<(req: NextRequest) => Promise<Response>>()
+        .mockRejectedValue(error);
+
+      // Create a type assertion to help TypeScript understand the API
+      type ApiHandler = (req: NextRequest) => Promise<Response>;
+      const typedWithApiLogger = withApiLogger as unknown as (handler: ApiHandler) => ApiHandler;
+      const wrappedHandler = typedWithApiLogger(mockHandler);
+
+      const response = await wrappedHandler(mockReq);
+
+      // Verify error handling
+      expect(mockHandler).toHaveBeenCalled();
+      expect(mockPinoLogger.error).toHaveBeenCalled();
+      expect(response.status).toBe(500);
+
       const body = await response.json();
-      expect(body).toEqual({
-        error: 'TestError',
-        message: 'Test error',
-        requestId: 'req-123',
-      });
+      expect(body.error).toBe('Error');
     });
   });
 });

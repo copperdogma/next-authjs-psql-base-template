@@ -12,9 +12,9 @@
 // =============================================================================
 import { signIn, signOut, useSession } from 'next-auth/react';
 import type { SignInResponse } from 'next-auth/react';
-import { createContextLogger } from '@/lib/services/logger-service';
+import { createLogger } from '@/lib/logger';
+import pino from 'pino';
 import { v4 as uuidv4 } from 'uuid';
-import type { LoggerService } from '@/lib/interfaces/services';
 
 /**
  * Minimal interface for options passed to extractClientInfo
@@ -27,7 +27,7 @@ interface ClientInfoOptions {
  * Logging parameters for sign-in operations
  */
 export interface SignInLoggingParams {
-  logger?: LoggerService;
+  logger?: pino.Logger;
   provider: string | undefined;
   correlationId: string;
   startTime: number;
@@ -79,7 +79,7 @@ export function extractClientInfo(
  * Log a successful sign-in attempt
  */
 export function logSignInSuccess(params: SignInLoggingParams): void {
-  const logger = params.logger || createContextLogger('auth');
+  const logger = params.logger || createLogger('auth');
   const duration = Date.now() - params.startTime;
 
   logger.info({
@@ -94,7 +94,7 @@ export function logSignInSuccess(params: SignInLoggingParams): void {
  * Log a failed sign-in attempt
  */
 export function logSignInFailure(params: SignInFailureParams): void {
-  const logger = params.logger || createContextLogger('auth');
+  const logger = params.logger || createLogger('auth');
   const duration = Date.now() - params.startTime;
 
   logger.warn({
@@ -110,7 +110,7 @@ export function logSignInFailure(params: SignInFailureParams): void {
  * Log an error during sign-in
  */
 export function logSignInError(params: SignInErrorParams): void {
-  const logger = params.logger || createContextLogger('auth');
+  const logger = params.logger || createLogger('auth');
   const duration = Date.now() - params.startTime;
 
   logger.error({
@@ -168,7 +168,7 @@ export const signInWithLogging = async (
   const [provider, options] = args;
   const correlationId = createCorrelationId();
   const startTime = Date.now();
-  const logger = createContextLogger('auth');
+  const logger = createLogger('auth');
   const clientInfo = extractClientInfo(options, false);
   const loggingParams: SignInLoggingParams = { logger, provider, correlationId, startTime };
 
@@ -196,7 +196,7 @@ export const signInWithLogging = async (
 // Handles signOut with redirect: false
 async function _signOutRedirectFalse(
   options: Parameters<typeof signOut>[0],
-  logger: LoggerService,
+  logger: pino.Logger,
   correlationId: string,
   startTime: number
 ): Promise<SignOutResponse> {
@@ -222,7 +222,7 @@ async function _signOutRedirectFalse(
 // Handles signOut with redirect: true (or default)
 async function _signOutRedirectTrue(
   options: Parameters<typeof signOut>[0],
-  logger: LoggerService,
+  logger: pino.Logger,
   correlationId: string,
   startTime: number
 ): Promise<void> {
@@ -249,8 +249,8 @@ export const signOutWithLogging = async (
   const [options] = args;
   const correlationId = createCorrelationId('signout');
   const startTime = Date.now();
-  const logger = createContextLogger('auth');
-  const clientInfo = extractClientInfo(options, false);
+  const logger = createLogger('auth');
+  const clientInfo = extractClientInfo(options, true);
 
   logger.info({
     msg: 'Sign-out attempt started',

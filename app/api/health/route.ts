@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiLogger, createErrorResponse } from '@/lib/services/api-logger-service';
-import { LoggerService } from '@/lib/interfaces/services';
+import pino from 'pino';
 
 // Schema for validating POST request data
 const HealthCheckRequestSchema = z.object({
@@ -34,7 +34,7 @@ export async function GET(): Promise<NextResponse> {
  */
 async function parseAndValidateRequest(
   request: NextRequest,
-  logger: LoggerService
+  logger: pino.Logger
 ): Promise<
   | { isValid: false; error: NextResponse }
   | { isValid: true; data: z.infer<typeof HealthCheckRequestSchema> }
@@ -72,7 +72,7 @@ async function parseAndValidateRequest(
 async function performDatabaseCheck(
   checkDatabase: boolean,
   timeout: number,
-  logger: LoggerService
+  logger: pino.Logger
 ): Promise<void> {
   if (checkDatabase) {
     logger.debug('Database check requested');
@@ -98,7 +98,7 @@ function createSuccessResponse(checkDatabase: boolean, timeout: number): NextRes
 /**
  * Handles errors with appropriate logging and response
  */
-function handleError(error: unknown, request: NextRequest, logger: LoggerService): NextResponse {
+function handleError(error: unknown, request: NextRequest, logger: pino.Logger): NextResponse {
   logger.error({ error }, 'Health check POST request processing failed');
 
   if (request.headers.has('x-request-id')) {
@@ -120,7 +120,7 @@ function handleError(error: unknown, request: NextRequest, logger: LoggerService
  * Validates request data and performs optional database check
  */
 export const POST = withApiLogger(
-  async (request: NextRequest, logger: LoggerService): Promise<NextResponse> => {
+  async (request: NextRequest, logger: pino.Logger): Promise<NextResponse> => {
     try {
       // Parse and validate the request
       const validationResult = await parseAndValidateRequest(request, logger).catch(() => ({

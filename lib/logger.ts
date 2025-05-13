@@ -26,15 +26,13 @@ export const redactFields = [
 ];
 
 // Create base logger configuration with Next.js-compatible settings
-const baseLogger = pino({
+const pinoOptions: pino.LoggerOptions = {
   level: process.env.LOG_LEVEL || 'info', // Use env var or default to info
   redact: {
     paths: redactFields,
     censor: '[REDACTED]',
     remove: true, // Completely remove secrets instead of replacing with [REDACTED]
   },
-  // REMOVED Transport config - let output go to stdout as JSON by default
-  // transport: { ... },
   base: {
     env: process.env.NODE_ENV,
     app: 'next-firebase-psql-template',
@@ -46,7 +44,21 @@ const baseLogger = pino({
       return { level: label };
     },
   },
-});
+};
+
+// Conditionally add pino-pretty transport for non-production environments
+if (process.env.NODE_ENV !== 'production') {
+  pinoOptions.transport = {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'SYS:standard',
+      ignore: 'pid,hostname,env,app', // Remove redundant base fields from pretty print
+    },
+  };
+}
+
+const baseLogger = pino(pinoOptions);
 
 /**
  * Main application logger

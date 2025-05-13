@@ -14,11 +14,16 @@ import pino from 'pino';
 
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-import type { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
 import { firebaseAdminService } from '@/lib/server/services';
 import { signIn } from '@/lib/auth-node';
 import type { ServiceResponse } from '@/types';
 import { type Redis } from 'ioredis';
+// Removed unused imports
+// import { rateLimit } from '@/lib/redis';
+// import { type CreateUserSchema } from '@/lib/schemas';
+import { FirebaseAdminService } from '@/lib/services/firebase-admin-service';
+// import { UserService } from '@/lib/services/user-service';
+// import { logger as rootLogger, createLogger } from '@/lib/logger'; // Import base logger
 
 // --- BEGIN IMPORT ERROR HELPERS ---
 import {
@@ -79,14 +84,14 @@ type RegistrationResult = ServiceResponse<null, RegistrationErrorDetails>;
 interface PerformRegistrationDeps {
   db: RegisterUserDbClient;
   hasher: Hasher;
-  fbService: FirebaseAdminServiceInterface;
+  fbService: FirebaseAdminService;
 }
 
 // Interface for optional dependencies passed into the main action logic
 interface RegisterUserOptionalDeps {
   db?: RegisterUserDbClient;
   hasher?: Hasher;
-  fbService?: FirebaseAdminServiceInterface;
+  fbService?: FirebaseAdminService;
   logger?: pino.Logger;
 }
 
@@ -101,7 +106,7 @@ async function _validateRegistrationInput(
 
 async function _createFirebaseUser(
   data: { email: string; password?: string; name?: string | null },
-  fbService: FirebaseAdminServiceInterface,
+  fbService: FirebaseAdminService,
   logContext: { email: string }
 ): Promise<admin.auth.UserRecord> {
   actionLogger.debug(logContext, '_createFirebaseUser: Attempting...');
@@ -122,7 +127,7 @@ async function _createFirebaseUser(
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
-  services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminServiceInterface },
+  services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminService },
   logContext: { email?: string | null; uid?: string }
 ): Promise<User | RegistrationResult> {
   const { db, hasher, fbService } = services;
@@ -200,7 +205,7 @@ async function _createPrismaUser(
  */
 async function _handlePrismaCreateFailure(
   firebaseUser: admin.auth.UserRecord, // Must be non-null here
-  fbService: FirebaseAdminServiceInterface,
+  fbService: FirebaseAdminService,
   baseLogContext: { email?: string | null },
   originalDbError: unknown // Keep a reference to the original DB error for context if needed
 ): Promise<RollbackError> {
@@ -598,7 +603,7 @@ async function _performRegistrationAttempt(
 // Helper function to resolve dependencies
 interface ResolvedRegisterDeps {
   log: pino.Logger;
-  fbService: FirebaseAdminServiceInterface;
+  fbService: FirebaseAdminService;
   db: RegisterUserDbClient;
   hasher: Hasher;
 }

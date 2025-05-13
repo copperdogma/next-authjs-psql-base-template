@@ -16,13 +16,12 @@
 // For integration testing, use the Firebase emulator.
 // =============================================================================
 import * as admin from 'firebase-admin';
-import type * as pino from 'pino';
-import type { FirebaseAdminService as FirebaseAdminServiceInterface } from '@/lib/interfaces/services';
+import pino from 'pino';
 
 /**
  * Implementation of FirebaseAdminService using Firebase Admin SDK
  */
-export class FirebaseAdminService implements FirebaseAdminServiceInterface {
+export class FirebaseAdminService {
   private readonly logger: pino.Logger;
   private readonly app: admin.app.App;
   private authInstance: admin.auth.Auth | null = null; // Lazy load Auth instance
