@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 // import type { RuntimeCaching } from 'next-pwa'; // Remove potentially outdated/incorrect type
-import { loggers } from '@/lib/logger'; // Import logger
+// import { loggers } from '@/lib/logger'; // Import logger
 
 // Use ESM imports instead of require
 import withBundleAnalyzer from '@next/bundle-analyzer';
@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
 
   // Mark pino and pino-pretty as external packages to prevent bundling issues
   // This is generally the preferred way for server-only packages
-  serverExternalPackages: ['pino', 'pino-pretty', 'jose'],
+  serverExternalPackages: ['pino', 'pino-pretty', 'jose', 'bcryptjs'],
 
   // Add CORS headers for API routes
   async headers() {
@@ -63,16 +63,16 @@ const nextConfig: NextConfig = {
   },
 
   // Simplified webpack configuration
-  webpack: (config, { dev, isServer, webpack }) => {
+  webpack: (config, { dev: _dev, isServer, webpack: _webpack }) => {
     // Log unused variables to satisfy TypeScript compiler
-    const logger = loggers.api;
+    // const logger = loggers.api;
     // Log all context variables, including webpack, to mark as used
-    logger.debug({
-      msg: 'Webpack context',
-      dev,
-      isServer: !!isServer,
-      webpackVersion: webpack?.version,
-    });
+    // logger.debug({
+    //   msg: 'Webpack context',
+    //   dev,
+    //   isServer: !!isServer,
+    //   webpackVersion: webpack?.version,
+    // });
 
     // Type assertion for config.resolve.fallback
     config.resolve = config.resolve || {};

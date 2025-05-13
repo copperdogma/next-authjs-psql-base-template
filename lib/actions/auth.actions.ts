@@ -605,7 +605,7 @@ async function _performRegistrationAttempt(
 // Helper function to resolve dependencies
 interface ResolvedRegisterDeps {
   log: PinoLogger; // Use imported type
-  fbService: FirebaseAdminService;
+  fbService: FirebaseAdminService | undefined; // Allow undefined here
   db: RegisterUserDbClient;
   hasher: Hasher;
 }
@@ -616,10 +616,9 @@ function _resolveRegisterDependencies(deps?: RegisterUserOptionalDeps): Resolved
   // Consider adding a check if stricter null safety is needed in the future.
   resolvedLogger.debug('_resolveRegisterDependencies: Resolving dependencies...');
 
-  // Ensure fbService is explicitly typed and not undefined
-  // firebaseAdminService is imported at module level so it should never be undefined
-  // but TypeScript might not infer this, so we use non-null assertion
-  const resolvedFbService = (deps?.fbService ?? firebaseAdminService)!;
+  // Resolve fbService without non-null assertion.
+  // The availability check happens in the calling function (registerUserLogic).
+  const resolvedFbService = deps?.fbService ?? firebaseAdminService;
 
   const resolvedDb = deps?.db ?? { user: prisma.user };
   const resolvedHasher = deps?.hasher ?? { hash };
