@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import { useRouter } from 'next/navigation';
 import { useSession, SessionContextValue } from 'next-auth/react';
 import type { ServiceResponse } from '@/types';
+import { getDisplayErrorMessage } from '@/lib/utils/error-display';
 
 // Hook for handling the redirect effect on success
 const useSuccessRedirectEffect = (
@@ -66,17 +67,14 @@ export function useRegistrationForm() {
 
   // Helper function to process the action result
   const processActionResult = (result: ServiceResponse<null, unknown>) => {
-    if (result.status === 'success') {
+    if (result.status === 'success' && result.data) {
       setSuccess(result.message || 'Registration successful!');
       logger.info('Success result received, state updated.');
     } else {
-      // Use result.error.message for detailed error, or result.message as fallback
       const mainError = result.error?.message || result.message || 'Registration failed.';
-      setError(mainError);
-      // If there are field-specific errors from Zod (e.g., result.errors from action),
-      // you might want to set them in a state to display next to fields.
-      // For example, if action returns: { status: 'error', errors: { field: ['message'] } }
-      // setFieldErrors(result.errors || {}); // Assuming `errors` is part of your ServiceResponse error payload for validation
+      setError(
+        getDisplayErrorMessage(result.error instanceof Error ? result.error : null, mainError)
+      );
     }
   };
 
@@ -90,7 +88,6 @@ export function useRegistrationForm() {
   });
 
   const onSubmit = async (validatedData: FormValues) => {
-    // Reset states at the start
     setError(null);
     setSuccess(null);
     setIsSubmitting(true);
@@ -102,20 +99,20 @@ export function useRegistrationForm() {
       formData.append('password', validatedData.password);
 
       const result = await registerUserAction(null, formData);
-
-      // Call the helper function to process the result
       processActionResult(result);
     } catch (err: unknown) {
       logger.error('Registration form submission error in hook', { error: err });
-      // Consolidate error setting
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setError(
+        getDisplayErrorMessage(
+          err instanceof Error ? err : null,
+          'An unexpected error occurred during registration.'
+        )
+      );
     } finally {
-      // Ensure isSubmitting is always reset
       setIsSubmitting(false);
     }
   };
 
-  // Call the extracted effect hook
   useSuccessRedirectEffect(success, isSubmitting, router, updateSession);
 
   return {

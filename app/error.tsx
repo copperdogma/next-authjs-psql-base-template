@@ -6,6 +6,7 @@ import { clientLogger } from '@/lib/client-logger';
 import PageLayout from '@/components/layouts/PageLayout'; // Added PageLayout
 import { Typography, Button, Paper, Box, Container } from '@mui/material'; // Added MUI components
 import { ErrorOutline } from '@mui/icons-material'; // Added MUI icon
+import { getDisplayErrorMessage } from '@/lib/utils/error-display'; // Added import
 
 // Log the error as soon as the boundary catches it
 let loggedError = false; // Prevent logging multiple times on re-renders
@@ -38,6 +39,11 @@ const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
       loggedError = false;
     };
   }, []);
+
+  const displayMessage = getDisplayErrorMessage(
+    error,
+    'An unexpected error occurred. We apologize for the inconvenience.'
+  );
 
   return (
     // Using PageLayout for consistency, assuming a title isn't strictly needed or can be generic
@@ -74,7 +80,7 @@ const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
             paragraph
             sx={{ maxWidth: 450, mx: 'auto', mb: 3 }}
           >
-            {error.message || 'An unexpected error occurred. We apologize for the inconvenience.'}
+            {displayMessage}
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
             <Button variant="contained" onClick={() => reset()} size="large">

@@ -55,6 +55,9 @@ const ExampleForm = ({
 
   // Centralized error handling (optional, good for API errors)
   const formError = errors.root?.message; // Access root errors if set by setError('root', ...)
+  // Developer Note: When calling setError('root', { message: '...' }) in the onSubmit handler,
+  // ensure the provided message is user-friendly or pre-processed (e.g., using getDisplayErrorMessage)
+  // if it originates from a raw error object, to prevent leaking technical details in production.
 
   return (
     // Use react-hook-form's handleSubmit to wrap our onSubmit

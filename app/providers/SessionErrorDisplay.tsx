@@ -1,10 +1,14 @@
 'use client';
 
+import { getDisplayErrorMessage } from '@/lib/utils/error-display';
+
 interface SessionErrorDisplayProps {
   error: Error;
 }
 
 export default function SessionErrorDisplay({ error }: SessionErrorDisplayProps) {
+  const displayMessage = getDisplayErrorMessage(error, 'A session error occurred.');
+
   return (
     <div
       style={{
@@ -18,7 +22,7 @@ export default function SessionErrorDisplay({ error }: SessionErrorDisplayProps)
       <h2>Session Error</h2>
       <p>There was a problem loading your session. Trying to recover...</p>
       <p>
-        <small>{error.message}</small>
+        <small>{displayMessage}</small>
       </p>
     </div>
   );

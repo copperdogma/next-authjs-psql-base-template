@@ -19,6 +19,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
+  // TODO: Update this URL for production deployments
+  metadataBase: new URL('http://localhost:3000'),
   title: 'Next.js + NextAuth + PostgreSQL',
   description: 'A Next.js starter template with NextAuth.js Authentication and PostgreSQL database',
 };

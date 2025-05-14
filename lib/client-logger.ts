@@ -79,10 +79,14 @@ function createLogEntry(
 // The exported logger object for client components
 export const clientLogger = {
   trace: (message: string, context?: Record<string, unknown>) => {
-    sendLog(createLogEntry('trace', message, context));
+    if (process.env.NODE_ENV !== 'production') {
+      sendLog(createLogEntry('trace', message, context));
+    }
   },
   debug: (message: string, context?: Record<string, unknown>) => {
-    sendLog(createLogEntry('debug', message, context));
+    if (process.env.NODE_ENV !== 'production') {
+      sendLog(createLogEntry('debug', message, context));
+    }
   },
   info: (message: string, context?: Record<string, unknown>) => {
     sendLog(createLogEntry('info', message, context));

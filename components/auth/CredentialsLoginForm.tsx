@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { logger } from '@/lib/logger';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getDisplayErrorMessage } from '@/lib/utils/error-display';
 
 // --- Material UI Imports ---
 import Box from '@mui/material/Box';
@@ -157,14 +158,12 @@ export function CredentialsLoginForm({
         setIsLoading(false);
       }
     } catch (err) {
-      let errorMessage = 'An unexpected server error occurred. Please try again.';
-      if (err instanceof Error) {
-        logger.error('Exception during credentials sign-in:', { error: err.message });
-        errorMessage = err.message;
-      } else {
-        logger.error('Unknown exception during credentials sign-in:', { error: err });
-      }
-      setError(errorMessage);
+      logger.error('Unknown exception during credentials sign-in:', { error: err });
+      const displayError = getDisplayErrorMessage(
+        err instanceof Error ? err : null,
+        'An unexpected server error occurred. Please try again.'
+      );
+      setError(displayError);
       setIsLoading(false);
     }
   };

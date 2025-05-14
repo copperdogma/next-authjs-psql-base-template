@@ -12,11 +12,12 @@
 // navigation and verify the resulting behavior in a browser context.
 // =============================================================================
 
-import NextAuth from 'next-auth';
-import { authConfigEdge } from '@/lib/auth-edge';
+// import { type NextRequest, NextResponse } from "next/server"; // Not needed directly
+import { auth } from '@/lib/auth-edge';
+// import NextAuth from 'next-auth';
 
 // Initialize NextAuth with the edge-compatible configuration
-const { auth } = NextAuth(authConfigEdge);
+// const { auth } = NextAuth(authConfigEdge);
 
 // Export the auth middleware as the default export for Next.js to pick up.
 // This will use the `authorized` callback within authConfigEdge for route protection.
