@@ -7,9 +7,6 @@ import { handleSharedSessionCallback } from '@/lib/auth-shared';
 import { authConfigNode } from '@/lib/auth-node';
 import { UserRole } from '@/types';
 import { createMockUser, createMockAccount, createMockToken } from '@/tests/mocks/auth';
-import { DeepMockProxy } from 'jest-mock-extended';
-import { PrismaClient } from '@prisma/client';
-import { FirebaseAdminService } from '@/lib/services/firebase-admin-service';
 import { validateOAuthInputs as mockValidateOAuthInputsOriginal } from '@/lib/auth/oauth-validation-helpers';
 
 // Mock external dependencies
@@ -57,23 +54,51 @@ jest.mock('@/lib/prisma', () => ({
 }));
 const { prisma: mockPrisma } = require('@/lib/prisma');
 
-// Mock for @/lib/firebase-admin - Ensure declarations are before usage
-const mockFirebaseGetUser = jest.fn();
-const mockFirebaseCreateUser = jest.fn();
-const mockFirebaseUpdateUser = jest.fn();
-const mockFirebaseIsInitialized = jest.fn(); // Declaration for isFirebaseAdminInitialized
-const mockFirebaseGetUserByEmail = jest.fn();
+// --- Refactored Firebase Admin Mock Setup ---
+
+// Declare mocks that are directly assigned in jest.mock factory *BEFORE* jest.mock
+// const MOCK_FB_IS_INITIALIZED = jest.fn(); // Will be defined inline below
+// const MOCK_FB_GET_APP = jest.fn(() => ({})); // Will be defined inline below
+
+// Declare mocks used inside the getFirebaseAdminAuth factory function
+const MOCK_FB_GET_USER = jest.fn();
+const MOCK_FB_CREATE_USER = jest.fn();
+const MOCK_FB_UPDATE_USER = jest.fn();
+const MOCK_FB_GET_USER_BY_EMAIL = jest.fn();
 
 jest.mock('@/lib/firebase-admin', () => ({
   getFirebaseAdminAuth: jest.fn(() => ({
-    getUser: mockFirebaseGetUser,
-    createUser: mockFirebaseCreateUser,
-    updateUser: mockFirebaseUpdateUser,
-    getUserByEmail: mockFirebaseGetUserByEmail,
+    // This is the mock for the getFirebaseAdminAuth function itself
+    // It returns an object whose methods are our singleton mocks
+    getUser: MOCK_FB_GET_USER,
+    createUser: MOCK_FB_CREATE_USER,
+    updateUser: MOCK_FB_UPDATE_USER,
+    getUserByEmail: MOCK_FB_GET_USER_BY_EMAIL,
   })),
-  isFirebaseAdminInitialized: mockFirebaseIsInitialized, // Usage of the declared mock
-  getFirebaseAdminApp: jest.fn(() => ({})), // Mock for getFirebaseAdminApp if it's used
+  isFirebaseAdminInitialized: jest.fn(), // Defined directly in the factory
+  getFirebaseAdminApp: jest.fn(() => ({ name: '[DEFAULT]' })), // Defined directly, returning a mock app object
 }));
+
+// New way using jest.requireMock.
+// This ensures we get the same mock instance that Jest is aware of.
+const {
+  getFirebaseAdminAuth: actualMockedGetFirebaseAdminAuth,
+  isFirebaseAdminInitialized: actualMockedIsFirebaseAdminInitialized,
+  getFirebaseAdminApp: actualMockedGetFirebaseAdminApp,
+} = jest.requireMock('@/lib/firebase-admin');
+
+// These are the variables the tests will use to assert calls and set mock behaviors.
+// The MOCK_FB_* series are for methods within the object returned by getFirebaseAdminAuth.
+// They are defined above jest.mock and correctly used by the mock factory.
+const mockFirebaseGetUser = MOCK_FB_GET_USER;
+const mockFirebaseCreateUser = MOCK_FB_CREATE_USER;
+const mockFirebaseUpdateUser = MOCK_FB_UPDATE_USER;
+const mockFirebaseGetUserByEmail = MOCK_FB_GET_USER_BY_EMAIL;
+
+// These variables will now point to the mock functions directly exported by the mocked @/lib/firebase-admin module.
+const mockFirebaseIsInitialized = actualMockedIsFirebaseAdminInitialized;
+const mockGetFirebaseAdminAuth = actualMockedGetFirebaseAdminAuth; // This is the mock for getFirebaseAdminAuth itself
+const mockGetFirebaseAdminApp = actualMockedGetFirebaseAdminApp;
 
 jest.mock('@/types', () => ({
   UserRole: { ADMIN: 'ADMIN', USER: 'USER' },
@@ -89,10 +114,6 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
   let jwtCallback: (args: any) => Promise<JWT | null>;
   let sessionCallback: (args: any) => Promise<Session>;
 
-  let mockFirebaseGetUser: jest.Mock;
-  let mockFirebaseCreateUser: jest.Mock;
-  let mockFirebaseUpdateUser: jest.Mock;
-
   beforeAll(() => {
     jwtCallback = authConfigNode.callbacks?.jwt as any;
     sessionCallback = authConfigNode.callbacks?.session as any;
@@ -102,18 +123,16 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks(); // Clears all mocks, including handleJwtSignIn/Update
+    jest.clearAllMocks(); // This clears all mocks defined with jest.fn(), including our singletons.
     mockUuidv4.mockReturnValue(mockCorrelationId);
 
-    // Assign the new firebase admin mocks
-    mockFirebaseGetUser = mockFirebaseAdminGetUser;
-    mockFirebaseCreateUser = mockFirebaseAdminCreateUser;
-    mockFirebaseUpdateUser = mockFirebaseAdminUpdateUser;
-
-    // IMPORTANT: Reset mockHandleJwtSignIn and mockHandleJwtUpdate to their original implementations by default
-    // Tests that need specific mock behavior for these will set it up locally within the test.
+    // Reset original implementations for auth-jwt mocks
     mockHandleJwtSignIn.mockImplementation(originalHandleJwtSignIn);
     mockHandleJwtUpdate.mockImplementation(originalHandleJwtUpdate);
+
+    // It's good practice to clear the mock for getFirebaseAdminAuth itself if tests depend on its call count/args
+    // mockGetFirebaseAdminAuth.mockClear();
+    // No default implementation for getFirebaseAdminAuth needed here, as its mock factory already returns the object with singleton method mocks.
   });
 
   // This is the main describe block for JWT callback tests
@@ -201,30 +220,76 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
       const baseAccountForDb = createMockAccount('google', { providerAccountId: 'google-user-id' });
 
       const setupRealHandleJwtSignInMocks = ({
-        fbUserExists,
-        fbUser = { uid: 'fb-user-id', email: baseUserForDb.email },
+        // Scenario flags:
+        firebaseUserExistsByEmail, // Will be re-purposed or clarified for UID existence
+        // fbUserRecord is the record that getUser(UID) or createUser should resolve with.
+        fbUserRecord = {
+          uid: 'fb-user-id',
+          email: baseUserForDb.email,
+          displayName: baseUserForDb.name,
+        },
         dbUserExists,
         dbAccountExists,
         dbUser = baseUserForDb,
         dbAccount = baseAccountForDb,
       }: {
-        fbUserExists: boolean;
-        fbUser?: any;
+        firebaseUserExistsByEmail: boolean; // REPURPOSED: true if fbUserRecord.uid should be found by auth.getUser(fbUserRecord.uid)
+        fbUserRecord?: {
+          uid: string;
+          email?: string | null;
+          displayName?: string | null;
+          photoURL?: string | null;
+          emailVerified?: boolean;
+        };
         dbUserExists: boolean;
         dbAccountExists: boolean;
         dbUser?: any;
         dbAccount?: any;
       }) => {
-        // Firebase Mocks
-        if (fbUserExists) {
-          mockFirebaseGetUser.mockResolvedValue(fbUser);
-        } else {
-          mockFirebaseGetUser.mockRejectedValue(new Error('User not found in Firebase for mock'));
-        }
-        mockFirebaseCreateUser.mockResolvedValue(fbUser);
-        mockFirebaseIsInitialized.mockReturnValue(true);
+        // --- Firebase Admin SDK Mocks ---
+        mockFirebaseIsInitialized.mockReturnValue(true); // Critical for sync logic to run
 
-        // Prisma Mocks
+        // Ensure mockGetFirebaseAdminAuth returns the object with the correct singleton mocks for this test setup
+        mockGetFirebaseAdminAuth.mockImplementation(() => ({
+          getUser: MOCK_FB_GET_USER, // This is auth.getUser(uid)
+          createUser: MOCK_FB_CREATE_USER,
+          updateUser: MOCK_FB_UPDATE_USER,
+          getUserByEmail: MOCK_FB_GET_USER_BY_EMAIL, // Keep for other tests if needed, but not primary for SUT path
+        }));
+
+        // Mock for auth.getUser(uid) - SUT calls this with NextAuth user.id
+        if (firebaseUserExistsByEmail) {
+          // Repurposed: if true, fbUserRecord.uid exists
+          MOCK_FB_GET_USER.mockImplementation(calledUid => {
+            if (calledUid === fbUserRecord.uid) {
+              return Promise.resolve(fbUserRecord);
+            }
+            return Promise.reject({
+              code: 'auth/user-not-found',
+              message: `Mock: User UID ${calledUid} not found for this scenario.`,
+            });
+          });
+        } else {
+          // Simulate user not found by UID, leading to potential creation by SUT
+          MOCK_FB_GET_USER.mockRejectedValue({
+            code: 'auth/user-not-found',
+            message: 'Mock: User not found by UID for creation scenario.',
+          });
+        }
+
+        // Mock for auth.createUser(payload) - SUT calls this if getUser(uid) fails
+        // It will be called with payload where payload.uid is the NextAuth user.id
+        MOCK_FB_CREATE_USER.mockResolvedValue(fbUserRecord); // Assumes creation is successful and returns this record
+
+        // mockFirebaseGetUserByEmail remains available but is not the primary path for syncFirebaseUserForOAuth
+        // If firebaseUserExistsByEmail is true, configure it for completeness or other tests
+        if (firebaseUserExistsByEmail && fbUserRecord.email) {
+          MOCK_FB_GET_USER_BY_EMAIL.mockResolvedValue(fbUserRecord);
+        } else {
+          MOCK_FB_GET_USER_BY_EMAIL.mockRejectedValue({ code: 'auth/user-not-found' });
+        }
+
+        // --- Prisma Mocks (largely unchanged, ensure they align with scenario) ---
         if (dbUserExists) {
           const userToReturnFromFindUnique = {
             ...dbUser,
@@ -250,22 +315,28 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
 
       it('should sync existing Firebase & DB user for OAuth signIn', async () => {
         const nextAuthUser = createMockUser({
-          id: 'nextauth-user1',
+          id: 'nextauth-user1', // This ID will be used as UID by SUT for Firebase getUser/createUser
           email: 'sync@example.com',
           name: 'Sync User',
         });
         const account = createMockAccount('google', { providerAccountId: 'google-sync1' });
         const token = createMockToken();
+        // finalDbUserId is what goes into token.sub
+        // finalFirebaseUidForMockFbSdk is the UID SUT will use for Firebase ops. Here it's nextAuthUser.id
         const finalDbUserId = 'db-sync1';
-        const finalFirebaseUidForMockFbSdk = 'fb-sync1';
+        const firebaseUidForSut = nextAuthUser.id!; // SUT uses NextAuth user.id as Firebase UID
 
         setupRealHandleJwtSignInMocks({
-          fbUserExists: true,
-          fbUser: { uid: 'fb-sync1', email: 'sync@example.com' },
+          firebaseUserExistsByEmail: true, // REPURPOSED: Means firebaseUidForSut (nextAuthUser.id) exists in Firebase
+          fbUserRecord: {
+            uid: firebaseUidForSut,
+            email: 'sync@example.com',
+            displayName: 'Sync User Firebase',
+          },
           dbUserExists: true,
           dbAccountExists: true,
-          dbUser: { id: 'db-sync1', email: 'sync@example.com' },
-          dbAccount: { providerAccountId: 'google-sync1', userId: 'db-sync1' },
+          dbUser: { id: finalDbUserId, email: 'sync@example.com' }, // DB user linked to finalDbUserId
+          dbAccount: { providerAccountId: 'google-sync1', userId: finalDbUserId },
         });
         const profile = {
           email: nextAuthUser.email!,
@@ -276,7 +347,7 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
         const validateOAuthInputsAsMock = mockValidateOAuthInputsOriginal as jest.Mock;
         validateOAuthInputsAsMock.mockReturnValue({
           isValid: true,
-          userId: nextAuthUser.id!,
+          userId: nextAuthUser.id!, // This is the ID SUT will use for Firebase UID
           userEmail: nextAuthUser.email!,
           validAccount: account,
         });
@@ -290,12 +361,13 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
         });
 
         expect(validateOAuthInputsAsMock).toHaveBeenCalled();
-        expect(isFirebaseAdminInitialized).toHaveBeenCalled();
-        expect(adminAuthMockFunctions.getUserByEmail).toHaveBeenCalledWith(nextAuthUser.email);
-        expect(adminAuthMockFunctions.createUser).not.toHaveBeenCalled();
-        expect(mockPrisma.user.findUnique).toHaveBeenCalled();
+        // SUT calls getUser(nextAuthUser.id), NOT getUserByEmail
+        expect(MOCK_FB_GET_USER).toHaveBeenCalledWith(firebaseUidForSut);
+        expect(MOCK_FB_CREATE_USER).not.toHaveBeenCalled(); // Should not create if getUser found it
+        expect(mockPrisma.user.findUnique).toHaveBeenCalled(); // DB interaction is separate
         expect(resultToken?.error).toBeUndefined();
-        expect(resultToken?.sub).toBe(finalDbUserId);
+        expect(resultToken?.sub).toBe(finalDbUserId); // sub should be the DB user's ID
+        // token.firebaseUid is set to the DB User ID after successful DB op, as per current SUT
         expect(resultToken?.firebaseUid).toBe(finalDbUserId);
       });
 
@@ -308,11 +380,15 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
         const account = createMockAccount('google', { providerAccountId: 'google-create-db' });
         const token = createMockToken();
         const finalDbUserId = 'new-db-user-id-from-create';
-        const finalFirebaseUidForMockFbSdk = 'fb-existing-for-create-db';
+        const firebaseUidForSut = nextAuthUser.id!; // SUT uses NextAuth user.id as Firebase UID
 
         setupRealHandleJwtSignInMocks({
-          fbUserExists: true,
-          fbUser: { uid: 'fb-existing-for-create-db', email: 'create-db@example.com' },
+          firebaseUserExistsByEmail: true,
+          fbUserRecord: {
+            uid: firebaseUidForSut,
+            email: 'create-db@example.com',
+            displayName: 'Create DB User Firebase',
+          },
           dbUserExists: false,
           dbAccountExists: false,
           dbUser: { id: 'new-db-user-id-from-create' },
@@ -347,9 +423,9 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
         });
 
         expect(validateOAuthInputsAsMock).toHaveBeenCalled();
-        expect(isFirebaseAdminInitialized).toHaveBeenCalled();
-        expect(adminAuthMockFunctions.getUserByEmail).toHaveBeenCalledWith(nextAuthUser.email);
-        expect(adminAuthMockFunctions.createUser).not.toHaveBeenCalled();
+        // SUT calls getUser(nextAuthUser.id), NOT getUserByEmail
+        expect(MOCK_FB_GET_USER).toHaveBeenCalledWith(firebaseUidForSut);
+        expect(MOCK_FB_CREATE_USER).not.toHaveBeenCalled(); // Should not create if getUser found it
         expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(
           expect.objectContaining({ where: { email: nextAuthUser.email } })
         );
@@ -378,11 +454,15 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
         const finalFirebaseUidForMockFbSdk = 'fb-newbie'; // Used for mocking Firebase SDK calls if they expect a certain format or value
 
         setupRealHandleJwtSignInMocks({
-          fbUserExists: false,
+          firebaseUserExistsByEmail: false,
           dbUserExists: false,
           dbAccountExists: false,
           // Mock Firebase Admin SDK to return a user with finalFirebaseUidForMockFbSdk
-          fbUser: { uid: finalFirebaseUidForMockFbSdk, email: nextAuthUser.email },
+          fbUserRecord: {
+            uid: finalFirebaseUidForMockFbSdk,
+            email: nextAuthUser.email,
+            displayName: nextAuthUser.name,
+          },
           // Mock DB user that would be created/found, its ID is finalDbUserId
           dbUser: {
             ...nextAuthUser,
@@ -463,20 +543,24 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
           name: userFromNextAuth.name,
         };
         const finalDbUserId = 'db-newbie2';
-        const finalFirebaseUidForMockFbSdk = 'fb-newbie2-firebase'; // Used for mocking Firebase SDK calls
+        const firebaseUidForSut = userFromNextAuth.id!;
 
-        // Ensure Firebase is treated as initialized for this test path
-        (isFirebaseAdminInitialized as jest.Mock).mockReturnValue(true);
-
-        // Mock Firebase: user not found by email, then create successfully
-        adminAuthMockFunctions.getUserByEmail.mockRejectedValue({ code: 'auth/user-not-found' });
-        adminAuthMockFunctions.createUser.mockResolvedValue({
-          uid: finalFirebaseUidForMockFbSdk,
+        // Mock Firebase: user not found by UID (nextAuth ID), then create successfully
+        // Ensure the mockGetFirebaseAdminAuth provides the auth object with these mocks
+        mockGetFirebaseAdminAuth.mockImplementation(() => ({
+          getUser: MOCK_FB_GET_USER,
+          createUser: MOCK_FB_CREATE_USER,
+          updateUser: MOCK_FB_UPDATE_USER,
+          getUserByEmail: MOCK_FB_GET_USER_BY_EMAIL,
+        }));
+        MOCK_FB_GET_USER.mockRejectedValue({ code: 'auth/user-not-found' });
+        MOCK_FB_CREATE_USER.mockResolvedValue({
+          uid: firebaseUidForSut, // Should be created with this UID
           email: profile.email,
           displayName: profile.name,
+          emailVerified: true, // from profile
         });
 
-        // Mock Prisma: user not found, then create successfully
         mockPrisma.user.findUnique.mockResolvedValue(null);
         mockPrisma.user.create.mockResolvedValue({
           ...userFromNextAuth,
@@ -494,9 +578,15 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
           trigger,
         });
 
-        expect(isFirebaseAdminInitialized).toHaveBeenCalled();
-        expect(adminAuthMockFunctions.getUserByEmail).toHaveBeenCalledWith(profile.email);
-        expect(adminAuthMockFunctions.createUser).toHaveBeenCalledTimes(1); // Corrected from importedMockCreateUser
+        expect(MOCK_FB_GET_USER).toHaveBeenCalledWith(firebaseUidForSut);
+        expect(MOCK_FB_CREATE_USER).toHaveBeenCalledWith(
+          expect.objectContaining({
+            uid: firebaseUidForSut,
+            email: profile.email,
+            displayName: profile.name,
+            emailVerified: true, // from profile
+          })
+        );
         expect(mockPrisma.user.findUnique).toHaveBeenCalledTimes(1);
         expect(mockPrisma.user.create).toHaveBeenCalledTimes(1);
         expect(resultToken?.error).toBeUndefined();
@@ -558,14 +648,22 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
           name: userFromNextAuth.name,
         };
         const finalDbUserId = 'db-newbie2';
-        const finalFirebaseUidForMockFbSdk = 'fb-newbie2-firebase';
+        const firebaseUidForSut = userFromNextAuth.id!;
 
-        (isFirebaseAdminInitialized as jest.Mock).mockReturnValue(true);
-        adminAuthMockFunctions.getUserByEmail.mockRejectedValue({ code: 'auth/user-not-found' });
-        adminAuthMockFunctions.createUser.mockResolvedValue({
-          uid: finalFirebaseUidForMockFbSdk,
+        // Mock Firebase: user not found by UID (nextAuth ID), then create successfully
+        // Ensure the mockGetFirebaseAdminAuth provides the auth object with these mocks
+        mockGetFirebaseAdminAuth.mockImplementation(() => ({
+          getUser: MOCK_FB_GET_USER,
+          createUser: MOCK_FB_CREATE_USER,
+          updateUser: MOCK_FB_UPDATE_USER,
+          getUserByEmail: MOCK_FB_GET_USER_BY_EMAIL,
+        }));
+        MOCK_FB_GET_USER.mockRejectedValue({ code: 'auth/user-not-found' });
+        MOCK_FB_CREATE_USER.mockResolvedValue({
+          uid: firebaseUidForSut, // Should be created with this UID
           email: profile.email,
           displayName: profile.name,
+          emailVerified: true, // from profile
         });
 
         mockPrisma.user.findUnique.mockResolvedValue(null);
@@ -585,9 +683,15 @@ describe('NextAuth Callbacks (Node & Shared)', () => {
           trigger,
         });
 
-        expect(isFirebaseAdminInitialized).toHaveBeenCalled();
-        expect(adminAuthMockFunctions.getUserByEmail).toHaveBeenCalledWith(profile.email);
-        expect(adminAuthMockFunctions.createUser).toHaveBeenCalledTimes(1);
+        expect(MOCK_FB_GET_USER).toHaveBeenCalledWith(firebaseUidForSut);
+        expect(MOCK_FB_CREATE_USER).toHaveBeenCalledWith(
+          expect.objectContaining({
+            uid: firebaseUidForSut,
+            email: profile.email,
+            displayName: profile.name,
+            emailVerified: true, // from profile
+          })
+        );
         expect(mockPrisma.user.findUnique).toHaveBeenCalledTimes(1);
         expect(mockPrisma.user.create).toHaveBeenCalledTimes(1);
         expect(resultToken?.error).toBeUndefined();

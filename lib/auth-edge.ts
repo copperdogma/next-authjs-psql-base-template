@@ -295,11 +295,12 @@ export const authConfigEdge: NextAuthConfig = {
     async session(params: {
       session: Session;
       token: JWT;
-      user: any;
-      newSession?: any;
-      trigger?: 'update';
+      // user: any; // Not used by handleSharedSessionCallback
+      // newSession?: any; // Not used by handleSharedSessionCallback
+      // trigger?: 'update'; // Not used by handleSharedSessionCallback directly
     }) {
-      return handleSharedSessionCallback(params);
+      // handleSharedSessionCallback only expects session and token
+      return handleSharedSessionCallback({ session: params.session, token: params.token });
     },
   },
   // Pages are inherited from sharedAuthConfig

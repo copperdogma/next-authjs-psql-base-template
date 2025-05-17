@@ -62,23 +62,28 @@ function validateConfig(config: FirebaseAdminConfig): string | null {
     'privateKey',
   ];
   for (const key of requiredInProdOrNonEmulator) {
-    if (!config[key]) {
-      const message = `Missing Firebase Admin SDK config value for: ${key}`;
-      // In production, missing creds (not using emulator) is a hard error.
-      // In dev/test (not using emulator), it's also an error.
-      if (config.nodeEnv === 'production' || !config.useEmulator) {
-        if (config.nodeEnv === 'production') {
-          moduleLogger.error({ missingKey: key }, message);
-        } else {
-          // For non-production environments without emulator, log a warning
-          moduleLogger.warn(
-            { missingKey: key },
-            `Non-production environment without emulator, but ${message}`
-          );
-        }
-        return message; // Return error message to be packaged in FirebaseInitResult
-      }
+    if (config[key]) {
+      continue; // Key is present, check next one
     }
+
+    // At this point, config[key] is missing.
+    const message = `Missing Firebase Admin SDK config value for: ${key}`;
+
+    // This check is now less nested.
+    // In production, or in dev/test NOT using emulator, missing creds is an error.
+    if (config.nodeEnv === 'production' || !config.useEmulator) {
+      if (config.nodeEnv === 'production') {
+        moduleLogger.error({ missingKey: key }, message);
+      } else {
+        // For non-production environments without emulator, log a warning
+        moduleLogger.warn(
+          { missingKey: key },
+          `Non-production environment without emulator, but ${message}`
+        );
+      }
+      return message; // Return error message to be packaged in FirebaseInitResult
+    }
+    // If it's dev/test AND useEmulator is true, missing creds here is fine.
   }
   return null;
 }

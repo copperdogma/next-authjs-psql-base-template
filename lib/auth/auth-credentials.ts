@@ -206,11 +206,70 @@ function _prepareAuthContext(
   return { correlationId, extendedLogContext };
 }
 
+function _extractPostRegName(creds: Record<string, unknown>): string | null {
+  if ('postRegistrationUserName' in creds) {
+    const rawName = creds.postRegistrationUserName;
+    if (typeof rawName === 'string') {
+      return rawName === 'null' ? null : rawName;
+    }
+    if (rawName === null) {
+      return null;
+    }
+  }
+  return null; // Default if not present or not string/null
+}
+
+// Helper for post-registration sign-in check
+function _handlePostRegistrationSignIn(
+  credentials: unknown,
+  extendedLogContext: Record<string, unknown>
+): NextAuthUser | null {
+  if (!credentials || typeof credentials !== 'object') {
+    return null;
+  }
+  const creds = credentials as Record<string, unknown>;
+
+  const isPostRegFlag = creds.isPostRegistration;
+  const isActuallyPostRegistration = isPostRegFlag === true || isPostRegFlag === 'true';
+  if (!isActuallyPostRegistration) {
+    return null;
+  }
+
+  const hasUserId =
+    'postRegistrationUserId' in creds && typeof creds.postRegistrationUserId === 'string';
+  const hasUserEmail =
+    'postRegistrationUserEmail' in creds && typeof creds.postRegistrationUserEmail === 'string';
+
+  if (!hasUserId || !hasUserEmail) {
+    logger.warn(
+      { ...extendedLogContext, credsProvided: creds },
+      '[Credentials Authorize Logic] Post-registration sign-in attempt missing required userId or email.'
+    );
+    return null;
+  }
+
+  const userId = creds.postRegistrationUserId as string;
+  const email = creds.postRegistrationUserEmail as string;
+  const name = _extractPostRegName(creds); // Use new helper
+
+  logger.info(
+    { ...extendedLogContext, userId, email, nameObtained: name },
+    '[Credentials Authorize Logic] Post-registration sign-in detected. Bypassing DB lookup and password check.'
+  );
+  return {
+    id: userId,
+    email: email,
+    name: name,
+    image: null,
+    role: UserRole.USER,
+  };
+}
+
 // Exported for use in the CredentialsProvider configuration
 export async function authorizeLogic(
-  credentials: unknown, // Keep unknown for flexibility, but check below
+  credentials: unknown,
   dependencies: AuthorizeDependencies,
-  logContext?: Record<string, unknown> // Add optional logContext parameter
+  logContext?: Record<string, unknown>
 ): Promise<NextAuthUser | null> {
   const { db, hasher, validator } = dependencies;
   const { correlationId, extendedLogContext } = _prepareAuthContext(dependencies, logContext);
@@ -221,40 +280,9 @@ export async function authorizeLogic(
   );
 
   // --- Special handling for post-registration sign-in ---
-  if (
-    credentials &&
-    typeof credentials === 'object' &&
-    'isPostRegistration' in credentials &&
-    (credentials.isPostRegistration === true || credentials.isPostRegistration === 'true') &&
-    'postRegistrationUserId' in credentials &&
-    typeof credentials.postRegistrationUserId === 'string' &&
-    'postRegistrationUserEmail' in credentials &&
-    typeof credentials.postRegistrationUserEmail === 'string'
-  ) {
-    const userId = credentials.postRegistrationUserId as string;
-    const email = credentials.postRegistrationUserEmail as string;
-
-    let name: string | null = null;
-    if ('postRegistrationUserName' in credentials) {
-      const rawName = credentials.postRegistrationUserName;
-      if (typeof rawName === 'string') {
-        name = rawName === 'null' ? null : rawName;
-      } else if (rawName === null) {
-        name = null;
-      }
-    }
-
-    logger.info(
-      { ...extendedLogContext, userId, email, nameObtained: name },
-      '[Credentials Authorize Logic] Post-registration sign-in detected. Bypassing DB lookup and password check.'
-    );
-    return {
-      id: userId,
-      email: email,
-      name: name,
-      image: null,
-      role: UserRole.USER,
-    };
+  const postRegUser = _handlePostRegistrationSignIn(credentials, extendedLogContext);
+  if (postRegUser) {
+    return postRegUser;
   }
   // --- End special handling ---
 

@@ -1,87 +1,107 @@
 import { jest } from '@jest/globals';
-// import type { UserRecord, CreateRequest, UpdateRequest } from 'firebase-admin/auth'; // Temporarily using any
-import { User as PrismaUser } from '@prisma/client';
-import { mockUser as defaultPrismaUser } from '../data/mockData';
+import * as admin from 'firebase-admin'; // Import for type referencing
 
-// Using any for Firebase Admin types temporarily due to persistent linting/type resolution issues
-type UserRecord = any;
-// type CreateRequest = any; // Not directly used in the simplified mocks
-// type UpdateRequest = any; // Not directly used in the simplified mocks
+// Use actual types for return values, not partials, to match admin.auth.Auth interface.
+// For tests, we'll create minimal objects that satisfy these full types.
+type MockUserRecord = admin.auth.UserRecord;
+type MockDecodedIdToken = admin.auth.DecodedIdToken;
 
-const mapPrismaUserToFirebaseUserRecord = (prismaUser: PrismaUser): Partial<UserRecord> => ({
-  uid: prismaUser.id,
-  email: prismaUser.email ?? undefined,
-  displayName: prismaUser.name ?? undefined,
-  emailVerified: !!prismaUser.emailVerified,
-  photoURL: prismaUser.image ?? undefined,
-  metadata: {
-    creationTime: prismaUser.createdAt.toISOString(),
-    lastSignInTime: prismaUser.lastSignedInAt?.toISOString() ?? prismaUser.updatedAt.toISOString(),
-  } as UserRecord['metadata'],
-});
+// Individual Firebase Auth method mocks
+export const verifyIdTokenMock =
+  jest.fn<(token: string, checkRevoked?: boolean) => Promise<MockDecodedIdToken>>();
+export const createSessionCookieMock =
+  jest.fn<(idToken: string, options: { expiresIn: number }) => Promise<string>>();
+export const verifySessionCookieMock =
+  jest.fn<(sessionCookie: string, checkRevoked?: boolean) => Promise<MockDecodedIdToken>>();
+export const revokeRefreshTokensMock = jest.fn<(uid: string) => Promise<void>>();
+export const getUserMock = jest.fn<(uid: string) => Promise<MockUserRecord>>();
+export const getUserByEmailMock = jest.fn<(email: string) => Promise<MockUserRecord>>();
+export const createUserMock =
+  jest.fn<(properties: admin.auth.CreateRequest) => Promise<MockUserRecord>>();
+export const updateUserMock =
+  jest.fn<(uid: string, properties: admin.auth.UpdateRequest) => Promise<MockUserRecord>>();
+export const deleteUserMock = jest.fn<(uid: string) => Promise<void>>();
+export const createCustomTokenMock = jest.fn<(uid: string, claims?: object) => Promise<string>>();
+export const listUsersMock =
+  jest.fn<(maxResults?: number, pageToken?: string) => Promise<admin.auth.ListUsersResult>>();
+export const setCustomUserClaimsMock =
+  jest.fn<(uid: string, claims: object | null) => Promise<void>>();
+export const generateEmailVerificationLinkMock =
+  jest.fn<(email: string, actionCodeSettings?: admin.auth.ActionCodeSettings) => Promise<string>>();
+export const generatePasswordResetLinkMock =
+  jest.fn<(email: string, actionCodeSettings?: admin.auth.ActionCodeSettings) => Promise<string>>();
 
-const mockAdminUserRecordPojo: Partial<UserRecord> =
-  mapPrismaUserToFirebaseUserRecord(defaultPrismaUser);
-export const mockSessionCookie = 'mock-session-cookie-for-testing';
-
-// Individual method mocks - ADD export
-export let verifyIdTokenMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let createSessionCookieMock = jest.fn<(...args: any[]) => Promise<string>>();
-export let verifySessionCookieMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let revokeRefreshTokensMock = jest.fn<(...args: any[]) => Promise<void>>();
-export let getUserMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let getUserByEmailMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let createUserMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let updateUserMock = jest.fn<(...args: any[]) => Promise<UserRecord>>();
-export let deleteUserMock = jest.fn<(...args: any[]) => Promise<void>>();
-export let createCustomTokenMock = jest.fn<(...args: any[]) => Promise<string>>();
-export let listUsersMock = jest.fn<(...args: any[]) => Promise<any>>();
-export let setCustomUserClaimsMock = jest.fn<(...args: any[]) => Promise<void>>();
-export let generateEmailVerificationLinkMock = jest.fn<(...args: any[]) => Promise<string>>();
-export let generatePasswordResetLinkMock = jest.fn<(...args: any[]) => Promise<string>>();
-
-const mockApps: any[] = [];
-
-// This object will be returned by initializeAppMock and getAppMock
-// It no longer needs to contain the auth service methods directly
-const mockAppDefinition = {
-  // name and options will be added by initializeAppMock logic
-  // auth: () => {}, // This will be handled by the global admin.auth() mock
+// This object groups all the auth method mocks. It will be returned by the mocked getAuth().
+export const authMethodsMockObject = {
+  verifyIdToken: verifyIdTokenMock,
+  createSessionCookie: createSessionCookieMock,
+  verifySessionCookie: verifySessionCookieMock,
+  revokeRefreshTokens: revokeRefreshTokensMock,
+  getUser: getUserMock,
+  getUserByEmail: getUserByEmailMock,
+  createUser: createUserMock,
+  updateUser: updateUserMock,
+  deleteUser: deleteUserMock,
+  createCustomToken: createCustomTokenMock,
+  listUsers: listUsersMock,
+  setCustomUserClaims: setCustomUserClaimsMock,
+  generateEmailVerificationLink: generateEmailVerificationLinkMock,
+  generatePasswordResetLink: generatePasswordResetLinkMock,
 };
 
-let initializeAppMock: jest.Mock = jest.fn();
-let getAppsMock: jest.Mock = jest.fn().mockReturnValue([]);
-let getAppMock: jest.Mock = jest.fn();
+// Mock for admin.app.App instance
+export const appInstanceMock = {
+  name: 'mock-app',
+  options: {},
+  auth: () => authMethodsMockObject as unknown as admin.auth.Auth, // This is fine as it's a mock App
+} as unknown as admin.app.App;
 
-function setDefaultImplementations() {
-  verifyIdTokenMock.mockResolvedValue(mockAdminUserRecordPojo as UserRecord);
-  createSessionCookieMock.mockResolvedValue(mockSessionCookie);
-  verifySessionCookieMock.mockResolvedValue(mockAdminUserRecordPojo as UserRecord);
-  revokeRefreshTokensMock.mockResolvedValue(undefined);
-  getUserMock.mockResolvedValue(mockAdminUserRecordPojo as UserRecord);
-  getUserByEmailMock.mockResolvedValue(mockAdminUserRecordPojo as UserRecord);
-  createUserMock.mockImplementation(
-    async (properties: any) =>
-      ({
-        ...mockAdminUserRecordPojo,
-        ...properties,
-        uid: properties.uid || mockAdminUserRecordPojo.uid || 'new-uid',
-      }) as UserRecord
-  );
-  updateUserMock.mockImplementation(
-    async (uid: string, properties: any) =>
-      ({ ...mockAdminUserRecordPojo, uid, ...properties }) as UserRecord
-  );
-  deleteUserMock.mockResolvedValue(undefined);
-  createCustomTokenMock.mockImplementation(async (uid: string) => `mock-custom-token-for-${uid}`);
-  listUsersMock.mockResolvedValue({ users: [], pageToken: undefined });
-  setCustomUserClaimsMock.mockResolvedValue(undefined);
-  generateEmailVerificationLinkMock.mockResolvedValue('mock-email-verification-link');
-  generatePasswordResetLinkMock.mockResolvedValue('mock-password-reset-link');
-}
+// Mocks for firebase-admin/app module functions
+export const initializeAppMock =
+  jest.fn<(options?: admin.AppOptions, name?: string) => admin.app.App>();
+export const getAppsMock = jest.fn<() => admin.app.App[]>();
+export const getAppMock = jest.fn<(name?: string) => admin.app.App>();
 
+// Mock for firebase-admin/auth module functions
+// This mock function will be used by the top-level admin.auth(app?) mock
+export const getAuthMock = jest.fn<(app?: admin.app.App) => admin.auth.Auth>();
+
+export const resetFirebaseAdminMocks = () => {
+  verifyIdTokenMock.mockReset();
+  createSessionCookieMock.mockReset();
+  verifySessionCookieMock.mockReset();
+  revokeRefreshTokensMock.mockReset();
+  getUserMock.mockReset();
+  getUserByEmailMock.mockReset();
+  createUserMock.mockReset();
+  updateUserMock.mockReset();
+  deleteUserMock.mockReset();
+  createCustomTokenMock.mockReset();
+  listUsersMock.mockReset();
+  setCustomUserClaimsMock.mockReset();
+  generateEmailVerificationLinkMock.mockReset();
+  generatePasswordResetLinkMock.mockReset();
+
+  // Reset App mocks and their default implementations
+  initializeAppMock.mockReset().mockReturnValue(appInstanceMock);
+  getAppsMock.mockReset().mockReturnValue([appInstanceMock]);
+  getAppMock.mockReset().mockReturnValue(appInstanceMock);
+
+  // Reset Auth factory mock and its default implementation
+  getAuthMock
+    .mockReset()
+    .mockImplementation(
+      (app?: admin.app.App) => authMethodsMockObject as unknown as admin.auth.Auth
+    );
+};
+
+// Factory to get all mocks. The test file will destructure what it needs.
 export const createFirebaseAdminMocks = () => {
+  // Ensure mocks are reset before providing them if desired (optional, test file can also call resetFirebaseAdminMocks)
+  // resetFirebaseAdminMocks(); // Or let the test control this in beforeEach
+
   return {
+    // Individual auth method mocks (for direct assertion)
     verifyIdTokenMock,
     createSessionCookieMock,
     verifySessionCookieMock,
@@ -96,104 +116,33 @@ export const createFirebaseAdminMocks = () => {
     setCustomUserClaimsMock,
     generateEmailVerificationLinkMock,
     generatePasswordResetLinkMock,
+
+    // The main object containing all auth methods, to be returned by getAuth()
+    authMethodsMockObject,
+
+    // App module mocks
     initializeAppMock,
     getAppsMock,
     getAppMock,
-    setupFirebaseAdminMock: () => {
-      jest.mock('firebase-admin', () => ({
-        credential: {
-          cert: jest.fn().mockReturnValue({ type: 'mockCredential' }),
-        },
-        initializeApp: initializeAppMock,
-        get apps() {
-          return getAppsMock();
-        },
-        app: getAppMock,
-        auth: jest.fn(() => ({
-          // Directly return the object for admin.auth()
-          verifyIdToken: verifyIdTokenMock,
-          createSessionCookie: createSessionCookieMock,
-          verifySessionCookie: verifySessionCookieMock,
-          revokeRefreshTokens: revokeRefreshTokensMock,
-          getUser: getUserMock,
-          getUserByEmail: getUserByEmailMock,
-          createUser: createUserMock,
-          updateUser: updateUserMock,
-          deleteUser: deleteUserMock,
-          createCustomToken: createCustomTokenMock,
-          listUsers: listUsersMock,
-          setCustomUserClaims: setCustomUserClaimsMock,
-          generateEmailVerificationLink: generateEmailVerificationLinkMock,
-          generatePasswordResetLink: generatePasswordResetLinkMock,
-          // Ensure other methods potentially called by SUT are also here as jest.fn()
-          // Example: storage: jest.fn(), firestore: jest.fn() if they were part of Auth service (they are not, they are on App)
-        })),
-      }));
-    },
+
+    // Auth module mocks
+    getAuthMock,
+
+    // App instance mock (returned by initializeApp, getApp)
+    appInstanceMock,
+
+    // Utility to reset all these mocks
+    resetFirebaseAdminMocks,
+    // Removed setupFirebaseAdminMock as jest.mock calls are now responsibility of the test file
   };
 };
 
-export const resetFirebaseAdminMocks = () => {
-  verifyIdTokenMock.mockClear();
-  createSessionCookieMock.mockClear();
-  verifySessionCookieMock.mockClear();
-  revokeRefreshTokensMock.mockClear();
-  getUserMock.mockClear();
-  getUserByEmailMock.mockClear();
-  createUserMock.mockClear();
-  updateUserMock.mockClear();
-  deleteUserMock.mockClear();
-  createCustomTokenMock.mockClear();
-  listUsersMock.mockClear();
-  setCustomUserClaimsMock.mockClear();
-  generateEmailVerificationLinkMock.mockClear();
-  generatePasswordResetLinkMock.mockClear();
-
-  initializeAppMock.mockClear();
-  getAppsMock.mockClear().mockReturnValue([]);
-  getAppMock.mockClear();
-  mockApps.length = 0;
-
-  initializeAppMock.mockImplementation(((options?: any, appName?: string) => {
-    const effectiveAppName = appName || options?.appName || '[DEFAULT]';
-    let existingApp = mockApps.find(app => app.name === effectiveAppName);
-    if (existingApp) return existingApp;
-
-    const newAppInstance = { ...mockAppDefinition, name: effectiveAppName, options: options || {} };
-    if (!options && effectiveAppName === '[DEFAULT]' && mockApps.length === 0) {
-      mockApps.push(newAppInstance);
-      return newAppInstance;
-    }
-    if (options) {
-      mockApps.push(newAppInstance);
-      return newAppInstance;
-    }
-    if (mockApps.length > 0 && effectiveAppName === '[DEFAULT]') return mockApps[0];
-    mockApps.push(newAppInstance); // Fallback app
-    return newAppInstance;
-  }) as any);
-
-  getAppsMock.mockImplementation((() => [...mockApps]) as any);
-
-  getAppMock.mockImplementation(((appName?: string) => {
-    const appNameToFind = appName || '[DEFAULT]';
-    const foundApp = mockApps.find(app => app.name === appNameToFind);
-    if (foundApp) return foundApp;
-    if (mockApps.length > 0 && !appName) return mockApps[0];
-    return undefined;
-  }) as any);
-
-  const defaultAppInstance = initializeAppMock({}, '[DEFAULT]');
-  if (!mockApps.find(app => app.name === '[DEFAULT]')) {
-    if (defaultAppInstance) {
-      mockApps.push(defaultAppInstance);
-    } else {
-      const emergencyDefault = { ...mockAppDefinition, name: '[DEFAULT]', options: {} };
-      mockApps.push(emergencyDefault);
-    }
-  }
-
-  setDefaultImplementations();
-};
-
-resetFirebaseAdminMocks();
+// Initial setup of default mock implementations when this module is first imported
+// This is important because the createFirebaseAdminMocks might be called after jest.mock has already run in the test file
+// and we want the default implementations to be set.
+getAuthMock.mockImplementation(
+  (app?: admin.app.App) => authMethodsMockObject as unknown as admin.auth.Auth
+);
+initializeAppMock.mockReturnValue(appInstanceMock);
+getAppMock.mockReturnValue(appInstanceMock);
+getAppsMock.mockReturnValue([appInstanceMock]);

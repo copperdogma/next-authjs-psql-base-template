@@ -74,6 +74,14 @@ const envSchema = z.object({
         message: 'RATE_LIMIT_REGISTER_WINDOW_SECONDS must be a positive number.',
       })
   ),
+  ENABLE_REDIS_RATE_LIMITING: z.preprocess(
+    val => (val === '' ? undefined : val), // Treat empty string as undefined
+    z
+      .string()
+      .optional()
+      .default('true') // Default to 'true'
+      .transform(val => val.toLowerCase() === 'true') // Convert string to boolean
+  ),
 
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string({

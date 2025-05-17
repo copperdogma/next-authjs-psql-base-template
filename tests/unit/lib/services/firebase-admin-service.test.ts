@@ -3,401 +3,507 @@
  */
 
 import { jest } from '@jest/globals';
+import * as admin from 'firebase-admin'; // For types and for the service's internal import
 import * as pino from 'pino';
+
+// Import the factory and mock functions from adminMocks
 import {
   createFirebaseAdminMocks,
-  resetFirebaseAdminMocks,
-} from '../../../mocks/firebase/adminMocks'; // Corrected path
-import { FirebaseAdminService } from '@/lib/services/firebase-admin-service'; // ADDED IMPORT
+  // Individual mocks are not typically needed here if using authMethodsMockObject for setup
+  // and asserting on its properties via the returned auth instance.
+} from '../../../mocks/firebase/adminMocks';
 
-// Define types for our mocks
-// Removed unused FirebaseUserRecord and FirebaseAuthError interfaces
-
+// --- Create all mocks needed for the top-level firebase-admin mock ---
+// We get them from the factory, so they are the same instances as used elsewhere.
 const {
+  initializeAppMock,
+  getAppMock,
+  getAppsMock,
+  getAuthMock, // This is the factory that returns authMethodsMockObject
+  appInstanceMock, // The mock app instance
+  authMethodsMockObject, // The object with all auth methods, returned by getAuthMock
+  resetFirebaseAdminMocks, // Utility to reset them all
+
+  // Destructure individual mocks if needed for direct assertion on them in this file
+  // (though typically assertions will be on authMethodsMockObject.createUserMock etc.)
   verifyIdTokenMock,
+  createUserMock, // Example, if you wanted to assert createUserMock was called
   getUserMock,
   getUserByEmailMock,
-  createUserMock,
   updateUserMock,
   deleteUserMock,
   createCustomTokenMock,
-  setupFirebaseAdminMock,
   listUsersMock,
   setCustomUserClaimsMock,
+  createSessionCookieMock,
 } = createFirebaseAdminMocks();
 
-setupFirebaseAdminMock();
+// === Top-level mock for 'firebase-admin' ===
+// This MUST be at the top, before FirebaseAdminService is imported.
+jest.mock('firebase-admin', () => {
+  console.log('[DEBUG] Top-level firebase-admin mock FACTORY CALLED');
+  return {
+    __esModule: true, // If firebase-admin uses ES modules
+    initializeApp: initializeAppMock,
+    app: jest.fn((name?: string) => (name ? getAppMock(name) : appInstanceMock)),
+    apps: getAppsMock(), // apps is a property (readonly FirebaseApp[]), not a function
+    auth: getAuthMock, // admin.auth() will call getAuthMock, which returns authMethodsMockObject
+    credential: {
+      cert: jest.fn().mockReturnValue({ type: 'mocked-cert' }), // Mock credentials if service uses it
+    },
+    // Add other admin SDK parts if your service directly uses them, e.g., firestore, storage
+  };
+});
+// === End Top-level Mock ===
 
-// Mock logger
+// Now import the service under test. It will pick up the above mock.
+import { FirebaseAdminService } from '@/lib/services/firebase-admin-service';
+
+// Define spies for the logger methods we want to assert on
+const mockLoggerErrorFn = jest.fn();
+const mockLoggerInfoFn = jest.fn();
+const mockLoggerWarnFn = jest.fn();
+const mockLoggerDebugFn = jest.fn();
+const mockLoggerTraceFn = jest.fn();
+
+// Simple pino-like mock that supports .child().<method>()
 const mockLogger = {
-  debug: jest.fn(),
-  trace: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  child: jest.fn().mockReturnThis(),
+  trace: mockLoggerTraceFn,
+  debug: mockLoggerDebugFn,
+  info: mockLoggerInfoFn,
+  warn: mockLoggerWarnFn,
+  error: mockLoggerErrorFn,
+  child: jest.fn().mockImplementation(() => mockLogger),
 } as unknown as pino.Logger;
-
-jest.mock('@/lib/logger', () => ({
-  logger: mockLogger,
-}));
 
 describe('FirebaseAdminServiceImpl', () => {
   let service: FirebaseAdminService;
-  const originalEnv = { ...process.env };
-  let mockApp: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    resetFirebaseAdminMocks();
-    process.env = { ...originalEnv };
-    process.env.FIREBASE_PROJECT_ID = 'test-project';
+    resetFirebaseAdminMocks(); // Clears all mocks, including auth method mocks
 
-    mockApp = {
-      name: 'mockApp',
-      options: { projectId: 'test-project' },
-      auth: jest.fn(() => ({
-        createUser: createUserMock,
-        getUser: getUserMock,
-        updateUser: updateUserMock,
-        getUserByEmail: getUserByEmailMock,
-        deleteUser: deleteUserMock,
-        createCustomToken: createCustomTokenMock,
-        verifyIdToken: verifyIdTokenMock,
-        listUsers: listUsersMock,
-        setCustomUserClaims: setCustomUserClaimsMock,
-      })),
-      firestore: jest.fn(() => ({ collection: jest.fn() })),
-      storage: jest.fn(() => ({ bucket: jest.fn() })),
-    };
+    // Clear our logger spies
+    mockLoggerErrorFn.mockClear();
+    mockLoggerInfoFn.mockClear();
+    mockLoggerWarnFn.mockClear();
+    mockLoggerDebugFn.mockClear();
+    mockLoggerTraceFn.mockClear();
+    (mockLogger.child as jest.Mock).mockClear(); // Clear calls to child itself
 
-    service = new FirebaseAdminService(mockApp, mockLogger);
+    // Re-ensure child returns mockLogger itself
+    (mockLogger.child as jest.Mock).mockImplementation(() => mockLogger);
+
+    service = FirebaseAdminService.createTestInstance(
+      authMethodsMockObject as unknown as admin.auth.Auth, // Cast to satisfy Auth type
+      mockLogger
+    );
+    // Add this log:
+    console.log(
+      '[DEBUG] firebase-admin-service.test.ts: Is authMethodsMockObject.getUser === getUserMock? ',
+      authMethodsMockObject.getUser === getUserMock
+    );
   });
 
-  afterEach(() => {
-    process.env = { ...originalEnv };
-  });
+  describe('getInstance', () => {
+    let mockGetFirebaseAdminApp: jest.Mock;
+    let mockAppFromGetAdminApp: { auth: jest.Mock };
 
-  describe('createUser', () => {
-    it('should call app.auth().createUser with properties', async () => {
-      const props = { email: 'new@example.com', password: 'password' };
-      const expectedUserRecord = { uid: 'new-uid', email: 'new@example.com' } as any;
+    beforeEach(() => {
+      // Reset the singleton instance before each test in this block
+      (FirebaseAdminService as any).instance = null;
 
-      createUserMock.mockResolvedValueOnce(expectedUserRecord);
+      // Prepare a mock app that getFirebaseAdminApp will return
+      // This mock app needs an auth() method that returns our main authMethodsMockObject
+      mockAppFromGetAdminApp = {
+        auth: jest.fn().mockReturnValue(authMethodsMockObject),
+        // Add other app properties if needed by the FirebaseAdminService constructor
+        // name: 'mock-app-from-getFirebaseAdminApp' // Example
+      };
 
-      const result = await service.createUser(props);
+      mockGetFirebaseAdminApp = jest.fn().mockReturnValue(mockAppFromGetAdminApp);
 
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(createUserMock).toHaveBeenCalledTimes(1);
-      expect(createUserMock).toHaveBeenCalledWith(props);
-      expect(result).toEqual(expectedUserRecord);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        { uid: 'new-uid', email: 'new@example.com' },
-        'Successfully created user in Firebase Auth'
+      // Mock the getFirebaseAdminApp module specifically for these getInstance tests
+      // This is separate from the top-level 'firebase-admin' mock
+      jest.doMock('@/lib/firebase/firebase-admin', () => ({
+        getFirebaseAdminApp: mockGetFirebaseAdminApp,
+      }));
+
+      // We need to re-require FirebaseAdminService *after* the doMock for getFirebaseAdminApp
+      // if getInstance itself is not static or if its module has already been loaded
+      // However, since getInstance IS static and we reset its internal static 'instance' property,
+      // and the constructor uses the (now mocked) getFirebaseAdminApp, this should be okay.
+      // If issues arise, use jest.isolateModules or resetModules + require.
+    });
+
+    afterEach(() => {
+      // Clean up the specific mock for getFirebaseAdminApp to not interfere with other tests
+      jest.unmock('@/lib/firebase/firebase-admin');
+      // Alternatively, if using jest.isolateModules, this cleanup is usually automatic.
+    });
+
+    it('should create a new instance if one does not exist, using getFirebaseAdminApp', () => {
+      // Act
+      let serviceInstance: FirebaseAdminService;
+      let FreshFirebaseAdminServiceClass: typeof FirebaseAdminService;
+
+      jest.isolateModules(() => {
+        const {
+          FirebaseAdminService: IsolatedFirebaseAdminService,
+        } = require('@/lib/services/firebase-admin-service');
+        FreshFirebaseAdminServiceClass = IsolatedFirebaseAdminService;
+        (FreshFirebaseAdminServiceClass as any).instance = null;
+        serviceInstance = FreshFirebaseAdminServiceClass.getInstance(mockLogger);
+      });
+
+      // Assert
+      expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1);
+      expect(mockAppFromGetAdminApp.auth).toHaveBeenCalledTimes(1);
+      // @ts-ignore
+      expect(serviceInstance).toBeInstanceOf(FreshFirebaseAdminServiceClass); // Use the isolated class definition
+      // @ts-ignore
+      expect(serviceInstance.getAuth()).toBe(authMethodsMockObject);
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        expect.stringContaining('FirebaseAdminService new instance created via getInstance')
       );
     });
 
-    it('should throw and log error if app.auth().createUser fails', async () => {
-      const props = { email: 'fail@example.com', password: 'password' };
-      const errorMessage = 'Failed to create user';
-      createUserMock.mockRejectedValueOnce(new Error(errorMessage));
+    it('should throw an error if authInstance is not available', () => {
+      // Arrange: service is already created in beforeEach using createTestInstance
+      // Manually nullify the authInstance to simulate a failure state
+      (service as any).authInstance = null;
 
-      await expect(service.createUser(props)).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
+      // Act & Assert
+      expect(() => service.getAuth()).toThrow('FirebaseAdminService: Auth instance not available.');
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith('Auth instance not initialized!');
+    });
+
+    it('should return the existing instance on subsequent calls', () => {
+      let firstInstance: FirebaseAdminService;
+      let secondInstance: FirebaseAdminService;
+
+      jest.isolateModules(() => {
+        const {
+          FirebaseAdminService: FreshFirebaseAdminService,
+        } = require('@/lib/services/firebase-admin-service');
+        (FreshFirebaseAdminService as any).instance = null;
+        firstInstance = FreshFirebaseAdminService.getInstance(mockLogger);
+        secondInstance = FreshFirebaseAdminService.getInstance(mockLogger);
+      });
+
+      // Assert
+      expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1); // Should only be called once for the first instance
+      // @ts-ignore
+      expect(secondInstance).toBe(firstInstance);
+    });
+  });
+
+  // Tests remain the same...
+  describe('isInitialized', () => {
+    it('should return true when service is created with createTestInstance', () => {
+      expect(service.isInitialized()).toBe(true);
+    });
+  });
+
+  describe('getAuth', () => {
+    it('should return the mocked auth instance directly set by createTestInstance', () => {
+      const authInstance = service.getAuth();
+      // It should be the exact same object instance passed to createTestInstance
+      expect(authInstance).toBe(authMethodsMockObject);
+      // And its methods should be our mocks
+      expect(authInstance.createUser).toBe(createUserMock);
+    });
+  });
+
+  describe('createUser', () => {
+    const props: admin.auth.CreateRequest = { email: 'test@example.com', password: 'password' };
+    const mockUserRecord = { uid: '123', email: props.email } as admin.auth.UserRecord;
+
+    it('should call the mocked createUser on authMethodsMockObject and log success', async () => {
+      createUserMock.mockResolvedValue(mockUserRecord);
+      const result = await service.createUser(props);
       expect(createUserMock).toHaveBeenCalledWith(props);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: expect.any(Error), email: props.email },
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        expect.objectContaining({ uid: mockUserRecord.uid, email: props.email }),
+        'Successfully created user in Firebase Auth'
+      );
+      expect(result).toBe(mockUserRecord);
+    });
+
+    it('should throw and log error if createUserMock (from authMethodsMockObject) fails', async () => {
+      const errorMessage = 'Failed to create user';
+      createUserMock.mockRejectedValue(new Error(errorMessage));
+      await expect(service.createUser(props)).rejects.toThrow(errorMessage);
+      expect(createUserMock).toHaveBeenCalledWith(props);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), email: props.email }),
         'Failed to create user in Firebase Auth'
       );
     });
   });
 
   describe('getUser', () => {
-    it('should call app.auth().getUser with uid', async () => {
-      const uid = 'test-uid';
-      const expectedUserRecord = { uid, email: 'user@example.com' } as any;
-      getUserMock.mockResolvedValueOnce(expectedUserRecord);
+    const uid = 'user-uid';
+    const mockUserRecord = { uid, email: 'user@example.com' } as admin.auth.UserRecord;
 
+    it('should call the mocked getUser on authMethodsMockObject', async () => {
+      getUserMock.mockResolvedValue(mockUserRecord);
       const result = await service.getUser(uid);
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(getUserMock).toHaveBeenCalledTimes(1);
       expect(getUserMock).toHaveBeenCalledWith(uid);
-      expect(result).toEqual(expectedUserRecord);
+      expect(result).toBe(mockUserRecord);
+    });
+
+    it('should throw and log error if getUserMock (from authMethodsMockObject) fails', async () => {
+      const errorMessage = 'Failed to get user';
+      getUserMock.mockRejectedValue(new Error(errorMessage));
+      await expect(service.getUser(uid)).rejects.toThrow(errorMessage);
+      expect(getUserMock).toHaveBeenCalledWith(uid);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), uid }),
+        'Error getting Firebase user'
+      );
     });
   });
 
   describe('getUserByEmail', () => {
-    it('should call app.auth().getUserByEmail and return user', async () => {
-      const email = 'user@example.com';
-      const expectedUserRecord = { uid: 'test-uid', email } as any;
-      getUserByEmailMock.mockResolvedValueOnce(expectedUserRecord);
+    const email = 'user@example.com';
+    const mockUserRecord = { uid: '123', email } as admin.auth.UserRecord;
 
+    it('should call the mocked getUserByEmail on authMethodsMockObject', async () => {
+      getUserByEmailMock.mockResolvedValue(mockUserRecord);
       const result = await service.getUserByEmail(email);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
       expect(getUserByEmailMock).toHaveBeenCalledWith(email);
-      expect(result).toEqual(expectedUserRecord);
+      expect(result).toBe(mockUserRecord);
     });
 
-    it('should throw and log error if app.auth().getUserByEmail fails', async () => {
-      const email = 'nonexistent@example.com';
+    it('should throw and log error if getUserByEmailMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'User not found';
-      getUserByEmailMock.mockRejectedValueOnce(new Error(errorMessage));
-
+      getUserByEmailMock.mockRejectedValue(new Error(errorMessage));
       await expect(service.getUserByEmail(email)).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
       expect(getUserByEmailMock).toHaveBeenCalledWith(email);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: expect.any(Error), email },
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), email }),
         'Error getting Firebase user by email'
       );
     });
   });
 
-  describe('getAuth', () => {
-    it('should return the auth instance from the provided app', () => {
-      const authInstance = service.getAuth();
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(authInstance).toEqual({
-        createUser: createUserMock,
-        getUser: getUserMock,
-        updateUser: updateUserMock,
-        getUserByEmail: getUserByEmailMock,
-        deleteUser: deleteUserMock,
-        createCustomToken: createCustomTokenMock,
-        verifyIdToken: verifyIdTokenMock,
-        listUsers: listUsersMock,
-        setCustomUserClaims: setCustomUserClaimsMock,
-      });
-    });
-  });
-
-  describe('isInitialized', () => {
-    it('should return true if app is provided', () => {
-      expect(service.isInitialized()).toBe(true);
-    });
-
-    it('should return false if app is not provided (simulated)', () => {
-      // Simulate a service initialized without a proper app
-      const serviceWithoutApp = new FirebaseAdminService(null as any, mockLogger);
-      expect(serviceWithoutApp.isInitialized()).toBe(false);
-    });
-  });
-
-  describe('getFirestore', () => {
-    it('should return the firestore instance from the provided app', () => {
-      const firestoreInstance = service.getFirestore();
-      expect(mockApp.firestore).toHaveBeenCalledTimes(1);
-      expect(firestoreInstance).toBeDefined();
-      expect(typeof firestoreInstance.collection).toBe('function');
-    });
-  });
-
   describe('listUsers', () => {
-    it('should call app.auth().listUsers and return users', async () => {
-      const mockUserResults = {
-        users: [{ uid: 'user1' }, { uid: 'user2' }] as any[],
-        pageToken: undefined,
-      };
-      listUsersMock.mockResolvedValueOnce(mockUserResults);
+    const mockListUsersResult = { users: [], pageToken: undefined } as admin.auth.ListUsersResult;
 
+    it('should call the mocked listUsers on authMethodsMockObject', async () => {
+      listUsersMock.mockResolvedValue(mockListUsersResult);
       const result = await service.listUsers();
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(listUsersMock).toHaveBeenCalledTimes(1);
-      expect(listUsersMock).toHaveBeenCalledWith(1000, undefined);
-      expect(result).toEqual(mockUserResults);
+      expect(listUsersMock).toHaveBeenCalledWith(undefined, undefined);
+      expect(result).toBe(mockListUsersResult);
     });
 
-    it('should call app.auth().listUsers with pageToken and maxResults', async () => {
-      const mockUserResults = {
-        users: [{ uid: 'user3' }] as any[],
-        pageToken: 'nextPageToken',
-      };
-      listUsersMock.mockResolvedValueOnce(mockUserResults);
-
-      const result = await service.listUsers(100, 'startToken');
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(listUsersMock).toHaveBeenCalledTimes(1);
-      expect(listUsersMock).toHaveBeenCalledWith(100, 'startToken');
-      expect(result).toEqual(mockUserResults);
+    it('should call the mocked listUsers on authMethodsMockObject with pageToken and maxResults', async () => {
+      listUsersMock.mockResolvedValue(mockListUsersResult);
+      const result = await service.listUsers(50, 'nextPageToken');
+      expect(listUsersMock).toHaveBeenCalledWith(50, 'nextPageToken');
+      expect(result).toBe(mockListUsersResult);
     });
 
-    it('should throw an error if app.auth().listUsers fails', async () => {
+    it('should throw an error if listUsersMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Failed to list users';
-      listUsersMock.mockRejectedValueOnce(new Error(errorMessage));
-
+      listUsersMock.mockRejectedValue(new Error(errorMessage));
       await expect(service.listUsers()).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(listUsersMock).toHaveBeenCalledTimes(1);
+      expect(listUsersMock).toHaveBeenCalledWith(undefined, undefined);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }),
+        'Error listing Firebase users'
+      );
     });
   });
 
-  describe('setCustomUserClaims', () => {
-    it('should call app.auth().setCustomUserClaims with uid and claims', async () => {
-      const uid = 'test-uid';
-      const claims = { admin: true };
-      setCustomUserClaimsMock.mockResolvedValueOnce(undefined);
+  describe('setCustomClaims (service method)', () => {
+    const uid = 'user-uid';
+    const claims = { admin: true };
 
-      await service.setCustomClaims(uid, claims); // Service method is setCustomClaims
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(setCustomUserClaimsMock).toHaveBeenCalledTimes(1);
+    it('should call the mocked setCustomUserClaims on authMethodsMockObject', async () => {
+      setCustomUserClaimsMock.mockResolvedValue(undefined);
+      await service.setCustomClaims(uid, claims);
       expect(setCustomUserClaimsMock).toHaveBeenCalledWith(uid, claims);
     });
 
-    it('should throw an error if app.auth().setCustomUserClaims fails', async () => {
-      const uid = 'test-uid';
-      const claims = { admin: true };
+    it('should throw an error if setCustomUserClaimsMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Failed to set custom claims';
-      setCustomUserClaimsMock.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(service.setCustomClaims(uid, claims)).rejects.toThrow(errorMessage); // Service method is setCustomClaims
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(setCustomUserClaimsMock).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('getStorage', () => {
-    it('should return the storage instance from the provided app', () => {
-      const storageInstance = service.getStorage();
-      expect(mockApp.storage).toHaveBeenCalledTimes(1);
-      expect(storageInstance).toBeDefined();
-      // Add a more specific check if the mockApp.storage().bucket is also a mock
-      // For now, just checking if it's defined and storage() was called is okay.
-      expect(typeof storageInstance.bucket).toBe('function');
+      setCustomUserClaimsMock.mockRejectedValue(new Error(errorMessage));
+      await expect(service.setCustomClaims(uid, claims)).rejects.toThrow(errorMessage);
+      expect(setCustomUserClaimsMock).toHaveBeenCalledWith(uid, claims);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), uid, claims }),
+        'Error setting Firebase custom claims'
+      );
     });
   });
 
   describe('deleteUser', () => {
-    it('should call app.auth().deleteUser with uid and log success', async () => {
-      const uid = 'delete-me-uid';
-      deleteUserMock.mockResolvedValueOnce(undefined);
+    const uid = 'user-uid-to-delete';
 
+    it('should call the mocked deleteUser on authMethodsMockObject and log success', async () => {
+      deleteUserMock.mockResolvedValue(undefined);
       await service.deleteUser(uid);
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(deleteUserMock).toHaveBeenCalledTimes(1);
       expect(deleteUserMock).toHaveBeenCalledWith(uid);
-      expect(mockLogger.info).toHaveBeenCalledWith({ uid }, 'Successfully deleted Firebase user');
-      expect(mockLogger.error).not.toHaveBeenCalled();
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith({ uid }, 'Successfully deleted Firebase user');
     });
 
-    it('should throw an error and log error if app.auth().deleteUser fails', async () => {
-      const uid = 'delete-me-uid-fail';
+    it('should throw an error and log error if deleteUserMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Failed to delete user';
-      deleteUserMock.mockRejectedValueOnce(new Error(errorMessage));
-
+      deleteUserMock.mockRejectedValue(new Error(errorMessage));
       await expect(service.deleteUser(uid)).rejects.toThrow(errorMessage);
-
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(deleteUserMock).toHaveBeenCalledTimes(1);
       expect(deleteUserMock).toHaveBeenCalledWith(uid);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: expect.any(Error), uid },
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), uid }),
         'Error deleting Firebase user'
-      );
-      expect(mockLogger.info).not.toHaveBeenCalledWith(
-        expect.stringContaining('Successfully deleted')
       );
     });
   });
 
   describe('updateUser', () => {
-    it('should call app.auth().updateUser and return updated user', async () => {
-      const uid = 'test-uid';
-      const updates = { displayName: 'New Name' };
-      const expectedUserRecord = { uid, displayName: 'New Name' } as any;
-      updateUserMock.mockResolvedValueOnce(expectedUserRecord);
+    const uid = 'user-uid-to-update';
+    const updates: { displayName?: string; photoURL?: string; email?: string } = {
+      displayName: 'New Name',
+    };
+    const mockUserRecord = { uid, displayName: 'New Name' } as admin.auth.UserRecord;
 
+    it('should call the mocked updateUser on authMethodsMockObject and return updated user', async () => {
+      updateUserMock.mockResolvedValue(mockUserRecord);
       const result = await service.updateUser(uid, updates);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
       expect(updateUserMock).toHaveBeenCalledWith(uid, updates);
-      expect(result).toEqual(expectedUserRecord);
+      expect(result).toBe(mockUserRecord);
     });
 
-    it('should throw and log error if app.auth().updateUser fails', async () => {
-      const uid = 'test-uid-fail';
-      const updates = { displayName: 'New Name' };
+    it('should throw and log error if updateUserMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Failed to update user';
-      updateUserMock.mockRejectedValueOnce(new Error(errorMessage));
-
+      updateUserMock.mockRejectedValue(new Error(errorMessage));
       await expect(service.updateUser(uid, updates)).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
       expect(updateUserMock).toHaveBeenCalledWith(uid, updates);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: expect.any(Error), uid },
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error), uid }),
         'Error updating Firebase user'
       );
     });
   });
 
   describe('verifyIdToken', () => {
-    it('should call app.auth().verifyIdToken and return decoded token', async () => {
-      const idToken = 'test-token';
-      const expectedDecodedToken = { uid: 'decoded-uid' } as any;
-      verifyIdTokenMock.mockResolvedValueOnce(expectedDecodedToken);
+    const idToken = 'test-id-token';
+    const mockDecodedToken = { uid: 'decoded-uid' } as admin.auth.DecodedIdToken;
 
+    it('should call the mocked verifyIdToken on authMethodsMockObject', async () => {
+      verifyIdTokenMock.mockResolvedValue(mockDecodedToken);
       const result = await service.verifyIdToken(idToken);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken);
-      expect(result).toEqual(expectedDecodedToken);
-      expect(mockLogger.trace).toHaveBeenCalledWith(
-        { uid: 'decoded-uid' },
-        'Firebase ID token verified successfully'
-      );
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined);
+      expect(result).toBe(mockDecodedToken);
     });
 
-    it('should throw and log error if app.auth().verifyIdToken fails', async () => {
-      const idToken = 'invalid-token';
+    it('should throw and log error if verifyIdTokenMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Invalid ID token';
-      verifyIdTokenMock.mockRejectedValueOnce(new Error(errorMessage));
-
+      verifyIdTokenMock.mockRejectedValue(new Error(errorMessage));
       await expect(service.verifyIdToken(idToken)).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        { err: expect.any(Error) },
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }),
         'Firebase ID token verification failed'
       );
     });
   });
 
   describe('createCustomToken', () => {
-    it('should call app.auth().createCustomToken and return token', async () => {
-      const uid = 'test-uid';
-      const claims = { premium: true };
-      const expectedToken = 'custom-jwt-token';
-      createCustomTokenMock.mockResolvedValueOnce(expectedToken);
+    const uid = 'test-uid';
+    const claims = { premium: true };
+    const mockToken = 'mock-custom-token';
 
+    it('should call the mocked createCustomToken on authMethodsMockObject', async () => {
+      createCustomTokenMock.mockResolvedValue(mockToken);
       const result = await service.createCustomToken(uid, claims);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
       expect(createCustomTokenMock).toHaveBeenCalledWith(uid, claims);
-      expect(result).toEqual(expectedToken);
+      expect(result).toBe(mockToken);
     });
 
-    it('should call app.auth().createCustomToken without claims if not provided', async () => {
-      const uid = 'test-uid-no-claims';
-      const expectedToken = 'custom-jwt-token-no-claims';
-      createCustomTokenMock.mockResolvedValueOnce(expectedToken);
-
-      const result = await service.createCustomToken(uid);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
-      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, undefined); // Ensure claims is undefined
-      expect(result).toEqual(expectedToken);
-    });
-
-    // Note: The service method doesn't have explicit try/catch,
-    // so testing error path relies on the mock rejecting, which is standard.
-    it('should throw if app.auth().createCustomToken fails', async () => {
-      const uid = 'test-uid-fail';
-      const errorMessage = 'Failed to create custom token';
-      createCustomTokenMock.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(service.createCustomToken(uid)).rejects.toThrow(errorMessage);
-      expect(mockApp.auth).toHaveBeenCalledTimes(1);
+    it('should call the mocked createCustomToken on authMethodsMockObject without claims if not provided', async () => {
+      createCustomTokenMock.mockResolvedValue(mockToken);
+      await service.createCustomToken(uid);
       expect(createCustomTokenMock).toHaveBeenCalledWith(uid, undefined);
+    });
+
+    it('should throw if createCustomTokenMock (from authMethodsMockObject) fails', async () => {
+      const errorMessage = 'Failed to create custom token';
+      createCustomTokenMock.mockRejectedValue(new Error(errorMessage));
+      await expect(service.createCustomToken(uid)).rejects.toThrow(errorMessage);
+      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, undefined);
+    });
+  });
+
+  describe('createSessionCookie', () => {
+    const idToken = 'test-id-token';
+    const options = { expiresIn: 3600000 }; // 1 hour in ms
+    const mockSessionCookie = 'mock-session-cookie';
+    const mockDecodedTokenForLog = { uid: 'logged-uid' } as admin.auth.DecodedIdToken;
+
+    beforeEach(() => {
+      // Clear relevant mocks before each test in this suite
+      createSessionCookieMock.mockClear();
+      verifyIdTokenMock.mockClear();
+      mockLoggerInfoFn.mockClear();
+      mockLoggerErrorFn.mockClear();
+    });
+
+    it('should create session cookie, log success, and return cookie', async () => {
+      // Arrange
+      createSessionCookieMock.mockResolvedValue(mockSessionCookie);
+      // The success log path also calls verifyIdToken to get the UID for logging
+      verifyIdTokenMock.mockResolvedValue(mockDecodedTokenForLog);
+
+      // Act
+      const result = await service.createSessionCookie(idToken, options);
+
+      // Assert
+      expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined); // For the logger, checkRevoked is undefined at call site
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        { uid: mockDecodedTokenForLog.uid, expiresInSeconds: options.expiresIn / 1000 },
+        'Successfully created Firebase session cookie'
+      );
+      expect(result).toBe(mockSessionCookie);
+    });
+
+    it('should throw and log error if createSessionCookie on auth instance fails', async () => {
+      // Arrange
+      const errorMessage = 'Failed to create session cookie via auth instance';
+      createSessionCookieMock.mockRejectedValue(new Error(errorMessage));
+      // verifyIdTokenMock might still be called if error happens after it in SUT, but for this test path it shouldn't matter
+
+      // Act & Assert
+      await expect(service.createSessionCookie(idToken, options)).rejects.toThrow(errorMessage);
+      expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }),
+        'Error creating Firebase session cookie'
+      );
+      // Ensure verifyIdToken was not called for logging if createSessionCookie itself failed
+      expect(verifyIdTokenMock).not.toHaveBeenCalled();
+    });
+
+    it('should throw and log error if verifyIdToken (for logging) fails after successful cookie creation', async () => {
+      // This tests a more specific failure scenario within the try block
+      // Arrange
+      createSessionCookieMock.mockResolvedValue(mockSessionCookie);
+      const verifyErrorMessage = 'Failed to verify token for logging';
+      verifyIdTokenMock.mockRejectedValue(new Error(verifyErrorMessage));
+
+      // Act & Assert
+      // The outer promise should still reject because verifyIdToken (for logging) fails
+      await expect(service.createSessionCookie(idToken, options)).rejects.toThrow(
+        verifyErrorMessage
+      );
+      expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined); // Called for logging, checkRevoked is undefined at call site
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }), // This will be the verifyIdToken error
+        'Error creating Firebase session cookie' // Generic message from the catch block
+      );
+      expect(mockLoggerInfoFn).not.toHaveBeenCalled(); // Success log should not happen
     });
   });
 });

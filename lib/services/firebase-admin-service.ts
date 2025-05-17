@@ -17,259 +17,202 @@
 // =============================================================================
 import * as admin from 'firebase-admin';
 import pino from 'pino';
+import { getFirebaseAdminApp } from '@/lib/firebase/firebase-admin';
+
+// Minimal options, can be expanded later if needed
+interface FirebaseServiceOptions {
+  someOption?: string;
+}
+
+const defaultOptions: FirebaseServiceOptions = {};
 
 /**
  * Implementation of FirebaseAdminService using Firebase Admin SDK
  */
 export class FirebaseAdminService {
-  private readonly logger: pino.Logger;
-  private readonly app: admin.app.App;
-  private authInstance: admin.auth.Auth | null = null; // Lazy load Auth instance
+  private static readonly SERVICE_NAME = 'FirebaseAdminService';
+  private static instance: FirebaseAdminService | null = null;
 
-  constructor(app: admin.app.App, logger: pino.Logger) {
-    this.app = app;
-    this.logger = logger;
-    this.logger.debug('FirebaseAdminService initialized with injected App');
+  private logger: pino.Logger;
+  private app: admin.app.App;
+  private authInstance: admin.auth.Auth;
+  private isSdkInitialized = false;
+  private options: FirebaseServiceOptions;
+
+  // Private constructor for singleton pattern
+  private constructor(
+    appInstance: admin.app.App,
+    loggerInstance: pino.Logger,
+    options?: FirebaseServiceOptions
+  ) {
+    this.options = { ...defaultOptions, ...options }; // Use defined defaultOptions
+    this.app = appInstance;
+    this.logger = loggerInstance.child({ serviceName: FirebaseAdminService.SERVICE_NAME });
+    this.authInstance = this.app.auth();
+    this.isSdkInitialized = true;
+    this.logger.info('FirebaseAdminService initialized via constructor');
   }
 
-  /**
-   * Check if Firebase Admin SDK is initialized
-   */
-  isInitialized(): boolean {
-    return !!this.app;
-  }
-
-  /**
-   * Get the Firebase Auth instance
-   */
-  getAuth(): admin.auth.Auth {
-    return this.auth();
-  }
-
-  /**
-   * Get the Firebase Firestore instance
-   */
-  getFirestore(): admin.firestore.Firestore {
-    return this.app.firestore();
-  }
-
-  /**
-   * Get the Firebase Storage instance
-   */
-  getStorage(): admin.storage.Storage {
-    return this.app.storage();
-  }
-
-  /**
-   * Get a user by their Firebase UID
-   * @param uid Firebase user ID
-   */
-  async getUser(uid: string): Promise<admin.auth.UserRecord> {
-    return this.getUserByUid(uid);
-  }
-
-  /**
-   * Delete a Firebase user
-   * @param uid Firebase user ID to delete
-   */
-  async deleteUser(uid: string): Promise<void> {
-    this.logger.debug({ uid }, 'Deleting Firebase user');
-    try {
-      await this.auth().deleteUser(uid);
-      this.logger.info({ uid }, 'Successfully deleted Firebase user');
-    } catch (error: unknown) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), uid },
-        'Error deleting Firebase user'
+  // Standard getInstance method
+  public static getInstance(logger: pino.Logger): FirebaseAdminService {
+    if (!FirebaseAdminService.instance) {
+      const app = getFirebaseAdminApp(); // Ensure app is initialized via singleton
+      FirebaseAdminService.instance = new FirebaseAdminService(app, logger);
+      FirebaseAdminService.instance.logger.info(
+        'FirebaseAdminService new instance created via getInstance'
       );
-      throw error;
     }
+    return FirebaseAdminService.instance;
   }
 
-  /**
-   * Creates a test instance with mock implementations for unit testing
-   * @param mockAuth Optional mock Auth instance
-   * @param mockLogger Optional mock logger
-   * @returns A FirebaseAdminService instance with mocked dependencies
-   */
-  static createTestInstance(
-    mockAuth?: Partial<admin.auth.Auth>,
-    mockLogger?: Partial<pino.Logger>
+  // Factory method for creating instances, especially for tests with mocked dependencies
+  public static createTestInstance(
+    mockAuthInstance: admin.auth.Auth,
+    loggerInstance: pino.Logger,
+    mockAppInstance?: admin.app.App // Optional mock app
   ): FirebaseAdminService {
-    // Create a mock app
-    const mockApp = {
-      name: 'mock-app',
-      options: {},
-    } as admin.app.App;
+    const appToUse =
+      mockAppInstance ||
+      ({
+        auth: () => mockAuthInstance,
+        name: 'mock-app',
+        // other necessary app properties if any
+      } as admin.app.App);
 
-    // Create a logger that does nothing if not provided
-    const logger = (mockLogger || {
-      debug: () => {},
-      trace: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      child: () => ({ debug: () => {}, trace: () => {} }),
-    }) as pino.Logger;
-
-    // Create the service instance
-    const service = new FirebaseAdminService(mockApp, logger);
-
-    // Override the auth method to return our mock if provided
-    if (mockAuth) {
-      service.authInstance = mockAuth as admin.auth.Auth;
-    }
-
-    return service;
+    // Directly use the constructor, ensuring all required params are met
+    // This bypasses the singleton logic of getInstance for isolated testing
+    const serviceInstance = new FirebaseAdminService(appToUse, loggerInstance);
+    // Explicitly set the authInstance to the mock one, as appToUse.auth() might not be fully mocked
+    serviceInstance.authInstance = mockAuthInstance;
+    serviceInstance.isSdkInitialized = true; // Assume initialized for test purposes
+    serviceInstance.logger.info('FirebaseAdminService test instance created');
+    return serviceInstance;
   }
 
-  /**
-   * Gets the Firebase Admin Auth instance, initializing it lazily.
-   *
-   * @returns {Auth} The Firebase Admin Auth instance.
-   */
-  auth(): admin.auth.Auth {
+  // Public methods accessing this.authInstance and this.logger
+  public isInitialized(): boolean {
+    return this.isSdkInitialized;
+  }
+
+  public getAuth(): admin.auth.Auth {
     if (!this.authInstance) {
-      this.logger.trace('Initializing and getting Firebase Admin Auth instance');
-      this.authInstance = admin.auth(this.app);
+      this.logger.error('Auth instance not initialized!');
+      throw new Error('FirebaseAdminService: Auth instance not available.');
     }
     return this.authInstance;
   }
 
-  /**
-   * Get a user by their Firebase UID
-   * @param uid Firebase user ID
-   */
-  async getUserByUid(uid: string) {
-    this.logger.trace({ uid }, 'Getting user by UID');
-    return this.auth().getUser(uid);
-  }
-
-  /**
-   * Gets a user by email from Firebase Auth
-   */
-  async getUserByEmail(email: string): Promise<admin.auth.UserRecord> {
+  async createUser(props: admin.auth.CreateRequest): Promise<admin.auth.UserRecord> {
     try {
-      return await this.auth().getUserByEmail(email);
-    } catch (error: unknown) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), email },
-        'Error getting Firebase user by email'
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Updates a user in Firebase Auth
-   * @param uid Firebase user ID
-   * @param userData Object containing profile updates (e.g., { displayName: 'New Name' })
-   */
-  async updateUser(
-    uid: string,
-    userData: { displayName?: string; photoURL?: string; email?: string }
-  ): Promise<admin.auth.UserRecord> {
-    try {
-      this.logger.debug({ uid, ...userData }, 'Updating Firebase user');
-      return await this.auth().updateUser(uid, userData);
-    } catch (error: unknown) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), uid },
-        'Error updating Firebase user'
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Verifies a Firebase ID token using the Admin SDK.
-   *
-   * @param {string} idToken The ID token string to verify.
-   * @returns {Promise<admin.auth.DecodedIdToken>} A promise that resolves with the decoded ID token.
-   * @throws {Error} Throws an error if the token is invalid or verification fails.
-   */
-  async verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
-    this.logger.debug('Verifying Firebase ID token');
-    try {
-      const decodedToken = await this.auth().verifyIdToken(idToken);
-      this.logger.trace({ uid: decodedToken.uid }, 'Firebase ID token verified successfully');
-      return decodedToken;
-    } catch (error) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)) },
-        'Firebase ID token verification failed'
-      );
-      // Re-throw the error to be handled by the caller
-      throw error;
-    }
-  }
-
-  /**
-   * Creates a custom token for authentication
-   */
-  async createCustomToken(uid: string, claims?: Record<string, unknown>) {
-    this.logger.debug({ uid, hasClaims: !!claims }, 'Creating custom token');
-    return this.auth().createCustomToken(uid, claims);
-  }
-
-  /**
-   * Creates a new user in Firebase Auth.
-   *
-   * @param properties The properties for the new user record.
-   * @returns A Promise resolving with the newly created UserRecord.
-   * @throws Throws an error if the user creation fails.
-   */
-  async createUser(properties: admin.auth.CreateRequest): Promise<admin.auth.UserRecord> {
-    this.logger.info({ email: properties.email }, 'Attempting to create user in Firebase Auth');
-    try {
-      const userRecord = await this.auth().createUser(properties);
+      const userRecord = await this.getAuth().createUser(props);
       this.logger.info(
-        { uid: userRecord.uid, email: properties.email },
+        { uid: userRecord.uid, email: props.email },
         'Successfully created user in Firebase Auth'
       );
       return userRecord;
-    } catch (error: unknown) {
+    } catch (error) {
       this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), email: properties.email },
+        { err: error, email: props.email },
         'Failed to create user in Firebase Auth'
       );
-      // Re-throw the error for the caller (e.g., the server action) to handle
       throw error;
     }
   }
 
-  /**
-   * Lists users in Firebase Auth with pagination
-   */
-  async listUsers(
-    maxResults: number = 1000,
-    pageToken?: string
-  ): Promise<admin.auth.ListUsersResult> {
+  async getUser(uid: string): Promise<admin.auth.UserRecord> {
     try {
-      return await this.auth().listUsers(maxResults, pageToken);
-    } catch (error: unknown) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), maxResults, pageToken },
-        'Error listing Firebase users'
-      );
+      const userRecord = await this.getAuth().getUser(uid);
+      return userRecord;
+    } catch (error) {
+      this.logger.error({ err: error, uid }, 'Error getting Firebase user');
       throw error;
     }
   }
 
-  /**
-   * Updates a Firebase user's claims
-   * @param uid Firebase user ID
-   * @param claims Custom claims object
-   */
-  async setCustomClaims(uid: string, claims: Record<string, unknown>): Promise<void> {
+  async getUserByEmail(email: string): Promise<admin.auth.UserRecord> {
     try {
-      await this.auth().setCustomUserClaims(uid, claims);
-      this.logger.info({ uid, claims }, 'Firebase custom claims updated');
-    } catch (error: unknown) {
-      this.logger.error(
-        { err: error instanceof Error ? error : new Error(String(error)), uid, claims },
-        'Error setting Firebase custom claims'
+      const userRecord = await this.getAuth().getUserByEmail(email);
+      return userRecord;
+    } catch (error) {
+      this.logger.error({ err: error, email }, 'Error getting Firebase user by email');
+      throw error;
+    }
+  }
+
+  async listUsers(maxResults?: number, pageToken?: string): Promise<admin.auth.ListUsersResult> {
+    try {
+      const listUsersResult = await this.getAuth().listUsers(maxResults, pageToken);
+      return listUsersResult;
+    } catch (error) {
+      this.logger.error({ err: error }, 'Error listing Firebase users');
+      throw error;
+    }
+  }
+
+  async setCustomClaims(uid: string, claims: object | null): Promise<void> {
+    try {
+      await this.getAuth().setCustomUserClaims(uid, claims);
+      this.logger.info({ uid, claims }, 'Successfully set custom claims for user');
+    } catch (error) {
+      this.logger.error({ err: error, uid, claims }, 'Error setting Firebase custom claims');
+      throw error;
+    }
+  }
+
+  async deleteUser(uid: string): Promise<void> {
+    try {
+      await this.getAuth().deleteUser(uid);
+      this.logger.info({ uid }, 'Successfully deleted Firebase user');
+    } catch (error) {
+      this.logger.error({ err: error, uid }, 'Error deleting Firebase user');
+      throw error;
+    }
+  }
+
+  async updateUser(uid: string, props: admin.auth.UpdateRequest): Promise<admin.auth.UserRecord> {
+    try {
+      const userRecord = await this.getAuth().updateUser(uid, props);
+      this.logger.info({ uid, props }, 'Successfully updated Firebase user');
+      return userRecord;
+    } catch (error) {
+      this.logger.error({ err: error, uid, props }, 'Error updating Firebase user');
+      throw error;
+    }
+  }
+
+  async verifyIdToken(idToken: string, checkRevoked?: boolean): Promise<admin.auth.DecodedIdToken> {
+    try {
+      const decodedToken = await this.getAuth().verifyIdToken(idToken, checkRevoked);
+      return decodedToken;
+    } catch (error) {
+      this.logger.error({ err: error }, 'Firebase ID token verification failed');
+      throw error;
+    }
+  }
+
+  async createCustomToken(uid: string, developerClaims?: object): Promise<string> {
+    try {
+      const customToken = await this.getAuth().createCustomToken(uid, developerClaims);
+      return customToken;
+    } catch (error) {
+      this.logger.error({ err: error, uid }, 'Error creating Firebase custom token');
+      throw error;
+    }
+  }
+
+  async createSessionCookie(idToken: string, options: { expiresIn: number }): Promise<string> {
+    try {
+      const sessionCookie = await this.getAuth().createSessionCookie(idToken, options);
+      this.logger.info(
+        {
+          uid: (await this.verifyIdToken(idToken)).uid,
+          expiresInSeconds: options.expiresIn / 1000,
+        },
+        'Successfully created Firebase session cookie'
       );
+      return sessionCookie;
+    } catch (error) {
+      this.logger.error({ err: error }, 'Error creating Firebase session cookie');
       throw error;
     }
   }

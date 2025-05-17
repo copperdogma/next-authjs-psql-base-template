@@ -18,6 +18,7 @@ export const AUTH = {
   MOCK_TOKEN: 'mock-firebase-token',
   MOCK_SESSION_COOKIE: 'mock-session-cookie',
   COOKIE_NAME: 'session',
+  SESSION_COOKIE_EXPIRES_IN_SECONDS: 5 * 24 * 60 * 60, // 5 days in seconds
   FIREBASE_PROJECT_ID: 'test-project-id',
   INVALID_TOKEN: 'invalid-token',
 };

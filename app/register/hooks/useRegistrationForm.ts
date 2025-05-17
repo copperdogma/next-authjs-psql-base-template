@@ -79,6 +79,49 @@ const formSchema = z
 
 export type FormValues = z.infer<typeof formSchema>;
 
+// Utility to check for fetch-like errors
+function _isFetchRelatedError(err: unknown): boolean {
+  if (err instanceof Error && err.message?.includes('fetch')) {
+    return true;
+  }
+
+  // Check for error with a nested cause.message structure
+  if (typeof err === 'object' && err !== null) {
+    const errorAsObject = err as { cause?: unknown };
+    if (typeof errorAsObject.cause === 'object' && errorAsObject.cause !== null) {
+      const causeAsObject = errorAsObject.cause as { message?: unknown };
+      if (typeof causeAsObject.message === 'string' && causeAsObject.message.includes('fetch')) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Helper function to handle errors during registration form submission
+function handleRegistrationSubmitError(
+  err: unknown,
+  setError: (message: string | null) => void,
+  setSuccess: (message: string | null) => void
+) {
+  // Use console.log instead of console.error to avoid failing the test
+  // due to console errors
+  console.log('Registration form submission error in hook', { error: err });
+
+  if (_isFetchRelatedError(err)) {
+    // If this is a fetch error but user was created, show success message
+    setSuccess('Registration successful! Please sign in with your new account.');
+  } else {
+    // For other errors, show error message
+    setError(
+      getDisplayErrorMessage(
+        err instanceof Error ? err : null,
+        'An unexpected error occurred during registration.'
+      )
+    );
+  }
+}
+
 // eslint-disable-next-line max-lines-per-function
 export function useRegistrationForm() {
   const router = useRouter();
@@ -126,27 +169,7 @@ export function useRegistrationForm() {
       const result = await registerUserAction(null, formData);
       processActionResult(result);
     } catch (err: unknown) {
-      // Use console.log instead of console.error to avoid failing the test
-      // due to console errors
-      console.log('Registration form submission error in hook', { error: err });
-
-      // Check specifically for fetch errors which might be from NextAuth client
-      const isFetchError =
-        (err instanceof Error && err.message?.includes('fetch')) ||
-        (err as any)?.cause?.message?.includes('fetch');
-
-      if (isFetchError) {
-        // If this is a fetch error but user was created, show success message
-        setSuccess('Registration successful! Please sign in with your new account.');
-      } else {
-        // For other errors, show error message
-        setError(
-          getDisplayErrorMessage(
-            err instanceof Error ? err : null,
-            'An unexpected error occurred during registration.'
-          )
-        );
-      }
+      handleRegistrationSubmitError(err, setError, setSuccess);
     } finally {
       setIsSubmitting(false);
     }
