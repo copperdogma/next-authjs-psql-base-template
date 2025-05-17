@@ -4,7 +4,6 @@ import { UserRole } from '@/types';
 import type { User as NextAuthUser } from 'next-auth';
 import type { AdapterUser } from 'next-auth/adapters';
 import type { Profile } from 'next-auth';
-import { type User as PrismaUserType } from '@prisma/client';
 
 // ====================================
 // Interfaces (Copied from auth-node.ts)
@@ -26,6 +25,16 @@ interface CreateNewUserParams {
   provider: string;
   providerAccountId: string;
   correlationId: string;
+}
+
+// Type for user data passed to _handleExistingUser
+interface ExistingUserWithAccountsFromDB {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role: string; // Prisma role is a string, will be cast to UserRole
+  accounts: { provider: string; providerAccountId: string }[];
 }
 
 // Define interface for parameters used in findOrCreateUserAndAccountInternal
@@ -104,7 +113,7 @@ async function _createNewUserWithAccount(
           },
         },
       },
-      select: { id: true, name: true, email: true, image: true, role: true }, // Select only needed fields
+      select: { id: true, name: true, email: true, image: true, role: true },
     });
     logger.info(
       { userId: newUser.id, correlationId },
@@ -129,10 +138,7 @@ async function _createNewUserWithAccount(
  * @returns The user data in AuthUserInternal format.
  */
 async function _handleExistingUser(
-  // Correct the type annotation for the user object from Prisma
-  dbUserWithAccounts: PrismaUserType & {
-    accounts: { provider: string; providerAccountId: string }[];
-  },
+  dbUserWithAccounts: ExistingUserWithAccountsFromDB,
   provider: string,
   providerAccountId: string,
   correlationId: string
@@ -170,8 +176,7 @@ async function _handleExistingUser(
     name: dbUserWithAccounts.name,
     email: dbUserWithAccounts.email,
     image: dbUserWithAccounts.image,
-    // Cast the role from Prisma enum ('USER') to our internal UserRole enum
-    role: dbUserWithAccounts.role as UserRole, // Assuming PrismaUserRole ('USER') matches UserRole ('USER')
+    role: dbUserWithAccounts.role as UserRole,
   };
   return resultUser;
 }
@@ -187,10 +192,18 @@ export async function findOrCreateUserAndAccountInternal({
   const logContext = { email, provider, correlationId };
 
   try {
-    // 1. Find user by email, including their accounts
+    // 1. Find user by email, including their accounts and necessary fields
     const dbUserWithAccounts = await prisma.user.findUnique({
       where: { email },
-      include: { accounts: { select: { provider: true, providerAccountId: true } } },
+      // Select fields needed by _handleExistingUser and for AuthUserInternal
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        accounts: { select: { provider: true, providerAccountId: true } },
+      },
     });
 
     let resultUser: AuthUserInternal | null = null;

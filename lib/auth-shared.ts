@@ -67,6 +67,11 @@ export async function handleSharedSessionCallback({
     hasTokenSub: !!token?.sub,
   });
 
+  // Ensure session.user exists before trying to assign to its properties
+  if (!session.user) {
+    session.user = {} as Session['user']; // Initialize if null or undefined
+  }
+
   if (token) {
     if (token.sub) session.user.id = token.sub;
     if (token.role) session.user.role = token.role as UserRole;

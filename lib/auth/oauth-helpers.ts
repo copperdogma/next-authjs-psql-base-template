@@ -99,6 +99,7 @@ export async function findOrCreateOAuthDbUser(params: {
     name: dbUser.name ?? undefined,
     image: dbUser.image ?? undefined,
     role: (dbUser.role as UserRole) ?? undefined,
+    firebaseUid: dbUser.id,
   } as OAuthDbUser;
 }
 
@@ -133,6 +134,7 @@ export function createOAuthJwtPayload(params: {
     jti: dependencies.uuidv4(),
     userId: dbUser.userId,
     userRole: dbUser.role || UserRole.USER,
+    firebaseUid: dbUser.firebaseUid,
   };
 }
 
@@ -250,6 +252,7 @@ async function processOauthUserAndCreateJwt(params: {
     jti: localDeps.uuidv4(),
     userId: dbUser.userId,
     userRole: dbUser.role || UserRole.USER,
+    firebaseUid: dbUser.firebaseUid,
   };
 }
 

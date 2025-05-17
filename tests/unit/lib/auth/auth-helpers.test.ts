@@ -95,7 +95,14 @@ describe('Auth Helpers', () => {
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: mockEmail },
-        include: { accounts: { select: { provider: true, providerAccountId: true } } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          accounts: { select: { provider: true, providerAccountId: true } },
+        },
       });
       expect(prisma.account.create).toHaveBeenCalledWith({
         data: {
@@ -142,7 +149,14 @@ describe('Auth Helpers', () => {
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: mockEmail },
-        include: { accounts: { select: { provider: true, providerAccountId: true } } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          accounts: { select: { provider: true, providerAccountId: true } },
+        },
       });
       expect(prisma.account.create).not.toHaveBeenCalled(); // Should not create account
       expect(prisma.user.create).not.toHaveBeenCalled(); // Should not create user
@@ -176,7 +190,14 @@ describe('Auth Helpers', () => {
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: mockEmail },
-        include: { accounts: { select: { provider: true, providerAccountId: true } } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          accounts: { select: { provider: true, providerAccountId: true } },
+        },
       });
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
