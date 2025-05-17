@@ -105,16 +105,26 @@ jest.mock('@/lib/firebase/firebase-admin', () => ({
 // Let's check if session.ts (imported by route.ts) uses FirebaseAdminService.
 // If session.ts or its dependencies initialize FirebaseAdminService, this mock is needed.
 // Based on previous logs, FirebaseAdminService is indeed used.
-jest.mock('@/lib/services/firebase-admin-service', () => ({
-  FirebaseAdminService: jest.fn().mockImplementation(() => {
-    // console.log('Mock FirebaseAdminService constructor called'); // Debug log
-    return {
-      verifyIdToken: authMethodsMockObject.verifyIdToken,
-      createSessionCookie: authMethodsMockObject.createSessionCookie,
-      // Add other methods of FirebaseAdminService if they are called by the SUT
-    };
-  }),
-}));
+jest.mock('@/lib/services/firebase-admin-service', () => {
+  // This is the mock instance that getInstance will return
+  const mockServiceInstance = {
+    verifyIdToken: authMethodsMockObject.verifyIdToken,
+    createSessionCookie: authMethodsMockObject.createSessionCookie,
+    // Add other methods of FirebaseAdminService if they are called by the SUT
+  };
+  return {
+    FirebaseAdminService: {
+      getInstance: jest.fn().mockImplementation(() => {
+        // console.log('Mock FirebaseAdminService.getInstance called'); // Debug log
+        return mockServiceInstance;
+      }),
+      // If the SUT or its dependencies ever try to call the constructor directly (e.g., new FirebaseAdminService(...))
+      // you might need to provide a mock constructor as well, though getInstance is the primary concern here.
+      // If new FirebaseAdminService() is never called, this part can be omitted.
+      // constructor: jest.fn().mockImplementation(() => mockServiceInstance)
+    },
+  };
+});
 
 // 3. Mock logger
 jest.mock('@/lib/logger', () => ({
@@ -220,7 +230,9 @@ describe('API /api/auth/session', () => {
     });
     // Override the json method with our mock
     // @ts-ignore A bit hacky, but needed to attach a Jest mock to an instance method
-    req.json = jest.fn().mockResolvedValue(body) as jest.MockedFunction<
+    req.json = jest
+      .fn<() => Promise<MockRequestData>>()
+      .mockResolvedValue(body ?? ({} as MockRequestData)) as jest.MockedFunction<
       () => Promise<MockRequestData>
     >;
     if (cookiesMock) {
@@ -304,7 +316,7 @@ describe('API /api/auth/session', () => {
       const req = createMockNextRequest(null); // body is null, but we mock json()
       // @ts-ignore
       req.json = jest
-        .fn()
+        .fn<() => Promise<MockRequestData>>()
         .mockRejectedValueOnce(new SyntaxError('Unexpected token i in JSON at position 0'));
       await POST(req);
       expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
