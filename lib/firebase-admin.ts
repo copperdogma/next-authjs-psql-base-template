@@ -1,16 +1,11 @@
 import * as admin from 'firebase-admin';
-import pino from 'pino';
-import { logger } from './logger'; // Import the actual logger
+import { logger } from '@/lib/logger';
+// import { logger } from './logger'; // Base logger for the app, if different from pino
 
-// Get the root logger instance
-// import { logger as rootLogger } from '@/lib/logger'; // Avoid importing logger here if possible to reduce cycles
+// Create a module logger
+const moduleLogger = logger.child({ module: 'firebase-admin' });
 
-// Create a logger specific to this module if necessary, or rely on caller's logger
-const moduleLogger = pino({ level: process.env.LOG_LEVEL || 'info' }).child({
-  module: 'firebase-admin',
-});
-
-// Define types for configuration and initialization result
+// Firebase Admin SDK specific types
 export interface FirebaseCredentials {
   projectId: string;
   clientEmail: string;
@@ -19,10 +14,10 @@ export interface FirebaseCredentials {
 
 export interface FirebaseAdminConfig {
   projectId: string;
-  clientEmail?: string | null; // Allow null/undefined
-  privateKey?: string | null; // Allow null/undefined
+  clientEmail?: string | null;
+  privateKey?: string | null;
   useEmulator: boolean;
-  nodeEnv: 'production' | 'development' | 'test' | string; // Include NODE_ENV
+  nodeEnv: 'production' | 'development' | 'test' | string;
 }
 
 export interface FirebaseInitResult {
@@ -31,228 +26,248 @@ export interface FirebaseInitResult {
   error?: string;
 }
 
-// --- Helper Functions ---
+// Used for managing singleton state
+const UNIQUE_FIREBASE_ADMIN_APP_NAME = '__NEXT_FIREBASE_ADMIN_APP_SINGLETON__';
 
-/**
- * Validates the Firebase Admin configuration.
- */
-function validateConfig(config: FirebaseAdminConfig): string | null {
-  const requiredInProd: Array<keyof FirebaseAdminConfig> = ['clientEmail', 'privateKey'];
+// Symbol for global singleton pattern
+const globalSymbol = Symbol.for('__FIREBASE_ADMIN_APP__');
 
-  // Only perform strict validation if in production OR if using credentials (not emulator)
-  if (config.nodeEnv !== 'production' && config.useEmulator) {
-    return null; // Skip validation for emulator use in non-prod
+interface FirebaseAdminGlobal {
+  appInstance?: admin.app.App;
+}
+
+// Type for global with our Firebase Admin global
+type GlobalWithFirebaseAdmin = typeof globalThis & {
+  [globalSymbol]?: FirebaseAdminGlobal;
+};
+
+// Get global firebase admin or create initial empty object
+const getFirebaseAdminGlobal = (): FirebaseAdminGlobal => {
+  const global = globalThis as GlobalWithFirebaseAdmin;
+  if (!global[globalSymbol]) {
+    global[globalSymbol] = {};
   }
+  return global[globalSymbol] as FirebaseAdminGlobal;
+};
 
-  // Check required fields
-  for (const key of requiredInProd) {
+// Create a module-scoped reference to the global state
+const firebaseAdminGlobal = getFirebaseAdminGlobal();
+
+function validateConfig(config: FirebaseAdminConfig): string | null {
+  if (config.nodeEnv !== 'production' && config.useEmulator) {
+    return null; // Emulator doesn't need full creds
+  }
+  const requiredInProdOrNonEmulator: Array<keyof FirebaseAdminConfig> = [
+    'clientEmail',
+    'privateKey',
+  ];
+  for (const key of requiredInProdOrNonEmulator) {
     if (!config[key]) {
       const message = `Missing Firebase Admin SDK config value for: ${key}`;
-      // Throw in production to prevent startup with invalid config
-      if (config.nodeEnv === 'production') {
-        moduleLogger.error({ err: new Error(message) }, message);
-        throw new Error(message);
+      // In production, missing creds (not using emulator) is a hard error.
+      // In dev/test (not using emulator), it's also an error.
+      if (config.nodeEnv === 'production' || !config.useEmulator) {
+        if (config.nodeEnv === 'production') {
+          moduleLogger.error({ missingKey: key }, message);
+        } else {
+          // For non-production environments without emulator, log a warning
+          moduleLogger.warn(
+            { missingKey: key },
+            `Non-production environment without emulator, but ${message}`
+          );
+        }
+        return message; // Return error message to be packaged in FirebaseInitResult
       }
-      // Return error message for non-production environments (when not using emulator)
-      return message;
     }
   }
-
-  return null; // No validation errors
+  return null;
 }
 
-/**
- * Sets up emulator environment variables.
- */
 function setupEmulator(): void {
-  moduleLogger.info('Configuring Firebase Admin SDK for EMULATOR use.');
-  process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099'; // Default Auth emulator host
+  moduleLogger.info('[Firebase Admin Init] Configuring Firebase Admin SDK for EMULATOR use.');
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+  // Add other emulator hosts if needed (e.g., Firestore)
+  // process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 }
 
-/**
- * Creates Firebase credentials from config.
- */
 function createCredentials(config: FirebaseAdminConfig): FirebaseCredentials {
   if (!config.clientEmail || !config.privateKey) {
-    // This should theoretically be caught by validateConfig, but helps type safety
+    // This should be caught by validateConfig, but as a safeguard:
     throw new Error('Client email and private key are required for credential creation.');
   }
   return {
     projectId: config.projectId,
     clientEmail: config.clientEmail,
-    privateKey: config.privateKey.replace(/\\n/g, '\n'), // Replace escaped newlines
+    privateKey: config.privateKey.replace(/\\n/g, '\n'),
   };
 }
 
-/**
- * Retrieves Firebase services (Auth) from the app instance.
- */
-function getFirebaseServices(app: admin.app.App): {
-  auth?: admin.auth.Auth;
-  error?: string;
-} {
-  try {
-    const auth = admin.auth(app);
-    return { auth };
-  } catch (error: unknown) {
-    // Return the raw error message without wrapping it
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    moduleLogger.error(
-      { err: new Error(errorMsg) },
-      'Failed to retrieve Auth service from existing initialized app.'
+export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
+  // 1. Check if already initialized and stored on global symbol
+  if (firebaseAdminGlobal.appInstance) {
+    moduleLogger.info(
+      '[Firebase Admin Init] Using existing Firebase Admin app from global symbol: %s',
+      firebaseAdminGlobal.appInstance.name
     );
-    return { error: errorMsg };
-  }
-}
-
-/**
- * Attempts to retrieve an existing Firebase Admin app instance.
- * Checks globalThis in non-production and admin.apps in production.
- */
-function getExistingFirebaseAdminApp(nodeEnv: FirebaseAdminConfig['nodeEnv']): {
-  app?: admin.app.App;
-  auth?: admin.auth.Auth;
-  error?: string;
-} {
-  const existingApp =
-    nodeEnv !== 'production'
-      ? (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY]
-      : admin.apps.length > 0
-        ? admin.app() // Get default app if already initialized in prod
-        : undefined;
-
-  if (existingApp) {
-    logger.warn('Firebase Admin already initialized. Returning existing instance.');
-    const servicesResult = getFirebaseServices(existingApp);
-    if (servicesResult.error) {
-      logger.error(
-        { err: new Error(servicesResult.error) },
+    try {
+      const auth = admin.auth(firebaseAdminGlobal.appInstance);
+      return { app: firebaseAdminGlobal.appInstance, auth };
+    } catch (e) {
+      // Use the errorMessage variable
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      moduleLogger.error(
+        { err: e, message: errorMessage },
         'Failed to retrieve Auth service from existing initialized app.'
       );
-      // Return the app even if services fail, along with the error
       return {
-        app: existingApp,
-        error: `Failed to retrieve Auth service from existing app: ${servicesResult.error}`,
+        app: firebaseAdminGlobal.appInstance,
+        error: `Failed to retrieve Auth service: ${errorMessage}`,
       };
     }
-    // Assign to exported variables as well
-    adminApp = existingApp;
-    adminAuth = servicesResult.auth;
-    return { app: existingApp, auth: servicesResult.auth };
   }
 
-  return {}; // No existing app found
-}
-
-/**
- * Performs the actual admin.initializeApp call based on config.
- */
-function performInitialization(config: FirebaseAdminConfig): admin.app.App {
-  if (config.useEmulator) {
-    setupEmulator();
-    return admin.initializeApp({ projectId: config.projectId });
-  } else {
-    const credentials = createCredentials(config);
-    const credential = admin.credential.cert(credentials);
-    // Ensure emulator hosts are unset if using credentials
-    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
-    return admin.initializeApp({ credential });
-  }
-}
-
-// --- Main Initialization Function ---
-
-// Use a symbol for unique global storage key
-const FIREBASE_ADMIN_APP_KEY = Symbol.for('firebaseAdminApp');
-
-// Define the type for the global object potentially holding our app
-type GlobalWithFirebase = typeof globalThis & {
-  [FIREBASE_ADMIN_APP_KEY]?: admin.app.App;
-};
-
-// Exported variables (will be assigned after initialization)
-let adminApp: admin.app.App | undefined;
-let adminAuth: admin.auth.Auth | undefined;
-
-// --- Helper: Get or Create App ---
-// eslint-disable-next-line max-statements
-function getOrCreateFirebaseAdminApp(config: FirebaseAdminConfig): FirebaseInitResult {
-  // 1. Attempt to retrieve existing app
-  const existingResult = getExistingFirebaseAdminApp(config.nodeEnv);
-  if (existingResult.app) {
-    // If an app was found (even with service errors), return it
-    return existingResult;
+  // 2. Check if Firebase SDK has our named app (e.g., after HMR that cleared global symbol)
+  try {
+    const existingNamedApp = admin.apps.find(app => app?.name === UNIQUE_FIREBASE_ADMIN_APP_NAME);
+    if (existingNamedApp) {
+      moduleLogger.warn(
+        '[Firebase Admin Init] Found existing app by unique name in SDK. Using it and caching globally: %s',
+        UNIQUE_FIREBASE_ADMIN_APP_NAME
+      );
+      firebaseAdminGlobal.appInstance = existingNamedApp; // Cache it globally
+      const auth = admin.auth(existingNamedApp);
+      return { app: existingNamedApp, auth };
+    }
+  } catch (error) {
+    moduleLogger.error({ error }, 'Error looking for existing named app in admin.apps');
+    // Fall through to attempt initialization
   }
 
-  // 2. Validate Configuration if creating new app
+  // 3. Validate config before attempting new initialization
   const validationError = validateConfig(config);
   if (validationError) {
-    logger.warn(
-      'Firebase Admin SDK not initialized due to missing configuration in non-production environment.'
+    moduleLogger.error(
+      '[Firebase Admin Init] Firebase Admin SDK not initialized due to config validation: %s',
+      validationError
     );
     return { error: `Initialization failed: ${validationError}` };
   }
 
-  // 3. Initialize App
+  // 4. Proceed with new initialization
   try {
-    const app = performInitialization(config);
-    logger.info('Firebase Admin SDK initialized successfully.');
-
-    // Store globally in dev
-    if (config.nodeEnv !== 'production') {
-      (globalThis as GlobalWithFirebase)[FIREBASE_ADMIN_APP_KEY] = app;
+    const appConfig: admin.AppOptions = {};
+    if (config.useEmulator) {
+      setupEmulator();
+      // For emulator, projectId is often set directly in AppOptions or via env vars for discovery
+      appConfig.projectId = config.projectId;
+    } else {
+      appConfig.credential = admin.credential.cert(createCredentials(config));
+      // Ensure emulator host is not set if not using emulator
+      delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
     }
 
-    // 4. Get Services
-    const servicesResult = getFirebaseServices(app);
-    if (servicesResult.error) {
-      // Log the error but still return the app instance if initialization itself succeeded
-      logger.error(
-        { err: new Error(servicesResult.error) },
-        'Failed to get Firebase services after app initialization'
-      );
-    }
+    moduleLogger.info(
+      '[Firebase Admin Init] Initializing new Firebase Admin app: %s',
+      UNIQUE_FIREBASE_ADMIN_APP_NAME
+    );
+    const newApp = admin.initializeApp(appConfig, UNIQUE_FIREBASE_ADMIN_APP_NAME);
+    firebaseAdminGlobal.appInstance = newApp; // Store it globally
 
-    // 5. Assign Singleton Instances to exported variables
-    adminApp = app;
-    adminAuth = servicesResult.auth; // Will be undefined if getFirebaseServices failed
-
-    return { app, auth: adminAuth, error: servicesResult.error };
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    logger.error({ err: new Error(errorMsg) }, 'Firebase Admin SDK initialization failed.');
+    const auth = admin.auth(newApp);
+    moduleLogger.info(
+      '[Firebase Admin Init] Firebase Admin SDK initialized successfully: %s',
+      newApp.name
+    );
+    return { app: newApp, auth };
+  } catch (initError: unknown) {
+    const errorMsg = initError instanceof Error ? initError.message : String(initError);
+    moduleLogger.error(
+      { err: initError },
+      '[Firebase Admin Init] Firebase Admin SDK initialization failed.'
+    );
+    firebaseAdminGlobal.appInstance = undefined; // Ensure it's clear on failure
     return { error: `Initialization failed: ${errorMsg}` };
   }
 }
 
-/**
- * Initializes the Firebase Admin SDK based on provided configuration.
- * Ensures singleton pattern (only initializes once), using globalThis in dev.
- * This function now primarily acts as a wrapper around getOrCreateFirebaseAdminApp
- * and ensures the exported variables `adminApp`, `adminAuth`, `adminDb` are set.
- */
-export function initializeFirebaseAdmin(config: FirebaseAdminConfig): FirebaseInitResult {
-  // The actual logic is now in getOrCreateFirebaseAdminApp
-  // This call ensures the singleton logic runs and exported variables are populated
-  const result = getOrCreateFirebaseAdminApp(config);
-
-  // Log the final outcome for clarity
-  if (result.error && !result.app) {
-    // Only log fatal error if app itself couldn't be initialized/retrieved
-    logger.error({ err: new Error(result.error) }, 'Firebase Admin initialization check failed'); // Assuming result.error is string
-  } else if (result.error) {
-    // Log warning if app exists but services failed
-    logger.warn(
-      { err: new Error(result.error) }, // Assuming result.error is string
-      'Firebase Admin app initialized/retrieved, but failed to get services'
-    );
-  } else {
-    logger.info('Firebase Admin initialization check completed successfully.');
+export function getFirebaseAdminApp(): admin.app.App | undefined {
+  if (firebaseAdminGlobal.appInstance) {
+    return firebaseAdminGlobal.appInstance;
   }
-
-  // Return the result containing app, auth, and potential error
-  return result;
+  // Attempt to recover if global symbol was missed but app exists in SDK
+  try {
+    const namedApp = admin.apps.find(app => app?.name === UNIQUE_FIREBASE_ADMIN_APP_NAME);
+    if (namedApp) {
+      moduleLogger.warn(
+        '[getFirebaseAdminApp] Recovered app by unique name from SDK. Global symbol instance was missing. Caching it now globally.',
+        { appName: UNIQUE_FIREBASE_ADMIN_APP_NAME }
+      );
+      firebaseAdminGlobal.appInstance = namedApp;
+      return namedApp;
+    }
+  } catch (error) {
+    moduleLogger.error(
+      { error, appName: UNIQUE_FIREBASE_ADMIN_APP_NAME },
+      '[getFirebaseAdminApp] Error occurred while trying to find named app from admin.apps registry.'
+    );
+  }
+  moduleLogger.error(
+    '[getFirebaseAdminApp] Firebase Admin app instance not found globally or by unique name in SDK registry. `initializeFirebaseAdmin` may have failed or was not called prior to this access.',
+    { appName: UNIQUE_FIREBASE_ADMIN_APP_NAME }
+  );
+  return undefined;
 }
 
-// Export the initialized instances for direct use
-export { adminApp, adminAuth };
+export function getFirebaseAdminAuth(): admin.auth.Auth | undefined {
+  const app = getFirebaseAdminApp();
+  if (app) {
+    try {
+      return admin.auth(app);
+    } catch (e: unknown) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      moduleLogger.error(
+        { error: e, message: errorMsg },
+        '[getFirebaseAdminAuth] Failed to get Firebase Auth service from app.'
+      );
+      // Potentially throw or return undefined based on how critical this is for consumers
+      // For now, returning undefined, consumers must check.
+      return undefined;
+    }
+  }
+  moduleLogger.warn(
+    '[getFirebaseAdminAuth] Could not get Firebase Admin app, so Auth service is unavailable.'
+  );
+  return undefined;
+}
+
+// Helper to get config, can be used by initializeFirebaseAdmin if called without explicit config
+// For example, if lib/server/services.ts calls initializeFirebaseAdmin() without args.
+export function getServerSideFirebaseAdminConfig(): FirebaseAdminConfig {
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!projectId) {
+    // This config is critical, throw if not found.
+    moduleLogger.error(
+      'Missing FIREBASE_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID for Firebase Admin SDK.'
+    );
+    throw new Error(
+      'Missing FIREBASE_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID for Firebase Admin SDK auto-init.'
+    );
+  }
+  // In dev/test, prefer emulator if env var is set. In prod, never use emulator.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const useEmulatorEnv =
+    process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true' ||
+    process.env.USE_FIREBASE_EMULATOR === 'true';
+  const useEmulator = !isProduction && useEmulatorEnv;
+
+  // Credentials are required if not using emulator, or if in production (even if useEmulatorEnv was true by mistake)
+  const requiresCredentials = !useEmulator || isProduction;
+
+  return {
+    projectId,
+    clientEmail: requiresCredentials ? process.env.FIREBASE_CLIENT_EMAIL : null,
+    privateKey: requiresCredentials ? process.env.FIREBASE_PRIVATE_KEY : null,
+    useEmulator,
+    nodeEnv: process.env.NODE_ENV || 'development',
+  };
+}

@@ -94,10 +94,19 @@ const config: PlaywrightTestConfig = defineConfig({
         /accessibility-improved\.spec\.ts/, // Assuming this doesn't strictly need auth
         /basic\.spec\.ts/,
         /ultra-basic\.spec\.ts/,
-        /auth\/registration\.spec\.ts/,
+        /auth\/registration\.spec\.ts/, // Keep this specific inclusion
       ],
-      // Explicitly ignore tests known to require auth state
-      testIgnore: [/auth\/.*\.spec\.ts/, /profile\/.*\.spec\.ts/, /dashboard\.spec\.ts/],
+      // Explicitly ignore tests known to require auth state or are handled by other projects
+      testIgnore: [
+        // Specific auth tests to ignore for this unauthenticated 'ui-tests' project
+        /auth\/login-logout-cycle\.spec\.ts/,
+        /auth\/redirect\.test\.ts/,
+        /auth\/oauth-firebase-sync\.spec\.ts/, // Assuming this needs auth
+        /auth\/auth-flow\.spec\.ts/, // Assuming this needs auth or is complex
+        // General patterns for other categories
+        /profile\/.*\.spec\.ts/,
+        /dashboard\.spec\.ts/,
+      ],
       use: {
         ...devices['Desktop Chrome'],
       },

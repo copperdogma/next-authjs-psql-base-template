@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { logger } from '@/lib/logger';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDisplayErrorMessage } from '@/lib/utils/error-display';
 
 // --- Material UI Imports ---
 import Box from '@mui/material/Box';
@@ -120,7 +119,6 @@ function _getSignInErrorMessage(error: string | undefined | null): string {
   return 'Login failed. Please check your details or try another method.';
 }
 
-// eslint-disable-next-line max-lines-per-function -- Component's length is driven by necessary state management and the contained submit handler logic, which is cohesive.
 export function CredentialsLoginForm({
   isLoading,
   setIsLoading,
@@ -159,11 +157,8 @@ export function CredentialsLoginForm({
       }
     } catch (err) {
       logger.error('Unknown exception during credentials sign-in:', { error: err });
-      const displayError = getDisplayErrorMessage(
-        err instanceof Error ? err : null,
-        'An unexpected server error occurred. Please try again.'
-      );
-      setError(displayError);
+      // For thrown errors, always use the generic user-friendly message
+      setError('An unexpected error occurred. Please try again later.');
       setIsLoading(false);
     }
   };

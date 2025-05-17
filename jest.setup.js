@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 import path from 'path';
 
 import dotenv from 'dotenv';
+import { defaultFallbackInView } from 'react-intersection-observer';
 
 import { resetPrismaMock } from './tests/mocks/db/prismaMocks';
 import { resetFirebaseAdminMocks } from './tests/mocks/firebase/adminMocks';
@@ -27,6 +28,20 @@ if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = TextEncoder;
   global.TextDecoder = TextDecoder;
 }
+
+// Set React 18 act environment
+global.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Mock IntersectionObserver for tests (inspired by benmvp.com article)
+// `react-intersection-observer/test-utils` added in `setupFilesAfterEnv`
+// will add a more complete mock in `beforeEach()`.
+// This global mock ensures that `hasIntersectionObserver` checks at module
+// scope (e.g., in Next.js link or potentially MUI components) pass.
+global.IntersectionObserver = jest.fn();
+
+// Default intersection to `false` so that components relying on it
+// don't unexpectedly trigger state updates during tests.
+defaultFallbackInView(false);
 
 // Mock window.matchMedia only in jsdom environment
 if (typeof window !== 'undefined') {

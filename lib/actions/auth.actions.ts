@@ -8,6 +8,7 @@
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import type { User } from '@prisma/client';
+import type { Prisma } from '@prisma/client'; // Ensured Prisma namespace is imported
 import * as admin from 'firebase-admin';
 // import { redirect } from 'next/navigation'; // Removed unused import
 import type { Logger as PinoLogger } from 'pino'; // Import type explicitly
@@ -86,6 +87,7 @@ interface PerformRegistrationDeps {
   db: RegisterUserDbClient;
   hasher: Hasher;
   fbService: FirebaseAdminService;
+  log: PinoLogger; // Added logger
 }
 
 // Interface for optional dependencies passed into the main action logic
@@ -96,7 +98,37 @@ interface RegisterUserOptionalDeps {
   logger?: PinoLogger; // Use imported type
 }
 
+// Interface for the options parameter of _runRegistrationPreChecks
+interface PreCheckOptions {
+  log: PinoLogger;
+  db: RegisterUserDbClient;
+  initialLogContext?: { email?: string }; // Optional initial log context from caller
+}
+
 // --- Private Helper Functions --- //
+
+// Helper function to prepare data for Prisma user creation
+function _preparePrismaUserData(
+  firebaseUser: admin.auth.UserRecord,
+  hashedPassword: string
+): Prisma.UserCreateInput {
+  if (!firebaseUser.email) {
+    // This case should ideally be caught by the caller of _createPrismaUser,
+    // but as a safeguard or if used elsewhere.
+    actionLogger.error(
+      { uid: firebaseUser.uid },
+      '_preparePrismaUserData: Firebase user record unexpectedly missing email.'
+    );
+    throw new Error('Firebase user record missing email for Prisma data preparation.');
+  }
+  return {
+    id: firebaseUser.uid,
+    name: firebaseUser.displayName,
+    email: firebaseUser.email,
+    hashedPassword,
+    emailVerified: firebaseUser.emailVerified ? new Date() : null,
+  };
+}
 
 async function _validateRegistrationInput(
   formData: FormData
@@ -125,21 +157,29 @@ async function _createFirebaseUser(
   }
 }
 
+/**
+ * Creates a user in Prisma, linking to an existing Firebase user if an ID is provided.
+ */
+// eslint-disable-next-line max-statements -- Handles critical creation step with necessary error handling and rollback logic, statement count is slightly over due to this.
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
   services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminService },
-  logContext: { email?: string | null; uid?: string }
+  logContext: { email?: string | null; uid?: string },
+  tx?: Prisma.TransactionClient // Added optional transaction client
 ): Promise<User | RegistrationResult> {
   const { db, hasher, fbService } = services;
+  // Use transaction client if provided for Prisma operations, else use the default db client from services
+  const prismaOps = tx || db;
   actionLogger.debug(logContext, '_createPrismaUser: Starting Prisma user creation process...');
 
   const email = firebaseUser.email;
   if (!email) {
     actionLogger.error(
-      { ...logContext, uid: firebaseUser.uid }, // Add uid to this specific log
+      { ...logContext, uid: firebaseUser.uid },
       '_createPrismaUser: Firebase user record unexpectedly missing email.'
     );
+    // This should ideally be caught by the caller, but throwing here prevents further processing.
     throw new Error('Firebase user record missing email during Prisma user creation.');
   }
   const logContextBase = {
@@ -147,23 +187,15 @@ async function _createPrismaUser(
     uid: firebaseUser.uid,
   };
 
-  // Check if user already exists in Prisma by email
-  actionLogger.debug(logContextBase, '_createPrismaUser: Checking for existing user by email...');
-
   actionLogger.debug(logContextBase, '_createPrismaUser: Hashing password...');
   const hashedPassword = await hasher.hash(passwordToHash, SALT_ROUNDS);
-  actionLogger.debug(logContextBase, '_createPrismaUser: Attempting DB create...');
 
+  actionLogger.debug(logContextBase, '_createPrismaUser: Preparing Prisma user data...');
+  const prismaUserData = _preparePrismaUserData(firebaseUser, hashedPassword);
+
+  actionLogger.debug(logContextBase, '_createPrismaUser: Attempting DB create...');
   try {
-    const prismaUser = await db.user.create({
-      data: {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName,
-        email: email,
-        hashedPassword,
-        emailVerified: firebaseUser.emailVerified ? new Date() : null,
-      },
-    });
+    const prismaUser = await prismaOps.user.create({ data: prismaUserData });
     actionLogger.debug(
       { ...logContextBase, userId: prismaUser.id },
       '_createPrismaUser: DB create success'
@@ -174,22 +206,12 @@ async function _createPrismaUser(
       { ...logContextBase, error: dbError },
       '_createPrismaUser: Prisma create failed. Initiating rollback.'
     );
-    if (!firebaseUser) {
-      actionLogger.error(
-        { ...logContextBase, error: dbError },
-        '_createPrismaUser: Firebase user record unexpectedly missing WITHIN catch block.'
-      );
-      return _handleMainRegistrationError(dbError, 'prisma create with missing firebase record');
-    }
-    // Firebase record exists, proceed with rollback logic.
-    // _handlePrismaCreateFailure returns a RollbackError instance.
     const rollbackErrorInstance = await _handlePrismaCreateFailure(
       firebaseUser,
       fbService,
       logContextBase,
       dbError
     );
-    // Now, use _handleMainRegistrationError to convert this RollbackError into a RegistrationResult.
     actionLogger.debug(
       { ...logContextBase, rollbackErrorInstance },
       '_createPrismaUser: Prisma catch returning error response via _handleMainRegistrationError.'
@@ -244,78 +266,42 @@ async function _handlePrismaCreateFailure(
   }
 }
 
-async function _attemptPostRegistrationSignIn(
-  email: string,
-  passwordAttempt: string,
-  log: PinoLogger // Use imported type
-): Promise<RegistrationResult | null> {
-  log.debug({ email }, '_attemptPostRegistrationSignIn: Attempting sign-in after registration...');
-  try {
-    // Use signIn directly from auth-node which handles CredentialsProvider
-    const signInResult = await signIn('credentials', {
-      email,
-      password: passwordAttempt,
-      redirect: false, // Important: Do not redirect from server action
-    });
-
-    // Check if signIn returned an error (NextAuth specific error structure)
-    if (signInResult?.error) {
-      log.warn(
-        { email, signInError: signInResult.error },
-        '_attemptPostRegistrationSignIn: signIn failed after registration.'
-      );
-      // Translate the NextAuth-specific error if possible, otherwise return generic
-      // Assuming CredentialsSignin means validation/match failure, but could be others
-      if (signInResult.error === 'CredentialsSignin') {
-        return {
-          status: 'error',
-          message: 'Post-registration sign-in failed (Credentials). Please log in manually.', // More specific message
-          error: {
-            code: 'POST_REGISTRATION_SIGNIN_CREDENTIALS_FAILED',
-            message: 'Post-registration sign-in failed (Credentials). Please log in manually.',
-          },
-        };
-      }
-      // Generic sign-in failure post-registration
-      return {
-        status: 'error',
-        message: 'Post-registration sign-in failed. Please log in manually.',
-        error: {
-          code: 'POST_REGISTRATION_SIGNIN_FAILED',
-          message: `Sign-in failed after registration: ${signInResult.error}`,
-          details: { originalError: signInResult.error },
-        },
-      };
-    }
-
-    log.info({ email }, '_attemptPostRegistrationSignIn: Sign-in successful after registration.');
-    // If signIn succeeded without error and didn't redirect (due to redirect:false), return null to indicate success handled.
-    // The main function will return the final success message.
-    return null;
-  } catch (error) {
-    log.error(
-      { email, error },
-      '_attemptPostRegistrationSignIn: Unexpected error during post-registration sign-in attempt.'
-    );
-    // Return a generic error response if the signIn call itself throws unexpectedly
-    return {
-      status: 'error',
-      message: 'An unexpected error occurred during post-registration sign-in.',
-      error: {
-        code: 'POST_REGISTRATION_SIGNIN_UNEXPECTED_ERROR',
-        message: 'An unexpected error occurred during post-registration sign-in.',
-        details: { originalError: error },
-      },
-    };
+// Helper to process RollbackError instances for _handleMainRegistrationError
+function _processRollbackError(
+  error: RollbackError,
+  logContextForWarning: object // Re-use logContext from caller or pass relevant parts
+): { errorCode: string; errorMessage: string; errorDetails: RegistrationErrorDetails } {
+  actionLogger.warn(
+    { ...logContextForWarning, originalDbError: error.originalError }, // Log context passed here
+    `Registration failed: ${error.message}`
+  );
+  let errorCode: string;
+  if (error.message.includes('rollback FAILED')) {
+    errorCode = 'REGISTRATION_DB_FAILURE_ROLLBACK_FAILURE';
+  } else {
+    errorCode = 'REGISTRATION_DB_FAILURE_ROLLBACK_SUCCESS';
   }
+  return {
+    errorCode,
+    errorMessage: error.message,
+    errorDetails: { originalError: error.originalError },
+  };
 }
 
+/**
+ * Handles and logs errors occurring during the main registration process (Firebase/Prisma user creation).
+ */
 async function _handleMainRegistrationError(
-  error: unknown,
+  error: unknown, // This will be the 'wrappedError' from the caller
   context: string,
-  _log?: PinoLogger // Optional logger param, prefix with underscore if unused by design
+  _log?: PinoLogger
 ): Promise<RegistrationResult> {
-  const logContext = { error, registrationContext: context };
+  // --- RESTORED INTENDED PRODUCTION LOGIC ---
+  const logContext = {
+    error,
+    registrationContext: context,
+    originalErrorType: (error as any)?.originalErrorType, // Log if present from wrappedError
+  };
   actionLogger.error(
     logContext,
     '_handleMainRegistrationError: Caught error during registration attempt.'
@@ -323,31 +309,43 @@ async function _handleMainRegistrationError(
 
   let errorCode = 'UNKNOWN_REGISTRATION_ERROR';
   let errorMessage = 'An unexpected error occurred during registration.';
-  let errorDetails: RegistrationErrorDetails = { originalError: error };
+  // Ensure originalError in details is a string representation for better serializability
+  let errorDetails: RegistrationErrorDetails = {
+    originalError: error instanceof Error ? error.message : String(error),
+  };
 
-  // Handle RollbackError specifically
   if (error instanceof RollbackError) {
-    actionLogger.warn(
-      { ...logContext, originalDbError: error.originalError },
-      `Registration failed: ${error.message}`
-    );
-    errorMessage = error.message; // Use the message from RollbackError
-    // Determine code based on the message content
-    if (error.message.includes('rollback FAILED')) {
-      errorCode = 'REGISTRATION_DB_FAILURE_ROLLBACK_FAILURE';
-    } else {
-      // This is the success case where Firebase user was successfully rolled back
-      errorCode = 'REGISTRATION_DB_FAILURE_ROLLBACK_SUCCESS';
+    const processedRollback = _processRollbackError(error, logContext);
+    errorCode = processedRollback.errorCode;
+    errorMessage = processedRollback.errorMessage;
+    // Ensure errorDetails from _processRollbackError also has stringified originalError
+    errorDetails = processedRollback.errorDetails;
+    if (typeof errorDetails.originalError !== 'string') {
+      errorDetails.originalError = String(
+        errorDetails.originalError || 'RollbackError original error missing or not stringifiable'
+      );
     }
-    errorDetails = {
-      originalError: error.originalError, // Keep the original DB error
-    };
   } else {
-    // Use the translation utility for other error types
+    // For other errors (like our wrappedError), use _translateRegistrationError
     const translated = _translateRegistrationError(error);
     errorMessage = translated.message;
     errorCode = translated.code;
-    errorDetails = { originalError: error }; // Store the original error
+    // errorDetails.originalError was already set from the incoming 'error' (wrappedError)
+    // No need to reset it here unless translated offers more specific primitive details
+    // For now, the initial stringified wrappedError.message is sufficient.
+  }
+
+  // If the error (or originalError in RollbackError) was a ZodError, add validation details
+  const potentialZodError = error instanceof RollbackError ? error.originalError : error;
+  if (potentialZodError instanceof z.ZodError) {
+    errorDetails.validationErrors = potentialZodError.flatten().fieldErrors as Record<
+      string,
+      string[]
+    >;
+    // If it was a ZodError and not a RollbackError, its message is likely best for originalError
+    if (!(error instanceof RollbackError)) {
+      errorDetails.originalError = potentialZodError.message;
+    }
   }
 
   return {
@@ -355,10 +353,11 @@ async function _handleMainRegistrationError(
     message: errorMessage,
     error: {
       code: errorCode,
-      message: errorMessage, // Include message in error object too
-      details: errorDetails,
+      message: errorMessage,
+      details: errorDetails, // Contains stringified originalError and optional validationErrors
     },
   };
+  // --- END RESTORED INTENDED PRODUCTION LOGIC ---
 }
 
 // --- Rate Limiting Logic --- //
@@ -373,6 +372,10 @@ interface ExecuteRateLimitPipelineOptions {
   clientIp: string; // For logging context
 }
 
+/**
+ * Executes the rate-limiting pipeline using Redis.
+ */
+// eslint-disable-next-line max-statements -- Function implements a specific Redis pipeline for rate limiting with detailed error checking for each step; keeping related commands together improves understanding.
 async function _executeRateLimitPipeline(
   redisClient: Redis, // Assumed to be non-null when this is called
   options: ExecuteRateLimitPipelineOptions,
@@ -430,6 +433,10 @@ async function _executeRateLimitPipeline(
   }
 }
 
+/**
+ * Checks if the registration attempt from a given IP or for a given user identifier is rate-limited.
+ */
+// eslint-disable-next-line max-statements -- Function performs several sequential checks to determine rate limit status, including handling of Redis client availability and pipeline errors.
 async function _checkRegistrationRateLimit(
   redisClient: Redis | null,
   clientIp: string,
@@ -483,122 +490,281 @@ async function _checkRegistrationRateLimit(
 
 // --- Core Registration Logic --- //
 
+// New helper function to encapsulate Prisma user creation and sign-in attempt
+async function _createPrismaUserAndAttemptSignIn(
+  firebaseUser: admin.auth.UserRecord,
+  validatedData: RegistrationInput, // For password and email
+  services: PerformRegistrationDeps,
+  logContext: { email: string; uid: string } // Include UID from firebaseUser
+): Promise<RegistrationResult | null> {
+  actionLogger.debug(
+    logContext,
+    '_createPrismaUserAndAttemptSignIn: Beginning process to create Prisma user and then attempt sign-in.'
+  );
+  const { log } = services; // Destructure services, removed unused db and hasher
+
+  // --- 1. Create Prisma User ---
+  actionLogger.debug(logContext, '_createPrismaUserAndAttemptSignIn: Attempting Prisma user creation...');
+
+  let createdPrismaUser: User | null = null;
+
+  // Step 1: Create Prisma User (within its own transaction)
+  actionLogger.debug(
+    logContext,
+    '_createPrismaUserAndAttemptSignIn: Beginning Prisma user creation transaction...'
+  );
+  try {
+    const prismaUserResult = await prisma.$transaction(async tx => {
+      actionLogger.debug(
+        logContext,
+        '_createPrismaUserAndAttemptSignIn: Inside transaction - creating Prisma user...'
+      );
+      const user = await _createPrismaUser(
+        firebaseUser,
+        validatedData.password,
+        { ...services, db: tx as unknown as RegisterUserDbClient }, // Pass transaction client correctly typed
+        logContext,
+        tx // Pass the transaction client also here, though _createPrismaUser primarily uses services.db
+      );
+
+      if (!user || !('id' in user)) {
+        actionLogger.warn(
+          logContext,
+          '_createPrismaUserAndAttemptSignIn: _createPrismaUser did not return a valid user object. Will throw to rollback Prisma transaction.'
+        );
+        const errorToThrow = new RollbackError(
+          'Prisma user creation failed or returned error structure inside transaction.',
+          (user as RegistrationResult)?.error?.details?.originalError ||
+          new Error('Prisma user creation failed within transaction.')
+        );
+        throw errorToThrow;
+      }
+      return user as User; // Explicitly type as User
+    });
+
+    createdPrismaUser = prismaUserResult; // Assign if transaction succeeded
+    actionLogger.info(
+      { ...logContext, userId: createdPrismaUser.id },
+      '_createPrismaUserAndAttemptSignIn: Prisma user creation transaction Succeeded.'
+    );
+  } catch (error: unknown) {
+    actionLogger.error(
+      { ...logContext, error },
+      '_createPrismaUserAndAttemptSignIn: Prisma user creation transaction failed or was rolled back.'
+    );
+    // If Prisma creation fails, Firebase user should have been rolled back by _createPrismaUser -> _handlePrismaCreateFailure
+    // So, we just return the error from that process.
+    if (error instanceof RollbackError) {
+      return _handleMainRegistrationError(
+        error,
+        'prisma creation transaction rollback with RollbackError'
+      );
+    }
+    return _handleMainRegistrationError(error, 'prisma creation transaction');
+  }
+
+  // If createdPrismaUser is null here, it means Prisma creation failed and returned.
+  if (!createdPrismaUser) {
+    // This case should be covered by the catch block above, but as a safeguard:
+    actionLogger.error(
+      logContext,
+      '_createPrismaUserAndAttemptSignIn: Prisma user is null after creation block, implies failure.'
+    );
+    return {
+      status: 'error',
+      message: 'Failed to create user record in database.',
+      error: {
+        code: 'PRISMA_USER_CREATION_FAILED_UNEXPECTED',
+        message: 'Prisma user null post-transaction.',
+      },
+    };
+  }
+
+  // --- 2. Attempt Post-Registration Sign-In (now that Prisma user is committed) ---
+  actionLogger.debug(
+    { ...logContext, userId: createdPrismaUser.id },
+    '_createPrismaUserAndAttemptSignIn: Attempting post-registration sign-in...'
+  );
+
+  const signInResult = await _attemptPostRegistrationSignIn(
+    createdPrismaUser.email as string, // Ensure email is string
+    validatedData.password,
+    log,
+    {
+      userId: createdPrismaUser.id,
+      email: createdPrismaUser.email as string, // Ensure email is string
+      name: createdPrismaUser.name,
+    }
+  );
+
+  if (signInResult && signInResult.status === 'error') {
+    actionLogger.warn(
+      { ...logContext, userId: createdPrismaUser.id, error: signInResult.error },
+      '_createPrismaUserAndAttemptSignIn: Post-registration sign-in failed. Prisma user ALREADY COMMITTED.'
+    );
+    // Return the signInResult directly, as Prisma user is already created and committed.
+    // The UI will show "Registration successful, please sign in."
+    return signInResult;
+  }
+
+  actionLogger.info(
+    { ...logContext, userId: createdPrismaUser.id },
+    '_createPrismaUserAndAttemptSignIn: Post-registration sign-in successful.'
+  );
+  return null; // Overall success
+}
+
+// Helper to attempt manual Firebase rollback in _performRegistrationAttempt catch block
+async function _attemptManualFirebaseRollbackOnError(
+  firebaseUser: admin.auth.UserRecord | undefined,
+  triggeringError: unknown, // The error that triggered this path
+  fbService: FirebaseAdminService,
+  baseLogContext: { email: string } // Base log context from the caller
+): Promise<void> {
+  // Returns void, only logs
+  if (firebaseUser && !(triggeringError instanceof RollbackError)) {
+    const logContext = { ...baseLogContext, uid: firebaseUser.uid, triggeringError };
+    actionLogger.warn(
+      logContext,
+      '_attemptManualFirebaseRollbackOnError: Unexpected error after Firebase user creation. Attempting manual rollback.'
+    );
+    try {
+      await fbService.deleteUser(firebaseUser.uid);
+      actionLogger.info(
+        { ...logContext, uid: firebaseUser.uid }, // Re-specify uid for this specific log point if needed, or rely on spread
+        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback successful.'
+      );
+    } catch (rollbackError) {
+      actionLogger.error(
+        { ...logContext, uid: firebaseUser.uid, rollbackError }, // Include rollbackError here
+        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback FAILED.'
+      );
+    }
+  }
+}
+
 /**
- * Performs the main registration steps: creating Firebase user, creating Prisma user,
- * and attempting post-registration sign-in. Assumes input is validated and rate limit passed.
+ * Core logic for a single registration attempt, including DB interaction and Firebase sync.
  */
 async function _performRegistrationAttempt(
   validatedData: RegistrationInput,
   services: PerformRegistrationDeps,
   logContext: { email: string }
 ): Promise<RegistrationResult | null> {
-  // Return type might need adjustment if errors always throw
-  const { db, hasher, fbService } = services;
-  const { email, password, name } = validatedData;
-  let firebaseUserRecord: admin.auth.UserRecord | null = null; // Declare here to be accessible in catch
-  let registrationErrorResult: RegistrationResult | null = null; // Variable to hold error from inner block
+  actionLogger.debug(logContext, '_performRegistrationAttempt: Starting registration attempt...');
+  const { fbService } = services; // Removed unused log, db and hasher
+
+  let firebaseUser: admin.auth.UserRecord | undefined;
 
   try {
-    // 1. Create Firebase User
-    firebaseUserRecord = await _createFirebaseUser(
-      { email, password, name },
+    actionLogger.debug(logContext, '_performRegistrationAttempt: Attempting to create Firebase user...');
+    firebaseUser = await _createFirebaseUser(
+      {
+        email: validatedData.email,
+        password: validatedData.password,
+        name: validatedData.name,
+      },
       fbService,
       logContext
     );
+    actionLogger.info(
+      { ...logContext, uid: firebaseUser.uid },
+      '_performRegistrationAttempt: Firebase user created successfully.'
+    );
 
-    // 2. Create Prisma User - Wrapped in try/catch for rollback
-    let prismaUser: User | null = null; // Initialize to null
-    try {
-      // Ensure the logContext passed has the uid
-      const prismaLogContext = { ...logContext, uid: firebaseUserRecord.uid };
-      const prismaUserResult = await _createPrismaUser(
-        firebaseUserRecord,
-        password,
-        { db, hasher, fbService },
-        prismaLogContext
-      );
+    const logContextWithUid = { ...logContext, uid: firebaseUser.uid };
 
-      // Check if the result is a User object or a RegistrationResult
-      if ('error' in prismaUserResult || 'status' in prismaUserResult) {
-        // It's a RegistrationResult, handle the error
-        actionLogger.warn(
-          { ...logContext, error: prismaUserResult.error },
-          '_performRegistrationAttempt: Prisma user creation returned an error result.'
-        );
-        return prismaUserResult;
-      }
+    const prismaSignInResult = await _createPrismaUserAndAttemptSignIn(
+      firebaseUser,
+      validatedData, // Contains password for sign-in attempt
+      services,
+      logContextWithUid
+    );
 
-      // It's a User object
-      prismaUser = prismaUserResult;
-      actionLogger.info(
-        { ...logContext, userId: prismaUser.id },
-        '_performRegistrationAttempt: Prisma user created'
-      );
-    } catch (dbError) {
+    if (prismaSignInResult?.status === 'error') {
       actionLogger.warn(
-        { ...logContext, error: dbError },
-        '_performRegistrationAttempt: Prisma create failed. Initiating rollback.'
+        logContextWithUid,
+        '_performRegistrationAttempt: Prisma user creation or post-reg sign-in failed. Attempting Firebase rollback.'
       );
-      if (!firebaseUserRecord) {
-        actionLogger.error(
-          { ...logContext, error: dbError },
-          '_performRegistrationAttempt: Firebase user record missing after successful creation attempt during Prisma failure. Cannot rollback.'
-        );
-        registrationErrorResult = await _handleMainRegistrationError(
-          dbError,
-          'prisma create with missing firebase record'
-        );
-      } else {
-        const rollbackErrorInstance = await _handlePrismaCreateFailure(
-          firebaseUserRecord,
-          fbService,
-          logContext,
-          dbError
-        );
-        registrationErrorResult = await _handleMainRegistrationError(
-          rollbackErrorInstance,
-          'prisma creation/rollback'
-        );
+      await _attemptManualFirebaseRollbackOnError(
+        firebaseUser,
+        prismaSignInResult, // Pass the error result as the triggering error
+        services.fbService, // Pass fbService from services
+        logContextWithUid // Restore: Use logContextWithUid which contains both email and uid
+      );
+      return prismaSignInResult; // Return the error from Prisma/sign-in stage
+    }
+
+    // If prismaSignInResult is null or not an error, registration is considered successful at this point
+    actionLogger.info(
+      logContextWithUid,
+      '_performRegistrationAttempt: Registration and post-reg sign-in successful.'
+    );
+    return { status: 'success', message: 'Registration successful', data: null };
+  } catch (error) {
+    actionLogger.error(
+      {
+        ...logContext,
+        email: validatedData.email,
+        errorName: error instanceof Error ? error.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+      'DEBUG_PERFORM_REG_ATTEMPT_CATCH: Entered catch block in _performRegistrationAttempt.'
+    );
+    const errorDetailsForLogging = {
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : 'N/A',
+      errorStack: error instanceof Error ? error.stack : 'N/A',
+      errorCause: error instanceof Error && error.cause ? error.cause : 'N/A',
+    };
+    actionLogger.error(
+      { ...logContext, email: validatedData.email, ...errorDetailsForLogging },
+      'Error during core registration attempt (Firebase/Prisma) - details logged separately if possible.'
+    );
+
+    if (firebaseUser?.uid) {
+      await _attemptManualFirebaseRollbackOnError(
+        firebaseUser,
+        error,
+        services.fbService, // Ensure fbService is passed correctly from services
+        logContext // Fix: Use logContext which is in scope, not logContextWithUid
+      );
+    }
+
+    // Safely construct wrappedError for _handleMainRegistrationError
+    let wrappedErrorMessage = 'Unknown error during registration attempt';
+    if (error instanceof Error) {
+      wrappedErrorMessage = error.message;
+    } else if (typeof error === 'string') {
+      wrappedErrorMessage = error;
+    } else {
+      try {
+        wrappedErrorMessage = String(error);
+      } catch (e) {
+        /* Fallback to default */
       }
     }
+    // const wrappedError = new Error(`Core registration error: ${wrappedErrorMessage}`);
+    // if (error instanceof Error && error.stack) {
+    //   wrappedError.stack = error.stack; // Preserve stack if available
+    // }
+    // let originalErrorType = 'unknown';
+    // if (error && typeof error === 'object' && error.constructor && typeof error.constructor.name === 'string') {
+    //   originalErrorType = error.constructor.name;
+    // } else {
+    //   originalErrorType = typeof error;
+    // }
+    // (wrappedError as any).originalErrorType = originalErrorType;
 
-    // --- Check if an error occurred during Prisma/Rollback ---
-    if (registrationErrorResult) {
-      actionLogger.debug(
-        { ...logContext, registrationErrorResult },
-        '_performRegistrationAttempt: Returning error captured from Prisma/Rollback block.'
-      );
-      return registrationErrorResult;
-    }
+    // --- SIMPLIFIED ERROR FOR DEBUGGING ---
+    const simplifiedErrorForDebug = new Error(wrappedErrorMessage); // Just use the message
 
-    // If we reach here, Prisma user creation succeeded (prismaUser should be set) and no error was captured.
-    if (!prismaUser) {
-      actionLogger.error(
-        { ...logContext },
-        '_performRegistrationAttempt: Reached post-Prisma block but prismaUser is null and no error was captured.'
-      );
-      return _handleMainRegistrationError(
-        new Error('Internal state error after Prisma user creation attempt'),
-        'internal state inconsistency'
-      );
-    }
-
-    // 3. Attempt Sign In (if Prisma user created successfully)
-    return await _attemptPostRegistrationSignIn(email, password, actionLogger);
-  } catch (error) {
-    // This top-level catch handles Firebase creation errors OR errors thrown by _handlePrismaCreateFailure
-    // (like RollbackError or the error from fbService.deleteUser failing)
-    // OR the re-thrown dbError if firebaseUserRecord was unexpectedly null.
-    actionLogger.error(
-      { ...logContext, error },
-      '_performRegistrationAttempt: Error during registration or rollback.'
+    // Return the result from the (now restored) _handleMainRegistrationError
+    // return _handleMainRegistrationError(wrappedError, 'core_registration_error');
+    return _handleMainRegistrationError(
+      simplifiedErrorForDebug,
+      'core_registration_error_simplified_debug'
     );
-    const errorResponse = _handleMainRegistrationError(error, 'registration attempt');
-    actionLogger.debug(
-      { ...logContext, errorResponse },
-      '_performRegistrationAttempt: Returning error response from outer catch.'
-    );
-    return errorResponse;
   }
 }
 
@@ -611,23 +777,18 @@ interface ResolvedRegisterDeps {
 }
 
 function _resolveRegisterDependencies(deps?: RegisterUserOptionalDeps): ResolvedRegisterDeps {
-  const resolvedLogger = deps?.logger ?? actionLogger;
-  // Note: Non-null assertion used below. Assumes actionLogger is always initialized.
-  // Consider adding a check if stricter null safety is needed in the future.
-  resolvedLogger.debug('_resolveRegisterDependencies: Resolving dependencies...');
+  const defaultLog = actionLogger.child({ function: '_resolveRegisterDependencies' });
+  const resolvedLogger = deps?.logger || defaultLog;
 
-  // Resolve fbService without non-null assertion.
-  // The availability check happens in the calling function (registerUserLogic).
-  const resolvedFbService = deps?.fbService ?? firebaseAdminService;
-
-  const resolvedDb = deps?.db ?? { user: prisma.user };
-  const resolvedHasher = deps?.hasher ?? { hash };
+  // Ensure FirebaseAdminService is initialized using getFirebaseAdminAuth()
+  // which handles the singleton correctly.
+  const fbServiceInstance = deps?.fbService || firebaseAdminService; // Uses the global singleton
 
   return {
     log: resolvedLogger,
-    fbService: resolvedFbService,
-    db: resolvedDb,
-    hasher: resolvedHasher,
+    fbService: fbServiceInstance, // Can be undefined if deps.fbService was explicitly null/undefined
+    db: deps?.db || prisma,
+    hasher: deps?.hasher || { hash },
   };
 }
 
@@ -700,102 +861,213 @@ async function _checkExistingPrismaUser(
   }
 }
 
-/**
- * Main logic for user registration, handling validation, rate limiting,
- * user creation in Firebase and Prisma, and post-registration sign-in attempt.
- * Dependencies are passed explicitly or default implementations are used.
- */
-export async function registerUserLogic(
+// Helper to validate FormData and prepare RegistrationInput for _runRegistrationPreChecks
+async function _validateAndPrepareInputData(
   formData: FormData,
-  deps?: RegisterUserOptionalDeps
-): Promise<RegistrationResult> {
-  // --- 1. Resolve Dependencies & Logger ---
-  const { log, fbService, db, hasher } = _resolveRegisterDependencies(deps);
-  log.info('registerUserLogic: Starting registration process...');
-
-  // --- Pre-check: Service Availability ---
-  if (!fbService) {
-    const logCtx = { errorCode: 'ServiceUnavailable' };
-    log.warn(logCtx, 'Firebase Admin Service is not available for registration.');
-    return {
-      status: 'error',
-      message: 'Firebase Admin Service not available.',
-      error: {
-        code: 'ServiceUnavailable',
-        message: 'Firebase Admin Service not available.',
-      },
-    };
-  }
-
-  // --- 2. Input Validation ---
+  initialLogContext: { email?: string } | undefined,
+  log: PinoLogger
+): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
+  log.debug(
+    initialLogContext,
+    '_validateAndPrepareInputData: Received FormData, performing validation.'
+  );
   const validationResult = await _validateRegistrationInput(formData);
+
   if (!validationResult.success) {
     const validationErrors = validationResult.error.flatten().fieldErrors;
-    const logCtx = { validationErrors };
-    log.warn(logCtx, 'Registration input validation failed.');
+    log.warn(
+      { ...initialLogContext, validationErrors },
+      '_validateAndPrepareInputData: Input validation failed.'
+    );
     return {
-      status: 'error',
-      message: 'Invalid input.',
-      error: {
-        code: 'ValidationError',
-        message: 'Invalid input.', // Consistent message
-        details: { validationErrors },
+      errorResult: {
+        status: 'error',
+        message: 'Invalid input.',
+        error: {
+          code: 'ValidationError',
+          message: 'Invalid input.',
+          details: { validationErrors },
+        },
       },
     };
   }
   const validatedData = validationResult.data;
-  const logContext = { email: validatedData.email }; // Base log context for subsequent steps
-  log.debug(logContext, 'Registration input validation successful.');
+  log.debug(
+    { ...initialLogContext, email: validatedData.email },
+    '_validateAndPrepareInputData: FormData validation successful.'
+  );
+  return { validatedData };
+}
 
-  // --- 3. Rate Limiting ---
-  const clientIp = await getClientIp(); // Add await here to resolve the Promise
-  const rateLimitError = await _handleRegistrationRateLimit(log, logContext, clientIp);
-  if (rateLimitError) {
-    return rateLimitError;
+// Runs pre-checks before attempting user registration (rate limiting, existing user).
+// eslint-disable-next-line max-statements, max-lines-per-function
+async function _runRegistrationPreChecks(
+  formDataOrValidatedData: FormData | RegistrationInput,
+  options: PreCheckOptions
+): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
+  const { log, db, initialLogContext } = options;
+  let validatedData: RegistrationInput;
+
+  if (formDataOrValidatedData instanceof FormData) {
+    const validationOutcome = await _validateAndPrepareInputData(
+      formDataOrValidatedData,
+      initialLogContext,
+      log
+    );
+    if (validationOutcome.errorResult) {
+      return { errorResult: validationOutcome.errorResult };
+    }
+    if (!validationOutcome.validatedData) {
+      log.error(
+        initialLogContext,
+        '_runRegistrationPreChecks: _validateAndPrepareInputData returned no error but no validatedData. Internal logic error.'
+      );
+      return {
+        errorResult: await _handleMainRegistrationError(
+          new Error('Internal error during input validation processing.'),
+          'internal_validation_processing_error'
+        ),
+      };
+    }
+    validatedData = validationOutcome.validatedData;
+  } else {
+    validatedData = formDataOrValidatedData;
+    log.debug(
+      { ...initialLogContext, email: validatedData.email },
+      '_runRegistrationPreChecks: Received pre-validated RegistrationInput.'
+    );
   }
 
-  // --- 4. Check Existing User (Database) ---
+  const currentLogContext = { ...initialLogContext, email: validatedData.email };
+
+  const clientIp = await getClientIp();
+
+  // 2. Rate Limiting
+  const rateLimitError = await _handleRegistrationRateLimit(log, currentLogContext, clientIp);
+  if (rateLimitError) {
+    return { errorResult: rateLimitError };
+  }
+
+  // 3. Check Existing User (Database)
   const existingUserError = await _checkExistingPrismaUser(
     log,
-    logContext,
+    currentLogContext,
     validatedData.email,
     db
   );
   if (existingUserError) {
-    return existingUserError;
+    return { errorResult: existingUserError };
   }
 
-  // --- 5. Perform Core Registration and Sign-in Attempt ---
-  log.debug(logContext, 'Proceeding to core registration attempt...');
+  log.debug(currentLogContext, '_runRegistrationPreChecks: All pre-checks passed.');
+  return { validatedData }; // All checks passed, return validated data
+}
+
+/**
+ * Main logic for user registration, handling data validation, rate limiting, user creation, and sign-in.
+ * This function is designed to be called from a Server Action.
+ */
+// eslint-disable-next-line max-lines-per-function, max-statements -- This is the main internal orchestrator for the registration process, coordinating various checks and operations. Its length and statement count are slightly over due to this central role.
+async function registerUserLogic(
+  _prevState: ServiceResponse<null, unknown> | null,
+  formData: FormData | RegistrationInput,
+  deps?: RegisterUserOptionalDeps
+): Promise<ServiceResponse<null, unknown>> {
+  const { log, fbService, db, hasher } = _resolveRegisterDependencies(deps);
+  const initialLogContextForLogic = {
+    email: formData instanceof FormData ? (formData.get('email') as string) : formData.email,
+  };
+  log.info(initialLogContextForLogic, 'registerUserLogic: Starting registration process...');
+
+  // REMOVED DEBUG TRY-CATCH WRAPPER - RESTORING ORIGINAL FLOW
+  if (!fbService) {
+    log.warn(
+      initialLogContextForLogic,
+      'registerUserLogic: Firebase Admin Service is not available. Registration cannot proceed.'
+    );
+    return {
+      status: 'error',
+      message: 'Registration service unavailable. Please try again later.',
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Firebase Admin Service not initialized.',
+      },
+    } as ServiceResponse<null, unknown>;
+  }
+
+  const { validatedData, errorResult: preCheckError } = await _runRegistrationPreChecks(formData, {
+    log,
+    db,
+    initialLogContext: initialLogContextForLogic,
+  });
+
+  if (preCheckError) {
+    log.warn(
+      { ...initialLogContextForLogic, errorCode: preCheckError.error?.code },
+      'registerUserLogic: Pre-checks failed.'
+    );
+    return preCheckError as ServiceResponse<null, unknown>;
+  }
+
+  if (!validatedData) {
+    log.error(
+      initialLogContextForLogic,
+      'registerUserLogic: Validated data is unexpectedly undefined after pre-checks without error.'
+    );
+    return {
+      status: 'error',
+      message: 'An unexpected error occurred during input validation.',
+      error: {
+        code: 'INTERNAL_VALIDATION_ERROR',
+        message: 'Validated data missing post pre-checks.',
+      },
+    } as ServiceResponse<null, unknown>;
+  }
+
+  const logContextWithValidatedEmail = { email: validatedData.email };
+
   const registrationAttemptResult = await _performRegistrationAttempt(
     validatedData,
-    { db, hasher, fbService },
-    logContext
+    { log, fbService, db, hasher },
+    logContextWithValidatedEmail
   );
 
-  // _performRegistrationAttempt returns null on complete success (including sign-in)
-  // or a ServiceResponse object on any failure (Firebase create, Prisma create + rollback, sign-in fail)
-  if (registrationAttemptResult) {
-    // If it returned an error response, just return that directly.
-    // Logging is handled within _performRegistrationAttempt or _handleMainRegistrationError
-    return registrationAttemptResult;
+  if (registrationAttemptResult?.status === 'error') {
+    log.warn(
+      { ...logContextWithValidatedEmail, errorCode: registrationAttemptResult.error?.code },
+      'registerUserLogic: Registration attempt resulted in an error status (returned from attempt).'
+    );
+    return registrationAttemptResult as ServiceResponse<null, unknown>;
   }
 
-  // --- 6. Handle Success ---
-  // If registrationAttemptResult is null, it means everything succeeded.
-  log.info(logContext, 'Registration and post-registration sign-in successful.');
+  if (registrationAttemptResult?.status === 'success') {
+    log.info(
+      logContextWithValidatedEmail,
+      'registerUserLogic: Registration process completed successfully.'
+    );
+    return { status: 'success', message: 'Registration successful', data: null };
+  }
+
+  log.error(
+    logContextWithValidatedEmail,
+    'registerUserLogic: Registration attempt returned an unexpected result structure.'
+  );
   return {
-    status: 'success',
-    message: 'User registered successfully. Redirecting...',
-    data: null, // No data needed for this success response
-  };
+    status: 'error',
+    message: 'An unexpected outcome occurred during registration.',
+    error: {
+      code: 'UNKNOWN_REGISTRATION_OUTCOME',
+      message: 'Unexpected result from registration attempt.',
+    },
+  } as ServiceResponse<null, unknown>;
+  // END OF ORIGINAL registerUserLogic BODY (before any debug catch was added)
 }
 
 // --- Public Server Action --- //
 
 /**
- * Server Action for user registration.
- * Handles form data submission, calls the core registration logic, and returns a ServiceResponse.
+ * Server Action for user registration with form data.
+ * This is the entry point for the registration form.
  */
 export async function registerUserAction(
   _prevState: ServiceResponse<null, unknown> | null, // Previous state (unused but required by useFormState)
@@ -803,7 +1075,7 @@ export async function registerUserAction(
 ): Promise<ServiceResponse<null, unknown>> {
   // We directly call registerUserLogic which now contains all the checks.
   // The dependencies (logger, db, fbService, hasher) will use defaults unless overridden for testing.
-  return registerUserLogic(formData);
+  return registerUserLogic(null, formData);
 }
 
 // Keep authenticateWithCredentials commented out as it was removed/refactored previously.
@@ -845,7 +1117,7 @@ export async function authenticateWithCredentials(
 
     // Fallback for non-Error objects or unknown errors
     log.error({ ...logContext, error }, 'Unexpected non-Error object caught during credentials sign-in.');
-    return { message: 'An unexpected error occurred during login.' };
+    return { message: 'An authentication error occurred. Please try again.' };
   }
 }
 
@@ -875,3 +1147,73 @@ function _handleNextAuthErrorType(
     }
 }
 */
+
+async function _attemptPostRegistrationSignIn(
+  email: string,
+  passwordAttempt: string,
+  log: PinoLogger,
+  postRegistrationData?: { userId: string; email: string; name: string | null }
+): Promise<RegistrationResult | null> {
+  const logContext = {
+    email,
+    operation: '_attemptPostRegistrationSignIn',
+    ...(postRegistrationData && { postRegUserId: postRegistrationData.userId }),
+  };
+  log.debug(logContext, 'Attempting post-registration sign-in...');
+
+  try {
+    const signInResult = await signIn('credentials', {
+      email,
+      password: passwordAttempt,
+      redirect: false,
+      callbackUrl: '/dashboard',
+    });
+
+    log.info(
+      { ...logContext, success: signInResult?.ok || false, signInResult },
+      'Post-registration sign-in attempt completed'
+    );
+
+    if (signInResult?.ok || (signInResult && !signInResult.error)) {
+      log.info(
+        { ...logContext, signInResultStatus: signInResult?.status },
+        'Post-registration sign-in successful based on signInResult inspection'
+      );
+      return null; // Success
+    }
+
+    log.warn(
+      {
+        ...logContext,
+        signInError: 'Sign-in part failed',
+        status: signInResult?.status,
+        error: signInResult?.error,
+      },
+      'Registration successful but automatic sign-in failed'
+    );
+    return {
+      status: 'error',
+      message: 'Registration successful but automatic sign-in failed. Please sign in manually.',
+      error: {
+        code: 'AUTO_SIGNIN_FAILED',
+        message: 'Registration successful but automatic sign-in failed.',
+        details: {
+          originalError: signInResult?.error || 'Unknown sign-in error',
+        },
+      },
+    };
+  } catch (error) {
+    log.error({ ...logContext, error }, 'Error during automatic post-registration sign-in');
+    return {
+      status: 'error',
+      message: 'Registration successful! Please sign in with your new account.',
+      error: {
+        code: 'AUTO_SIGNIN_EXCEPTION',
+        message: 'Exception during automatic sign-in after registration.',
+        details: {
+          originalError: error,
+        },
+      },
+    };
+  }
+}

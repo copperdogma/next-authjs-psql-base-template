@@ -1,13 +1,53 @@
 // lib/auth-edge.ts
 import NextAuth from 'next-auth';
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthConfig, Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 // import Google from 'next-auth/providers/google'; // Provided by shared config
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
 // import { UserRole } from '@/types'; // Unused import removed
-import { sharedAuthConfig } from './auth-shared'; // Import shared config
+import { sharedAuthConfig, handleSharedSessionCallback } from './auth-shared'; // Import shared config and callback
 import { logRequestResponse } from '@/middleware/request-logger'; // Corrected import path
 import { type NextRequest, NextResponse } from 'next/server';
+
+// Define a unique symbol for storing the NextAuth instance globally
+const NEXTAUTH_INSTANCE = Symbol.for('nextAuthInstanceEdge');
+
+interface NextAuthInstance {
+  handlers: {
+    GET: (req: NextRequest) => Promise<Response>;
+    POST: (req: NextRequest) => Promise<Response>;
+  };
+  auth: () => Promise<Session | null>;
+  signIn: (provider?: string, options?: Record<string, unknown>) => Promise<unknown>;
+  signOut: (options?: Record<string, unknown>) => Promise<unknown>;
+}
+
+// Type for the global object containing NextAuthInstance
+type GlobalWithNextAuth = typeof globalThis & {
+  [NEXTAUTH_INSTANCE]?: NextAuthInstance;
+};
+
+/**
+ * Initializes and/or retrieves the NextAuth instance for the Edge runtime.
+ * Ensures that NextAuth is initialized only once.
+ */
+function getNextAuthInstance(): NextAuthInstance {
+  // Check if the instance already exists on the global object
+  const globalWithNextAuth = globalThis as GlobalWithNextAuth;
+
+  if (!globalWithNextAuth[NEXTAUTH_INSTANCE]) {
+    logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth (Singleton)...');
+    const instance = NextAuth(authConfigEdge);
+    globalWithNextAuth[NEXTAUTH_INSTANCE] = instance;
+    logger.info('[Auth Edge Config] Edge-compatible NextAuth initialization complete (Singleton).');
+  } else {
+    logger.debug(
+      '[Auth Edge Config] Reusing existing Edge-compatible NextAuth instance (Singleton).'
+    );
+  }
+  return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
+}
 
 // Extend session types (already done in auth-shared.ts, no need to repeat declare module)
 
@@ -153,7 +193,7 @@ export const authConfigEdge: NextAuthConfig = {
     ...sharedAuthConfig.callbacks,
 
     // --- authorized callback (Edge-specific logic) ---
-    // eslint-disable-next-line complexity
+    // eslint-disable-next-line complexity, max-lines-per-function, max-statements
     async authorized({ auth, request }) {
       const { nextUrl } = request;
       const pathname = nextUrl.pathname;
@@ -250,20 +290,23 @@ export const authConfigEdge: NextAuthConfig = {
       logger.debug({ msg: '[Auth Edge] End jwt callback' });
       return token;
     },
-    // session callback is inherited from sharedAuthConfig
+
+    // --- session callback (Edge-specific) ---
+    async session(params: {
+      session: Session;
+      token: JWT;
+      user: any;
+      newSession?: any;
+      trigger?: 'update';
+    }) {
+      return handleSharedSessionCallback(params);
+    },
   },
   // Pages are inherited from sharedAuthConfig
   // Debug is inherited from sharedAuthConfig
   // Secret is inherited from sharedAuthConfig
 };
 
-// =============================================================================
-// Initialization and Exports (Edge-specific)
-// =============================================================================
-
-logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth.');
-
-// Initialize NextAuth with the edge config and export only the 'auth' handler for middleware
-export const { auth } = NextAuth(authConfigEdge);
-
-logger.info('[Auth Edge Config] Edge-compatible NextAuth initialization complete.');
+// Retrieve and export the NextAuth instance
+const { handlers, auth, signIn, signOut } = getNextAuthInstance();
+export { handlers, auth, signIn, signOut };

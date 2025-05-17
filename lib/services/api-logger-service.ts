@@ -336,40 +336,41 @@ function logSuccessfulRequest<T extends NextResponse | Response>(
 export function withApiLogger<T extends NextResponse | Response>(
   handler: (req: NextRequest, logger: pino.Logger) => Promise<T> // Update logger type hint
 ): (req: NextRequest) => Promise<T | NextResponse> {
+  // eslint-disable-next-line max-statements
   return async (req: NextRequest) => {
-    let apiLogger: pino.Logger; // Use pino.Logger type
+    let loggerInstance: pino.Logger;
     let requestStartTime: number;
 
     try {
       // Create logger with request context
       const { logger: createdLogger, startTime } = createApiLogger(req);
-      apiLogger = createdLogger;
+      loggerInstance = createdLogger;
       requestStartTime = startTime; // Capture startTime
     } catch (error) {
       // If logger creation fails, use a fallback and attempt to continue
-      apiLogger = createFallbackLogger(req, error);
+      loggerInstance = createFallbackLogger(req, error);
       requestStartTime = Date.now(); // Use current time as fallback startTime
     }
 
     try {
       // Log request start
-      logRequestStart(apiLogger, req);
+      logRequestStart(loggerInstance, req);
 
       // Execute the actual handler
-      const response = await handler(req, apiLogger);
+      const response = await handler(req, loggerInstance);
 
       // Log successful response details (optional)
-      logSuccessfulRequest(response, apiLogger);
+      logSuccessfulRequest(response, loggerInstance);
 
       return response;
     } catch (error) {
       // Handle and log errors centrally
       // Note: logRequestCompletion will be called in finally, logging the error state
-      return handleApiError(error, apiLogger);
+      return handleApiError(error, loggerInstance);
     } finally {
       // Ensure completion is logged regardless of success or failure
-      // Check if apiLogger was successfully created before logging completion
-      if (apiLogger && typeof apiLogger.info === 'function') {
+      // Check if loggerInstance was successfully created before logging completion
+      if (loggerInstance && typeof loggerInstance.info === 'function') {
         // Check if it's a valid logger
         // Determine response/error state for final log message
         // This is tricky because the response/error from try/catch isn't directly available here.
@@ -379,7 +380,7 @@ export function withApiLogger<T extends NextResponse | Response>(
 
         // Simplified approach: Pass null response/error for now.
         // Status/error details are already logged by handleApiError or info logs.
-        logRequestCompletion(apiLogger, requestStartTime, undefined, undefined); // Pass captured startTime
+        logRequestCompletion(loggerInstance, requestStartTime, undefined, undefined); // Pass captured startTime
       }
     }
   };

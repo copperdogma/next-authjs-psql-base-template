@@ -1,8 +1,5 @@
 import { logger } from '@/lib/logger';
-import {
-  firebaseAdminServiceImpl,
-  isFirebaseAdminServiceReady,
-} from '@/lib/server/firebase-admin-singleton';
+import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
 import type { Account, Profile, User as NextAuthUser } from 'next-auth';
 
 // Helper function to determine if Firebase user sync should occur
@@ -16,11 +13,14 @@ export function shouldSyncFirebaseUser(
   );
 }
 
-// Check if Firebase Admin service is ready using the imported check
+// Check if Firebase Admin service is ready
 function checkFirebaseAdminStatus(logContext: Record<string, unknown>): boolean {
-  if (!isFirebaseAdminServiceReady()) {
-    // Use the imported readiness check
-    logger.error(logContext, '[JWT Callback] Firebase Admin Service not ready. Skipping user sync');
+  const authService = getFirebaseAdminAuth();
+  if (!authService) {
+    logger.error(
+      logContext,
+      '[JWT Callback] Firebase Admin Auth Service not available. Skipping user sync'
+    );
     return false;
   }
   return true;
@@ -90,9 +90,18 @@ async function createFirebaseUserIfNeeded(
   logContext: Record<string, unknown>
 ): Promise<void> {
   const userId = userPayload.uid;
+  const authService = getFirebaseAdminAuth();
+
+  if (!authService) {
+    logger.error(
+      logContext,
+      '[JWT Callback] Firebase Admin Auth Service not available in createFirebaseUserIfNeeded. Cannot create/check user.'
+    );
+    return;
+  }
 
   try {
-    await firebaseAdminServiceImpl.getUser(userId); // Use imported singleton
+    await authService.getUser(userId); // USE NEW SERVICE
     logger.info(logContext, '[JWT Callback] Firebase user already exists');
   } catch (error: unknown) {
     const errorCode =
@@ -105,7 +114,7 @@ async function createFirebaseUserIfNeeded(
 
     if (errorCode === 'auth/user-not-found') {
       try {
-        await firebaseAdminServiceImpl.createUser(userPayload); // Use imported singleton
+        await authService.createUser(userPayload); // USE NEW SERVICE
         logger.info(logContext, '[JWT Callback] Successfully created Firebase user');
       } catch (creationError) {
         logger.error(

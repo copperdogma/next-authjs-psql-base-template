@@ -215,7 +215,50 @@ export async function authorizeLogic(
   const { db, hasher, validator } = dependencies;
   const { correlationId, extendedLogContext } = _prepareAuthContext(dependencies, logContext);
 
-  // --- Validation ---
+  logger.info(
+    { ...extendedLogContext, receivedCredentials: credentials },
+    '[Credentials Authorize Logic] Received credentials for authorization.'
+  );
+
+  // --- Special handling for post-registration sign-in ---
+  if (
+    credentials &&
+    typeof credentials === 'object' &&
+    'isPostRegistration' in credentials &&
+    (credentials.isPostRegistration === true || credentials.isPostRegistration === 'true') &&
+    'postRegistrationUserId' in credentials &&
+    typeof credentials.postRegistrationUserId === 'string' &&
+    'postRegistrationUserEmail' in credentials &&
+    typeof credentials.postRegistrationUserEmail === 'string'
+  ) {
+    const userId = credentials.postRegistrationUserId as string;
+    const email = credentials.postRegistrationUserEmail as string;
+
+    let name: string | null = null;
+    if ('postRegistrationUserName' in credentials) {
+      const rawName = credentials.postRegistrationUserName;
+      if (typeof rawName === 'string') {
+        name = rawName === 'null' ? null : rawName;
+      } else if (rawName === null) {
+        name = null;
+      }
+    }
+
+    logger.info(
+      { ...extendedLogContext, userId, email, nameObtained: name },
+      '[Credentials Authorize Logic] Post-registration sign-in detected. Bypassing DB lookup and password check.'
+    );
+    return {
+      id: userId,
+      email: email,
+      name: name,
+      image: null,
+      role: UserRole.USER,
+    };
+  }
+  // --- End special handling ---
+
+  // --- Normal Validation (if not post-registration) ---
   const validationResult = _validateCredentials(credentials, validator, correlationId);
   if (validationResult.error || !validationResult.data) {
     // Validation errors are logged within the helper, throw a generic error here

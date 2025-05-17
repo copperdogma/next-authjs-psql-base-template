@@ -100,3 +100,9 @@ serviceAccountKey.json
 
 # Secrets folder
 /secrets/
+
+# Temporary files
+*.bak
+*.old
+*.tmp
+*.skip

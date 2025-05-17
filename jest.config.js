@@ -107,16 +107,16 @@ const customJestConfig = {
       ],
       moduleNameMapper: {
         // Keep specific overrides first
-        '^@/lib/prisma$': '<rootDir>/lib/prisma.ts',
-        '^@/lib/db/prisma$': '<rootDir>/lib/db/prisma.ts',
-        '^@/lib/logger$': '<rootDir>/lib/logger.ts',
-        '^@/lib/auth-node$': '<rootDir>/lib/auth-node.ts',
+        '@/lib/prisma': '<rootDir>/lib/prisma.ts',
+        '@/lib/db/prisma': '<rootDir>/lib/db/prisma.ts',
+        '@/lib/logger': '<rootDir>/lib/logger.ts',
+        '@/lib/auth-node': '<rootDir>/lib/auth-node.ts',
 
-        // Add general lib mapping BEFORE specific one
+        // Add general lib mapping AFTER specific one
         '^@/lib/(.*)$': '<rootDir>/lib/$1',
 
         // More specific lib mapping that includes file extensions
-        '^@/lib/(.+\\.(?:ts|tsx|js|jsx))$': '<rootDir>/lib/$1',
+        // '^@/lib/(.+\\.(?:ts|tsx|js|jsx))$': '<rootDir>/lib/$1',
 
         // Keep other specific mappings
         '^@/types$': '<rootDir>/types/index.ts',
@@ -139,7 +139,7 @@ const customJestConfig = {
         '<rootDir>/tests/unit/providers/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js', 'react-intersection-observer/test-utils'],
       testEnvironment: 'jsdom',
       ...sharedConfig,
       globals: {

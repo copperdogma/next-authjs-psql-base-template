@@ -8,7 +8,6 @@ export * from './palette';
 export * from './typography';
 export * from './components';
 export * from './tokens';
-export * from './utils';
 
 // Create theme function
 export const createAppTheme = (mode: PaletteMode) => {

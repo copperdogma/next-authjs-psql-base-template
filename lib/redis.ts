@@ -3,10 +3,38 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import pino from 'pino';
 
-let redis: Redis | null = null;
-let initialConnectionAttempted = false;
-let initialConnectionFailed = false;
-let redisExplicitlyDisabled = false;
+declare const module: {
+  hot?: {
+    dispose: (callback: (data: Record<string, unknown>) => Promise<void> | void) => void;
+    data?: Record<string, unknown>;
+  };
+}; // For HMR module.hot API
+
+// --- BEGIN Global Symbol for Singleton ---
+interface RedisGlobal {
+  redisClient?: Redis | null;
+  redisConnectionAttempted?: boolean;
+  redisConnectionFailed?: boolean;
+  redisExplicitlyDisabled?: boolean;
+}
+
+const REDIS_GLOBAL_KEY = Symbol.for('__NEXT_REDIS_CLIENT_SINGLETON__');
+
+function getRedisGlobal(): RedisGlobal {
+  const globalWithRedis = globalThis as typeof globalThis & {
+    [REDIS_GLOBAL_KEY]?: RedisGlobal;
+  };
+  if (!globalWithRedis[REDIS_GLOBAL_KEY]) {
+    globalWithRedis[REDIS_GLOBAL_KEY] = {
+      redisClient: undefined, // Initialize as undefined to distinguish from null (explicitly no client)
+      redisConnectionAttempted: false,
+      redisConnectionFailed: false,
+      redisExplicitlyDisabled: false,
+    };
+  }
+  return globalWithRedis[REDIS_GLOBAL_KEY] as RedisGlobal;
+}
+// --- END Global Symbol for Singleton ---
 
 const moduleLogger = logger.child({ module: 'redis-client' });
 
@@ -16,11 +44,12 @@ function _createRedisRetryStrategy(
   redisUrl: string | undefined // Pass env.REDIS_URL to avoid direct env dependency here
 ): (times: number) => number | null {
   return function retryStrategy(times: number): number | null {
+    const redisGlobal = getRedisGlobal();
     if (times > 5) {
       localLogger.error(
         `Redis: Could not connect after ${times} attempts. Stopping retries. Please check Redis server and REDIS_URL: ${redisUrl}`
       );
-      initialConnectionFailed = true; // This global flag modification is a side effect
+      redisGlobal.redisConnectionFailed = true; // This global flag modification is a side effect
       return null;
     }
     const delay = Math.min(times * 200, 3000);
@@ -35,6 +64,14 @@ function _createRedisRetryStrategy(
 // --- BEGIN NEW HELPER for attaching Redis event listeners ---
 function _attachRedisEventListeners(client: Redis): void {
   // Note: The original event handlers (_logRedisConnect etc.) use `moduleLogger` from their outer scope.
+
+  // Detach any existing listeners from this specific client instance first to prevent duplicates
+  // if this function were ever called multiple times on the same client (defensive)
+  client.removeAllListeners('connect');
+  client.removeAllListeners('error');
+  client.removeAllListeners('close');
+  client.removeAllListeners('reconnecting');
+
   client.on('connect', _logRedisConnect);
   client.on('error', _logRedisError);
   client.on('close', _logRedisClose);
@@ -47,7 +84,8 @@ function _attemptRedisClientInstantiation(
   redisUrlToUse: string,
   baseLogger: pino.Logger // For retry strategy and initial logging
 ): void {
-  // This function modifies global `redis` and `initialConnectionFailed`
+  const redisGlobal = getRedisGlobal();
+  // This function modifies global `redisGlobal.redisClient` and `redisGlobal.redisConnectionFailed`
   baseLogger.info(
     { redisUrl: redisUrlToUse },
     'REDIS_URL is set. Attempting to initialize Redis client...'
@@ -62,43 +100,48 @@ function _attemptRedisClientInstantiation(
     });
 
     _attachRedisEventListeners(client);
-    redis = client; // Set global redis instance
+    redisGlobal.redisClient = client; // Set global redis instance
 
-    if (redis.status !== 'connecting' && redis.status !== 'ready' && redis.status !== 'connect') {
+    if (
+      redisGlobal.redisClient.status !== 'connecting' &&
+      redisGlobal.redisClient.status !== 'ready' &&
+      redisGlobal.redisClient.status !== 'connect'
+    ) {
       baseLogger.warn(
-        { currentStatus: redis.status, redisUrl: redisUrlToUse },
+        { currentStatus: redisGlobal.redisClient?.status ?? 'unknown', redisUrl: redisUrlToUse },
         "Redis client instantiated, but initial status is not 'connecting' or 'ready'. " +
           'This may indicate an immediate issue with Redis server or configuration. ' +
           'Redis-dependent features will likely be unavailable or fail open.'
       );
-      initialConnectionFailed = true;
+      redisGlobal.redisConnectionFailed = true;
     } else {
       baseLogger.info(
-        { currentStatus: redis.status, redisUrl: redisUrlToUse },
+        { currentStatus: redisGlobal.redisClient?.status ?? 'unknown', redisUrl: redisUrlToUse },
         'Redis client instance created, attempting connection...'
       );
-      // initialConnectionFailed remains false or will be set by error/retry handlers
+      // redisGlobal.redisConnectionFailed remains false or will be set by error/retry handlers
     }
   } catch (synchronousError) {
     baseLogger.error(
       { error: synchronousError, redisUrl: redisUrlToUse },
       'CRITICAL: Synchronous error during Redis client instantiation. Redis will be unavailable.'
     );
-    initialConnectionFailed = true;
-    redis = null; // Ensure redis is null on critical instantiation failure
+    redisGlobal.redisConnectionFailed = true;
+    redisGlobal.redisClient = null; // Ensure redis is null on critical instantiation failure
   }
 }
 // --- END NEW HELPER ---
 
 // --- BEGIN NEW HELPER for handling missing REDIS_URL ---
 function _handleNoRedisUrl(baseLogger: pino.Logger): null {
+  const redisGlobal = getRedisGlobal();
   baseLogger.info(
     'REDIS_URL is not set in environment variables. Redis-dependent features (e.g., rate limiting) will be disabled. ' +
       'This is expected if you do not intend to use Redis. To enable Redis features, please set REDIS_URL.'
   );
-  initialConnectionFailed = true; // Mark as failed because it's not configured
-  redisExplicitlyDisabled = true; // Prevent further attempts for this session
-  redis = null; // Ensure redis instance is null
+  redisGlobal.redisConnectionFailed = true; // Mark as failed because it's not configured
+  redisGlobal.redisExplicitlyDisabled = true; // Prevent further attempts for this session
+  redisGlobal.redisClient = null; // Ensure redis instance is null
   return null;
 }
 // --- END NEW HELPER for handling missing REDIS_URL ---
@@ -111,22 +154,27 @@ function _handleNoRedisUrl(baseLogger: pino.Logger): null {
  */
 // eslint-disable-next-line complexity
 function getRedisClient(): Redis | null {
+  const redisGlobal = getRedisGlobal();
+
   // Return type can now be null
-  if (redisExplicitlyDisabled) {
+  if (redisGlobal.redisExplicitlyDisabled) {
     return null; // If already determined to be disabled, don't try again
   }
-  if (initialConnectionAttempted && redis) {
-    // If we already have an instance (even if it failed to connect initially),
-    // return it and let retry/error handlers manage it.
-    // initialConnectionFailed flag will be checked by getOptionalRedisClient.
-    return redis;
+
+  // If an instance already exists on the global scope (even if it failed to connect initially),
+  // return it. Retry/error handlers attached to it should manage its state.
+  // The redisGlobal.redisClient is initialized to `undefined` to distinguish from `null` (explicitly no client).
+  if (typeof redisGlobal.redisClient !== 'undefined') {
+    return redisGlobal.redisClient;
   }
-  if (initialConnectionAttempted && !redis) {
-    // This means REDIS_URL was missing on a previous attempt and redis was never instantiated.
+
+  if (redisGlobal.redisConnectionAttempted && !redisGlobal.redisClient) {
+    // This means REDIS_URL was missing on a previous attempt or instantiation failed,
+    // and redisGlobal.redisClient was set to null.
     return null;
   }
 
-  initialConnectionAttempted = true;
+  redisGlobal.redisConnectionAttempted = true;
 
   if (!env.REDIS_URL) {
     // Logic extracted to _handleNoRedisUrl
@@ -137,16 +185,16 @@ function getRedisClient(): Redis | null {
   // Extracted to _attemptRedisClientInstantiation
   _attemptRedisClientInstantiation(env.REDIS_URL, logger);
 
-  if (initialConnectionFailed && redis) {
+  if (redisGlobal.redisConnectionFailed && redisGlobal.redisClient) {
     logger.warn(
-      { status: redis.status, redisUrl: env.REDIS_URL },
+      { status: (redisGlobal.redisClient as Redis)?.status ?? 'unknown', redisUrl: env.REDIS_URL },
       'getRedisClient: Returning a Redis client instance that has previously indicated connection issues or is in a non-operational state. Redis features may be impaired.'
     );
-  } else if (redis && !initialConnectionFailed) {
+  } else if (redisGlobal.redisClient && !redisGlobal.redisConnectionFailed) {
     // logger.debug("getRedisClient: Returning apparently healthy Redis client instance.");
   }
 
-  return redis; // This can be null if REDIS_URL was not set or if synchronousError occurred
+  return redisGlobal.redisClient === undefined ? null : redisGlobal.redisClient;
 }
 
 /**
@@ -165,54 +213,71 @@ export const redisClient = getRedisClient();
  * @returns {Redis | null} The ioredis client instance or null.
  */
 export function getOptionalRedisClient(): Redis | null {
-  // Ensure getRedisClient() has been called by accessing the exported redisClient
-  // This initializes `redis`, `initialConnectionFailed`, `redisExplicitlyDisabled`
-  const client = redisClient; // This is just to trigger the getter if not already run.
+  const currentClient = getRedisClient(); // Renamed for clarity
+  const globalState = getRedisGlobal(); // Renamed for clarity
 
-  if (redisExplicitlyDisabled) {
+  if (globalState.redisExplicitlyDisabled) {
     // True if REDIS_URL was not set
     // Informative log already happened in getRedisClient
     return null;
   }
 
-  if (initialConnectionFailed) {
+  // If connection has failed (according to global flag)
+  if (globalState.redisConnectionFailed) {
+    let statusDetail = 'unknown (client state undetermined)';
+
+    // Handle the type safely without using @ts-expect-error
+    if (currentClient instanceof Redis) {
+      statusDetail = currentClient.status;
+    } else {
+      statusDetail = 'unknown (client was null)';
+    }
     logger.warn(
-      { redisUrl: env.REDIS_URL, status: client?.status }, // client might be null if sync error in getRedisClient
+      { redisUrl: env.REDIS_URL, status: statusDetail },
       'getOptionalRedisClient: Initial Redis connection attempt failed or client is in an error state. Returning null.'
     );
     return null;
   }
 
-  if (!client) {
-    // Should be caught by redisExplicitlyDisabled or initialConnectionFailed if REDIS_URL was missing/bad
+  // If, despite connection not being marked as failed globally, we still don't have a client
+  if (!currentClient) {
+    // This path should ideally be less common if redisConnectionFailed is comprehensive
     logger.warn(
-      'getOptionalRedisClient: Redis client instance is unexpectedly null. Redis is unavailable. Returning null.'
+      'getOptionalRedisClient: Redis client instance is unexpectedly null (and connection not marked as globally failed). Redis is unavailable. Returning null.'
     );
     return null;
   }
 
+  // Now, currentClient is definitely a Redis instance.
+  // And globalState.redisConnectionFailed is false.
   // Final check on current status before returning a client instance
-  if (client.status !== 'ready' && client.status !== 'connecting' && client.status !== 'connect') {
+  if (
+    currentClient.status !== 'ready' &&
+    currentClient.status !== 'connecting' &&
+    currentClient.status !== 'connect'
+  ) {
     logger.warn(
-      { currentStatus: client.status, redisUrl: env.REDIS_URL },
-      'getOptionalRedisClient: Redis client is not in a ready/connecting state. Returning null to ensure fail-open.'
+      { currentStatus: currentClient.status, redisUrl: env.REDIS_URL },
+      'getOptionalRedisClient: Redis client is not in a ready/connecting state (though not marked as globally failed). Returning null to ensure fail-open.'
     );
     return null;
   }
 
-  return client;
+  return currentClient;
 }
 
 // Helper functions for logging Redis events to reduce complexity in getRedisClient
 function _logRedisConnect(this: Redis) {
+  const redisGlobal = getRedisGlobal();
   moduleLogger.info(
     { host: this.options.host, port: this.options.port },
     'Successfully connected to Redis.'
   );
-  initialConnectionFailed = false; // Reset on successful connection
+  redisGlobal.redisConnectionFailed = false; // Reset on successful connection
 }
 
 function _logRedisError(this: Redis, err: Error) {
+  const redisGlobal = getRedisGlobal();
   moduleLogger.error(
     {
       error: {
@@ -225,12 +290,21 @@ function _logRedisError(this: Redis, err: Error) {
     },
     'Redis client connection error.'
   );
-  if (!initialConnectionAttempted) {
-    initialConnectionFailed = true;
+  // Mark as failed only if this is part of the initial attempt.
+  // If it's an error after initial connection, redisConnectionFailed might already be false.
+  // The retry strategy also sets redisConnectionFailed to true after max retries.
+  const clientStatus = redisGlobal.redisClient?.status;
+  if (
+    !redisGlobal.redisConnectionAttempted ||
+    clientStatus === 'reconnecting' ||
+    clientStatus === 'connecting'
+  ) {
+    redisGlobal.redisConnectionFailed = true;
   }
 }
 
 function _logRedisClose(this: Redis) {
+  // const redisGlobal = getRedisGlobal(); // Unused
   moduleLogger.warn(
     { host: this.options.host, port: this.options.port },
     'Redis client connection closed.'
@@ -238,8 +312,34 @@ function _logRedisClose(this: Redis) {
 }
 
 function _logRedisReconnecting(this: Redis) {
+  // const redisGlobal = getRedisGlobal(); // Unused
   moduleLogger.info(
     { host: this.options.host, port: this.options.port },
     'Redis client attempting to reconnect...'
   );
+}
+
+// --- HMR Cleanup ---
+// Ensure this code only runs in a Node.js environment where `module` and `module.hot` are defined.
+if (typeof module !== 'undefined' && module.hot && process.env.NODE_ENV === 'development') {
+  module.hot.dispose(async (_data: Record<string, unknown>) => {
+    const redisGlobal = getRedisGlobal();
+    if (redisGlobal.redisClient) {
+      moduleLogger.info('HMR: Disposing old Redis client...');
+      try {
+        // Detach listeners before quitting to be absolutely sure, though quit should handle it.
+        redisGlobal.redisClient.removeAllListeners();
+        await redisGlobal.redisClient.quit();
+        moduleLogger.info('HMR: Old Redis client quit successfully.');
+      } catch (err) {
+        moduleLogger.error({ error: err }, 'HMR: Error quitting old Redis client.');
+      }
+    }
+    // Clear the global instance so it gets fully re-initialized by the new module instance
+    const globalWithRedis = globalThis as typeof globalThis & { [REDIS_GLOBAL_KEY]?: RedisGlobal };
+    delete globalWithRedis[REDIS_GLOBAL_KEY];
+    moduleLogger.info('HMR: Redis global symbol cleared for re-initialization.');
+    // You can pass data to the new module instance if needed via data object
+    // _data.reloaded = true;
+  });
 }

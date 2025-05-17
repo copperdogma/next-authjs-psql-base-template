@@ -15,9 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { logger as rootLogger } from '@/lib/logger';
 import {
   initializeFirebaseAdmin,
-  // adminAuth, // Unused
-  // adminDb, // Unused
-  adminApp, // Keep adminApp as it's used
+  getFirebaseAdminApp, // Import the getter instead of adminApp directly
   type FirebaseAdminConfig,
   // type FirebaseInitResult, // Unused
 } from '@/lib/firebase-admin';
@@ -56,8 +54,10 @@ initializeFirebaseAdmin(firebaseConfig);
 const setupLogger = rootLogger.child({ scope: 'service-init' });
 
 // FirebaseAdminService requires the admin.app.App instance and a pino.Logger
-const firebaseAdminServiceInstance = adminApp
-  ? new FirebaseAdminService(adminApp, setupLogger.child({ service: 'firebase-admin' }))
+const currentAdminApp = getFirebaseAdminApp(); // Call the getter
+
+const firebaseAdminServiceInstance = currentAdminApp
+  ? new FirebaseAdminService(currentAdminApp, setupLogger.child({ service: 'firebase-admin' }))
   : undefined;
 
 // Instantiate RawQueryService implementation

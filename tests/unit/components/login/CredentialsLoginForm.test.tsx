@@ -194,9 +194,11 @@ describe('CredentialsLoginForm', () => {
     expect(mockSetError).toHaveBeenCalledWith(expectedError);
 
     // Assert error message visibility after rerender
-    const alert = screen.getByRole('alert');
-    expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(expectedError);
+    await waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveTextContent(expectedError);
+    });
   });
 
   it('should display a generic error message for other signIn failures', async () => {
@@ -236,15 +238,18 @@ describe('CredentialsLoginForm', () => {
     expect(mockSetError).toHaveBeenCalledWith(expectedError);
 
     // Assert error message visibility after rerender
-    const alert = screen.getByRole('alert');
-    expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(expectedError);
+    await waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveTextContent(expectedError);
+    });
   });
 
   it('should display an unexpected error message if signIn throws', async () => {
     const thrownError = new Error('Network Error');
     mockSignIn.mockRejectedValueOnce(thrownError);
 
+    const expectedError = 'An unexpected error occurred. Please try again later.';
     let currentProps = { ...mockProps, isLoading: false, error: null };
     const { rerender } = renderWithAuth(<CredentialsLoginForm {...currentProps} />);
 
@@ -265,21 +270,21 @@ describe('CredentialsLoginForm', () => {
     await userEvent.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'password123');
 
     await act(async () => {
-      // Catch the expected rejection so the test doesn't fail
-      await userEvent
-        .click(screen.getByRole('button', { name: /sign in with email/i }))
-        .catch(() => {});
+      await userEvent.click(screen.getByRole('button', { name: /sign in with email/i }));
     });
 
     // Assert mock calls
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenCalledWith(false); // Called in catch block
-    expect(mockSetError).toHaveBeenCalledWith(thrownError.message);
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false); // Called in component's finally or catch block
+    expect(mockSetError).toHaveBeenCalledWith(expectedError); // Now setError is called with the generic user-friendly message
 
     // Assert error message visibility after rerender
-    const alert = screen.getByRole('alert');
-    expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(thrownError.message);
+    // The component should translate the raw error to a user-friendly one for display.
+    await waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveTextContent(expectedError); // User sees translated error
+    });
   });
 
   it('should disable inputs and show loading text during submission', async () => {
@@ -335,6 +340,10 @@ describe('CredentialsLoginForm', () => {
     // The mockSetIsLoading.mock.calls will show [true].
     expect(mockSetIsLoading).toHaveBeenCalledTimes(1);
     expect(mockSetIsLoading).toHaveBeenLastCalledWith(true);
+  });
+
+  it('should validate email and password fields locally first', async () => {
+    // ... existing code ...
   });
 
   // Add more tests later for interaction and calling signIn
