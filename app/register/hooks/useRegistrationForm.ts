@@ -47,7 +47,8 @@ const useSuccessRedirectEffect = (
             router.push('/login?message=registration_success_manual_login');
           }
         } catch (error) {
-          console.error( // Changed to console.error for actual errors
+          console.error(
+            // Changed to console.error for actual errors
             '[Client] useSuccessRedirectEffect: Exception during session update or redirect. Redirecting to /login.',
             error
           );

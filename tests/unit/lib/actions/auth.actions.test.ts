@@ -553,7 +553,8 @@ describe('registerUser with Rate Limiting', () => {
 
   test('returns an error if Firebase Admin Service is unavailable', async () => {
     // Get the mock function for getFirebaseAdminService
-    const { getFirebaseAdminService: mockGetFirebaseAdminService } = jest.requireMock('@/lib/server/services');
+    const { getFirebaseAdminService: mockGetFirebaseAdminService } =
+      jest.requireMock('@/lib/server/services');
     // Override its behavior for this test
     mockGetFirebaseAdminService.mockResolvedValueOnce(null); // Simulate unavailable service
 
@@ -634,7 +635,8 @@ describe('registerUser with Rate Limiting', () => {
     };
 
     // Get the mock function for getFirebaseAdminService and make it return the specific mock for this test
-    const { getFirebaseAdminService: mockGetFirebaseAdminService } = jest.requireMock('@/lib/server/services');
+    const { getFirebaseAdminService: mockGetFirebaseAdminService } =
+      jest.requireMock('@/lib/server/services');
     mockGetFirebaseAdminService.mockResolvedValueOnce(specificFbServiceMock);
 
     // Dynamically import the action to ensure it picks up the modified mock

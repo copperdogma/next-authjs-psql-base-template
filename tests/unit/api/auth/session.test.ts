@@ -127,7 +127,9 @@ describe('API Route: /api/auth/session', () => {
     loggerMock = mockLoggerModule.logger; // This will now be undefined as the mock exports createLogger
     // We need to get the instance returned by createLogger if we want to inspect it directly
     // However, for most tests, it's enough that createLogger is callable and returns a valid logger mock.
-    Object.values(actualLoggerMocks).forEach(mockFn => typeof mockFn === 'function' && mockFn.mockClear());
+    Object.values(actualLoggerMocks).forEach(
+      mockFn => typeof mockFn === 'function' && mockFn.mockClear()
+    );
     actualLoggerMocks.child.mockReturnThis(); // Ensure child returns the logger instance for chaining
 
     // Firebase Admin Service and its method mocks

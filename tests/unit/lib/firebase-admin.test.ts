@@ -256,7 +256,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
       const initResult = SUT_firebaseAdmin.initializeFirebaseAdmin(invalidConfig as any);
 
       // Assert: initializeFirebaseAdmin behavior
-      expect(initResult.error).toContain('Missing Firebase Admin SDK config value for: clientEmail');
+      expect(initResult.error).toContain(
+        'Missing Firebase Admin SDK config value for: clientEmail'
+      );
       expect(initResult.app).toBeUndefined();
       expect(initResult.auth).toBeUndefined();
       expect(localAdminMock.initializeApp).not.toHaveBeenCalled(); // Due to validation failure
@@ -622,7 +624,8 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
 
         const mockFindFn = jest.fn((callback: (app: admin.app.App) => boolean) => {
           // Simulate finding the app if the callback matches its name
-          if (callback(mockRecoveredApp)) { // This assumes callback checks app.name === UNIQUE_SUT_APP_NAME
+          if (callback(mockRecoveredApp)) {
+            // This assumes callback checks app.name === UNIQUE_SUT_APP_NAME
             return mockRecoveredApp;
           }
           return undefined;
@@ -651,7 +654,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
           { appName: mockRecoveredApp.name } // SUT logs with this second argument
         );
 
-        const globalScope = (globalThis as any)[Symbol.for('__NEXT_FIREBASE_ADMIN_APP_SINGLETON__')];
+        const globalScope = (globalThis as any)[
+          Symbol.for('__NEXT_FIREBASE_ADMIN_APP_SINGLETON__')
+        ];
         expect(globalScope?.appInstance).toBe(mockRecoveredApp); // SUT caches to firebaseAdminGlobal.appInstance
       });
     });
@@ -691,7 +696,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
           expect.objectContaining({ appName: UNIQUE_SUT_APP_NAME })
         );
 
-        const globalScope = (globalThis as any)[Symbol.for('__NEXT_FIREBASE_ADMIN_APP_SINGLETON__')];
+        const globalScope = (globalThis as any)[
+          Symbol.for('__NEXT_FIREBASE_ADMIN_APP_SINGLETON__')
+        ];
         expect(globalScope?.appInstance).toBeUndefined(); // App should not be cached if find threw
       });
     });
@@ -805,7 +812,8 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
 
         expect(authResult).toBe(mockAuthServiceInstance);
         expect(mockAppAuthMethod).toHaveBeenCalledTimes(1);
-        expect(loggerMock.warn).toHaveBeenCalledWith( // Recovery warning IS expected
+        expect(loggerMock.warn).toHaveBeenCalledWith(
+          // Recovery warning IS expected
           expect.stringContaining('[getFirebaseAdminApp] Recovered app by unique name from SDK'),
           expect.objectContaining({ appName: UNIQUE_SUT_APP_NAME })
         );
@@ -870,7 +878,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
         );
         // getFirebaseAdminAuth then logs its own warning
         expect(loggerMock.warn).toHaveBeenCalledWith(
-          expect.stringContaining(`Could not get Firebase Auth service due to: Failed to retrieve auth from existing global app. App state: ${mockApp.name}`)
+          expect.stringContaining(
+            `Could not get Firebase Auth service due to: Failed to retrieve auth from existing global app. App state: ${mockApp.name}`
+          )
         );
       });
     });
@@ -894,7 +904,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
         expect(authResult).toBeUndefined();
         expect(mockGetFirebaseAdminAppFn).toHaveBeenCalledTimes(1);
         expect(loggerMock.warn).toHaveBeenCalledWith(
-          expect.stringContaining(`App '${mockAppFromDependency.name}' was found, but its Auth service could not be retrieved`)
+          expect.stringContaining(
+            `App '${mockAppFromDependency.name}' was found, but its Auth service could not be retrieved`
+          )
         );
         expect(loggerMock.error).not.toHaveBeenCalled();
       });
@@ -919,7 +931,9 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
         expect(authResult).toBeUndefined();
         expect(mockGetFirebaseAdminAppFn).toHaveBeenCalledTimes(1);
         expect(loggerMock.warn).toHaveBeenCalledWith(
-          expect.stringContaining(`Could not get Firebase Auth service due to: ${errorMsgFromDep}. App state: undefined`)
+          expect.stringContaining(
+            `Could not get Firebase Auth service due to: ${errorMsgFromDep}. App state: undefined`
+          )
         );
         expect(loggerMock.error).not.toHaveBeenCalled(); // Error from getFirebaseAdminApp is handled as a warning by getFirebaseAdminAuth
       });
@@ -953,11 +967,12 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
         );
         // getFirebaseAdminAuth would then log its own warning
         expect(loggerMock.warn).toHaveBeenCalledWith(
-          expect.stringContaining(`Could not get Firebase Auth service due to: Failed to retrieve auth from existing global app. App state: ${mockGlobalApp.name}`)
+          expect.stringContaining(
+            `Could not get Firebase Auth service due to: Failed to retrieve auth from existing global app. App state: ${mockGlobalApp.name}`
+          )
         );
       });
     });
-
   });
 
   describe('getServerSideFirebaseAdminConfig', () => {
@@ -1099,5 +1114,4 @@ describe.skip('Temporary skip for firebase-admin.test.ts', () => {
       expect(config.nodeEnv).toBe('development');
     });
   });
-
 }); // Closes the describe.skip for the entire file

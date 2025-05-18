@@ -70,7 +70,6 @@ async function _initializeFirebaseAdminApp(): Promise<boolean> {
       );
     }
     return true;
-
   } catch (error) {
     setupLogger.error(
       { err: error },
@@ -205,10 +204,10 @@ const userServiceInstance = new UserService(prisma, setupLogger.child({ service:
 const profileServiceInstance =
   firebaseAdminServiceInstance && userServiceInstance
     ? new ProfileService(
-      userServiceInstance, // Pass the created UserService instance
-      firebaseAdminServiceInstance,
-      setupLogger.child({ service: 'profile' }) // Pass pino logger instance
-    )
+        userServiceInstance, // Pass the created UserService instance
+        firebaseAdminServiceInstance,
+        setupLogger.child({ service: 'profile' }) // Pass pino logger instance
+      )
     : undefined;
 
 // Export a base logger instance for general API use
