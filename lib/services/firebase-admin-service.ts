@@ -19,6 +19,10 @@ import * as admin from 'firebase-admin';
 import pino from 'pino';
 import { getFirebaseAdminApp } from '@/lib/firebase/firebase-admin';
 
+// Error handling and retry constants
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 500;
+
 // Minimal options, can be expanded later if needed
 // interface FirebaseServiceOptions { // Removed unused interface
 //   someOption?: string;
@@ -129,6 +133,77 @@ export class FirebaseAdminService {
     return this.isSdkInitialized;
   }
 
+  /**
+   * Determines if an error is retryable based on its message
+   * @param error The error to check
+   * @returns boolean indicating if the error should be retried
+   */
+  private isRetryableError(error: unknown): boolean {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    return (
+      errorMessage.includes('network') ||
+      errorMessage.includes('connect') ||
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('unavailable') ||
+      errorMessage.includes('ECONNREFUSED')
+    );
+  }
+
+  /**
+   * Utility method to handle potential Firebase Admin connection issues
+   * with retry logic and improved error reporting
+   */
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    context: Record<string, unknown> = {}
+  ): Promise<T> {
+    let lastError: Error | unknown;
+    let retryCount = 0;
+
+    while (retryCount < MAX_RETRIES) {
+      try {
+        // If not the first attempt, wait before retrying
+        if (retryCount > 0) {
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * retryCount));
+          this.logger.info(
+            { operationName, retryCount, ...context },
+            `Retrying Firebase Admin operation (attempt ${retryCount + 1}/${MAX_RETRIES})`
+          );
+        }
+
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        retryCount++;
+
+        // Log the error, but don't rethrow yet if we have retries left
+        this.logger.warn(
+          { err: error, operationName, retryCount, ...context },
+          `Firebase Admin operation failed, ${retryCount < MAX_RETRIES ? 'will retry' : 'max retries reached'}`
+        );
+
+        // Check if the error is retryable
+        if (!this.isRetryableError(error)) {
+          this.logger.info(
+            { operationName, errorMessage: error instanceof Error ? error.message : String(error) },
+            'Error not deemed retryable, will not attempt further retries'
+          );
+          break; // Don't retry non-connection errors
+        }
+      }
+    }
+
+    // If we get here, all retries failed
+    this.logger.error(
+      { err: lastError, operationName, ...context },
+      `Firebase Admin operation failed after ${MAX_RETRIES} retries`
+    );
+
+    throw lastError;
+  }
+
   public getAuth(): admin.auth.Auth {
     if (!this.authInstance) {
       this.logger.error('Auth instance not initialized!');
@@ -138,105 +213,107 @@ export class FirebaseAdminService {
   }
 
   async createUser(props: admin.auth.CreateRequest): Promise<admin.auth.UserRecord> {
-    try {
-      const userRecord = await this.getAuth().createUser(props);
-      this.logger.info(
-        { uid: userRecord.uid, email: props.email },
-        'Successfully created user in Firebase Auth'
-      );
-      return userRecord;
-    } catch (error) {
-      this.logger.error(
-        { err: error, email: props.email },
-        'Failed to create user in Firebase Auth'
-      );
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const userRecord = await this.getAuth().createUser(props);
+        this.logger.info(
+          { uid: userRecord.uid, email: props.email },
+          'Successfully created user in Firebase Auth'
+        );
+        return userRecord;
+      },
+      'createUser',
+      { email: props.email }
+    );
   }
 
   async getUser(uid: string): Promise<admin.auth.UserRecord> {
-    try {
-      const userRecord = await this.getAuth().getUser(uid);
-      return userRecord;
-    } catch (error) {
-      this.logger.error({ err: error, uid }, 'Error getting Firebase user');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const userRecord = await this.getAuth().getUser(uid);
+        return userRecord;
+      },
+      'getUser',
+      { uid }
+    );
   }
 
   async getUserByEmail(email: string): Promise<admin.auth.UserRecord> {
-    try {
-      const userRecord = await this.getAuth().getUserByEmail(email);
-      return userRecord;
-    } catch (error) {
-      this.logger.error({ err: error, email }, 'Error getting Firebase user by email');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const userRecord = await this.getAuth().getUserByEmail(email);
+        return userRecord;
+      },
+      'getUserByEmail',
+      { email }
+    );
   }
 
   async listUsers(maxResults?: number, pageToken?: string): Promise<admin.auth.ListUsersResult> {
-    try {
-      const listUsersResult = await this.getAuth().listUsers(maxResults, pageToken);
-      return listUsersResult;
-    } catch (error) {
-      this.logger.error({ err: error }, 'Error listing Firebase users');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const listUsersResult = await this.getAuth().listUsers(maxResults, pageToken);
+        return listUsersResult;
+      },
+      'listUsers',
+      { maxResults, pageToken }
+    );
   }
 
   async setCustomClaims(uid: string, claims: object | null): Promise<void> {
-    try {
-      await this.getAuth().setCustomUserClaims(uid, claims);
-      this.logger.info({ uid, claims }, 'Successfully set custom claims for user');
-    } catch (error) {
-      this.logger.error({ err: error, uid, claims }, 'Error setting Firebase custom claims');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        await this.getAuth().setCustomUserClaims(uid, claims);
+        this.logger.info({ uid, claims }, 'Successfully set custom claims for user');
+      },
+      'setCustomClaims',
+      { uid }
+    );
   }
 
   async deleteUser(uid: string): Promise<void> {
-    try {
-      await this.getAuth().deleteUser(uid);
-      this.logger.info({ uid }, 'Successfully deleted Firebase user');
-    } catch (error) {
-      this.logger.error({ err: error, uid }, 'Error deleting Firebase user');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        await this.getAuth().deleteUser(uid);
+        this.logger.info({ uid }, 'Successfully deleted Firebase user');
+      },
+      'deleteUser',
+      { uid }
+    );
   }
 
   async updateUser(uid: string, props: admin.auth.UpdateRequest): Promise<admin.auth.UserRecord> {
-    try {
-      const userRecord = await this.getAuth().updateUser(uid, props);
-      this.logger.info({ uid, props }, 'Successfully updated Firebase user');
-      return userRecord;
-    } catch (error) {
-      this.logger.error({ err: error, uid, props }, 'Error updating Firebase user');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const userRecord = await this.getAuth().updateUser(uid, props);
+        this.logger.info({ uid, props }, 'Successfully updated Firebase user');
+        return userRecord;
+      },
+      'updateUser',
+      { uid }
+    );
   }
 
   async verifyIdToken(idToken: string, checkRevoked?: boolean): Promise<admin.auth.DecodedIdToken> {
-    try {
+    return this.withRetry(async () => {
       const decodedToken = await this.getAuth().verifyIdToken(idToken, checkRevoked);
       return decodedToken;
-    } catch (error) {
-      this.logger.error({ err: error }, 'Firebase ID token verification failed');
-      throw error;
-    }
+    }, 'verifyIdToken');
   }
 
   async createCustomToken(uid: string, developerClaims?: object): Promise<string> {
-    try {
-      const customToken = await this.getAuth().createCustomToken(uid, developerClaims);
-      return customToken;
-    } catch (error) {
-      this.logger.error({ err: error, uid }, 'Error creating Firebase custom token');
-      throw error;
-    }
+    return this.withRetry(
+      async () => {
+        const customToken = await this.getAuth().createCustomToken(uid, developerClaims);
+        return customToken;
+      },
+      'createCustomToken',
+      { uid }
+    );
   }
 
   async createSessionCookie(idToken: string, options: { expiresIn: number }): Promise<string> {
-    try {
+    return this.withRetry(async () => {
       const sessionCookie = await this.getAuth().createSessionCookie(idToken, options);
       this.logger.info(
         {
@@ -246,10 +323,7 @@ export class FirebaseAdminService {
         'Successfully created Firebase session cookie'
       );
       return sessionCookie;
-    } catch (error) {
-      this.logger.error({ err: error }, 'Error creating Firebase session cookie');
-      throw error;
-    }
+    }, 'createSessionCookie');
   }
 }
 

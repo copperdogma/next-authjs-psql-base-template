@@ -13,6 +13,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 // Define a unique symbol for storing the NextAuth instance globally
 const NEXTAUTH_INSTANCE = Symbol.for('nextAuthInstanceEdge');
 const NEXTAUTH_LOCK = Symbol.for('nextAuthLockEdge');
+const NEXTAUTH_INITIALIZED = Symbol.for('nextAuthInitializedEdge');
 
 interface NextAuthInstance {
   handlers: {
@@ -28,6 +29,7 @@ interface NextAuthInstance {
 type GlobalWithNextAuth = typeof globalThis & {
   [NEXTAUTH_INSTANCE]?: NextAuthInstance;
   [NEXTAUTH_LOCK]?: boolean;
+  [NEXTAUTH_INITIALIZED]?: boolean;
 };
 
 /**
@@ -338,6 +340,25 @@ export const authConfigEdge: NextAuthConfig = {
   // Secret is inherited from sharedAuthConfig
 };
 
-// Retrieve and export the NextAuth instance
-const { handlers, auth, signIn, signOut } = getNextAuthInstance();
+// Create a self-executing function to initialize NextAuth only once
+const initNextAuth = () => {
+  const globalWithNextAuth = globalThis as GlobalWithNextAuth;
+
+  // Check if we've already initialized
+  if (globalWithNextAuth[NEXTAUTH_INITIALIZED]) {
+    logger.debug('[Auth Edge Config] NextAuth already initialized at module level');
+    return getNextAuthInstance();
+  }
+
+  logger.info('[Auth Edge Config] Initializing NextAuth at module level (singleton)');
+
+  // Mark as initialized
+  globalWithNextAuth[NEXTAUTH_INITIALIZED] = true;
+
+  // Return the instance
+  return getNextAuthInstance();
+};
+
+// Retrieve and export the NextAuth instance (will be initialized only once)
+const { handlers, auth, signIn, signOut } = initNextAuth();
 export { handlers, auth, signIn, signOut };

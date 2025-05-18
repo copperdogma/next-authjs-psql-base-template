@@ -82,7 +82,7 @@ function handleGenericError(error: Error): { httpStatus: number; clientMessage: 
 }
 
 // Helper function to handle errors during session creation
-export function handleSessionCreationError(error: unknown): NextResponse {
+function handleSessionCreationError(error: unknown): NextResponse {
   let httpStatus = HTTP_STATUS.INTERNAL_SERVER_ERROR;
   let clientMessage = 'An unexpected error occurred during session creation.';
   let errorCode: string | undefined;
@@ -246,4 +246,10 @@ export async function DELETE(_request: NextRequest): Promise<NextResponse> {
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
+}
+
+// Only export what's needed for tests
+if (process.env.NODE_ENV === 'test') {
+  // Export additional functions for testing
+  exports.handleSessionCreationError = handleSessionCreationError;
 }
