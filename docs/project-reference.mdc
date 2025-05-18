@@ -3,3 +3,23 @@ description:
 globs:
 alwaysApply: false
 ---
+# Test Configuration
+TEST_USER_EMAIL=test@example.com
+TEST_USER_PASSWORD=Test123!
+
+# Database
+DATABASE_URL=
+
+# Redis
+# Connection string for your Redis instance (e.g., redis://localhost:6379)
+# Required for features like rate limiting.
+REDIS_URL=
+# Optional: Max registration attempts per IP in window (default: 10)
+RATE_LIMIT_REGISTER_MAX_ATTEMPTS=
+# Optional: Window in seconds for registration rate limit (default: 3600)
+RATE_LIMIT_REGISTER_WINDOW_SECONDS=
+
+# Deprecated or to be removed if not used by Prisma directly
+# REDIS_URL=
+
+## Tech Stack

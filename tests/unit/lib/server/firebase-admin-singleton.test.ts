@@ -20,7 +20,7 @@ const mockFirebaseAdminApp = { name: 'mockAdminApp' };
 const mockFirebaseAdminAppNotInitialized = null;
 
 describe.skip('lib/server/firebase-admin-singleton', () => {
-  let MockedFirebaseAdminService: jest.MockedClass<typeof FirebaseAdminService>;
+  let MockedFirebaseAdminService_Constructor: jest.Mock;
   let mockedLoggerChild: jest.Mock;
   let mockedLoggerFatal: jest.Mock;
 
@@ -28,14 +28,12 @@ describe.skip('lib/server/firebase-admin-singleton', () => {
     jest.resetModules(); // Reset modules before each test to ensure clean state
 
     // Assign mocked versions after resetModules and before each test
-    MockedFirebaseAdminService = FirebaseAdminService as jest.MockedClass<
-      typeof FirebaseAdminService
-    >;
+    MockedFirebaseAdminService_Constructor = FirebaseAdminService as unknown as jest.Mock;
     mockedLoggerChild = (actualLoggerFromMock as any).child as jest.Mock;
     mockedLoggerFatal = (actualLoggerFromMock as any).fatal as jest.Mock;
 
     // Clear mocks
-    MockedFirebaseAdminService.mockClear();
+    MockedFirebaseAdminService_Constructor.mockClear();
     mockedLoggerChild.mockClear();
     mockedLoggerFatal.mockClear();
   });
@@ -50,12 +48,12 @@ describe.skip('lib/server/firebase-admin-singleton', () => {
       } = require('@/lib/server/firebase-admin-singleton');
 
       expect(mockedLoggerChild).toHaveBeenCalledWith({ service: 'FirebaseAdminSingleton' });
-      expect(MockedFirebaseAdminService).toHaveBeenCalledTimes(1);
-      expect(MockedFirebaseAdminService).toHaveBeenCalledWith(
+      expect(MockedFirebaseAdminService_Constructor).toHaveBeenCalledTimes(1);
+      expect(MockedFirebaseAdminService_Constructor).toHaveBeenCalledWith(
         mockFirebaseAdminApp,
         expect.any(Object)
       );
-      expect(serviceInstance).toBeInstanceOf(MockedFirebaseAdminService);
+      expect(serviceInstance).toBeInstanceOf(FirebaseAdminService);
       expect(mockedLoggerFatal).not.toHaveBeenCalled();
     });
 
@@ -70,7 +68,7 @@ describe.skip('lib/server/firebase-admin-singleton', () => {
       );
 
       expect(mockedLoggerChild).toHaveBeenCalledWith({ service: 'FirebaseAdminSingleton' });
-      expect(MockedFirebaseAdminService).not.toHaveBeenCalled();
+      expect(MockedFirebaseAdminService_Constructor).not.toHaveBeenCalled();
       expect(mockedLoggerFatal).toHaveBeenCalledWith(
         'Firebase Admin App was not initialized. FirebaseAdminService singleton cannot be created.'
       );

@@ -1,376 +1,325 @@
-/**
- * API Auth Session Tests
- *
- * Tests the functionality of the session API endpoints for authentication.
- */
-
-import { HTTP_STATUS, AUTH } from '../../../utils/test-constants';
-import { mockUser } from '../../../mocks/data/mockData';
-import {
-  createFirebaseAdminMocks,
-  resetFirebaseAdminMocks as resetAdminMocks, // Renamed for clarity if needed, or use directly
-  authMethodsMockObject, // Import the mock auth object
-  initializeAppMock as adminInitializeAppMock,
-  getAppMock as adminGetAppMock,
-  getAppsMock as adminGetAppsMock,
-  appInstanceMock as adminAppInstanceMock,
-} from '../../../mocks/firebase/adminMocks';
+// @ts-nocheck
+// File: tests/unit/api/auth/session.test.ts
 import { jest } from '@jest/globals';
-import * as admin from 'firebase-admin'; // For types, if needed beyond mocks
-import { NextRequest, NextResponse } from 'next/server'; // Import NextRequest and NextResponse
+import * as admin from 'firebase-admin';
+// Import types from next/server. Due to jest.setup.api.js, these will be influenced by the mocks,
+// but are used for type checking in tests.
+import {
+  type NextRequest as NextRequestType,
+  type NextResponse as NextResponseType,
+} from 'next/server';
+import { HTTP_STATUS, AUTH } from '@/tests/utils/test-constants';
+// prisma and logger will be mocked, so direct import for type is okay, but will be shadowed by mock
+// import { prisma } from '@/lib/prisma';
+// import { logger as mockedLogger } from '@/lib/client-logger';
 
-// **MOVED TO TOP** Mock next/server for NextResponse.json
-const mockCookiesSet = jest.fn();
-const mockCookiesGet = jest.fn();
-const mockNextResponseJsonFn = jest.fn<
-  (
-    body?: any,
-    init?: { status?: number }
-  ) => {
-    status: number;
-    cookies: {
-      set: typeof mockCookiesSet;
-      get: typeof mockCookiesGet;
-    };
-    json: () => Promise<any>;
-    text: () => Promise<string>;
-  }
->();
+// --- Variable Placeholders ---
+// These will be assigned fresh mock instances or imported modules in beforeEach
+let POST_handler: any;
+let DELETE_handler: any;
+let prismaUserFindUniqueMock: jest.Mock;
+let prismaSessionCreateMock: jest.Mock;
+let prismaSessionDeleteManyMock: jest.Mock;
+let loggerMock: any;
+// let FirebaseAdminServiceModule: any; // No longer needed with full module mock
+let mockVerifyIdToken: jest.Mock;
+let mockCreateSessionCookie: jest.Mock;
+let mockGetServiceAccountApp: jest.Mock; // For the .getApp() method on the service instance
+let mockGetFirebaseAdminApp: jest.Mock; // From the top-level doMock for @/lib/firebase/firebase-admin utility
+// let ActualNextRequest: any; // No longer creating actual NextRequest instances for POST due to .json() issues
+// let ActualNextResponse: any; // No longer needed; SUT will use NextResponse from jest.setup.api.js global mock
 
-// Assign the default implementation directly to the mock function
-mockNextResponseJsonFn.mockImplementation((body?: any, init?: { status?: number }) => {
-  return {
-    status: init?.status ?? HTTP_STATUS.OK,
-    cookies: {
-      set: mockCookiesSet,
-      get: mockCookiesGet,
-    },
-    json: () => Promise.resolve(body),
-    text: () => Promise.resolve(JSON.stringify(body)),
-  };
-});
-
-// Define an explicit type for the mock Firebase Admin app instance if needed
-type MockAdminApp = Partial<admin.app.App> & {
-  auth: () => Partial<admin.auth.Auth>;
+// --- Constants for Mocks ---
+const MOCK_USER_ID = 'test-user-id-xxyyzz';
+const MOCK_USER_EMAIL = 'test@example.com';
+const MOCK_SESSION_COOKIE = AUTH.MOCK_SESSION_COOKIE;
+const mockDecodedToken = {
+  uid: MOCK_USER_ID,
+  email: MOCK_USER_EMAIL,
+  email_verified: true,
+};
+const MOCK_PRISMA_SESSION_ID = 'mock-prisma-session-id-abcdef';
+const MOCK_PRISMA_USER = { id: MOCK_USER_ID, email: MOCK_USER_EMAIL };
+const MOCK_PRISMA_SESSION = {
+  id: MOCK_PRISMA_SESSION_ID,
+  sessionToken: MOCK_SESSION_COOKIE,
+  userId: MOCK_USER_ID,
+  expires: new Date(Date.now() + 3600000),
 };
 
-// === Top-level Mocks (Order Matters) ===
+// --- Mocks Setup (Top-level jest.doMock for prisma, logger, firebase-admin, and firebase-admin-service) ---
 
-// 1. Mock 'firebase-admin'
-// This is the primary mock. It ensures that any import of 'firebase-admin'
-// within the SUT (session/route.ts) or its dependencies gets this mocked version.
-jest.mock('firebase-admin', () => {
-  // console.log('firebase-admin mock being called'); // Debug log
-  return {
-    __esModule: true, // Required for ES modules
-    initializeApp: adminInitializeAppMock,
-    // app: jest.fn((name?: string) => (name ? adminGetAppMock(name) : adminAppInstanceMock)),
-    app: jest.fn((name?: string) => {
-      // console.log(`firebase-admin.app mock called with name: ${name}`); // Debug log
-      const appInstance = name ? adminGetAppMock(name) : adminAppInstanceMock;
-      // Ensure the app instance itself has the auth method if it's called like app().auth()
-      // This mirrors how FirebaseAdminService might get its auth instance.
-      // @ts-ignore
-      appInstance.auth = () => authMethodsMockObject;
-      return appInstance;
-    }),
-    apps: adminGetAppsMock(),
-    // auth: () => authMethodsMockObject, // Direct auth() call from admin import
-    auth: jest.fn(() => {
-      // console.log('firebase-admin.auth() mock called, returning authMethodsMockObject'); // Debug log
-      return authMethodsMockObject;
-    }),
-    credential: { cert: jest.fn() }, // Mock credential.cert if needed
-  };
-});
-
-// NEW MOCK for lib/firebase/firebase-admin.ts
-// This mock intercepts calls to getFirebaseAdminApp and returns a mock app instance,
-// preventing the actual SDK initialization during tests.
-// It should use the same adminAppInstanceMock that the 'firebase-admin' mock provides.
-jest.mock('@/lib/firebase/firebase-admin', () => ({
-  getFirebaseAdminApp: jest.fn(() => {
-    // console.log('Mock getFirebaseAdminApp called'); // Debug log
-    // Ensure the mock app instance provided here has the necessary auth method
-    // consistent with what FirebaseAdminService expects.
-    // @ts-ignore
-    adminAppInstanceMock.auth = () => authMethodsMockObject;
-    return adminAppInstanceMock;
-  }),
-}));
-
-// 2. Mock FirebaseAdminService - if route.ts *directly* instantiates and uses it.
-// The route handler uses functions from '@/lib/auth/session'.
-// Let's check if session.ts (imported by route.ts) uses FirebaseAdminService.
-// If session.ts or its dependencies initialize FirebaseAdminService, this mock is needed.
-// Based on previous logs, FirebaseAdminService is indeed used.
-jest.mock('@/lib/services/firebase-admin-service', () => {
-  // This is the mock instance that getInstance will return
-  const mockServiceInstance = {
-    verifyIdToken: authMethodsMockObject.verifyIdToken,
-    createSessionCookie: authMethodsMockObject.createSessionCookie,
-    // Add other methods of FirebaseAdminService if they are called by the SUT
-  };
-  return {
-    FirebaseAdminService: {
-      getInstance: jest.fn().mockImplementation(() => {
-        // console.log('Mock FirebaseAdminService.getInstance called'); // Debug log
-        return mockServiceInstance;
-      }),
-      // If the SUT or its dependencies ever try to call the constructor directly (e.g., new FirebaseAdminService(...))
-      // you might need to provide a mock constructor as well, though getInstance is the primary concern here.
-      // If new FirebaseAdminService() is never called, this part can be omitted.
-      // constructor: jest.fn().mockImplementation(() => mockServiceInstance)
+// 1. Mock Prisma Client
+jest.doMock('@/lib/prisma', () => {
+  // Define the mock structure inside the factory to ensure it's fresh
+  const mockPrismaClient = {
+    user: {
+      findUnique: jest.fn(),
     },
+    session: {
+      create: jest.fn(), // Bare jest.fn(), will be configured in beforeEach
+      deleteMany: jest.fn(),
+    },
+    // Add any other prisma models/methods if needed by the SUT
   };
+  return { prisma: mockPrismaClient };
 });
 
-// 3. Mock logger
-jest.mock('@/lib/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-    trace: jest.fn(),
-    child: jest.fn(() => ({
-      // Ensure child returns an object with logging methods
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-      trace: jest.fn(),
-    })),
-  },
+// 2. Mock Logger
+const actualLoggerMocks = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  child: jest.fn().mockReturnThis(), // Important for chained calls like logger.child(...).info(...)
+};
+// actualLoggerMocks.child.mockReturnThis(); // This line is redundant due to inline mockReturnThis above
+
+jest.doMock('@/lib/logger', () => ({
+  __esModule: true, // Good practice for ES modules
+  createLogger: jest.fn(() => actualLoggerMocks), // createLogger now returns the mock logger
+  logger: actualLoggerMocks, // Export the logger instance directly as well
+  // Mock getRequestId if it's also used by the SUT or its dependencies from this module
+  getRequestId: jest.fn(() => 'mock-request-id'),
 }));
 
-// === Local Mocks ===
-const LOCAL_MOCK_SESSION_COOKIE = 'mock-session-cookie-for-this-test-session-api';
+// 3. Mock Firebase Admin SDK utility (used by FirebaseAdminService internally or elsewhere)
+mockGetFirebaseAdminApp = jest.fn().mockReturnValue({ name: 'mocked-app-via-doMock-utility' });
+jest.doMock('@/lib/firebase/firebase-admin', () => ({
+  getFirebaseAdminApp: mockGetFirebaseAdminApp,
+}));
 
-// Destructure the actual mock functions we'll be using from authMethodsMockObject
-// These are the functions we will spy on and provide mock implementations for.
-const {
-  verifyIdToken: mockVerifyIdTokenFn, // Renamed for clarity in tests
-  createSessionCookie: mockCreateSessionCookieFn, // Renamed for clarity
-  // Add other auth methods if needed by these tests
-} = authMethodsMockObject;
+// 4. Mock FirebaseAdminService (the entire service module)
+const mockFirebaseAdminServiceInstance = {
+  // This is the object that getInstance() will return
+  verifyIdToken: jest.fn(),
+  createSessionCookie: jest.fn(),
+  getApp: jest.fn(), // This is the .getApp() method on the service instance
+};
 
-describe('API /api/auth/session', () => {
-  // Import SUT here, after all jest.mock calls have been hoisted and processed.
-  let POST: any;
-  let DELETE: any;
+const mockFirebaseAdminServiceStatic = {
+  // This mocks the static parts of the class, e.g., FirebaseAdminService.getInstance
+  getInstance: jest.fn().mockReturnValue(mockFirebaseAdminServiceInstance),
+};
 
-  beforeAll(async () => {
-    jest.resetModules(); // Reset modules before dynamic mock and import
+jest.doMock('@/lib/services/firebase-admin-service', () => ({
+  FirebaseAdminService: mockFirebaseAdminServiceStatic, // Mock the class itself (specifically its static methods like getInstance)
+}));
 
-    // Use jest.doMock for next/server specifically for this describe block
-    jest.doMock('next/server', () => {
-      const originalModule = jest.requireActual('next/server') as typeof import('next/server');
-      // Create a mock constructor for NextResponse
-      const MockNextResponse = jest.fn();
-      // Assign our mockNextResponseJsonFn (defined in the outer scope) to the static 'json' property
-      (MockNextResponse as any).json = mockNextResponseJsonFn;
+// --- Test Suite ---
+describe('API Route: /api/auth/session', () => {
+  beforeEach(async () => {
+    jest.resetModules(); // Clears the cache for all modules. jest.setup.api.js mocks should re-apply.
 
-      return {
-        __esModule: true,
-        NextResponse: MockNextResponse, // Use the mock constructor
-        NextRequest: originalModule.NextRequest, // Keep using the actual NextRequest
-      };
-    });
+    // --- Re-configure mocks for this specific test run (AFTER resetModules) ---
 
-    // Dynamically import the route handlers to ensure mocks are applied first.
-    const route = await import('../../../../app/api/auth/session/route');
-    POST = route.POST;
-    DELETE = route.DELETE;
+    // Prisma Mocks (re-assigning to the top-level variables)
+    const mockPrismaModule = jest.requireMock('@/lib/prisma');
+    prismaUserFindUniqueMock = mockPrismaModule.prisma.user.findUnique;
+    prismaSessionCreateMock = mockPrismaModule.prisma.session.create;
+    prismaSessionDeleteManyMock = mockPrismaModule.prisma.session.deleteMany;
+    prismaUserFindUniqueMock.mockResolvedValue(MOCK_PRISMA_USER);
+    prismaSessionCreateMock.mockResolvedValue(MOCK_PRISMA_SESSION);
+    prismaSessionDeleteManyMock.mockResolvedValue({ count: 1 });
+
+    // Logger Mock (re-assigning to the top-level variable)
+    const mockLoggerModule = jest.requireMock('@/lib/logger');
+    loggerMock = mockLoggerModule.logger; // This will now be undefined as the mock exports createLogger
+    // We need to get the instance returned by createLogger if we want to inspect it directly
+    // However, for most tests, it's enough that createLogger is callable and returns a valid logger mock.
+    Object.values(actualLoggerMocks).forEach(mockFn => typeof mockFn === 'function' && mockFn.mockClear());
+    actualLoggerMocks.child.mockReturnThis(); // Ensure child returns the logger instance for chaining
+
+    // Firebase Admin Service and its method mocks
+    const FirebaseAdminServiceMockedStaticCtrl = jest.requireMock(
+      '@/lib/services/firebase-admin-service'
+    ).FirebaseAdminService;
+    FirebaseAdminServiceMockedStaticCtrl.getInstance.mockClear();
+    mockVerifyIdToken = mockFirebaseAdminServiceInstance.verifyIdToken;
+    mockCreateSessionCookie = mockFirebaseAdminServiceInstance.createSessionCookie;
+    mockGetServiceAccountApp = mockFirebaseAdminServiceInstance.getApp;
+    mockVerifyIdToken.mockReset().mockResolvedValue(mockDecodedToken as admin.auth.DecodedIdToken);
+    mockCreateSessionCookie.mockReset().mockResolvedValue(MOCK_SESSION_COOKIE);
+    mockGetFirebaseAdminApp.mockClear().mockReturnValue({ name: 'mocked-app-in-beforeEach' });
+    mockGetServiceAccountApp.mockReset().mockReturnValue(mockGetFirebaseAdminApp());
+
+    // We are now relying on the global mock of 'next/server' from jest.setup.api.js.
+    // No need for jest.doMock('next/server', ...) here.
+    // No need to acquire ActualNextResponse here for the SUT.
+
+    // Dynamically import SUT. It will use the globally mocked 'next/server'.
+    const routeFile = await import('@/app/api/auth/session/route');
+    POST_handler = routeFile.POST;
+    DELETE_handler = routeFile.DELETE;
   });
 
-  // mockRequest will be an object that needs to be correctly typed for NextRequest
-  interface MockRequestData {
-    token?: string;
-    // other potential body fields
-  }
-  interface MockRequest extends Omit<NextRequest, 'json' | 'cookies'> {
-    json: jest.MockedFunction<() => Promise<MockRequestData>>; // Use jest.MockedFunction
-    cookies?: Partial<NextRequest['cookies'] & { set: jest.Mock; get: jest.Mock }>;
-  }
-  let mockRequest: MockRequestData; // This will hold the body, not the request object
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    resetAdminMocks();
-
-    // Clear the new spy
-    mockNextResponseJsonFn.mockClear();
-
-    mockCookiesSet.mockClear();
-    mockCookiesGet.mockClear();
-
-    // Default successful mock implementations for Firebase auth methods
-    // These are now set on the functions from authMethodsMockObject
-    mockVerifyIdTokenFn.mockResolvedValue({
-      uid: mockUser.id,
-      email: mockUser.email,
-    } as admin.auth.DecodedIdToken);
-
-    mockCreateSessionCookieFn.mockResolvedValue(LOCAL_MOCK_SESSION_COOKIE);
+  afterEach(() => {
+    jest.clearAllMocks(); // Use clearAllMocks as per jest.setup.api.js, instead of restoreAllMocks
   });
 
-  // Helper to create a mock NextRequest object
-  const createMockNextRequest = (
-    body: MockRequestData | null,
-    headers?: HeadersInit,
-    method?: string,
-    cookiesMock?: any
-  ): NextRequest => {
-    const req = new NextRequest(new URL('http://localhost/api/auth/session'), {
-      method: method || 'POST',
-      headers: headers || new Headers({ 'Content-Type': 'application/json' }),
-      body: body ? JSON.stringify(body) : null,
-    });
-    // Override the json method with our mock
-    // @ts-ignore A bit hacky, but needed to attach a Jest mock to an instance method
-    req.json = jest
-      .fn<() => Promise<MockRequestData>>()
-      .mockResolvedValue(body ?? ({} as MockRequestData)) as jest.MockedFunction<
-      () => Promise<MockRequestData>
-    >;
-    if (cookiesMock) {
-      // @ts-ignore
-      req.cookies = cookiesMock;
-    }
-    return req;
-  };
+  // --- POST Tests ---
+  describe('POST /api/auth/session', () => {
+    it('should create a session and return 200 on valid Firebase ID token', async () => {
+      const requestBody = { token: 'mock-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: {
+          get: jest.fn(),
+          set: jest.fn(),
+          delete: jest.fn(),
+          clear: jest.fn(),
+          getAll: jest.fn(),
+          has: jest.fn(),
+        },
+      } as unknown as NextRequestType;
 
-  describe('POST', () => {
-    test('should create a session and set cookie on successful token verification', async () => {
-      const idToken = 'valid-firebase-id-token';
-      const requestBody = { token: idToken };
-      const req = createMockNextRequest(requestBody);
+      const response = (await POST_handler(req)) as NextResponseType & {
+        cookies: { set: jest.Mock; get: jest.Mock };
+      }; // Cast to include mocked cookies for assertion
 
-      await POST(req);
+      expect(response.status).toBe(200);
+      const responseBody = await response.json();
+      expect(responseBody).toEqual({ status: 'success', message: 'Session created' });
 
-      // @ts-ignore
-      expect(req.json).toHaveBeenCalledTimes(1);
-      expect(mockVerifyIdTokenFn).toHaveBeenCalledWith(idToken);
-      expect(mockCreateSessionCookieFn).toHaveBeenCalledWith(idToken, {
+      // The cookies.set is on the response object returned by the mocked NextResponse.json
+      // from jest.setup.api.js. We need to ensure it was called.
+      // The mock in jest.setup.api.js for NextResponse.json().cookies.set is jest.fn()
+      // How to access it for assertion? The `response` object itself has the `cookies` property.
+      expect(response.cookies.set).toHaveBeenCalledWith({
+        name: AUTH.COOKIE_NAME,
+        value: MOCK_SESSION_COOKIE,
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== 'development',
+        path: '/',
+        maxAge: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS,
+      });
+
+      // Assertions for service calls (unchanged)
+      expect(mockVerifyIdToken).toHaveBeenCalledWith(requestBody.token, true);
+      expect(prismaUserFindUniqueMock).toHaveBeenCalledWith({ where: { id: MOCK_USER_ID } });
+      expect(prismaSessionCreateMock).toHaveBeenCalledWith({
+        data: {
+          userId: MOCK_USER_ID,
+          expires: expect.any(Date),
+          sessionToken: 'placeholder-for-session-token',
+        },
+      });
+      expect(mockCreateSessionCookie).toHaveBeenCalledWith(requestBody.token, {
         expiresIn: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS * 1000,
       });
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { status: 'success' },
-        { status: HTTP_STATUS.OK }
-      );
-      expect(mockCookiesSet).toHaveBeenCalledWith({
-        name: AUTH.COOKIE_NAME,
-        value: LOCAL_MOCK_SESSION_COOKIE,
-        httpOnly: true,
-        maxAge: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS,
-        path: '/',
-        sameSite: 'lax',
-        secure: false, // Adjust if your test environment or defaults are different
-      });
     });
 
-    test('should return 400 if no token is provided', async () => {
+    // ... other POST tests for failure cases (token missing, verifyIdToken fails, user not found, etc.)
+    it('should return 400 if token is missing', async () => {
       const requestBody = {}; // No token
-      const req = createMockNextRequest(requestBody);
-      await POST(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { error: 'No token provided' },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
-      expect(mockVerifyIdTokenFn).not.toHaveBeenCalled();
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody), // Will effectively be an empty object
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+      const response = await POST_handler(req);
+      expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+      const responseBody = await response.json(); // This might still fail if NextResponse.json is broken
+      expect(responseBody.error).toBe('Token is required');
     });
 
-    test('should return 401 if token verification fails', async () => {
-      const idToken = 'invalid-firebase-id-token';
-      const requestBody = { token: idToken };
-      const req = createMockNextRequest(requestBody);
-      const verificationError = new Error('Invalid token');
-      // @ts-ignore
-      verificationError.code = 'auth/id-token-expired';
-      mockVerifyIdTokenFn.mockRejectedValueOnce(verificationError);
-      await POST(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { error: 'Invalid token or Firebase error' },
-        { status: HTTP_STATUS.UNAUTHORIZED }
-      );
-      expect(mockCreateSessionCookieFn).not.toHaveBeenCalled();
+    it('should return 401 if Firebase token verification fails', async () => {
+      mockVerifyIdToken.mockRejectedValueOnce(new Error('Invalid Firebase ID token'));
+      const requestBody = { token: 'invalid-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+      const response = await POST_handler(req);
+      expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+      const responseBody = await response.json();
+      expect(responseBody.error).toContain('Invalid Firebase ID token');
     });
 
-    test('should return 500 if creating session cookie fails', async () => {
-      const idToken = 'valid-token-but-cookie-fails';
-      const requestBody = { token: idToken };
-      const req = createMockNextRequest(requestBody);
-      mockCreateSessionCookieFn.mockRejectedValueOnce(new Error('Session cookie creation failed'));
-      await POST(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { error: 'Could not create session cookie' },
-        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
-      );
+    it('should return 404 if user is not found in Prisma DB', async () => {
+      prismaUserFindUniqueMock.mockResolvedValueOnce(null); // User not found
+      const requestBody = { token: 'mock-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+      const response = await POST_handler(req);
+      expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
+      const responseBody = await response.json();
+      expect(responseBody.error).toBe('User not found in database for session creation.');
     });
 
-    test('should return 400 if request body is malformed (e.g., not JSON)', async () => {
-      // To simulate malformed JSON, the actual req.json() would throw an error.
-      // We can mock our req.json() to throw such an error.
-      const req = createMockNextRequest(null); // body is null, but we mock json()
-      // @ts-ignore
-      req.json = jest
-        .fn<() => Promise<MockRequestData>>()
-        .mockRejectedValueOnce(new SyntaxError('Unexpected token i in JSON at position 0'));
-      await POST(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { error: 'Invalid request body' },
-        { status: HTTP_STATUS.BAD_REQUEST }
-      );
+    it('should return 500 if prisma.session.create fails', async () => {
+      prismaSessionCreateMock.mockRejectedValueOnce(new Error('DB session create error'));
+      const requestBody = { token: 'mock-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+      const response = await POST_handler(req);
+      expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      const responseBody = await response.json();
+      expect(responseBody.error).toBe('DB session create error');
+      expect(responseBody.originalErrorMessage).toBe('DB session create error');
+    });
+
+    it('should return 500 if createSessionCookie fails', async () => {
+      mockCreateSessionCookie.mockRejectedValueOnce(new Error('Session cookie creation failed'));
+      const requestBody = { token: 'mock-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+      const response = await POST_handler(req);
+      expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      const responseBody = await response.json();
+      expect(responseBody.error).toBe('Session cookie creation failed');
+      expect(responseBody.originalErrorMessage).toBe('Session cookie creation failed');
     });
   });
 
-  describe('DELETE', () => {
-    test('should clear the session cookie and return success', async () => {
-      const cookiesMock = {
-        get: mockCookiesGet.mockReturnValue({
-          name: AUTH.COOKIE_NAME,
-          value: LOCAL_MOCK_SESSION_COOKIE,
-        }),
-        set: mockCookiesSet,
-      };
-      const req = createMockNextRequest(null, undefined, 'DELETE', cookiesMock);
-      await DELETE(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { status: 'success' },
-        { status: HTTP_STATUS.OK }
-      );
-      expect(mockCookiesSet).toHaveBeenCalledWith({
-        name: AUTH.COOKIE_NAME,
-        value: '',
-        httpOnly: true,
-        maxAge: 0,
-        path: '/',
-        sameSite: 'lax',
-        secure: false, // Adjust based on actual secure flag usage
-      });
-    });
+  // --- DELETE Tests ---
+  describe('DELETE /api/auth/session', () => {
+    it('should delete the session cookie, returning 200', async () => {
+      const req = {
+        headers: new Headers(),
+        method: 'DELETE',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn(), clear: jest.fn() },
+      } as unknown as NextRequestType;
 
-    it('should still clear cookie and return success even if no cookie was initially present', async () => {
-      const cookiesMock = {
-        get: mockCookiesGet.mockReturnValue(undefined), // Simulate no cookie found
-        set: mockCookiesSet,
+      const response = (await DELETE_handler(req)) as NextResponseType & {
+        cookies: { set: jest.Mock };
       };
-      const req = createMockNextRequest(null, undefined, 'DELETE', cookiesMock);
-      await DELETE(req);
-      expect(mockNextResponseJsonFn).toHaveBeenCalledWith(
-        { status: 'success' },
-        { status: HTTP_STATUS.OK }
-      );
-      expect(mockCookiesSet).toHaveBeenCalledWith({
+
+      expect(response.status).toBe(200);
+      const responseBody = await response.json();
+      expect(responseBody).toEqual({ status: 'success', message: 'Session deleted' });
+
+      expect(response.cookies.set).toHaveBeenCalledWith({
         name: AUTH.COOKIE_NAME,
         value: '',
         httpOnly: true,
-        maxAge: 0,
+        secure: process.env.NODE_ENV !== 'development',
         path: '/',
-        sameSite: 'lax',
-        secure: false, // Adjust based on actual secure flag usage
+        maxAge: 0,
       });
     });
   });

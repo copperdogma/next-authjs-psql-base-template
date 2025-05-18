@@ -30,22 +30,29 @@ const useSuccessRedirectEffect = (
           '[Client] useSuccessRedirectEffect: Timer fired. Attempting to update session before redirect...'
         );
         try {
-          await updateSession().catch(err => {
-            // Silently log but don't throw - this prevents unhandled promise rejections
-            // that become console errors in the browser
-            console.log('[Client] Session update failed but continuing with redirect:', err);
-          });
-          console.log(
-            '[Client] useSuccessRedirectEffect: Session updated. Redirecting to /dashboard via router.push.'
-          );
-          router.push('/dashboard');
+          // updateSession() in v5 returns the session object or null
+          const session = await updateSession();
+
+          if (session) {
+            console.log(
+              '[Client] useSuccessRedirectEffect: Session updated successfully. Redirecting to /dashboard via router.push.',
+              { sessionData: session } // Log actual session data for debugging
+            );
+            router.push('/dashboard');
+          } else {
+            console.warn(
+              '[Client] useSuccessRedirectEffect: Session update failed or returned no session. Redirecting to /login.'
+            );
+            // If auto-sign-in was expected but session is not there, redirect to login
+            router.push('/login?message=registration_success_manual_login');
+          }
         } catch (error) {
-          console.log(
-            '[Client] useSuccessRedirectEffect: Error handled during session update or redirect',
+          console.error( // Changed to console.error for actual errors
+            '[Client] useSuccessRedirectEffect: Exception during session update or redirect. Redirecting to /login.',
             error
           );
-          // Continue with redirect even if session update fails
-          router.push('/dashboard');
+          // Fallback redirect to login on any exception
+          router.push('/login?message=registration_error_manual_login');
         }
       }, 300); // Initial delay for user feedback
     }

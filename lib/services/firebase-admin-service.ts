@@ -20,11 +20,9 @@ import pino from 'pino';
 import { getFirebaseAdminApp } from '@/lib/firebase/firebase-admin';
 
 // Minimal options, can be expanded later if needed
-interface FirebaseServiceOptions {
-  someOption?: string;
-}
-
-const defaultOptions: FirebaseServiceOptions = {};
+// interface FirebaseServiceOptions { // Removed unused interface
+//   someOption?: string;
+// }
 
 /**
  * Implementation of FirebaseAdminService using Firebase Admin SDK
@@ -37,15 +35,9 @@ export class FirebaseAdminService {
   private app: admin.app.App;
   private authInstance: admin.auth.Auth;
   private isSdkInitialized = false;
-  private options: FirebaseServiceOptions;
 
   // Private constructor for singleton pattern
-  private constructor(
-    appInstance: admin.app.App,
-    loggerInstance: pino.Logger,
-    options?: FirebaseServiceOptions
-  ) {
-    this.options = { ...defaultOptions, ...options }; // Use defined defaultOptions
+  private constructor(appInstance: admin.app.App, loggerInstance: pino.Logger) {
     this.app = appInstance;
     this.logger = loggerInstance.child({ serviceName: FirebaseAdminService.SERVICE_NAME });
     this.authInstance = this.app.auth();
@@ -57,9 +49,30 @@ export class FirebaseAdminService {
   public static getInstance(logger: pino.Logger): FirebaseAdminService {
     if (!FirebaseAdminService.instance) {
       const app = getFirebaseAdminApp(); // Ensure app is initialized via singleton
+      if (!app) {
+        // This is a critical failure if the app is not available when getInstance is called.
+        // It implies that initializeFirebaseAdmin (via lib/server/services.ts) did not succeed or was skipped.
+        logger.error(
+          '[FirebaseAdminService.getInstance] Firebase Admin App is not available via getFirebaseAdminApp(). Cannot create service instance.'
+        );
+        // Depending on desired behavior, could throw, or handle by ensuring instance remains null.
+        // For now, let's throw to make the issue very clear.
+        throw new Error(
+          'FirebaseAdminService.getInstance: Firebase Admin App not initialized or available. Check earlier logs.'
+        );
+      }
       FirebaseAdminService.instance = new FirebaseAdminService(app, logger);
       FirebaseAdminService.instance.logger.info(
         'FirebaseAdminService new instance created via getInstance'
+      );
+    } else {
+      // If instance exists, ensure its logger is updated if a new one is provided,
+      // or use its existing logger. This can be useful if getInstance is called from different contexts
+      // with potentially different logger configurations (though usually it'd be a shared root logger).
+      // For simplicity, let's assume the first logger passed is sufficient or manage logger updates explicitly if needed.
+      // FirebaseAdminService.instance.logger = logger.child({ serviceName: FirebaseAdminService.SERVICE_NAME });
+      FirebaseAdminService.instance.logger.info(
+        'FirebaseAdminService returning existing instance via getInstance'
       );
     }
     return FirebaseAdminService.instance;

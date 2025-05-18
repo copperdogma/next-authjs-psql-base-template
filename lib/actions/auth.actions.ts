@@ -11,10 +11,11 @@ import type { User } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import type { Logger as PinoLogger } from 'pino';
+// import type { Session } from 'next-auth'; // Removed unused import
 
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-import { firebaseAdminService } from '@/lib/server/services';
+import { getFirebaseAdminService } from '@/lib/server/services';
 import { signIn } from '@/lib/auth-node';
 import type { ServiceResponse } from '@/types';
 import { type Redis } from 'ioredis';
@@ -138,7 +139,15 @@ async function _createFirebaseUser(
     actionLogger.info({ ...logContext, uid: firebaseUser.uid }, '_createFirebaseUser: Success');
     return firebaseUser;
   } catch (error) {
-    actionLogger.error({ ...logContext, error }, '_createFirebaseUser: FAILED');
+    actionLogger.error(
+      {
+        ...logContext,
+        error,
+        isErrorInstance: error instanceof Error,
+        errorStringified: JSON.stringify(error, Object.getOwnPropertyNames(error)), // More robust stringify
+      },
+      '_createFirebaseUser: FAILED'
+    );
     throw error;
   }
 }
@@ -472,251 +481,6 @@ async function _checkRegistrationRateLimit(
   return { limited: false };
 }
 
-async function _createPrismaUserAndAttemptSignIn(
-  firebaseUser: admin.auth.UserRecord,
-  validatedData: RegistrationInput,
-  services: PerformRegistrationDeps,
-  logContext: LogContext
-): Promise<RegistrationResult | null> {
-  actionLogger.debug(
-    logContext,
-    '_createPrismaUserAndAttemptSignIn: Beginning process to create Prisma user and then attempt sign-in.'
-  );
-  const { log } = services;
-
-  let createdPrismaUser: User | null = null;
-
-  actionLogger.debug(
-    logContext,
-    '_createPrismaUserAndAttemptSignIn: Beginning Prisma user creation transaction...'
-  );
-  try {
-    const prismaUserResult = await prisma.$transaction(async tx => {
-      actionLogger.debug(
-        logContext,
-        '_createPrismaUserAndAttemptSignIn: Inside transaction - creating Prisma user...'
-      );
-      const user = await _createPrismaUser(
-        firebaseUser,
-        validatedData.password,
-        { ...services, db: tx as unknown as RegisterUserDbClient },
-        { logContext: { email: validatedData.email, uid: firebaseUser.uid }, tx }
-      );
-
-      if (!user || !('id' in user)) {
-        actionLogger.warn(
-          logContext,
-          '_createPrismaUserAndAttemptSignIn: _createPrismaUser did not return a valid user object. Will throw to rollback Prisma transaction.'
-        );
-        const errorToThrow = new RollbackError(
-          'Prisma user creation failed or returned error structure inside transaction.',
-          (user as RegistrationResult)?.error?.details?.originalError ||
-            new Error('Prisma user creation failed within transaction.')
-        );
-        throw errorToThrow;
-      }
-      return user as User;
-    });
-
-    createdPrismaUser = prismaUserResult;
-    actionLogger.info(
-      { ...logContext, userId: createdPrismaUser.id },
-      '_createPrismaUserAndAttemptSignIn: Prisma user creation transaction Succeeded.'
-    );
-  } catch (error: unknown) {
-    actionLogger.error(
-      { ...logContext, error },
-      '_createPrismaUserAndAttemptSignIn: Prisma user creation transaction failed or was rolled back.'
-    );
-    if (error instanceof RollbackError) {
-      return _handleMainRegistrationError(
-        error,
-        'prisma creation transaction rollback with RollbackError'
-      );
-    }
-    return _handleMainRegistrationError(error, 'prisma creation transaction');
-  }
-
-  if (!createdPrismaUser) {
-    actionLogger.error(
-      logContext,
-      '_createPrismaUserAndAttemptSignIn: Prisma user is null after creation block, implies failure.'
-    );
-    return {
-      status: 'error',
-      message: 'Failed to create user record in database.',
-      error: {
-        code: 'PRISMA_USER_CREATION_FAILED_UNEXPECTED',
-        message: 'Prisma user null post-transaction.',
-      },
-    };
-  }
-
-  actionLogger.debug(
-    { ...logContext, userId: createdPrismaUser.id },
-    '_createPrismaUserAndAttemptSignIn: Attempting post-registration sign-in...'
-  );
-
-  const signInResult = await _attemptPostRegistrationSignIn(
-    createdPrismaUser.email as string,
-    validatedData.password,
-    log,
-    {
-      userId: createdPrismaUser.id,
-      email: createdPrismaUser.email as string,
-      name: createdPrismaUser.name,
-    }
-  );
-
-  if (signInResult && signInResult.status === 'error') {
-    actionLogger.warn(
-      { ...logContext, userId: createdPrismaUser.id, error: signInResult.error },
-      '_createPrismaUserAndAttemptSignIn: Post-registration sign-in failed. Prisma user ALREADY COMMITTED.'
-    );
-    return signInResult;
-  }
-
-  actionLogger.info(
-    { ...logContext, userId: createdPrismaUser.id },
-    '_createPrismaUserAndAttemptSignIn: Post-registration sign-in successful.'
-  );
-  return null;
-}
-
-async function _attemptManualFirebaseRollbackOnError(
-  firebaseUser: admin.auth.UserRecord | undefined,
-  triggeringError: unknown,
-  fbService: FirebaseAdminService,
-  baseLogContext: LogContext
-): Promise<void> {
-  if (firebaseUser && !(triggeringError instanceof RollbackError)) {
-    const logContext = { ...baseLogContext, uid: firebaseUser.uid, triggeringError };
-    actionLogger.warn(
-      logContext,
-      '_attemptManualFirebaseRollbackOnError: Unexpected error after Firebase user creation. Attempting manual rollback.'
-    );
-    try {
-      await fbService.deleteUser(firebaseUser.uid);
-      actionLogger.info(
-        { ...logContext, uid: firebaseUser.uid },
-        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback successful.'
-      );
-    } catch (rollbackError) {
-      actionLogger.error(
-        { ...logContext, uid: firebaseUser.uid, rollbackError },
-        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback FAILED.'
-      );
-    }
-  }
-}
-
-async function _performRegistrationAttempt(
-  validatedData: RegistrationInput,
-  services: PerformRegistrationDeps,
-  logContext: LogContext
-): Promise<RegistrationResult | null> {
-  const { log, fbService, db, hasher } = services;
-  const { email, password, name } = validatedData;
-  let firebaseUser: admin.auth.UserRecord | undefined;
-
-  log.info(logContext, '_performRegistrationAttempt: Starting registration process.');
-
-  try {
-    firebaseUser = await _createFirebaseUser({ email, password, name }, fbService, logContext);
-    const step1LogContext = { ...logContext, uid: firebaseUser.uid };
-    log.debug(step1LogContext, '_performRegistrationAttempt: Firebase user created.');
-
-    const prismaUserResult = await _createPrismaUser(
-      firebaseUser,
-      password,
-      { db, hasher, fbService },
-      { logContext: step1LogContext }
-    );
-
-    if (!(prismaUserResult instanceof Error) && 'id' in prismaUserResult && prismaUserResult.id) {
-      log.info(
-        { ...step1LogContext, userId: prismaUserResult.id },
-        '_performRegistrationAttempt: Prisma user created successfully.'
-      );
-      return null;
-    } else {
-      log.warn(
-        step1LogContext,
-        '_performRegistrationAttempt: _createPrismaUser indicated an error. Propagating error response.'
-      );
-      return prismaUserResult as RegistrationResult;
-    }
-  } catch (error) {
-    log.error(
-      { ...logContext, error, firebaseUidAttempted: firebaseUser?.uid },
-      '_performRegistrationAttempt: Main try-catch block error.'
-    );
-    await _attemptManualFirebaseRollbackOnError(firebaseUser, error, fbService, logContext);
-    return _handleMainRegistrationError(
-      error,
-      'firebase user creation or unknown initial error',
-      log
-    );
-  }
-}
-
-interface ResolvedRegisterDeps {
-  log: PinoLogger;
-  fbService: FirebaseAdminService | undefined;
-  db: RegisterUserDbClient;
-  hasher: Hasher;
-}
-
-function _resolveRegisterDependencies(deps?: RegisterUserOptionalDeps): ResolvedRegisterDeps {
-  const defaultLog = actionLogger.child({ function: '_resolveRegisterDependencies' });
-  const resolvedLogger = deps?.logger || defaultLog;
-  const fbServiceInstance = deps?.fbService || firebaseAdminService;
-
-  return {
-    log: resolvedLogger,
-    fbService: fbServiceInstance,
-    db: deps?.db || prisma,
-    hasher: deps?.hasher || { hash },
-  };
-}
-
-async function _handleRegistrationRateLimit(
-  log: PinoLogger,
-  logContext: LogContext, // Made LogContext more general
-  clientIp: string | null | undefined
-): Promise<RegistrationResult | null> {
-  if (!clientIp) {
-    log.warn(
-      { ...logContext }, // Spread logContext
-      'Could not determine client IP for rate limiting. Failing open.'
-    );
-    return null;
-  }
-  const ipToCheck = clientIp;
-  const redisClient = await getOptionalRedisClient();
-  const rateLimitResult = await _checkRegistrationRateLimit(redisClient, ipToCheck, log);
-
-  if (rateLimitResult.error) {
-    log.warn(
-      { ...logContext, clientIp: ipToCheck },
-      'Rate limit check failed, but proceeding (fail open).'
-    );
-    return null;
-  } else if (rateLimitResult.limited) {
-    log.warn({ ...logContext, clientIp: ipToCheck }, 'Registration rate limit exceeded.');
-    return {
-      status: 'error',
-      message: 'Registration rate limit exceeded for this IP.',
-      error: {
-        code: 'RateLimitExceeded',
-        message: 'Registration rate limit exceeded for this IP.',
-      },
-    };
-  }
-  log.debug({ ...logContext, clientIp: ipToCheck }, 'Rate limit check passed.');
-  return null;
-}
-
 async function _checkExistingPrismaUser(
   log: PinoLogger,
   logContext: LogContext,
@@ -851,7 +615,7 @@ async function registerUserLogic(
   formData: FormData | RegistrationInput,
   deps?: RegisterUserOptionalDeps
 ): Promise<ServiceResponse<null, unknown>> {
-  const resolvedDeps = _resolveRegisterDependencies(deps);
+  const resolvedDeps = await _resolveRegisterDependencies(deps);
   const { log, fbService, db, hasher } = resolvedDeps;
 
   const initialLogContext: LogContext = {
@@ -1037,5 +801,164 @@ async function _attemptPostRegistrationSignIn(
       isException: true,
       exceptionError: error,
     });
+  }
+}
+
+interface ResolvedRegisterDeps {
+  log: PinoLogger;
+  fbService: FirebaseAdminService | undefined | null;
+  db: RegisterUserDbClient;
+  hasher: Hasher;
+}
+
+async function _resolveRegisterDependencies(
+  deps?: RegisterUserOptionalDeps
+): Promise<ResolvedRegisterDeps> {
+  const log = deps?.logger || actionLogger.child({ function: '_resolveRegisterDependencies' });
+  let resolvedFbService: FirebaseAdminService | null | undefined = deps?.fbService;
+
+  if (!resolvedFbService) {
+    log.info(
+      'FirebaseAdminService not provided in deps, attempting to get from getFirebaseAdminService.'
+    );
+    resolvedFbService = await getFirebaseAdminService(); // Await the promise
+    if (resolvedFbService) {
+      log.info('Successfully retrieved FirebaseAdminService via getFirebaseAdminService.');
+    } else {
+      log.warn(
+        'Failed to retrieve FirebaseAdminService via getFirebaseAdminService. Registration will likely fail if action proceeds.'
+      );
+    }
+  } else {
+    log.info('FirebaseAdminService was provided directly in dependencies.');
+  }
+
+  const db = deps?.db || {
+    user: {
+      findUnique: prisma.user.findUnique,
+      create: prisma.user.create,
+    },
+  };
+  const hasherInstance = deps?.hasher || { hash };
+
+  return {
+    log,
+    fbService: resolvedFbService,
+    db,
+    hasher: hasherInstance,
+  };
+}
+
+async function _handleRegistrationRateLimit(
+  log: PinoLogger,
+  logContext: LogContext, // Made LogContext more general
+  clientIp: string | null | undefined
+): Promise<RegistrationResult | null> {
+  if (!clientIp) {
+    log.warn(
+      { ...logContext }, // Spread logContext
+      'Could not determine client IP for rate limiting. Failing open.'
+    );
+    return null;
+  }
+  const ipToCheck = clientIp;
+  const redisClient = await getOptionalRedisClient();
+  const rateLimitResult = await _checkRegistrationRateLimit(redisClient, ipToCheck, log);
+
+  if (rateLimitResult.error) {
+    log.warn(
+      { ...logContext, clientIp: ipToCheck },
+      'Rate limit check failed, but proceeding (fail open).'
+    );
+    return null;
+  } else if (rateLimitResult.limited) {
+    log.warn({ ...logContext, clientIp: ipToCheck }, 'Registration rate limit exceeded.');
+    return {
+      status: 'error',
+      message: 'Registration rate limit exceeded for this IP.',
+      error: {
+        code: 'RateLimitExceeded',
+        message: 'Registration rate limit exceeded for this IP.',
+      },
+    };
+  }
+  log.debug({ ...logContext, clientIp: ipToCheck }, 'Rate limit check passed.');
+  return null;
+}
+
+async function _performRegistrationAttempt(
+  validatedData: RegistrationInput,
+  services: PerformRegistrationDeps,
+  logContext: LogContext
+): Promise<RegistrationResult | null> {
+  const { log, fbService, db, hasher } = services;
+  const { email, password, name } = validatedData;
+  let firebaseUser: admin.auth.UserRecord | undefined;
+
+  log.info(logContext, '_performRegistrationAttempt: Starting registration process.');
+
+  try {
+    firebaseUser = await _createFirebaseUser({ email, password, name }, fbService, logContext);
+    const step1LogContext = { ...logContext, uid: firebaseUser.uid };
+    log.debug(step1LogContext, '_performRegistrationAttempt: Firebase user created.');
+
+    const prismaUserResult = await _createPrismaUser(
+      firebaseUser,
+      password,
+      { db, hasher, fbService },
+      { logContext: step1LogContext }
+    );
+
+    if (!(prismaUserResult instanceof Error) && 'id' in prismaUserResult && prismaUserResult.id) {
+      log.info(
+        { ...step1LogContext, userId: prismaUserResult.id },
+        '_performRegistrationAttempt: Prisma user created successfully.'
+      );
+      return null;
+    } else {
+      log.warn(
+        step1LogContext,
+        '_performRegistrationAttempt: _createPrismaUser indicated an error. Propagating error response.'
+      );
+      return prismaUserResult as RegistrationResult;
+    }
+  } catch (error) {
+    log.error(
+      { ...logContext, error, firebaseUidAttempted: firebaseUser?.uid },
+      '_performRegistrationAttempt: Main try-catch block error.'
+    );
+    await _attemptManualFirebaseRollbackOnError(firebaseUser, error, fbService, logContext);
+    return _handleMainRegistrationError(
+      error,
+      'firebase user creation or unknown initial error',
+      log
+    );
+  }
+}
+
+async function _attemptManualFirebaseRollbackOnError(
+  firebaseUser: admin.auth.UserRecord | undefined,
+  triggeringError: unknown,
+  fbService: FirebaseAdminService,
+  baseLogContext: LogContext
+): Promise<void> {
+  if (firebaseUser && !(triggeringError instanceof RollbackError)) {
+    const logContext = { ...baseLogContext, uid: firebaseUser.uid, triggeringError };
+    actionLogger.warn(
+      logContext,
+      '_attemptManualFirebaseRollbackOnError: Unexpected error after Firebase user creation. Attempting manual rollback.'
+    );
+    try {
+      await fbService.deleteUser(firebaseUser.uid);
+      actionLogger.info(
+        { ...logContext, uid: firebaseUser.uid },
+        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback successful.'
+      );
+    } catch (rollbackError) {
+      actionLogger.error(
+        { ...logContext, uid: firebaseUser.uid, rollbackError },
+        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback FAILED.'
+      );
+    }
   }
 }

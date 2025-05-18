@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev | pino-pretty",
     "dev:3001": "cross-env PORT=3001 next dev -p 3001 | pino-pretty",
-    "dev:test": "cross-env NODE_ENV=test ALLOW_TEST_ENDPOINTS=true NEXT_PUBLIC_IS_E2E_TEST_ENV=true RATE_LIMIT_REGISTER_MAX_ATTEMPTS=1000 next dev --port 3777",
+    "dev:test": "NODE_ENV=test ALLOW_TEST_ENDPOINTS=true NEXT_PUBLIC_IS_E2E_TEST_ENV=true RATE_LIMIT_REGISTER_MAX_ATTEMPTS=1000 next dev --port 3777",
+    "dev:test:debug": "NODE_OPTIONS='--inspect' npm run dev:test",
     "build": "next build",
     "start": "next start",
     "lint": "ESLINT_USE_FLAT_CONFIG=true eslint .",
@@ -53,7 +54,8 @@
     "ai:logs": "pm2 logs next-dev --lines 100 --nostream",
     "ai:port": "node scripts/get-port.js",
     "ai:health": "node scripts/check-health.js",
-    "dev:simple": "next dev -p 3336"
+    "dev:simple": "next dev -p 3336",
+    "dev:background": "npm run dev &"
   },
   "dependencies": {
     "@auth/core": "^0.38.0",

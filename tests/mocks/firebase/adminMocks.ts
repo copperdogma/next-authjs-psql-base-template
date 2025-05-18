@@ -90,9 +90,7 @@ export const resetFirebaseAdminMocks = () => {
   // Reset Auth factory mock and its default implementation
   getAuthMock
     .mockReset()
-    .mockImplementation(
-      (app?: admin.app.App) => authMethodsMockObject as unknown as admin.auth.Auth
-    );
+    .mockImplementation(() => authMethodsMockObject as unknown as admin.auth.Auth);
 };
 
 // Factory to get all mocks. The test file will destructure what it needs.
@@ -140,9 +138,7 @@ export const createFirebaseAdminMocks = () => {
 // Initial setup of default mock implementations when this module is first imported
 // This is important because the createFirebaseAdminMocks might be called after jest.mock has already run in the test file
 // and we want the default implementations to be set.
-getAuthMock.mockImplementation(
-  (app?: admin.app.App) => authMethodsMockObject as unknown as admin.auth.Auth
-);
+getAuthMock.mockImplementation(() => authMethodsMockObject as unknown as admin.auth.Auth);
 initializeAppMock.mockReturnValue(appInstanceMock);
 getAppMock.mockReturnValue(appInstanceMock);
 getAppsMock.mockReturnValue([appInstanceMock]);

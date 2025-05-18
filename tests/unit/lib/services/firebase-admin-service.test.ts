@@ -41,7 +41,7 @@ const {
 // === Top-level mock for 'firebase-admin' ===
 // This MUST be at the top, before FirebaseAdminService is imported.
 jest.mock('firebase-admin', () => {
-  console.log('[DEBUG] Top-level firebase-admin mock FACTORY CALLED');
+  // console.log('[DEBUG] Top-level firebase-admin mock FACTORY CALLED'); // Removed
   return {
     __esModule: true, // If firebase-admin uses ES modules
     initializeApp: initializeAppMock,
@@ -98,10 +98,10 @@ describe('FirebaseAdminServiceImpl', () => {
       mockLogger
     );
     // Add this log:
-    console.log(
-      '[DEBUG] firebase-admin-service.test.ts: Is authMethodsMockObject.getUser === getUserMock? ',
-      authMethodsMockObject.getUser === getUserMock
-    );
+    // console.log( // Removed
+    //   '[DEBUG] firebase-admin-service.test.ts: Is authMethodsMockObject.getUser === getUserMock? ',
+    //   authMethodsMockObject.getUser === getUserMock
+    // );
   });
 
   describe('getInstance', () => {

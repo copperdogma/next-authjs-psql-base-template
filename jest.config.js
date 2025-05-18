@@ -83,7 +83,7 @@ const customJestConfig = {
       setupFilesAfterEnv: [
         '<rootDir>/jest.setup.api.js',
         '<rootDir>/tests/config/setup/jest.setup.api.mocks.ts',
-        '<rootDir>/jest.setup.js',
+        '<rootDir>/jest.setup.ts',
       ],
       testEnvironment: 'node',
       ...sharedConfig,
@@ -139,7 +139,7 @@ const customJestConfig = {
         '<rootDir>/tests/unit/providers/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.js', 'react-intersection-observer/test-utils'],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.ts', 'react-intersection-observer/test-utils'],
       testEnvironment: 'jsdom',
       ...sharedConfig,
       globals: {

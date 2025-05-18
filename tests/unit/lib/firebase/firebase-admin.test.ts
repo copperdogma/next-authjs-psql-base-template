@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { getFirebaseAdminApp } from '@/lib/firebase/firebase-admin';
+// import { getFirebaseAdminApp } from '@/lib/firebase/firebase-admin'; // Removed unused import
 import { logger } from '@/lib/logger';
 
 // Mock firebase-admin

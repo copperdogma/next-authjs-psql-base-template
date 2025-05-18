@@ -266,9 +266,7 @@ describe('registerUser with Rate Limiting', () => {
 
     jest.doMock('@/lib/server/services', () => ({
       __esModule: true,
-      get firebaseAdminService() {
-        return dynamicFirebaseAdminServiceMock;
-      },
+      getFirebaseAdminService: jest.fn().mockResolvedValue(dynamicFirebaseAdminServiceMock),
       dbService: mockDbService,
       passwordHashingService: mockHasherService,
     }));
@@ -554,8 +552,12 @@ describe('registerUser with Rate Limiting', () => {
   });
 
   test('returns an error if Firebase Admin Service is unavailable', async () => {
-    dynamicFirebaseAdminServiceMock = null;
+    // Get the mock function for getFirebaseAdminService
+    const { getFirebaseAdminService: mockGetFirebaseAdminService } = jest.requireMock('@/lib/server/services');
+    // Override its behavior for this test
+    mockGetFirebaseAdminService.mockResolvedValueOnce(null); // Simulate unavailable service
 
+    // Dynamically import the action to ensure it picks up the modified mock
     const { registerUserAction: actionToTest } = await import('@/lib/actions/auth.actions');
 
     const formData = new FormData();
@@ -621,17 +623,21 @@ describe('registerUser with Rate Limiting', () => {
   });
 
   test('returns an error if Firebase user creation fails', async () => {
-    //     mockUserFindUnique.mockResolvedValue(null);
     const firebaseCreateError = new Error('Simulated Firebase createUser error');
     (firebaseCreateError as any).code = 'GENERIC_ERROR';
-
     const testSpecificDeleteUserMock = jest.fn();
 
-    dynamicFirebaseAdminServiceMock = {
+    // Configure the service mock for this specific test case
+    const specificFbServiceMock = {
       createUser: jest.fn().mockRejectedValue(firebaseCreateError),
       deleteUser: testSpecificDeleteUserMock,
     };
 
+    // Get the mock function for getFirebaseAdminService and make it return the specific mock for this test
+    const { getFirebaseAdminService: mockGetFirebaseAdminService } = jest.requireMock('@/lib/server/services');
+    mockGetFirebaseAdminService.mockResolvedValueOnce(specificFbServiceMock);
+
+    // Dynamically import the action to ensure it picks up the modified mock
     const { registerUserAction: actionToTest } = await import('@/lib/actions/auth.actions');
 
     const formData = new FormData();
@@ -654,7 +660,7 @@ describe('registerUser with Rate Limiting', () => {
     }
 
     expect(mockUserFindUnique).toHaveBeenCalledWith({ where: { email: testEmail } });
-    expect(dynamicFirebaseAdminServiceMock.createUser).toHaveBeenCalledTimes(1);
+    expect(specificFbServiceMock.createUser).toHaveBeenCalledTimes(1);
     expect(mockDbUserCreate).not.toHaveBeenCalled();
     expect(mockSignInFn).not.toHaveBeenCalled();
 

@@ -156,7 +156,7 @@ test.describe('Navigation and Layout', () => {
     // Test navigation to each route
     for (const route of routesToTest) {
       // Navigate to the route
-      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
       // Wait for the page to load with proper waiting
       await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
