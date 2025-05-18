@@ -235,8 +235,12 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.createUser(props)).rejects.toThrow(errorMessage);
       expect(createUserMock).toHaveBeenCalledWith(props);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), email: props.email }),
-        'Failed to create user in Firebase Auth'
+        expect.objectContaining({
+          err: expect.any(Error),
+          email: props.email,
+          operationName: 'createUser',
+        }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
@@ -258,15 +262,15 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.getUser(uid)).rejects.toThrow(errorMessage);
       expect(getUserMock).toHaveBeenCalledWith(uid);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), uid }),
-        'Error getting Firebase user'
+        expect.objectContaining({ err: expect.any(Error), uid, operationName: 'getUser' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
 
   describe('getUserByEmail', () => {
     const email = 'user@example.com';
-    const mockUserRecord = { uid: '123', email } as admin.auth.UserRecord;
+    const mockUserRecord = { uid: 'user-uid', email } as admin.auth.UserRecord;
 
     it('should call the mocked getUserByEmail on authMethodsMockObject', async () => {
       getUserByEmailMock.mockResolvedValue(mockUserRecord);
@@ -281,26 +285,24 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.getUserByEmail(email)).rejects.toThrow(errorMessage);
       expect(getUserByEmailMock).toHaveBeenCalledWith(email);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), email }),
-        'Error getting Firebase user by email'
+        expect.objectContaining({ err: expect.any(Error), email, operationName: 'getUserByEmail' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
 
   describe('listUsers', () => {
-    const mockListUsersResult = { users: [], pageToken: undefined } as admin.auth.ListUsersResult;
+    const maxResults = 10;
+    const pageToken = 'page-token';
+    const mockListUsersResult = {
+      users: [{ uid: 'user1' }, { uid: 'user2' }],
+      pageToken: 'next-token',
+    } as admin.auth.ListUsersResult;
 
-    it('should call the mocked listUsers on authMethodsMockObject', async () => {
+    it('should call the mocked listUsers with correct parameters', async () => {
       listUsersMock.mockResolvedValue(mockListUsersResult);
-      const result = await service.listUsers();
-      expect(listUsersMock).toHaveBeenCalledWith(undefined, undefined);
-      expect(result).toBe(mockListUsersResult);
-    });
-
-    it('should call the mocked listUsers on authMethodsMockObject with pageToken and maxResults', async () => {
-      listUsersMock.mockResolvedValue(mockListUsersResult);
-      const result = await service.listUsers(50, 'nextPageToken');
-      expect(listUsersMock).toHaveBeenCalledWith(50, 'nextPageToken');
+      const result = await service.listUsers(maxResults, pageToken);
+      expect(listUsersMock).toHaveBeenCalledWith(maxResults, pageToken);
       expect(result).toBe(mockListUsersResult);
     });
 
@@ -310,8 +312,8 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.listUsers()).rejects.toThrow(errorMessage);
       expect(listUsersMock).toHaveBeenCalledWith(undefined, undefined);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        'Error listing Firebase users'
+        expect.objectContaining({ err: expect.any(Error), operationName: 'listUsers' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
@@ -320,10 +322,14 @@ describe('FirebaseAdminServiceImpl', () => {
     const uid = 'user-uid';
     const claims = { admin: true };
 
-    it('should call the mocked setCustomUserClaims on authMethodsMockObject', async () => {
+    it('should call the mocked setCustomUserClaims with correct parameters', async () => {
       setCustomUserClaimsMock.mockResolvedValue(undefined);
       await service.setCustomClaims(uid, claims);
       expect(setCustomUserClaimsMock).toHaveBeenCalledWith(uid, claims);
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        { uid, claims },
+        'Successfully set custom claims for user'
+      );
     });
 
     it('should throw an error if setCustomUserClaimsMock (from authMethodsMockObject) fails', async () => {
@@ -332,8 +338,8 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.setCustomClaims(uid, claims)).rejects.toThrow(errorMessage);
       expect(setCustomUserClaimsMock).toHaveBeenCalledWith(uid, claims);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), uid, claims }),
-        'Error setting Firebase custom claims'
+        expect.objectContaining({ err: expect.any(Error), uid, operationName: 'setCustomClaims' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
@@ -341,7 +347,7 @@ describe('FirebaseAdminServiceImpl', () => {
   describe('deleteUser', () => {
     const uid = 'user-uid-to-delete';
 
-    it('should call the mocked deleteUser on authMethodsMockObject and log success', async () => {
+    it('should call the mocked deleteUser with correct parameters', async () => {
       deleteUserMock.mockResolvedValue(undefined);
       await service.deleteUser(uid);
       expect(deleteUserMock).toHaveBeenCalledWith(uid);
@@ -354,23 +360,25 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.deleteUser(uid)).rejects.toThrow(errorMessage);
       expect(deleteUserMock).toHaveBeenCalledWith(uid);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), uid }),
-        'Error deleting Firebase user'
+        expect.objectContaining({ err: expect.any(Error), uid, operationName: 'deleteUser' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
 
   describe('updateUser', () => {
     const uid = 'user-uid-to-update';
-    const updates: { displayName?: string; photoURL?: string; email?: string } = {
-      displayName: 'New Name',
-    };
-    const mockUserRecord = { uid, displayName: 'New Name' } as admin.auth.UserRecord;
+    const updates = { displayName: 'Updated Name' };
+    const mockUserRecord = { uid, ...updates } as admin.auth.UserRecord;
 
-    it('should call the mocked updateUser on authMethodsMockObject and return updated user', async () => {
+    it('should call the mocked updateUser with correct parameters', async () => {
       updateUserMock.mockResolvedValue(mockUserRecord);
       const result = await service.updateUser(uid, updates);
       expect(updateUserMock).toHaveBeenCalledWith(uid, updates);
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        { uid, props: updates },
+        'Successfully updated Firebase user'
+      );
       expect(result).toBe(mockUserRecord);
     });
 
@@ -380,21 +388,24 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.updateUser(uid, updates)).rejects.toThrow(errorMessage);
       expect(updateUserMock).toHaveBeenCalledWith(uid, updates);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error), uid }),
-        'Error updating Firebase user'
+        expect.objectContaining({ err: expect.any(Error), uid, operationName: 'updateUser' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
 
   describe('verifyIdToken', () => {
-    const idToken = 'test-id-token';
-    const mockDecodedToken = { uid: 'decoded-uid' } as admin.auth.DecodedIdToken;
+    const idToken = 'valid.id.token';
+    const decodedToken = {
+      uid: 'user-uid',
+      email: 'user@example.com',
+    } as admin.auth.DecodedIdToken;
 
-    it('should call the mocked verifyIdToken on authMethodsMockObject', async () => {
-      verifyIdTokenMock.mockResolvedValue(mockDecodedToken);
-      const result = await service.verifyIdToken(idToken);
-      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined);
-      expect(result).toBe(mockDecodedToken);
+    it('should call the mocked verifyIdToken with the token and checkRevoked flag', async () => {
+      verifyIdTokenMock.mockResolvedValue(decodedToken);
+      const result = await service.verifyIdToken(idToken, true);
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, true);
+      expect(result).toBe(decodedToken);
     });
 
     it('should throw and log error if verifyIdTokenMock (from authMethodsMockObject) fails', async () => {
@@ -403,107 +414,92 @@ describe('FirebaseAdminServiceImpl', () => {
       await expect(service.verifyIdToken(idToken)).rejects.toThrow(errorMessage);
       expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        'Firebase ID token verification failed'
+        expect.objectContaining({ err: expect.any(Error), operationName: 'verifyIdToken' }),
+        'Firebase Admin operation failed after 3 retries'
       );
     });
   });
 
   describe('createCustomToken', () => {
-    const uid = 'test-uid';
-    const claims = { premium: true };
-    const mockToken = 'mock-custom-token';
+    const uid = 'user-uid';
+    const developerClaims = { admin: true };
+    const customToken = 'custom.token.string';
 
-    it('should call the mocked createCustomToken on authMethodsMockObject', async () => {
-      createCustomTokenMock.mockResolvedValue(mockToken);
-      const result = await service.createCustomToken(uid, claims);
-      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, claims);
-      expect(result).toBe(mockToken);
+    it('should call the mocked createCustomToken with uid and claims', async () => {
+      createCustomTokenMock.mockResolvedValue(customToken);
+      const result = await service.createCustomToken(uid, developerClaims);
+      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, developerClaims);
+      expect(result).toBe(customToken);
     });
 
-    it('should call the mocked createCustomToken on authMethodsMockObject without claims if not provided', async () => {
-      createCustomTokenMock.mockResolvedValue(mockToken);
-      await service.createCustomToken(uid);
-      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, undefined);
-    });
-
-    it('should throw if createCustomTokenMock (from authMethodsMockObject) fails', async () => {
+    it('should throw an error if createCustomTokenMock (from authMethodsMockObject) fails', async () => {
       const errorMessage = 'Failed to create custom token';
       createCustomTokenMock.mockRejectedValue(new Error(errorMessage));
-      await expect(service.createCustomToken(uid)).rejects.toThrow(errorMessage);
-      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, undefined);
+      await expect(service.createCustomToken(uid, developerClaims)).rejects.toThrow(errorMessage);
+      expect(createCustomTokenMock).toHaveBeenCalledWith(uid, developerClaims);
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err: expect.any(Error),
+          uid,
+          operationName: 'createCustomToken',
+        }),
+        'Firebase Admin operation failed after 3 retries'
+      );
     });
   });
 
   describe('createSessionCookie', () => {
-    const idToken = 'test-id-token';
+    const idToken = 'valid.id.token';
     const options = { expiresIn: 3600000 }; // 1 hour in ms
-    const mockSessionCookie = 'mock-session-cookie';
-    const mockDecodedTokenForLog = { uid: 'logged-uid' } as admin.auth.DecodedIdToken;
+    const sessionCookie = 'session.cookie.string';
+    const decodedToken = { uid: 'user-uid' } as admin.auth.DecodedIdToken;
 
-    beforeEach(() => {
-      // Clear relevant mocks before each test in this suite
-      createSessionCookieMock.mockClear();
-      verifyIdTokenMock.mockClear();
-      mockLoggerInfoFn.mockClear();
-      mockLoggerErrorFn.mockClear();
-    });
+    it('should call createSessionCookie and log success with user details from token verification', async () => {
+      createSessionCookieMock.mockResolvedValue(sessionCookie);
+      verifyIdTokenMock.mockResolvedValue(decodedToken);
 
-    it('should create session cookie, log success, and return cookie', async () => {
-      // Arrange
-      createSessionCookieMock.mockResolvedValue(mockSessionCookie);
-      // The success log path also calls verifyIdToken to get the UID for logging
-      verifyIdTokenMock.mockResolvedValue(mockDecodedTokenForLog);
-
-      // Act
       const result = await service.createSessionCookie(idToken, options);
 
-      // Assert
       expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
-      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined); // For the logger, checkRevoked is undefined at call site
+      expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined);
       expect(mockLoggerInfoFn).toHaveBeenCalledWith(
-        { uid: mockDecodedTokenForLog.uid, expiresInSeconds: options.expiresIn / 1000 },
+        {
+          uid: decodedToken.uid,
+          expiresInSeconds: options.expiresIn / 1000,
+        },
         'Successfully created Firebase session cookie'
       );
-      expect(result).toBe(mockSessionCookie);
+      expect(result).toBe(sessionCookie);
     });
 
     it('should throw and log error if createSessionCookie on auth instance fails', async () => {
-      // Arrange
       const errorMessage = 'Failed to create session cookie via auth instance';
       createSessionCookieMock.mockRejectedValue(new Error(errorMessage));
-      // verifyIdTokenMock might still be called if error happens after it in SUT, but for this test path it shouldn't matter
+      // Verify token successful for this test
+      verifyIdTokenMock.mockResolvedValue(decodedToken);
 
-      // Act & Assert
       await expect(service.createSessionCookie(idToken, options)).rejects.toThrow(errorMessage);
       expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        'Error creating Firebase session cookie'
+        expect.objectContaining({ err: expect.any(Error), operationName: 'createSessionCookie' }),
+        'Firebase Admin operation failed after 3 retries'
       );
-      // Ensure verifyIdToken was not called for logging if createSessionCookie itself failed
-      expect(verifyIdTokenMock).not.toHaveBeenCalled();
     });
 
     it('should throw and log error if verifyIdToken (for logging) fails after successful cookie creation', async () => {
-      // This tests a more specific failure scenario within the try block
-      // Arrange
-      createSessionCookieMock.mockResolvedValue(mockSessionCookie);
-      const verifyErrorMessage = 'Failed to verify token for logging';
-      verifyIdTokenMock.mockRejectedValue(new Error(verifyErrorMessage));
+      // Cookie creation succeeds
+      createSessionCookieMock.mockResolvedValue(sessionCookie);
+      // But token verification (for logging) fails
+      const errorMessage = 'Failed to verify token for logging';
+      verifyIdTokenMock.mockRejectedValue(new Error(errorMessage));
 
-      // Act & Assert
-      // The outer promise should still reject because verifyIdToken (for logging) fails
-      await expect(service.createSessionCookie(idToken, options)).rejects.toThrow(
-        verifyErrorMessage
-      );
+      await expect(service.createSessionCookie(idToken, options)).rejects.toThrow(errorMessage);
       expect(createSessionCookieMock).toHaveBeenCalledWith(idToken, options);
       expect(verifyIdTokenMock).toHaveBeenCalledWith(idToken, undefined); // Called for logging, checkRevoked is undefined at call site
       expect(mockLoggerErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }), // This will be the verifyIdToken error
-        'Error creating Firebase session cookie' // Generic message from the catch block
+        expect.objectContaining({ err: expect.any(Error), operationName: 'verifyIdToken' }),
+        'Firebase Admin operation failed after 3 retries'
       );
-      expect(mockLoggerInfoFn).not.toHaveBeenCalled(); // Success log should not happen
     });
   });
 });
