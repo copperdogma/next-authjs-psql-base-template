@@ -1,47 +1,118 @@
 import * as admin from 'firebase-admin';
-import { logger } from '@/lib/logger'; // Assuming logger is available here
+import { logger } from '@/lib/logger';
 
-let app: admin.app.App;
+// Initialize as undefined
+let app: admin.app.App | undefined;
+// Lock to prevent simultaneous initializations
+let initializationLock = false;
 
 /**
- * Initializes and returns the Firebase Admin SDK App instance (Singleton).
- * Uses environment variables for configuration.
+ * Helper function to check if all required Firebase credentials are available
  */
-export function getFirebaseAdminApp(): admin.app.App {
-  if (app) {
-    return app;
-  }
-
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
+function checkRequiredCredentials(): { isValid: boolean; error?: string } {
   if (!process.env.FIREBASE_PROJECT_ID) {
-    throw new Error('FIREBASE_PROJECT_ID is not set in environment variables.');
+    return { isValid: false, error: 'FIREBASE_PROJECT_ID is not set in environment variables.' };
   }
   if (!process.env.FIREBASE_CLIENT_EMAIL) {
-    throw new Error('FIREBASE_CLIENT_EMAIL is not set in environment variables.');
+    return { isValid: false, error: 'FIREBASE_CLIENT_EMAIL is not set in environment variables.' };
   }
-  if (!privateKey) {
-    throw new Error('FIREBASE_PRIVATE_KEY is not set in environment variables.');
+  if (!process.env.FIREBASE_PRIVATE_KEY) {
+    return { isValid: false, error: 'FIREBASE_PRIVATE_KEY is not set in environment variables.' };
   }
+  return { isValid: true };
+}
 
-  const credentials = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: privateKey,
+/**
+ * Creates Firebase credential object from environment variables
+ */
+function createFirebaseCredentials() {
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  return {
+    projectId: process.env.FIREBASE_PROJECT_ID!,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+    privateKey: privateKey!,
   };
+}
 
+/**
+ * Attempts to find an existing Firebase Admin app
+ */
+function findExistingApp(): admin.app.App | undefined {
+  if (admin.apps.length > 0) {
+    const existingApp = admin.apps[0];
+    if (existingApp) {
+      logger.info('Found existing Firebase Admin SDK app, reusing it.');
+      return existingApp;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Initializes a new Firebase Admin app
+ */
+function initializeNewApp(credentials: any): admin.app.App | undefined {
   try {
     logger.info('Initializing Firebase Admin SDK...');
-    app = admin.initializeApp({
+    const newApp = admin.initializeApp({
       credential: admin.credential.cert(credentials),
-      // databaseURL: `https://${credentials.projectId}.firebaseio.com` // Optional: if using Realtime Database
     });
     logger.info('Firebase Admin SDK initialized successfully.');
-    return app;
+    return newApp;
   } catch (error) {
     logger.error({ err: error }, 'Firebase Admin SDK initialization failed');
     throw new Error('Could not initialize Firebase Admin SDK. Check server logs for details.');
   }
+}
+
+/**
+ * Initializes and returns the Firebase Admin SDK App instance (Singleton).
+ * Uses environment variables for configuration.
+ * Implements double-check locking pattern for thread safety.
+ */
+export function getFirebaseAdminApp(): admin.app.App | undefined {
+  // Fast path: return immediately if initialized
+  if (app) {
+    return app;
+  }
+
+  // Wait if initialization is in progress
+  if (initializationLock) {
+    logger.debug('Firebase Admin SDK initialization in progress, waiting...');
+    // Simple blocking wait - in a real system, consider using a promise-based approach
+    while (initializationLock) {
+      // Micro-wait
+    }
+    return app; // Return the result after waiting (might still be undefined)
+  }
+
+  // Set the lock
+  initializationLock = true;
+
+  try {
+    // Double-check pattern: verify again after acquiring lock
+    if (!app) {
+      // Check for existing app first
+      app = findExistingApp();
+      if (app) return app;
+
+      // Validate required credentials
+      const { isValid, error } = checkRequiredCredentials();
+      if (!isValid) {
+        throw new Error(error);
+      }
+
+      // Create credentials and initialize
+      const credentials = createFirebaseCredentials();
+      app = initializeNewApp(credentials);
+    }
+  } finally {
+    // Always release the lock
+    initializationLock = false;
+  }
+
+  return app;
 }
 
 // Initialize on load (optional, alternative is to call getFirebaseAdminApp() when needed)

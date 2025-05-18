@@ -7,7 +7,7 @@
 import { PrismaClient } from '@prisma/client'; // Assuming Prisma is used
 import { Redis } from 'ioredis'; // Assuming ioredis is used for RedisService, or similar
 import * as admin from 'firebase-admin';
-// @ts-ignore
+// @ts-expect-error AsyncLock types are not available but the package works correctly
 import AsyncLock from 'async-lock';
 
 import { initializeFirebaseAdmin, getServerSideFirebaseAdminConfig } from '@/lib/firebase-admin';
@@ -31,6 +31,52 @@ let servicesInitialized = false; // Declare servicesInitialized
 
 const initLock = new AsyncLock();
 
+// Helper for Firebase admin app initialization result handling
+function _handleFirebaseAdminInitResult(initResult: {
+  error?: string;
+  app?: admin.app.App;
+}): boolean {
+  if (initResult.error && !initResult.app) {
+    setupLogger.error(
+      { error: initResult.error },
+      'Failed to initialize Firebase Admin App in services.ts (returned error).'
+    );
+    currentAdminApp = undefined;
+    return false;
+  }
+
+  if (!initResult.app) {
+    setupLogger.error(
+      'Firebase Admin App was not assigned (app undefined in result) after calling initializeFirebaseAdmin.'
+    );
+    currentAdminApp = undefined;
+    return false;
+  }
+
+  currentAdminApp = initResult.app;
+  return true;
+}
+
+// Log success for Firebase admin app initialization
+function _logFirebaseAdminInitSuccess(): void {
+  if (currentAdminApp) {
+    setupLogger.info(
+      { appName: currentAdminApp.name },
+      'Firebase Admin App successfully initialized and assigned in services.ts'
+    );
+  }
+}
+
+// Log warning for Firebase admin app initialization
+function _logFirebaseAdminInitWarning(initResult: { error?: string; app?: admin.app.App }): void {
+  if (initResult.error && currentAdminApp) {
+    setupLogger.warn(
+      { appName: currentAdminApp.name, error: initResult.error },
+      'Firebase Admin App initialized, but an associated error was reported (e.g., auth retrieval failure).'
+    );
+  }
+}
+
 async function _initializeFirebaseAdminApp(): Promise<boolean> {
   if (currentAdminApp) {
     return true; // Already initialized
@@ -40,35 +86,14 @@ async function _initializeFirebaseAdminApp(): Promise<boolean> {
     const adminConfig = getServerSideFirebaseAdminConfig();
     const initResult = initializeFirebaseAdmin(adminConfig);
 
-    if (initResult.error && !initResult.app) {
-      setupLogger.error(
-        { error: initResult.error },
-        'Failed to initialize Firebase Admin App in services.ts (returned error).'
-      );
-      currentAdminApp = undefined;
+    const success = _handleFirebaseAdminInitResult(initResult);
+    if (!success) {
       return false;
     }
 
-    if (!initResult.app) {
-      setupLogger.error(
-        'Firebase Admin App was not assigned (app undefined in result) after calling initializeFirebaseAdmin.'
-      );
-      currentAdminApp = undefined;
-      return false;
-    }
+    _logFirebaseAdminInitSuccess();
+    _logFirebaseAdminInitWarning(initResult);
 
-    currentAdminApp = initResult.app;
-    setupLogger.info(
-      { appName: currentAdminApp.name },
-      'Firebase Admin App successfully initialized and assigned in services.ts'
-    );
-
-    if (initResult.error) {
-      setupLogger.warn(
-        { appName: currentAdminApp.name, error: initResult.error },
-        'Firebase Admin App initialized, but an associated error was reported (e.g., auth retrieval failure).'
-      );
-    }
     return true;
   } catch (error) {
     setupLogger.error(

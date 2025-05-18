@@ -569,16 +569,18 @@ describe('registerUser with Rate Limiting', () => {
     const result = await actionToTest(null, formData);
 
     expect(result.status).toBe('error');
-    expect(result.message).toBe('Firebase service not configured');
-    expect(result.error?.code).toBe('GENERIC_ERROR');
+    expect(result.message).toBe(
+      'Registration service is currently unavailable. Please try again later.'
+    );
+    expect(result.error?.code).toBe('REGISTRATION_SERVICE_UNAVAILABLE');
 
     expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
     expect(mockDbUserCreate).not.toHaveBeenCalled();
     expect(mockSignInFn).not.toHaveBeenCalled();
     // Check for the error log when FirebaseAdminService is not available
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
-      expect.objectContaining({ email: testEmail }), // The log context should include the email
-      'FirebaseAdminService not available for registration.' // The actual message logged
+      expect.objectContaining({ email: testEmail, source: 'registerUserAction' }), // The log context should include the email
+      'Required FirebaseAdminService is not available for registration attempt.' // The actual message logged
     );
   });
 
