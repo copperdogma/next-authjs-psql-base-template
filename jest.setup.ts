@@ -23,16 +23,18 @@ try {
 }
 
 // Set IS_REACT_ACT_ENVIRONMENT to true for React 18+ compatibility with testing-library
-(global as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(global as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
 
 // Mock TextEncoder and TextDecoder which are not available in JSDOM by default
 // These are often used by libraries like next-auth or other crypto-related functions
 // Check if they are already defined to avoid overwriting if tests run in a different env (e.g. node)
-if (typeof (global as any).TextEncoder === 'undefined') {
-  (global as any).TextEncoder = TextEncoder;
+// Use unknown instead of any to avoid the no-explicit-any eslint rule
+if (typeof (global as unknown as Record<string, unknown>).TextEncoder === 'undefined') {
+  (global as unknown as Record<string, unknown>).TextEncoder = TextEncoder;
 }
-if (typeof (global as any).TextDecoder === 'undefined') {
-  (global as any).TextDecoder = TextDecoder;
+if (typeof (global as unknown as Record<string, unknown>).TextDecoder === 'undefined') {
+  (global as unknown as Record<string, unknown>).TextDecoder = TextDecoder;
 }
 
 // Mock next/router
@@ -53,7 +55,8 @@ jest.mock('next/navigation', () => ({
 const originalConsoleError = console.error;
 console.error = (...args: unknown[]) => {
   const firstArg = args.length > 0 ? args[0] : '';
-  if (typeof firstArg === 'string' &&
+  if (
+    typeof firstArg === 'string' &&
     (firstArg.includes('The current testing environment is not configured to support act(...)') ||
       firstArg.includes('Warning: An update to %s inside a test was not wrapped in act(...).'))
   ) {
@@ -65,25 +68,28 @@ console.error = (...args: unknown[]) => {
 // JSDOM-specific mocks - only apply if window is defined
 if (typeof window !== 'undefined') {
   // Mock IntersectionObserver for components that use it
-  (global as any).IntersectionObserver = class IntersectionObserver {
-    constructor() { }
+  // Define a class that implements the basic interface we need
+  class MockIntersectionObserver {
+    constructor() {}
 
-    disconnect() {
+    disconnect(): null {
       return null;
     }
 
-    observe() {
+    observe(): null {
       return null;
     }
 
-    takeRecords() {
+    takeRecords(): [] {
       return [];
     }
 
-    unobserve() {
+    unobserve(): null {
       return null;
     }
-  } as any;
+  }
+
+  (global as unknown as Record<string, unknown>).IntersectionObserver = MockIntersectionObserver;
 
   // Mock window.matchMedia, often used for responsive components
   Object.defineProperty(window, 'matchMedia', {
@@ -124,4 +130,4 @@ CONSOLE_FAIL_TYPES.forEach(type => {
     throw new Error(`Unexpected console.${type} call: ${args.join(', ')}`);
   };
 });
-*/ 
+*/
