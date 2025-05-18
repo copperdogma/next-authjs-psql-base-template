@@ -12,6 +12,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 // Define a unique symbol for storing the NextAuth instance globally
 const NEXTAUTH_INSTANCE = Symbol.for('nextAuthInstanceEdge');
+const NEXTAUTH_LOCK = Symbol.for('nextAuthLockEdge');
 
 interface NextAuthInstance {
   handlers: {
@@ -26,26 +27,55 @@ interface NextAuthInstance {
 // Type for the global object containing NextAuthInstance
 type GlobalWithNextAuth = typeof globalThis & {
   [NEXTAUTH_INSTANCE]?: NextAuthInstance;
+  [NEXTAUTH_LOCK]?: boolean;
 };
 
 /**
  * Initializes and/or retrieves the NextAuth instance for the Edge runtime.
- * Ensures that NextAuth is initialized only once.
+ * Ensures that NextAuth is initialized only once using a lock-based singleton pattern.
  */
 function getNextAuthInstance(): NextAuthInstance {
   // Check if the instance already exists on the global object
   const globalWithNextAuth = globalThis as GlobalWithNextAuth;
 
-  if (!globalWithNextAuth[NEXTAUTH_INSTANCE]) {
-    logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth (Singleton)...');
-    const instance = NextAuth(authConfigEdge);
-    globalWithNextAuth[NEXTAUTH_INSTANCE] = instance;
-    logger.info('[Auth Edge Config] Edge-compatible NextAuth initialization complete (Singleton).');
-  } else {
-    logger.debug(
-      '[Auth Edge Config] Reusing existing Edge-compatible NextAuth instance (Singleton).'
-    );
+  // Fast path: return existing instance
+  if (globalWithNextAuth[NEXTAUTH_INSTANCE]) {
+    logger.debug('[Auth Edge Config] Reusing existing NextAuth instance (fast path)');
+    return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
   }
+
+  // Wait for any in-progress initialization
+  if (globalWithNextAuth[NEXTAUTH_LOCK]) {
+    logger.debug('[Auth Edge Config] Waiting for NextAuth initialization to complete...');
+    // Simple blocking wait - in a real system, consider using async mechanisms
+    while (globalWithNextAuth[NEXTAUTH_LOCK]) {
+      // Micro-wait
+    }
+    // Check if instance is now available
+    if (globalWithNextAuth[NEXTAUTH_INSTANCE]) {
+      logger.debug('[Auth Edge Config] NextAuth instance now available after waiting');
+      return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
+    }
+  }
+
+  // Set the initialization lock
+  globalWithNextAuth[NEXTAUTH_LOCK] = true;
+
+  try {
+    // Double-check pattern: verify again after acquiring lock
+    if (!globalWithNextAuth[NEXTAUTH_INSTANCE]) {
+      logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth (Singleton)...');
+      const instance = NextAuth(authConfigEdge);
+      globalWithNextAuth[NEXTAUTH_INSTANCE] = instance;
+      logger.info(
+        '[Auth Edge Config] Edge-compatible NextAuth initialization complete (Singleton).'
+      );
+    }
+  } finally {
+    // Always release the lock
+    globalWithNextAuth[NEXTAUTH_LOCK] = false;
+  }
+
   return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
 }
 

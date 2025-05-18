@@ -610,6 +610,40 @@ async function _runRegistrationPreChecks(
   return { validatedData };
 }
 
+// Initial setup for registration process
+function _setupRegistrationContext(log: PinoLogger): { initialLogContext: LogContext } {
+  const initialLogContext: LogContext = {
+    source: 'registerUserAction',
+  };
+  log.info(initialLogContext, 'Registration attempt started.');
+
+  return { initialLogContext };
+}
+
+// Error case: Missing or incorrect dependencies
+function _validateRegistrationDependencies(
+  fbService: FirebaseAdminService | undefined | null,
+  log: PinoLogger,
+  logContextWithEmail: LogContext
+): ServiceResponse<null, unknown> | null {
+  if (!fbService) {
+    log.error(
+      logContextWithEmail,
+      'Required FirebaseAdminService is not available for registration attempt.'
+    );
+    return {
+      status: 'error',
+      message: 'Registration service is currently unavailable. Please try again later.',
+      error: {
+        code: 'REGISTRATION_SERVICE_UNAVAILABLE',
+        message: 'Firebase Admin Service unavailable',
+      },
+    };
+  }
+  return null;
+}
+
+// Main registration logic function
 async function registerUserLogic(
   _prevState: ServiceResponse<null, unknown> | null,
   formData: FormData | RegistrationInput,
@@ -618,11 +652,10 @@ async function registerUserLogic(
   const resolvedDeps = await _resolveRegisterDependencies(deps);
   const { log, fbService, db, hasher } = resolvedDeps;
 
-  const initialLogContext: LogContext = {
-    source: 'registerUserAction',
-  };
-  log.info(initialLogContext, 'Registration attempt started.');
+  // Setup initial context
+  const { initialLogContext } = _setupRegistrationContext(log);
 
+  // Run pre-checks
   const preCheckResult = await _runRegistrationPreChecks(formData, {
     log,
     db,
@@ -632,61 +665,37 @@ async function registerUserLogic(
   if (preCheckResult.errorResult) {
     return preCheckResult.errorResult;
   }
+
   if (!preCheckResult.validatedData) {
     log.error(
       initialLogContext,
       'Pre-check completed without validated data or an error result. This is unexpected.'
     );
-    return _handleMainRegistrationError(
+    const errorResult = await _handleMainRegistrationError(
       new Error('Internal error: Invalid pre-check state'),
       'pre-check state',
       log
     );
+    return errorResult;
   }
+
   const validatedData = preCheckResult.validatedData;
   const logContextWithEmail: LogContext = { ...initialLogContext, email: validatedData.email };
   log.info(logContextWithEmail, 'Input validation and pre-checks successful.');
 
-  if (!fbService) {
-    log.error(logContextWithEmail, 'FirebaseAdminService not available for registration.');
-    return _handleMainRegistrationError(
-      new Error('Firebase service not configured'),
-      'firebase service check',
-      log
-    );
-  }
+  // Validate dependencies
+  const dependencyError = _validateRegistrationDependencies(fbService, log, logContextWithEmail);
+  if (dependencyError) return dependencyError;
 
   try {
     const registrationAttemptResult = await _performRegistrationAttempt(
       validatedData,
-      { db, hasher, fbService, log },
+      { db, hasher, fbService: fbService as FirebaseAdminService, log },
       logContextWithEmail
     );
 
     if (registrationAttemptResult === null) {
-      log.info(
-        logContextWithEmail,
-        'Registration successful. Attempting post-registration sign-in.'
-      );
-      const signInResult = await _attemptPostRegistrationSignIn(
-        validatedData.email,
-        validatedData.password,
-        log,
-        { userId: 'unknown', email: validatedData.email, name: validatedData.name || null }
-      );
-
-      if (signInResult && signInResult.status === 'error') {
-        log.warn(
-          logContextWithEmail,
-          'Post-registration sign-in failed, but registration itself was successful.'
-        );
-      }
-
-      return {
-        status: 'success',
-        message: 'Registration successful',
-        data: null,
-      };
+      return await _handleSuccessfulRegistration(validatedData, db, logContextWithEmail, log);
     } else {
       log.warn(logContextWithEmail, 'Registration attempt failed. Returning error response.');
       return registrationAttemptResult;
@@ -696,7 +705,12 @@ async function registerUserLogic(
       { ...logContextWithEmail, error: e },
       'Critical unexpected error in registerUserLogic'
     );
-    return _handleMainRegistrationError(e, 'critical registerUserLogic error', log);
+    const errorResult = await _handleMainRegistrationError(
+      e,
+      'critical registerUserLogic error',
+      log
+    );
+    return errorResult;
   }
 }
 
@@ -948,17 +962,91 @@ async function _attemptManualFirebaseRollbackOnError(
       logContext,
       '_attemptManualFirebaseRollbackOnError: Unexpected error after Firebase user creation. Attempting manual rollback.'
     );
-    try {
-      await fbService.deleteUser(firebaseUser.uid);
-      actionLogger.info(
-        { ...logContext, uid: firebaseUser.uid },
-        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback successful.'
+
+    await _performFirebaseUserDeletion(firebaseUser.uid, fbService, logContext);
+  }
+}
+
+/**
+ * Helper function to attempt Firebase user deletion during rollback
+ */
+async function _performFirebaseUserDeletion(
+  userId: string,
+  fbService: FirebaseAdminService,
+  logContext: LogContext
+): Promise<void> {
+  try {
+    await fbService.deleteUser(userId);
+    actionLogger.info(
+      { ...logContext, uid: userId },
+      '_performFirebaseUserDeletion: Manual Firebase user rollback successful.'
+    );
+  } catch (rollbackError) {
+    actionLogger.error(
+      { ...logContext, uid: userId, rollbackError },
+      '_performFirebaseUserDeletion: Manual Firebase user rollback FAILED.'
+    );
+  }
+}
+
+/**
+ * Handle the post-registration success path including sign-in attempt
+ */
+async function _handleSuccessfulRegistration(
+  validatedData: RegistrationInput,
+  db: RegisterUserDbClient,
+  logContextWithEmail: LogContext,
+  log: PinoLogger
+): Promise<ServiceResponse<null, unknown>> {
+  // Attempt to extract user ID from the Prisma user creation
+  const user = await db.user.findUnique({
+    where: { email: validatedData.email },
+    select: { id: true },
+  });
+
+  const userId = user?.id || 'unknown';
+
+  log.info(
+    { ...logContextWithEmail, userId },
+    'Registration successful. Attempting post-registration sign-in.'
+  );
+
+  // Try sign-in, but don't block the response on its success/failure
+  try {
+    const signInResult = await signIn('credentials', {
+      email: validatedData.email,
+      password: validatedData.password,
+      redirect: false,
+      callbackUrl: '/dashboard',
+      // Add special fields for post-registration handling
+      isPostRegistration: true,
+      postRegistrationUserId: userId,
+      postRegistrationUserEmail: validatedData.email,
+      postRegistrationUserName: validatedData.name || null,
+    });
+
+    if (signInResult?.ok) {
+      log.info(
+        { ...logContextWithEmail, userId, signInStatus: signInResult.status },
+        'Post-registration sign-in completed successfully.'
       );
-    } catch (rollbackError) {
-      actionLogger.error(
-        { ...logContext, uid: firebaseUser.uid, rollbackError },
-        '_attemptManualFirebaseRollbackOnError: Manual Firebase user rollback FAILED.'
+    } else {
+      log.warn(
+        { ...logContextWithEmail, userId, signInError: signInResult?.error },
+        'Post-registration sign-in failed, but registration itself was successful.'
       );
     }
+  } catch (signInError) {
+    log.error(
+      { ...logContextWithEmail, error: signInError, userId },
+      'Error during post-registration sign-in attempt.'
+    );
   }
+
+  // Return success result
+  return {
+    status: 'success',
+    message: 'Registration successful',
+    data: null,
+  };
 }
