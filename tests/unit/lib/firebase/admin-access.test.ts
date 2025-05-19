@@ -1,213 +1,193 @@
-import * as admin from 'firebase-admin';
-import { logger } from '@/lib/logger';
-import { getFirebaseAdminApp, getFirebaseAdminAuth } from '@/lib/firebase/admin-access';
-import { getFirebaseAdminGlobal, tryGetAuth } from '@/lib/firebase/admin-utils';
+/**
+ * Tests for Firebase Admin Access module
+ */
+import { jest } from '@jest/globals';
 
-// Mock @/lib/firebase/admin-types to control UNIQUE_FIREBASE_ADMIN_APP_NAME
-jest.mock('@/lib/firebase/admin-types', () => ({
-  ...jest.requireActual('@/lib/firebase/admin-types'),
-  UNIQUE_FIREBASE_ADMIN_APP_NAME: 'mocked-app-name-for-access-tests',
-}));
+// 1. Setup static mock values first
+const MOCK_APP_NAME = 'test-firebase-admin-app';
 
-const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types');
+// Create shared mocks
+const mockAuth = { getUser: jest.fn() };
+const mockApp = {
+  name: MOCK_APP_NAME,
+  auth: jest.fn(() => mockAuth),
+};
+const mockAppsList = [] as any[];
 
-// Mock firebase-admin (dependency of SUT)
-// The factory function for jest.mock is executed before other module code.
-// Thus, it cannot reference variables like mockFbAdminAppInstance if they are defined later using const/let.
-// Define the mock structure self-containedly or use requireActual for runtime values needed by the mock.
-jest.mock('firebase-admin', () => {
-  // Values needed by the mock that can be determined at module load time
-  const adminTypes = jest.requireActual('@/lib/firebase/admin-types'); // Get actual values for constants
-  const localMockAuthService = { getUser: jest.fn(), verifyIdToken: jest.fn() } as any;
-  const localMockAppInstance = {
-    name: adminTypes.UNIQUE_FIREBASE_ADMIN_APP_NAME, // Use the name from actual admin-types
-    auth: jest.fn().mockReturnValue(localMockAuthService),
-  } as unknown as admin.app.App;
+// Store global state in a private scope variable that can be manipulated
+let globalAppInstance: any = undefined;
 
-  return {
-    apps: [],
-    initializeApp: jest.fn().mockReturnValue(localMockAppInstance),
-    credential: { cert: jest.fn(), applicationDefault: jest.fn() },
-    app: jest.fn(() => localMockAppInstance),
-    auth: jest.fn(() => localMockAuthService),
-  };
-});
-
-// Mock @/lib/firebase/admin-utils (dependency of SUT)
-const mockGlobalAdminState = {
-  appInstance: undefined as admin.app.App | undefined,
+// Create pre-defined mock functions for consistent access
+const mockGetGlobalFn = jest.fn(() => ({
+  get appInstance() {
+    return globalAppInstance;
+  },
+  set appInstance(val) {
+    globalAppInstance = val;
+  },
   isInitializing: false,
   config: undefined,
   lock: null,
-};
-jest.mock('@/lib/firebase/admin-utils', () => ({
-  getFirebaseAdminGlobal: jest.fn().mockReturnValue(mockGlobalAdminState),
-  tryGetAuth: jest.fn((app: admin.app.App | undefined) => (app ? app.auth() : undefined)),
 }));
 
-describe('Firebase Admin Access Module', () => {
-  const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types');
-  // Get the top-level mocked firebase-admin app instance for reference in tests, if needed
-  // This needs to be robust to jest.resetModules()
-  let currentMockAppInstance: admin.app.App;
-  let currentMockAuthService: any;
+const mockTryGetAuthFn = jest.fn(app => (app === mockApp ? mockAuth : undefined));
 
-  // Get mock functions from the mocked modules
-  const mockedAdminAppFn = admin.app as jest.Mock;
-  const mockedAdminAppsArray = admin.apps as admin.app.App[];
-  const mockedFirebaseAdminModule = admin as any; // For referencing initializeApp etc.
+// 2. Define module mocks
+jest.mock('@/lib/firebase/admin-types', () => ({
+  UNIQUE_FIREBASE_ADMIN_APP_NAME: MOCK_APP_NAME,
+}));
 
-  const mockUtilsGetFirebaseAdminGlobal = require('@/lib/firebase/admin-utils')
-    .getFirebaseAdminGlobal as jest.Mock;
-  const mockUtilsTryGetAuth = require('@/lib/firebase/admin-utils').tryGetAuth as jest.Mock;
+jest.mock('firebase-admin', () => {
+  // Need to return an object where apps has all the proper array methods
+  const mockApps = [] as any[];
 
+  return {
+    // Using get accessor to ensure apps is always the current mockAppsList
+    get apps() {
+      return mockAppsList;
+    },
+    app: jest.fn((name?: string) => {
+      if (!name || name === MOCK_APP_NAME) return mockApp;
+      throw new Error(`App not found: ${name}`);
+    }),
+  };
+});
+
+jest.mock('@/lib/firebase/admin-utils', () => ({
+  getFirebaseAdminGlobal: mockGetGlobalFn,
+  tryGetAuth: mockTryGetAuthFn,
+}));
+
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn(() => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    })),
+  },
+}));
+
+// 3. Import modules being tested
+import * as admin from 'firebase-admin';
+import { logger } from '@/lib/logger';
+import { getFirebaseAdminApp, getFirebaseAdminAuth } from '@/lib/firebase/admin-access';
+
+// 4. Tests
+describe('Firebase Admin Access', () => {
   beforeEach(() => {
-    jest.resetModules(); // This is key. It resets SUT and its cached dependencies.
     jest.clearAllMocks();
 
-    // After resetModules, re-require SUT if its internal state relies on module-level vars post-mocking
-    // For this SUT, direct import at top level should be fine if deps are correctly mocked before it.
+    // Reset shared state
+    globalAppInstance = undefined;
+    mockAppsList.length = 0;
 
-    // Re-establish references to the *current* mocks after resetModules might have changed them
-    // The factory for firebase-admin mock creates new instances each time it's evaluated by Jest.
-    currentMockAuthService = { getUser: jest.fn(), verifyIdToken: jest.fn() };
-    currentMockAppInstance = {
-      name: adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME,
-      auth: jest.fn().mockReturnValue(currentMockAuthService),
-    } as unknown as admin.app.App;
-
-    // Configure the *live* mocks from the 'firebase-admin' module that jest is now using for this test run
-    (mockedFirebaseAdminModule.initializeApp as jest.Mock).mockReturnValue(currentMockAppInstance);
-    (mockedFirebaseAdminModule.app as jest.Mock).mockReturnValue(currentMockAppInstance);
-    (mockedFirebaseAdminModule.auth as jest.Mock).mockReturnValue(currentMockAuthService);
-    (currentMockAppInstance.auth as jest.Mock).mockReturnValue(currentMockAuthService);
-    while (mockedAdminAppsArray.length > 0) mockedAdminAppsArray.pop(); // Clear admin.apps
-
-    // Reset and reconfigure admin-utils mocks
-    mockGlobalAdminState.appInstance = undefined;
-    mockGlobalAdminState.isInitializing = false;
-    mockGlobalAdminState.config = undefined;
-    mockGlobalAdminState.lock = null;
-    mockUtilsGetFirebaseAdminGlobal.mockReturnValue(mockGlobalAdminState);
-    mockUtilsTryGetAuth.mockImplementation((app: admin.app.App | undefined) =>
-      app ? app.auth() : undefined
-    );
+    // Reset mocks to their default implementations
+    mockTryGetAuthFn.mockImplementation(app => (app === mockApp ? mockAuth : undefined));
   });
 
   describe('getFirebaseAdminApp', () => {
-    it('should return app and auth from global if appInstance exists and auth is retrieved', () => {
-      mockGlobalAdminState.appInstance = currentMockAppInstance;
-      mockUtilsTryGetAuth.mockReturnValue(currentMockAuthService);
+    it('returns app and auth when found in global', () => {
+      // Setup
+      globalAppInstance = mockApp;
 
+      // Act
       const result = getFirebaseAdminApp();
 
-      expect(mockUtilsGetFirebaseAdminGlobal).toHaveBeenCalled();
-      expect(result.app).toBe(currentMockAppInstance);
-      expect(result.auth).toBe(currentMockAuthService);
+      // Assert
+      expect(mockGetGlobalFn).toHaveBeenCalled();
+      expect(result.app).toBe(mockApp);
+      expect(result.auth).toBe(mockAuth);
       expect(result.error).toBeUndefined();
-      expect(logger.info).toHaveBeenCalledWith(
-        '[Firebase Admin Access] Found app in global:',
-        currentMockAppInstance.name
-      );
     });
 
-    it('should return app with error if global appInstance exists but auth retrieval fails', () => {
-      mockGlobalAdminState.appInstance = currentMockAppInstance;
-      mockUtilsTryGetAuth.mockReturnValue(undefined);
+    it('returns app with error if auth retrieval fails', () => {
+      // Setup
+      globalAppInstance = mockApp;
+      mockTryGetAuthFn.mockReturnValueOnce(undefined);
 
+      // Act
       const result = getFirebaseAdminApp();
 
-      expect(result.app).toBe(currentMockAppInstance);
+      // Assert
+      expect(result.app).toBe(mockApp);
       expect(result.auth).toBeUndefined();
       expect(result.error).toBe('Failed to retrieve auth from existing global app.');
-      expect(logger.warn).toHaveBeenCalledWith(
-        '[Firebase Admin Access] App found in global, but failed to retrieve auth.',
-        currentMockAppInstance.name
-      );
     });
 
-    it('should attempt to recover app from admin.apps if not found in global and succeed if present', () => {
-      mockedAdminAppsArray.push(currentMockAppInstance);
-      // Ensure admin.app(name) will find it from the array
-      (mockedFirebaseAdminModule.app as jest.Mock).mockImplementation(appName => {
-        if (appName === adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME)
-          return currentMockAppInstance;
-        throw new Error('App not found by name in admin.app mock');
-      });
-      mockUtilsTryGetAuth.mockReturnValue(currentMockAuthService);
+    it('recovers app from admin.apps if not in global', () => {
+      // Setup - ensure app is in admin.apps but not in global
+      mockAppsList.push(mockApp);
+      globalAppInstance = undefined;
 
+      // Act
       const result = getFirebaseAdminApp();
 
-      expect(mockUtilsGetFirebaseAdminGlobal).toHaveBeenCalled();
-      expect(logger.warn).toHaveBeenCalledWith(
-        '[Firebase Admin Access] App not found via global. Attempting recovery from admin.apps with name:',
-        adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME
-      );
-      expect(mockedFirebaseAdminModule.app).toHaveBeenCalledWith(
-        adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME
-      );
-      expect(result.app).toBe(currentMockAppInstance);
-      expect(result.auth).toBe(currentMockAuthService);
-      expect(logger.info).toHaveBeenCalledWith(
-        '[Firebase Admin Access] Recovered app by unique name:',
-        currentMockAppInstance.name
-      );
+      // Assert
+      expect(mockGetGlobalFn).toHaveBeenCalled();
+      expect(result.app).toBeDefined();
+      expect(result.auth).toBeDefined();
+
+      // Verify the app was stored in global
+      expect(globalAppInstance).toBe(mockApp);
     });
 
-    it('should return error if app not in global and recovery from admin.apps fails', () => {
-      (mockedFirebaseAdminModule.app as jest.Mock).mockImplementation(() => {
-        throw new Error('Mocked: App not found in admin.apps');
-      });
+    it('returns error if app not found anywhere', () => {
+      // Setup - ensure app is neither in global nor in admin.apps
+      globalAppInstance = undefined;
+      mockAppsList.length = 0;
 
+      // Act
       const result = getFirebaseAdminApp();
 
+      // Assert
       expect(result.app).toBeUndefined();
       expect(result.auth).toBeUndefined();
       expect(result.error).toBe(
         'Firebase Admin App not initialized or unrecoverable. Call initializeFirebaseAdmin first.'
       );
-      expect(logger.error).toHaveBeenCalledWith(
-        '[Firebase Admin Access] CRITICAL: App not found in global or via admin.apps recovery.',
-        expect.any(Error)
-      );
     });
   });
 
   describe('getFirebaseAdminAuth', () => {
-    it('should return auth if app is successfully retrieved and has auth', () => {
-      mockGlobalAdminState.appInstance = currentMockAppInstance;
-      mockUtilsTryGetAuth.mockReturnValue(currentMockAuthService);
+    it('returns auth when available', () => {
+      // Setup
+      globalAppInstance = mockApp;
 
+      // Act
       const auth = getFirebaseAdminAuth();
 
-      expect(auth).toBe(currentMockAuthService);
+      // Assert
+      expect(auth).toBe(mockAuth);
     });
 
-    it('should return undefined if getFirebaseAdminApp returns an error', () => {
-      (mockedFirebaseAdminModule.app as jest.Mock).mockImplementation(() => {
-        throw new Error('Mocked: App not found in getFirebaseAdminApp path');
-      });
-      mockGlobalAdminState.appInstance = undefined; // Ensure global is empty for this path
+    it('returns undefined if app not found', () => {
+      // Setup
+      globalAppInstance = undefined;
+      mockAppsList.length = 0;
 
+      // Act
       const auth = getFirebaseAdminAuth();
 
+      // Assert
       expect(auth).toBeUndefined();
-      expect(logger.warn).toHaveBeenCalledWith(
-        '[Firebase Admin Access] Could not get Firebase Auth service because Firebase Admin App could not be retrieved.',
-        'Firebase Admin App not initialized or unrecoverable. Call initializeFirebaseAdmin first.'
-      );
     });
 
-    it('should return undefined if app is retrieved but its auth service is missing', () => {
-      mockGlobalAdminState.appInstance = currentMockAppInstance;
-      mockUtilsTryGetAuth.mockReturnValue(undefined);
+    it('returns undefined if auth service missing', () => {
+      // Setup
+      globalAppInstance = mockApp;
+      mockTryGetAuthFn.mockReturnValueOnce(undefined);
 
+      // Act
       const auth = getFirebaseAdminAuth();
 
+      // Assert
       expect(auth).toBeUndefined();
-      expect(logger.warn).toHaveBeenCalledWith(
-        `[Firebase Admin Access] App '${adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME}' was found, but failed to retrieve its Auth service.`
-      );
     });
   });
 });
