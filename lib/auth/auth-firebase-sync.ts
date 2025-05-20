@@ -107,9 +107,9 @@ async function createFirebaseUserIfNeeded(
   } catch (error: unknown) {
     const errorCode =
       typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        typeof error.code === 'string'
+      error !== null &&
+      'code' in error &&
+      typeof error.code === 'string'
         ? error.code
         : undefined;
 
@@ -137,10 +137,15 @@ function _logSkipSync(
   reason: string,
   logContext: Record<string, unknown>,
   details?: Record<string, unknown>,
-  logLevel: 'info' | 'warn' = 'info'
+  logLevel: 'info' | 'warn' | 'debug' = 'info'
 ): false {
   if (logLevel === 'warn') {
     logger.warn(
+      { ...logContext, ...details },
+      `[JWT Callback] Skipping Firebase OAuth Sync: ${reason}`
+    );
+  } else if (logLevel === 'debug') {
+    logger.debug(
       { ...logContext, ...details },
       `[JWT Callback] Skipping Firebase OAuth Sync: ${reason}`
     );
@@ -151,6 +156,23 @@ function _logSkipSync(
     );
   }
   return false;
+}
+
+// Helper function to handle logging and skipping for non-OAuth sync cases
+function _handleNonOAuthSync(
+  trigger: string | undefined,
+  account: Account | null,
+  baseLogContext: { trigger: string | undefined; correlationId: string }
+): false {
+  const isCredentialsProvider = account?.provider === 'credentials';
+  const logLevel = isCredentialsProvider ? 'debug' : 'info';
+  const reason = `Provider '${account?.provider}' (type: '${account?.type}') is not OAuth/OIDC. ${isCredentialsProvider ? 'This is normal for credentials-based sign-in.' : ''}`;
+  return _logSkipSync(
+    reason,
+    baseLogContext,
+    { provider: account?.provider, accountType: account?.type },
+    logLevel
+  );
 }
 
 // Validate prerequisites for Firebase sync
@@ -164,17 +186,19 @@ function _validateSyncPrerequisites(
 ): boolean {
   const { trigger, account, user } = authContext;
 
-  // Use a consistent validation approach
+  // Check for valid user object with ID
   if (!isObject(user) || !user?.id) {
-    return _logSkipSync('User ID is missing or user object is invalid.', baseLogContext, { user }, 'warn');
+    return _logSkipSync(
+      'User ID is missing or user object is invalid.',
+      baseLogContext,
+      { user },
+      'warn'
+    );
   }
 
+  // For non-OAuth auth types, skip sync without warning - this is normal for credentials
   if (!shouldSyncFirebaseUser(trigger, account?.type)) {
-    return _logSkipSync(
-      `Provider '${account?.provider}' (type: '${account?.type}') is not OAuth/OIDC. This is normal for credentials-based sign-in.`,
-      baseLogContext,
-      { provider: account?.provider, accountType: account?.type }
-    );
+    return _handleNonOAuthSync(trigger, account, baseLogContext);
   }
   return true;
 }
