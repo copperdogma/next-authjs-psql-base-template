@@ -32,11 +32,13 @@ import {
   getServerSideFirebaseAdminConfig,
   // getFirebaseAdminConfig, // Not exported from this module
 } from '@/lib/firebase/admin-config';
-// Don't import these as constants since we need to reassign them in beforeEach
-// import {
-//   initializeFirebaseAdmin,
-//   // ensureFirebaseAdminInitialized, // Not exported from this module
-// } from '@/lib/firebase/admin-initialization';
+import { initializeFirebaseAdmin } from '@/lib/firebase/admin-initialization';
+import * as adminUtils from '@/lib/firebase/admin-utils';
+import {
+  FirebaseAdminConfig,
+  UNIQUE_FIREBASE_ADMIN_APP_NAME,
+  FirebaseAdminGlobal,
+} from '@/lib/firebase/admin-types';
 
 // Define variables for functions we will re-assign in beforeEach
 let initializeFirebaseAdmin: any;
@@ -392,6 +394,232 @@ describe('Firebase Admin Initialization Module', () => {
       expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining(`All initialization attempts failed after ${maxRetries} retries.`),
         persistentError
+      );
+    });
+  });
+});
+
+// Mocks
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    child: jest.fn().mockReturnThis(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Mock the entire admin-utils module
+jest.mock('@/lib/firebase/admin-utils', () => ({
+  validateConfig: jest.fn(),
+  setupEmulator: jest.fn(),
+  createCredentials: jest.fn(),
+  tryGetAuth: jest.fn(),
+  safeConfigLogging: jest.fn(config => config), // Simple pass-through for logging
+  getFirebaseAdminGlobal: jest.fn(),
+}));
+
+// Mock firebase-admin SDK parts
+const mockAdminApp = {
+  name: UNIQUE_FIREBASE_ADMIN_APP_NAME,
+  // other app properties can be added if needed by SUT, e.g., for tryGetAuth
+} as any as admin.app.App;
+
+const mockAdminAuth = {} as admin.auth.Auth;
+
+// Spy on admin.initializeApp and admin.credential.cert
+const mockInitializeApp = jest.spyOn(admin, 'initializeApp');
+const mockCredentialCert = jest.spyOn(admin.credential, 'cert');
+
+const baseValidConfig: FirebaseAdminConfig = {
+  projectId: 'test-project',
+  clientEmail: 'test@example.com',
+  privateKey: 'test-private-key',
+  nodeEnv: 'test',
+  useEmulator: false,
+};
+
+describe('lib/firebase/admin-initialization', () => {
+  let mockGlobalAdminState: FirebaseAdminGlobal;
+  let adminAppsSpy: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockGlobalAdminState = { appInstance: undefined }; // Reset global state mock
+    (adminUtils.getFirebaseAdminGlobal as jest.Mock).mockReturnValue(mockGlobalAdminState);
+
+    // Default admin.apps to empty. Tests can override.
+    adminAppsSpy = jest.spyOn(admin, 'apps', 'get').mockReturnValue([]);
+
+    // Default mock implementations
+    mockInitializeApp.mockReturnValue(mockAdminApp);
+    (adminUtils.tryGetAuth as jest.Mock).mockReturnValue(mockAdminAuth);
+    (adminUtils.validateConfig as jest.Mock).mockReturnValue(null); // Assume valid config by default
+    (adminUtils.createCredentials as jest.Mock).mockReturnValue({} as any); // Return dummy credentials
+  });
+
+  afterEach(() => {
+    adminAppsSpy.mockRestore();
+  });
+
+  describe('initializeFirebaseAdmin', () => {
+    // --- Handling Existing App Scenarios ---
+    it('should use existing app from global if available and auth succeeds', () => {
+      mockGlobalAdminState.appInstance = mockAdminApp;
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBe(mockAdminAuth);
+      expect(adminUtils.tryGetAuth).toHaveBeenCalledWith(mockAdminApp);
+      expect(mockInitializeApp).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Using existing Firebase Admin app from global')
+      );
+    });
+
+    it('should use existing app from global but return error if auth fails', () => {
+      mockGlobalAdminState.appInstance = mockAdminApp;
+      (adminUtils.tryGetAuth as jest.Mock).mockReturnValue(undefined);
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBeUndefined();
+      expect(result.error).toBe('Failed to retrieve auth from existing global app.');
+      expect(mockInitializeApp).not.toHaveBeenCalled();
+    });
+
+    it('should recover app from admin.apps if not in global and auth succeeds', () => {
+      adminAppsSpy.mockReturnValue([mockAdminApp]);
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBe(mockAdminAuth);
+      expect(mockGlobalAdminState.appInstance).toBe(mockAdminApp); // Should be cached globally
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Recovered existing app'));
+      expect(mockInitializeApp).not.toHaveBeenCalled();
+    });
+
+    it('should recover app from admin.apps but return error if auth fails', () => {
+      adminAppsSpy.mockReturnValue([mockAdminApp]);
+      (adminUtils.tryGetAuth as jest.Mock).mockReturnValue(undefined);
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBeUndefined();
+      expect(result.error).toBe('Failed to retrieve auth from recovered SDK app.');
+      expect(mockGlobalAdminState.appInstance).toBe(mockAdminApp);
+      expect(mockInitializeApp).not.toHaveBeenCalled();
+    });
+
+    it('should return error from _handleExistingApp if global app becomes undefined unexpectedly', () => {
+      // This scenario is hard to trigger perfectly without modifying the SUT,
+      // but we can simulate the state where it might occur if appInstance was nulled between checks.
+      Object.defineProperty(mockGlobalAdminState, 'appInstance', {
+        get: jest.fn().mockReturnValueOnce(mockAdminApp).mockReturnValueOnce(undefined),
+        configurable: true,
+      });
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.error).toBe('Internal error: Global app instance lost.');
+    });
+
+    // --- New Initialization Scenarios (Non-Emulator) ---
+    it('should initialize with credentials if no existing app and config is valid', () => {
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(mockInitializeApp).toHaveBeenCalledWith(
+        { credential: expect.any(Object), projectId: baseValidConfig.projectId },
+        UNIQUE_FIREBASE_ADMIN_APP_NAME
+      );
+      expect(adminUtils.validateConfig).toHaveBeenCalledWith(baseValidConfig);
+      expect(adminUtils.createCredentials).toHaveBeenCalledWith(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBe(mockAdminAuth);
+      expect(mockGlobalAdminState.appInstance).toBe(mockAdminApp);
+    });
+
+    it('should return error if credential config validation fails', () => {
+      (adminUtils.validateConfig as jest.Mock).mockReturnValue('Config validation failed');
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.error).toBe('Invalid Firebase Admin config: Config validation failed');
+      expect(mockInitializeApp).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Config validation failed' }),
+        expect.any(String)
+      );
+    });
+
+    it('should return error from _finalizeInitialization if auth retrieval fails after new credential init', () => {
+      (adminUtils.tryGetAuth as jest.Mock).mockReturnValue(undefined);
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBeUndefined();
+      expect(result.error).toBe(
+        'Successfully initialized app but failed to retrieve its Auth service.'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ appName: mockAdminApp.name }),
+        expect.stringContaining(
+          'CRITICAL: Successfully initialized app but failed to retrieve its Auth service.'
+        )
+      );
+    });
+
+    // --- New Initialization Scenarios (Emulator) ---
+    it('should initialize for emulator if useEmulator is true', () => {
+      const emulatorConfig = { ...baseValidConfig, useEmulator: true };
+      const result = initializeFirebaseAdmin(emulatorConfig);
+      expect(adminUtils.setupEmulator).toHaveBeenCalled();
+      expect(mockInitializeApp).toHaveBeenCalledWith(
+        { projectId: emulatorConfig.projectId },
+        UNIQUE_FIREBASE_ADMIN_APP_NAME
+      );
+      expect(adminUtils.validateConfig).not.toHaveBeenCalled(); // Should not validate full config for emulator
+      expect(adminUtils.createCredentials).not.toHaveBeenCalled();
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBe(mockAdminAuth);
+    });
+
+    it('should return error from _finalizeInitialization if auth retrieval fails after new emulator init', () => {
+      const emulatorConfig = { ...baseValidConfig, useEmulator: true };
+      (adminUtils.tryGetAuth as jest.Mock).mockReturnValue(undefined);
+      const result = initializeFirebaseAdmin(emulatorConfig);
+      expect(result.app).toBe(mockAdminApp);
+      expect(result.auth).toBeUndefined();
+      expect(result.error).toBe(
+        'Successfully initialized app but failed to retrieve its Auth service.'
+      );
+    });
+
+    // --- General Error Handling in _performNewInitialization ---
+    it('should return error if admin.initializeApp throws during credential init', () => {
+      const initError = new Error('InitializeApp failed!');
+      mockInitializeApp.mockImplementation(() => {
+        throw initError;
+      });
+      const result = initializeFirebaseAdmin(baseValidConfig);
+      expect(result.error).toBe(`New initialization failed critically: ${initError.message}`);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err: initError,
+          appNameAttempted: UNIQUE_FIREBASE_ADMIN_APP_NAME,
+        }),
+        expect.stringContaining('Firebase Admin SDK new initialization attempt failed critically.')
+      );
+    });
+
+    it('should return error if admin.initializeApp throws during emulator init', () => {
+      const initError = new Error('Emulator InitializeApp failed!');
+      mockInitializeApp.mockImplementation(() => {
+        throw initError;
+      });
+      const emulatorConfig = { ...baseValidConfig, useEmulator: true };
+      const result = initializeFirebaseAdmin(emulatorConfig);
+      expect(result.error).toBe(`New initialization failed critically: ${initError.message}`);
+    });
+
+    it('should use custom appName if provided', () => {
+      const customAppName = 'my-custom-app';
+      initializeFirebaseAdmin(baseValidConfig, customAppName);
+      expect(mockInitializeApp).toHaveBeenCalledWith(
+        expect.any(Object), // Credentials or projectId object
+        customAppName
       );
     });
   });

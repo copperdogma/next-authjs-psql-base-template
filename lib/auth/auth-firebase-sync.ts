@@ -1,6 +1,7 @@
 import { logger } from '@/lib/logger';
 import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
 import type { Account, Profile, User as NextAuthUser } from 'next-auth';
+import { isObject } from '../utils/type-guards';
 
 // Helper function to determine if Firebase user sync should occur
 export function shouldSyncFirebaseUser(
@@ -106,9 +107,9 @@ async function createFirebaseUserIfNeeded(
   } catch (error: unknown) {
     const errorCode =
       typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      typeof error.code === 'string'
+        error !== null &&
+        'code' in error &&
+        typeof error.code === 'string'
         ? error.code
         : undefined;
 
@@ -131,42 +132,83 @@ async function createFirebaseUserIfNeeded(
   }
 }
 
+// Helper to log and return for skipping sync
+function _logSkipSync(
+  reason: string,
+  logContext: Record<string, unknown>,
+  details?: Record<string, unknown>,
+  logLevel: 'info' | 'warn' = 'info'
+): false {
+  if (logLevel === 'warn') {
+    logger.warn(
+      { ...logContext, ...details },
+      `[JWT Callback] Skipping Firebase OAuth Sync: ${reason}`
+    );
+  } else {
+    logger.info(
+      { ...logContext, ...details },
+      `[JWT Callback] Skipping Firebase OAuth Sync: ${reason}`
+    );
+  }
+  return false;
+}
+
+// Validate prerequisites for Firebase sync
+function _validateSyncPrerequisites(
+  authContext: {
+    trigger: string | undefined;
+    account: Account | null; // account can be null for credentials
+    user: NextAuthUser;
+  },
+  baseLogContext: { trigger: string | undefined; correlationId: string }
+): boolean {
+  const { trigger, account, user } = authContext;
+
+  // Use a consistent validation approach
+  if (!isObject(user) || !user?.id) {
+    return _logSkipSync('User ID is missing or user object is invalid.', baseLogContext, { user }, 'warn');
+  }
+
+  if (!shouldSyncFirebaseUser(trigger, account?.type)) {
+    return _logSkipSync(
+      `Provider '${account?.provider}' (type: '${account?.type}') is not OAuth/OIDC. This is normal for credentials-based sign-in.`,
+      baseLogContext,
+      { provider: account?.provider, accountType: account?.type }
+    );
+  }
+  return true;
+}
+
 // Main function to sync Firebase user
 export async function syncFirebaseUserForOAuth(
   authContext: {
     trigger: string | undefined;
-    account: Account;
+    account: Account; // In this context, account is expected to be present due to shouldSyncFirebaseUser
     user: NextAuthUser;
     profile: Profile | undefined;
   },
   baseLogContext: { trigger: string | undefined; correlationId: string }
 ): Promise<void> {
-  const { trigger, account, user, profile } = authContext;
-
-  // Skip if conditions not met or user ID missing
-  if (!shouldSyncFirebaseUser(trigger, account?.type) || !user?.id) {
-    logger.warn(
-      baseLogContext,
-      '[JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing'
-    );
-    return;
+  if (!_validateSyncPrerequisites(authContext, baseLogContext)) {
+    return; // Prerequisites not met, already logged
   }
 
-  const userId = user.id;
-  const oauthLogContext = { ...baseLogContext, userId, provider: account.provider };
+  // Destructure after validation ensures user.id and account are somewhat safe to access,
+  // though account might still need checks if _validateSyncPrerequisites logic changes.
+  const { user, profile, account } = authContext; // account is now from authContext
+  const userId = user.id as string; // user.id is confirmed by _validateSyncPrerequisites
+
+  const oauthLogContext = { ...baseLogContext, userId, provider: account.provider }; // account.provider should be safe here
   logger.info(oauthLogContext, '[JWT Callback] Conditions met for Firebase OAuth Sync');
 
-  // Check Firebase admin status using the new function
   if (!checkFirebaseAdminStatus(oauthLogContext)) {
-    return;
+    return; // Status check failed, already logged
   }
 
-  // Prepare user data
   const userPayload = prepareFirebaseUserPayload(userId, profile, user, oauthLogContext);
   if (!userPayload) {
-    return;
+    return; // Payload prep failed, already logged
   }
 
-  // Create or update user in Firebase, using the imported singleton directly
   await createFirebaseUserIfNeeded(userPayload, oauthLogContext);
 }

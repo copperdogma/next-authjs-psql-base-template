@@ -10,7 +10,7 @@ import { z } from 'zod';
 import type { User } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import * as admin from 'firebase-admin';
-import type { Logger as PinoLogger } from 'pino';
+import type { Logger } from 'pino';
 // import type { Session } from 'next-auth'; // Removed unused import
 
 import { logger as rootLogger } from '@/lib/logger';
@@ -29,6 +29,7 @@ import {
 import { getOptionalRedisClient } from '@/lib/redis';
 import { getClientIp } from '@/lib/utils/server-utils';
 import { env } from '@/lib/env';
+import { isObject, isValidUserResult } from '../utils/type-guards';
 
 // Constants
 const SALT_ROUNDS = 10;
@@ -74,18 +75,18 @@ interface PerformRegistrationDeps {
   db: RegisterUserDbClient;
   hasher: Hasher;
   fbService: FirebaseAdminService;
-  log: PinoLogger;
+  log: Logger;
 }
 
 interface RegisterUserOptionalDeps {
   db?: RegisterUserDbClient;
   hasher?: Hasher;
   fbService?: FirebaseAdminService;
-  logger?: PinoLogger;
+  logger?: Logger;
 }
 
 interface PreCheckOptions {
-  log: PinoLogger;
+  log: Logger;
   db: RegisterUserDbClient;
   initialLogContext?: LogContext;
 }
@@ -178,10 +179,10 @@ async function _handlePrismaCreateErrorAndRollback(
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
-  services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminService },
+  services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminService; log: Logger },
   options: CreatePrismaUserOptions
 ): Promise<User | RegistrationResult> {
-  const { db, hasher, fbService } = services;
+  const { db, hasher, fbService, log } = services;
   const { logContext, tx } = options;
   const prismaOps = tx || db;
   const email = firebaseUser.email;
@@ -324,7 +325,7 @@ function _determineErrorTypeAndTranslate(
 async function _handleMainRegistrationError(
   error: unknown,
   context: string,
-  _log?: PinoLogger
+  _log?: Logger
 ): Promise<RegistrationResult> {
   const initialLogContext = {
     error,
@@ -446,7 +447,7 @@ function _parseRateLimitPipelineResults(
 async function _executeRateLimitPipeline(
   redisClient: Redis,
   options: ExecuteRateLimitPipelineOptions,
-  log: PinoLogger
+  log: Logger
 ): Promise<{ currentAttempts?: number; errorOccurred: boolean }> {
   const { key, windowSeconds, clientIp } = options;
 
@@ -479,7 +480,7 @@ async function _executeRateLimitPipeline(
 async function _checkRegistrationRateLimit(
   redisClient: Redis | null,
   clientIp: string,
-  log: PinoLogger
+  log: Logger
 ): Promise<RateLimitResult> {
   const logContext = { clientIp };
 
@@ -521,7 +522,7 @@ async function _checkRegistrationRateLimit(
 }
 
 async function _checkExistingPrismaUser(
-  log: PinoLogger,
+  log: Logger,
   logContext: LogContext,
   emailToCheck: string,
   db: RegisterUserDbClient
@@ -554,7 +555,7 @@ async function _checkExistingPrismaUser(
 async function _validateAndPrepareInputData(
   formData: FormData,
   initialLogContext: LogContext | undefined,
-  log: PinoLogger
+  log: Logger
 ): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
   log.debug(
     initialLogContext,
@@ -592,7 +593,7 @@ async function _validateAndPrepareInputData(
 async function _getValidatedDataForPreChecks(
   input: FormData | RegistrationInput,
   initialLogContext: LogContext,
-  log: PinoLogger
+  log: Logger
 ): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
   if (input instanceof FormData) {
     const validationOutcome = await _validateAndPrepareInputData(input, initialLogContext, log);
@@ -666,7 +667,7 @@ async function _runRegistrationPreChecks(
 }
 
 // Initial setup for registration process
-function _setupRegistrationContext(log: PinoLogger): { initialLogContext: LogContext } {
+function _setupRegistrationContext(log: Logger): { initialLogContext: LogContext } {
   const initialLogContext: LogContext = {
     source: 'registerUserAction',
   };
@@ -679,40 +680,100 @@ interface RegistrationCoreServices {
   db: RegisterUserDbClient;
   hasher: Hasher;
   fbService: FirebaseAdminService;
-  log: PinoLogger;
+  log: Logger;
+}
+
+/**
+ * Standardized error logging for authentication actions
+ */
+function _logAuthActionError(
+  logger: Logger,
+  context: Record<string, unknown>,
+  error: unknown,
+  message: string,
+  level: 'warn' | 'error' = 'error'
+): void {
+  const logData = { ...context, error };
+
+  if (level === 'warn') {
+    logger.warn(logData, message);
+  } else {
+    logger.error(logData, message);
+  }
 }
 
 async function _executeRegistrationCore(
   validatedData: RegistrationInput,
   services: RegistrationCoreServices,
   logContextWithEmail: LogContext
-): Promise<ServiceResponse<null, unknown>> {
+): Promise<RegistrationResult> {
   const { db, hasher, fbService, log } = services;
+
   try {
     const registrationAttemptResult = await _performRegistrationAttempt(
       validatedData,
-      { db, hasher, fbService, log }, // Pass services through
+      { db, hasher, fbService, log },
       logContextWithEmail
     );
 
-    if (registrationAttemptResult === null) {
-      // Success
-      return await _handleSuccessfulRegistration(validatedData, db, logContextWithEmail, log);
-    } else {
-      // Known error from attempt
-      log.warn(
-        logContextWithEmail,
-        'Registration attempt failed within core execution. Returning error response.'
-      );
-      return registrationAttemptResult;
-    }
+    // Handle the registration attempt result
+    return _processRegistrationAttemptResult(
+      registrationAttemptResult,
+      validatedData,
+      log,
+      logContextWithEmail,
+      db
+    );
   } catch (e: unknown) {
-    // Unexpected error during attempt
-    log.error(
-      { ...logContextWithEmail, error: e },
+    _logAuthActionError(
+      log,
+      { ...logContextWithEmail },
+      e,
       'Critical unexpected error in _executeRegistrationCore'
     );
     return _handleMainRegistrationError(e, 'critical_execute_registration_core_error', log);
+  }
+}
+
+/**
+ * Process the result of a registration attempt and take appropriate action
+ */
+function _processRegistrationAttemptResult(
+  registrationAttemptResult: RegistrationResult | null | User,
+  validatedData: RegistrationInput,
+  log: Logger,
+  logContextWithEmail: LogContext,
+  db: RegisterUserDbClient
+): Promise<RegistrationResult> {
+  if (isValidUserResult(registrationAttemptResult)) {
+    const createdUser = registrationAttemptResult;
+    return _handleSuccessfulRegistration(
+      validatedData,
+      createdUser.id,
+      logContextWithEmail,
+      log
+    ) as Promise<RegistrationResult>;
+  } else if (registrationAttemptResult === null) {
+    _logAuthActionError(
+      log,
+      logContextWithEmail,
+      new Error('Unexpected null result'),
+      '_executeRegistrationCore: _performRegistrationAttempt returned unexpected null. This should be a User object or RegistrationResult. Cannot proceed with post-registration sign-in reliably.'
+    );
+    return Promise.resolve({
+      status: 'error',
+      message: 'Internal error during registration: User data not available for sign-in.',
+      error: { code: 'InternalError', message: 'User data missing post-creation' },
+    });
+  } else {
+    _logAuthActionError(
+      log,
+      logContextWithEmail,
+      registrationAttemptResult,
+      'Registration attempt failed within core execution. Returning error response.',
+      'warn'
+    );
+    return Promise.resolve(registrationAttemptResult as RegistrationResult);
   }
 }
 
@@ -766,7 +827,7 @@ export async function registerUserAction(
 }
 
 interface ResolvedRegisterDeps {
-  log: PinoLogger;
+  log: Logger;
   fbService: FirebaseAdminService | undefined | null;
   db: RegisterUserDbClient;
   hasher: Hasher;
@@ -811,7 +872,7 @@ async function _resolveRegisterDependencies(
 }
 
 async function _handleRegistrationRateLimit(
-  log: PinoLogger,
+  log: Logger,
   logContext: LogContext, // Made LogContext more general
   clientIp: string | null | undefined
 ): Promise<RegistrationResult | null> {
@@ -851,30 +912,25 @@ async function _performRegistrationAttempt(
   validatedData: RegistrationInput,
   services: PerformRegistrationDeps,
   logContext: LogContext
-): Promise<RegistrationResult | null> {
+): Promise<RegistrationResult | null | User> {
   const { log, fbService, db, hasher } = services;
   const { email, password, name } = validatedData;
   let firebaseUser: admin.auth.UserRecord | undefined;
 
   try {
     firebaseUser = await _createFirebaseUser({ email, password, name }, fbService, logContext);
-    // step1LogContext was primarily for logging that is now handled or deemed redundant.
-    // const step1LogContext = { ...logContext, uid: firebaseUser.uid };
 
     const prismaUserResult = await _createPrismaUser(
-      firebaseUser, // firebaseUser will have uid here
+      firebaseUser,
       password,
-      { db, hasher, fbService },
-      // Pass enriched logContext for _createPrismaUser, it will build its own base from it
+      { db, hasher, fbService, log },
       { logContext: { ...logContext, uid: firebaseUser.uid } }
     );
 
     if (!(prismaUserResult instanceof Error) && 'id' in prismaUserResult && prismaUserResult.id) {
-      return null; // Indicates success
+      return prismaUserResult as User;
     } else {
-      // _createPrismaUser (via helpers) already logs the specifics of the error.
-      // No need for an additional log.warn here before returning the error result.
-      return prismaUserResult as RegistrationResult; // Propagate the error result
+      return prismaUserResult as RegistrationResult;
     }
   } catch (error) {
     log.error(
@@ -926,63 +982,160 @@ async function _performFirebaseUserDeletion(
 }
 
 /**
+ * Logs the result of the post-registration sign-in attempt.
+ */
+
+interface SignInResultObject {
+  ok?: boolean;
+  error?: string | null;
+  status?: number;
+  url?: string | null;
+  // It can also be other things not strictly defined here, hence the `any` usage in some places
+  // if we can't be sure of the structure from NextAuth's various return possibilities.
+}
+
+interface FailedSignInResultDetails {
+  originalInput: unknown;
+  typedResult: SignInResultObject | string | null;
+}
+
+function _logSignInResult(
+  signInResultInput: unknown, // Can be string, object with ok/error, or other
+  userId: string,
+  logContextWithEmail: LogContext,
+  log: Logger
+): { signInConsideredSuccessful: boolean } {
+  let typedSignInResult: SignInResultObject | string | null = null;
+  if (typeof signInResultInput === 'string') {
+    typedSignInResult = signInResultInput;
+  } else if (isObject(signInResultInput)) {
+    typedSignInResult = signInResultInput as SignInResultObject; // Cast to our interface
+  }
+
+  const isErrorObject =
+    isObject(typedSignInResult) && 'error' in typedSignInResult && typedSignInResult.error !== null;
+  const explicitOk = isObject(typedSignInResult) && typedSignInResult.ok === true;
+  const isLikelySuccessUrl = typeof typedSignInResult === 'string';
+
+  const signInConsideredSuccessful = !isErrorObject && (explicitOk || isLikelySuccessUrl);
+
+  if (signInConsideredSuccessful) {
+    _logSuccessfulSignInDetails(typedSignInResult, userId, logContextWithEmail, log);
+  } else {
+    _logFailedSignInDetails(
+      { originalInput: signInResultInput, typedResult: typedSignInResult },
+      userId,
+      logContextWithEmail,
+      log
+    );
+  }
+  return { signInConsideredSuccessful };
+}
+
+function _logSuccessfulSignInDetails(
+  signInResult: SignInResultObject | string | null, // It's typedSignInResult from caller
+  userId: string,
+  logContextWithEmail: LogContext,
+  log: Logger
+) {
+  log.info(
+    {
+      ...logContextWithEmail,
+      userId,
+      signInStatus: isObject(signInResult) ? signInResult.status : undefined,
+      signInUrl:
+        typeof signInResult === 'string'
+          ? signInResult
+          : isObject(signInResult)
+            ? signInResult.url
+            : undefined,
+    },
+    'Post-registration sign-in process completed. Assumed successful based on signIn result type (URL or ok:true).'
+  );
+}
+
+function _logFailedSignInDetails(
+  results: FailedSignInResultDetails,
+  userId: string,
+  logContextWithEmail: LogContext,
+  log: Logger
+) {
+  _logAuthActionError(
+    log,
+    {
+      ...logContextWithEmail,
+      userId,
+      signInError:
+        isObject(results.typedResult) && results.typedResult.error
+          ? results.typedResult.error
+          : 'Result was not an error object or string, or ok was not true.',
+      signInStatus: isObject(results.typedResult) ? results.typedResult.status : undefined,
+      signInOk: isObject(results.typedResult) ? results.typedResult.ok : undefined,
+      signInUrl: isObject(results.typedResult) ? results.typedResult.url : undefined,
+      fullSignInResult: results.originalInput, // Log the original input for full context
+    },
+    results.typedResult,
+    'Post-registration sign-in failed or response was not indicative of success. See fullSignInResult for details.',
+    'warn'
+  );
+}
+
+/**
  * Handle the post-registration success path including sign-in attempt
  */
 async function _handleSuccessfulRegistration(
   validatedData: RegistrationInput,
-  db: RegisterUserDbClient,
+  userIdToSignIn: string,
   logContextWithEmail: LogContext,
-  log: PinoLogger
+  log: Logger
 ): Promise<ServiceResponse<null, unknown>> {
-  // Attempt to extract user ID from the Prisma user creation
-  const user = await db.user.findUnique({
-    where: { email: validatedData.email },
-    select: { id: true },
-  });
+  const userId = userIdToSignIn;
 
-  const userId = user?.id || 'unknown';
+  if (userId === 'unknown') {
+    log.error(
+      { ...logContextWithEmail },
+      "_handleSuccessfulRegistration: Received 'unknown' userId. Cannot proceed with post-registration sign-in."
+    );
+    // Still return success for registration, but log this critical internal error.
+    return {
+      status: 'success',
+      message:
+        'Registration successful, but internal error prevented sign-in attempt (unknown user ID).',
+      data: null,
+    };
+  }
 
   log.info(
     { ...logContextWithEmail, userId },
     'Registration successful. Attempting post-registration sign-in.'
   );
 
-  // Try sign-in, but don't block the response on its success/failure
   try {
+    // The signIn call itself is not extracted as it's a core part of this function's purpose.
+    // The complexity came from handling its result.
     const signInResult = await signIn('credentials', {
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
-      callbackUrl: '/dashboard',
-      // Add special fields for post-registration handling
       isPostRegistration: true,
       postRegistrationUserId: userId,
       postRegistrationUserEmail: validatedData.email,
       postRegistrationUserName: validatedData.name || null,
     });
 
-    if (signInResult?.ok) {
-      log.info(
-        { ...logContextWithEmail, userId, signInStatus: signInResult.status },
-        'Post-registration sign-in completed successfully.'
-      );
-    } else {
-      log.warn(
-        { ...logContextWithEmail, userId, signInError: signInResult?.error },
-        'Post-registration sign-in failed, but registration itself was successful.'
-      );
-    }
+    _logSignInResult(signInResult, userId, logContextWithEmail, log);
   } catch (signInError) {
     log.error(
       { ...logContextWithEmail, error: signInError, userId },
       'Error during post-registration sign-in attempt.'
     );
+    // Even if sign-in fails, registration was successful.
+    // The error is logged, but we don't want to tell the user registration failed.
   }
 
-  // Return success result
   return {
     status: 'success',
-    message: 'Registration successful',
+    message: 'Registration successful', // User is registered, sign-in is best-effort here.
     data: null,
   };
 }

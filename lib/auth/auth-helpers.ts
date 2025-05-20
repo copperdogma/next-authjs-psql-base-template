@@ -4,6 +4,8 @@ import { UserRole } from '@/types';
 import type { User as NextAuthUser } from 'next-auth';
 import type { AdapterUser } from 'next-auth/adapters';
 import type { Profile } from 'next-auth';
+import { isObject as _isObject } from '../utils/type-guards';
+import type { Logger } from 'pino';
 
 // ====================================
 // Interfaces (Copied from auth-node.ts)
@@ -218,10 +220,8 @@ export async function findOrCreateUserAndAccountInternal(
         name: true,
         email: true,
         image: true,
-        role: true, // Compacted simple fields
-        accounts: {
-          select: { provider: true, providerAccountId: true },
-        },
+        role: true,
+        accounts: { select: { provider: true, providerAccountId: true } },
       },
     });
 
@@ -304,4 +304,23 @@ export function prepareProfileDataForDb(
     name: name,
     image: image,
   };
+}
+
+interface LogAuthErrorParams {
+  logger: Logger;
+  context: Record<string, unknown>;
+  error: unknown;
+  message: string;
+  level?: 'warn' | 'error';
+}
+
+function _logAuthError(params: LogAuthErrorParams): void {
+  const { logger, context, error, message, level = 'error' } = params;
+  const logData = { ...context, error };
+
+  if (level === 'warn') {
+    logger.warn(logData, message);
+  } else {
+    logger.error(logData, message);
+  }
 }
