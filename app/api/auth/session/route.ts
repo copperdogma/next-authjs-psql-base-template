@@ -121,6 +121,59 @@ function handleSessionCreationError(error: unknown): NextResponse {
   );
 }
 
+interface SessionCreationServices {
+  adminService: FirebaseAdminService;
+  prismaClient: typeof prisma;
+  loggerInstance: typeof logger;
+}
+
+async function _createSessionAndGetResponse(
+  idToken: string,
+  expiresIn: number,
+  services: SessionCreationServices
+): Promise<NextResponse> {
+  const { adminService, prismaClient, loggerInstance } = services;
+
+  const decodedToken = await adminService.verifyIdToken(idToken, true);
+  const userId = decodedToken.uid;
+
+  const user = await prismaClient.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    loggerInstance.warn(
+      { userId },
+      'Session POST (_createSessionAndGetResponse): User not found in DB.'
+    );
+    return NextResponse.json(
+      { error: 'User not found in database for session creation.' },
+      { status: HTTP_STATUS.NOT_FOUND }
+    );
+  }
+
+  // Placeholder Prisma session creation
+  await prismaClient.session.create({
+    data: {
+      userId: user.id,
+      expires: new Date(Date.now() + expiresIn),
+      sessionToken: 'placeholder-for-session-token',
+    },
+  });
+
+  const sessionCookie = await adminService.createSessionCookie(idToken, { expiresIn });
+  const response = NextResponse.json(
+    { status: 'success', message: 'Session created' },
+    { status: HTTP_STATUS.OK }
+  );
+  response.cookies.set({
+    name: AUTH.COOKIE_NAME,
+    value: sessionCookie,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS,
+  });
+  return response;
+}
+
 export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth(); // Get session using edge-compatible auth
@@ -147,10 +200,7 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const adminService = FirebaseAdminService.getInstance(logger);
   try {
-    // console.log('[ROUTE_DEBUG] POST handler started');
-    // console.log('[ROUTE_DEBUG] POST: typeof request:', typeof request, 'request.json is func:', typeof request?.json === 'function');
     const body = (await request.json()) as SessionPostBody;
-    // console.log('[ROUTE_DEBUG] POST after request.json()', body);
 
     if (!body || !body.token) {
       logger.warn('Session POST: Missing token in request body.');
@@ -159,60 +209,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { token: idToken } = body;
     const expiresIn = AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS * 1000; // ms
 
-    // console.log('[ROUTE_DEBUG] POST before adminService.verifyIdToken');
-    const decodedToken = await adminService.verifyIdToken(idToken, true);
-    // console.log('[ROUTE_DEBUG] POST after adminService.verifyIdToken', decodedToken);
-    const userId = decodedToken.uid;
-
-    // console.log('[ROUTE_DEBUG] POST before prisma.user.findUnique');
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    // console.log('[ROUTE_DEBUG] POST after prisma.user.findUnique', user);
-
-    if (!user) {
-      logger.warn({ userId }, 'Session POST: User not found in database for session creation.');
-      return NextResponse.json(
-        { error: 'User not found in database for session creation.' },
-        { status: HTTP_STATUS.NOT_FOUND }
-      );
-    }
-
-    // console.log('[ROUTE_DEBUG] POST before prisma.session.create');
-    // Prisma session creation for audit log or additional checks, not directly for NextAuth session cookie.
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        expires: new Date(Date.now() + expiresIn),
-        sessionToken: 'placeholder-for-session-token', // This will be overwritten by actual session cookie value if needed for DB
-      },
+    return await _createSessionAndGetResponse(idToken, expiresIn, {
+      adminService,
+      prismaClient: prisma, // Pass the imported prisma directly
+      loggerInstance: logger, // Pass the imported logger directly
     });
-    // console.log('[ROUTE_DEBUG] POST after prisma.session.create', _session);
-
-    // console.log('[ROUTE_DEBUG] POST before adminService.createSessionCookie');
-    const sessionCookie = await adminService.createSessionCookie(idToken, { expiresIn });
-    // console.log('[ROUTE_DEBUG] POST after adminService.createSessionCookie', sessionCookie);
-
-    // console.log('[ROUTE_DEBUG] POST success: typeof NextResponse.json:', typeof NextResponse?.json);
-    const response = NextResponse.json(
-      { status: 'success', message: 'Session created' },
-      { status: HTTP_STATUS.OK }
-    );
-    response.cookies.set({
-      name: AUTH.COOKIE_NAME,
-      value: sessionCookie,
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      path: '/',
-      maxAge: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS,
-    });
-
-    logger.info('Session POST: Session cookie created successfully.');
-    return response;
-  } catch (error: unknown) {
-    // console.log('[ROUTE_DEBUG] RAW ERROR IN CATCH - Type:', typeof error, 'Stringified:', String(error));
-    // if (error instanceof Error) {
-    //   console.log('[ROUTE_DEBUG] Error Name:', error.name, 'Msg:', error.message, 'Stack:', error.stack);
-    // }
-    // logger.error('POST HANDLER CAUGHT ERROR:', error); // This is too generic, handleSessionCreationError has better logging
+  } catch (error) {
+    // Errors from _createSessionAndGetResponse (e.g., verifyIdToken, createSessionCookie) will be caught here
+    // as will errors from request.json() or if the helper itself throws an unexpected error.
     return handleSessionCreationError(error);
   }
 }

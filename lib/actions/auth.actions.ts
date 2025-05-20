@@ -152,6 +152,29 @@ async function _createFirebaseUser(
   }
 }
 
+async function _handlePrismaCreateErrorAndRollback(
+  dbError: unknown,
+  firebaseUser: admin.auth.UserRecord,
+  fbService: FirebaseAdminService,
+  baseLogContext: LogContext // Reverted to baseLogContext for clarity as email/uid are already in it
+): Promise<RegistrationResult> {
+  actionLogger.warn(
+    { ...baseLogContext, error: dbError },
+    '_handlePrismaCreateErrorAndRollback: Prisma create failed. Initiating rollback.'
+  );
+  const rollbackErrorInstance = await _handlePrismaCreateFailure(
+    firebaseUser,
+    fbService,
+    baseLogContext,
+    dbError
+  );
+  actionLogger.debug(
+    { ...baseLogContext, rollbackErrorInstance },
+    '_handlePrismaCreateErrorAndRollback: Returning error response via _handleMainRegistrationError.'
+  );
+  return _handleMainRegistrationError(rollbackErrorInstance, 'prisma creation/rollback');
+}
+
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
@@ -161,9 +184,8 @@ async function _createPrismaUser(
   const { db, hasher, fbService } = services;
   const { logContext, tx } = options;
   const prismaOps = tx || db;
-  actionLogger.debug(logContext, '_createPrismaUser: Starting Prisma user creation process...');
-
   const email = firebaseUser.email;
+
   if (!email) {
     actionLogger.error(
       { ...logContext, uid: firebaseUser.uid },
@@ -171,38 +193,23 @@ async function _createPrismaUser(
     );
     throw new Error('Firebase user record missing email during Prisma user creation.');
   }
-  const logContextBase = { ...logContext, email, uid: firebaseUser.uid };
+  const baseLogContext = { ...logContext, email, uid: firebaseUser.uid };
 
-  actionLogger.debug(logContextBase, '_createPrismaUser: Hashing password...');
-  const hashedPassword = await hasher.hash(passwordToHash, SALT_ROUNDS);
-
-  actionLogger.debug(logContextBase, '_createPrismaUser: Preparing Prisma user data...');
-  const prismaUserData = _preparePrismaUserData(firebaseUser, hashedPassword);
-
-  actionLogger.debug(logContextBase, '_createPrismaUser: Attempting DB create...');
+  actionLogger.debug(
+    baseLogContext,
+    '_createPrismaUser: Attempting DB create. Hashing password & preparing data as part of create operation...'
+  );
   try {
-    const prismaUser = await prismaOps.user.create({ data: prismaUserData });
+    const prismaUser = await prismaOps.user.create({
+      data: _preparePrismaUserData(firebaseUser, await hasher.hash(passwordToHash, SALT_ROUNDS)),
+    });
     actionLogger.debug(
-      { ...logContextBase, userId: prismaUser.id },
+      { ...baseLogContext, userId: prismaUser.id },
       '_createPrismaUser: DB create success'
     );
     return prismaUser;
   } catch (dbError) {
-    actionLogger.warn(
-      { ...logContextBase, error: dbError },
-      '_createPrismaUser: Prisma create failed. Initiating rollback.'
-    );
-    const rollbackErrorInstance = await _handlePrismaCreateFailure(
-      firebaseUser,
-      fbService,
-      logContextBase,
-      dbError
-    );
-    actionLogger.debug(
-      { ...logContextBase, rollbackErrorInstance },
-      '_createPrismaUser: Prisma catch returning error response via _handleMainRegistrationError.'
-    );
-    return _handleMainRegistrationError(rollbackErrorInstance, 'prisma creation/rollback');
+    return _handlePrismaCreateErrorAndRollback(dbError, firebaseUser, fbService, baseLogContext);
   }
 }
 
@@ -380,54 +387,91 @@ interface ExecuteRateLimitPipelineOptions {
   clientIp: string;
 }
 
+// Adding the helper function and its interface before _executeRateLimitPipeline
+interface ParsedPipelineResult {
+  currentAttempts?: number;
+  errorOccurred: boolean;
+  logMessage?: string; // For logging in the caller
+  logContextAdditions?: Record<string, unknown>; // For additional context for the error log
+}
+
+function _parseRateLimitPipelineResults(
+  results: readonly [Error | null, unknown][] | null
+): ParsedPipelineResult {
+  if (!results) {
+    return {
+      errorOccurred: true,
+      logMessage: 'Redis pipeline execution returned null/undefined results array.',
+    };
+  }
+
+  const incrResult = results[0]; // expecting [error, value] from INCR
+
+  if (!incrResult) {
+    return {
+      errorOccurred: true,
+      logMessage: 'INCR result unexpectedly missing from pipeline results array.',
+    };
+  }
+
+  if (incrResult[0]) {
+    // Error from INCR command itself
+    const error = incrResult[0] as Error; // Type assertion for clarity
+    return {
+      errorOccurred: true,
+      logMessage: 'Error reported by Redis INCR command in pipeline.',
+      logContextAdditions: { redisIncrError: error.message, redisFullError: error },
+    };
+  }
+
+  const currentAttemptsRaw = incrResult[1];
+  if (typeof currentAttemptsRaw !== 'number') {
+    return {
+      errorOccurred: true,
+      logMessage: 'Invalid data type from Redis INCR result (expected number).',
+      logContextAdditions: {
+        incrValueType: typeof currentAttemptsRaw,
+        incrValue: currentAttemptsRaw,
+      },
+    };
+  }
+
+  // Success case
+  return {
+    currentAttempts: currentAttemptsRaw,
+    errorOccurred: false,
+  };
+}
+
 async function _executeRateLimitPipeline(
   redisClient: Redis,
   options: ExecuteRateLimitPipelineOptions,
   log: PinoLogger
 ): Promise<{ currentAttempts?: number; errorOccurred: boolean }> {
   const { key, windowSeconds, clientIp } = options;
-  const logContext = { redisKey: key, clientIp };
-  log.debug(logContext, 'Executing rate limit pipeline...');
 
   try {
     const pipeline = redisClient.pipeline();
     pipeline.incr(key);
     pipeline.expire(key, windowSeconds);
     const results = await pipeline.exec();
-    log.debug({ ...logContext, results }, 'Rate limit pipeline executed.');
 
-    if (!results) {
-      log.error(logContext, 'Redis pipeline execution returned null/undefined.');
-      return { errorOccurred: true };
-    }
+    const parsed = _parseRateLimitPipelineResults(results);
 
-    const incrResult = results[0];
-
-    if (incrResult && incrResult[0]) {
+    if (parsed.errorOccurred) {
       log.error(
-        { ...logContext, redisError: incrResult[0] },
-        'Error during Redis INCR in pipeline.'
+        { redisKey: key, clientIp, ...parsed.logContextAdditions },
+        parsed.logMessage || 'Error parsing rate limit pipeline results.'
       );
       return { errorOccurred: true };
     }
 
-    const currentAttemptsRaw = incrResult ? incrResult[1] : undefined;
-
-    if (typeof currentAttemptsRaw !== 'number') {
-      log.error(
-        { ...logContext, incrResultRaw: currentAttemptsRaw },
-        'Invalid result type from Redis INCR.'
-      );
-      return { errorOccurred: true };
-    }
-
-    log.debug(
-      { ...logContext, currentAttempts: currentAttemptsRaw },
-      'Rate limit check successful.'
-    );
-    return { currentAttempts: currentAttemptsRaw, errorOccurred: false };
+    return { currentAttempts: parsed.currentAttempts, errorOccurred: false };
   } catch (error) {
-    log.error({ ...logContext, error }, 'Generic error during Redis pipeline execution.');
+    log.error(
+      { redisKey: key, clientIp, error },
+      'Generic error during Redis pipeline.exec() call.'
+    );
     return { errorOccurred: true };
   }
 }
@@ -438,10 +482,10 @@ async function _checkRegistrationRateLimit(
   log: PinoLogger
 ): Promise<RateLimitResult> {
   const logContext = { clientIp };
-  log.debug(logContext, 'Checking registration rate limit...');
 
   if (!redisClient) {
     log.warn(
+      { ...logContext },
       'Redis client is not available for registration. Skipping rate limiting. Failing open.'
     );
     return { limited: false };
@@ -451,8 +495,6 @@ async function _checkRegistrationRateLimit(
   const windowSeconds = env.RATE_LIMIT_REGISTER_WINDOW_SECONDS;
   const key = `rate-limit:register:${clientIp}`;
 
-  log.debug({ ...logContext, key, maxAttempts, windowSeconds }, 'Rate limit parameters');
-
   const { currentAttempts, errorOccurred } = await _executeRateLimitPipeline(
     redisClient,
     { key, windowSeconds, clientIp },
@@ -461,23 +503,20 @@ async function _checkRegistrationRateLimit(
 
   if (errorOccurred) {
     log.error({ ...logContext, key }, 'Rate limit check failed due to Redis error. Failing open.');
+    // currentAttempts might be undefined here, but error:true signifies the problem.
     return { limited: false, error: true };
   }
 
-  if (typeof currentAttempts !== 'number') {
-    log.error(
-      { ...logContext, key, currentAttempts },
-      'Rate limit check failed: currentAttempts is undefined despite no reported error. Failing open.'
-    );
-    return { limited: false, error: true };
-  }
+  // If errorOccurred is false, _parseRateLimitPipelineResults guarantees currentAttempts is a number.
+  // Thus, the explicit typeof currentAttempts !== 'number' check can be removed.
+  // We can directly cast/use currentAttempts as number here if TypeScript needs it, but it should infer.
 
-  if (currentAttempts > maxAttempts) {
+  if ((currentAttempts as number) > maxAttempts) {
+    // Type assertion for clarity in condition
     log.warn({ ...logContext, key, currentAttempts, maxAttempts }, 'Rate limit exceeded.');
     return { limited: true };
   }
 
-  log.debug({ ...logContext, key, currentAttempts, maxAttempts }, 'Rate limit check passed.');
   return { limited: false };
 }
 
@@ -549,26 +588,21 @@ async function _validateAndPrepareInputData(
   return { validatedData };
 }
 
-async function _runRegistrationPreChecks(
-  formDataOrValidatedData: FormData | RegistrationInput,
-  options: PreCheckOptions
+// Helper to get validated data, handling FormData or pre-validated input
+async function _getValidatedDataForPreChecks(
+  input: FormData | RegistrationInput,
+  initialLogContext: LogContext,
+  log: PinoLogger
 ): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
-  const { log, db, initialLogContext = {} } = options; // Default initialLogContext
-  let validatedData: RegistrationInput;
-
-  if (formDataOrValidatedData instanceof FormData) {
-    const validationOutcome = await _validateAndPrepareInputData(
-      formDataOrValidatedData,
-      initialLogContext,
-      log
-    );
+  if (input instanceof FormData) {
+    const validationOutcome = await _validateAndPrepareInputData(input, initialLogContext, log);
     if (validationOutcome.errorResult) {
       return { errorResult: validationOutcome.errorResult };
     }
     if (!validationOutcome.validatedData) {
       log.error(
         initialLogContext,
-        '_runRegistrationPreChecks: _validateAndPrepareInputData returned no error but no validatedData. Internal logic error.'
+        '_getValidatedDataForPreChecks: _validateAndPrepareInputData returned no error but no validatedData. Internal logic error.'
       );
       return {
         errorResult: await _handleMainRegistrationError(
@@ -577,19 +611,40 @@ async function _runRegistrationPreChecks(
         ),
       };
     }
-    validatedData = validationOutcome.validatedData;
+    return { validatedData: validationOutcome.validatedData };
   } else {
-    validatedData = formDataOrValidatedData;
+    // Input is already RegistrationInput
     log.debug(
-      { ...initialLogContext, email: validatedData.email },
-      '_runRegistrationPreChecks: Received pre-validated RegistrationInput.'
+      { ...initialLogContext, email: input.email }, // Ensure email is logged if available
+      '_getValidatedDataForPreChecks: Received pre-validated RegistrationInput.'
     );
+    return { validatedData: input };
+  }
+}
+
+async function _runRegistrationPreChecks(
+  formDataOrValidatedData: FormData | RegistrationInput,
+  options: PreCheckOptions
+): Promise<{ validatedData?: RegistrationInput; errorResult?: RegistrationResult }> {
+  const { log, db, initialLogContext = {} } = options;
+
+  const validationPrepResult = await _getValidatedDataForPreChecks(
+    formDataOrValidatedData,
+    initialLogContext,
+    log
+  );
+
+  if (validationPrepResult.errorResult) {
+    return { errorResult: validationPrepResult.errorResult };
   }
 
+  // Assuming _getValidatedDataForPreChecks ensures validatedData exists if no errorResult is returned.
+  // Thus, the explicit check for !validationPrepResult.validatedData is removed.
+  const validatedData = validationPrepResult.validatedData as RegistrationInput; // Type assertion for confidence
   const currentLogContext: LogContext = { ...initialLogContext, email: validatedData.email };
 
   if (env.ENABLE_REDIS_RATE_LIMITING) {
-    const clientIp = await getClientIp(); // Await client IP for rate limiting
+    const clientIp = await getClientIp();
     const rateLimitError = await _handleRegistrationRateLimit(log, currentLogContext, clientIp);
     if (rateLimitError) {
       return { errorResult: rateLimitError };
@@ -606,7 +661,7 @@ async function _runRegistrationPreChecks(
     return { errorResult: existingUserError };
   }
 
-  log.debug(currentLogContext, '_runRegistrationPreChecks: All pre-checks passed.');
+  // log.debug(currentLogContext, '_runRegistrationPreChecks: All pre-checks passed.'); // Removed
   return { validatedData };
 }
 
@@ -620,30 +675,47 @@ function _setupRegistrationContext(log: PinoLogger): { initialLogContext: LogCon
   return { initialLogContext };
 }
 
-// Error case: Missing or incorrect dependencies
-function _validateRegistrationDependencies(
-  fbService: FirebaseAdminService | undefined | null,
-  log: PinoLogger,
-  logContextWithEmail: LogContext
-): ServiceResponse<null, unknown> | null {
-  if (!fbService) {
-    log.error(
-      logContextWithEmail,
-      'Required FirebaseAdminService is not available for registration attempt.'
-    );
-    return {
-      status: 'error',
-      message: 'Registration service is currently unavailable. Please try again later.',
-      error: {
-        code: 'REGISTRATION_SERVICE_UNAVAILABLE',
-        message: 'Firebase Admin Service unavailable',
-      },
-    };
-  }
-  return null;
+interface RegistrationCoreServices {
+  db: RegisterUserDbClient;
+  hasher: Hasher;
+  fbService: FirebaseAdminService;
+  log: PinoLogger;
 }
 
-// Main registration logic function
+async function _executeRegistrationCore(
+  validatedData: RegistrationInput,
+  services: RegistrationCoreServices,
+  logContextWithEmail: LogContext
+): Promise<ServiceResponse<null, unknown>> {
+  const { db, hasher, fbService, log } = services;
+  try {
+    const registrationAttemptResult = await _performRegistrationAttempt(
+      validatedData,
+      { db, hasher, fbService, log }, // Pass services through
+      logContextWithEmail
+    );
+
+    if (registrationAttemptResult === null) {
+      // Success
+      return await _handleSuccessfulRegistration(validatedData, db, logContextWithEmail, log);
+    } else {
+      // Known error from attempt
+      log.warn(
+        logContextWithEmail,
+        'Registration attempt failed within core execution. Returning error response.'
+      );
+      return registrationAttemptResult;
+    }
+  } catch (e: unknown) {
+    // Unexpected error during attempt
+    log.error(
+      { ...logContextWithEmail, error: e },
+      'Critical unexpected error in _executeRegistrationCore'
+    );
+    return _handleMainRegistrationError(e, 'critical_execute_registration_core_error', log);
+  }
+}
+
 async function registerUserLogic(
   _prevState: ServiceResponse<null, unknown> | null,
   formData: FormData | RegistrationInput,
@@ -652,10 +724,8 @@ async function registerUserLogic(
   const resolvedDeps = await _resolveRegisterDependencies(deps);
   const { log, fbService, db, hasher } = resolvedDeps;
 
-  // Setup initial context
   const { initialLogContext } = _setupRegistrationContext(log);
 
-  // Run pre-checks
   const preCheckResult = await _runRegistrationPreChecks(formData, {
     log,
     db,
@@ -666,52 +736,26 @@ async function registerUserLogic(
     return preCheckResult.errorResult;
   }
 
-  if (!preCheckResult.validatedData) {
-    log.error(
-      initialLogContext,
-      'Pre-check completed without validated data or an error result. This is unexpected.'
-    );
-    const errorResult = await _handleMainRegistrationError(
-      new Error('Internal error: Invalid pre-check state'),
-      'pre-check state',
-      log
-    );
-    return errorResult;
-  }
-
-  const validatedData = preCheckResult.validatedData;
+  const validatedData = preCheckResult.validatedData as RegistrationInput;
   const logContextWithEmail: LogContext = { ...initialLogContext, email: validatedData.email };
-  log.info(logContextWithEmail, 'Input validation and pre-checks successful.');
 
-  // Validate dependencies
-  const dependencyError = _validateRegistrationDependencies(fbService, log, logContextWithEmail);
-  if (dependencyError) return dependencyError;
-
-  try {
-    const registrationAttemptResult = await _performRegistrationAttempt(
-      validatedData,
-      { db, hasher, fbService: fbService as FirebaseAdminService, log },
-      logContextWithEmail
-    );
-
-    if (registrationAttemptResult === null) {
-      return await _handleSuccessfulRegistration(validatedData, db, logContextWithEmail, log);
-    } else {
-      log.warn(logContextWithEmail, 'Registration attempt failed. Returning error response.');
-      return registrationAttemptResult;
-    }
-  } catch (e: unknown) {
+  if (!fbService) {
     log.error(
-      { ...logContextWithEmail, error: e },
-      'Critical unexpected error in registerUserLogic'
+      logContextWithEmail,
+      'registerUserLogic: FirebaseAdminService is unexpectedly null before calling _executeRegistrationCore.'
     );
-    const errorResult = await _handleMainRegistrationError(
-      e,
-      'critical registerUserLogic error',
+    return _handleMainRegistrationError(
+      new Error('Internal server error: Firebase service unavailable during registration.'),
+      'firebase_service_unavailable',
       log
     );
-    return errorResult;
   }
+
+  return _executeRegistrationCore(
+    validatedData,
+    { db, hasher, fbService, log },
+    logContextWithEmail
+  );
 }
 
 export async function registerUserAction(
@@ -812,44 +856,33 @@ async function _performRegistrationAttempt(
   const { email, password, name } = validatedData;
   let firebaseUser: admin.auth.UserRecord | undefined;
 
-  log.info(logContext, '_performRegistrationAttempt: Starting registration process.');
-
   try {
     firebaseUser = await _createFirebaseUser({ email, password, name }, fbService, logContext);
-    const step1LogContext = { ...logContext, uid: firebaseUser.uid };
-    log.debug(step1LogContext, '_performRegistrationAttempt: Firebase user created.');
+    // step1LogContext was primarily for logging that is now handled or deemed redundant.
+    // const step1LogContext = { ...logContext, uid: firebaseUser.uid };
 
     const prismaUserResult = await _createPrismaUser(
-      firebaseUser,
+      firebaseUser, // firebaseUser will have uid here
       password,
       { db, hasher, fbService },
-      { logContext: step1LogContext }
+      // Pass enriched logContext for _createPrismaUser, it will build its own base from it
+      { logContext: { ...logContext, uid: firebaseUser.uid } }
     );
 
     if (!(prismaUserResult instanceof Error) && 'id' in prismaUserResult && prismaUserResult.id) {
-      log.info(
-        { ...step1LogContext, userId: prismaUserResult.id },
-        '_performRegistrationAttempt: Prisma user created successfully.'
-      );
-      return null;
+      return null; // Indicates success
     } else {
-      log.warn(
-        step1LogContext,
-        '_performRegistrationAttempt: _createPrismaUser indicated an error. Propagating error response.'
-      );
-      return prismaUserResult as RegistrationResult;
+      // _createPrismaUser (via helpers) already logs the specifics of the error.
+      // No need for an additional log.warn here before returning the error result.
+      return prismaUserResult as RegistrationResult; // Propagate the error result
     }
   } catch (error) {
     log.error(
       { ...logContext, error, firebaseUidAttempted: firebaseUser?.uid },
-      '_performRegistrationAttempt: Main try-catch block error.'
+      '_performRegistrationAttempt: Error during Firebase user creation or other unexpected issue.'
     );
     await _attemptManualFirebaseRollbackOnError(firebaseUser, error, fbService, logContext);
-    return _handleMainRegistrationError(
-      error,
-      'firebase user creation or unknown initial error',
-      log
-    );
+    return _handleMainRegistrationError(error, 'firebase_user_creation_or_unexpected_error', log);
   }
 }
 

@@ -138,7 +138,6 @@ async function initializeServicesIfNeeded(): Promise<void> {
       setupLogger.info('Services already initialized.');
       return;
     }
-    setupLogger.info('Attempting to initialize services within initializeServicesIfNeeded...');
 
     const adminAppInitialized = await _initializeFirebaseAdminApp();
     if (!adminAppInitialized) {
@@ -150,31 +149,17 @@ async function initializeServicesIfNeeded(): Promise<void> {
 
     const adminServiceInitialized = await _initializeFirebaseAdminService();
     if (!adminServiceInitialized) {
-      setupLogger.error(
-        'Aborting further service initialization due to Firebase Admin Service failure.'
-      );
-      // Potentially allow other services to init if they don't depend on Firebase
+      // setupLogger.error(
+      //   'Aborting further service initialization due to Firebase Admin Service failure.'
+      // ); // Removed this log as the final status log should cover it.
     }
 
-    // Placeholder for Prisma Client initialization
-    if (!prismaClient) {
-      // Example: prismaClient = new PrismaClient();
-      // setupLogger.info('PrismaClient initialized.');
-    }
-
-    // Placeholder for Redis Service initialization
-    if (!redisService) {
-      // Example: redisService = new Redis(); // or RedisService.getInstance();
-      // setupLogger.info('RedisService initialized.');
-    }
-
-    // Update servicesInitialized based on critical services
     if (firebaseAdminServiceInstance && firebaseAdminServiceInstance.isInitialized()) {
       servicesInitialized = true;
       setupLogger.info('Core services marked as initialized.');
     } else {
       setupLogger.error(
-        'Core services (specifically FirebaseAdminService) FAILED to initialize. servicesInitialized remains false.'
+        'Core services (specifically FirebaseAdminService) FAILED to initialize or Admin App failed. servicesInitialized remains false.'
       );
     }
   });

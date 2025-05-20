@@ -152,7 +152,7 @@ describe('authorizeLogic', () => {
     localMockDependencies.validator = mockValidator as unknown as typeof CredentialsSchema;
     await expect(
       authorizeLogic({ email: '', password: '' }, localMockDependencies)
-    ).rejects.toThrow('Invalid credentials provided.');
+    ).resolves.toBeNull();
     expect(mockValidator.safeParse).toHaveBeenCalledTimes(1);
     // Check logger call *within* _validateCredentials (indirectly tested)
     expect(logger.warn).toHaveBeenCalledWith(

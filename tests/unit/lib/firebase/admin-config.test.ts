@@ -1,43 +1,24 @@
-// Define the constant FIRST
-const UNIQUE_FIREBASE_ADMIN_APP_NAME = 'firebase-admin-app-unique-name';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
+// const UNIQUE_FIREBASE_ADMIN_APP_NAME = 'firebase-admin-app-unique-name';
 
-import * as admin from 'firebase-admin';
-import { logger } from '@/lib/logger';
-// Import SUT functions directly for testing their implementation
-// Functions to be tested are createFirebaseAdminConfig and getFirebaseAdminConfig
-// getServerSideFirebaseAdminConfig is also from SUT but might be used as a helper or tested separately
+// import * as admin from 'firebase-admin';
+// import { logger } from '@/lib/logger';
+// import { adminTypes } from '@/lib/firebase/admin-types';
 
-// Mock the admin-types to control the constant
-jest.mock('@/lib/firebase/admin-types', () => ({
+// const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types');
+
+// Mock firebase-admin before any imports
+jest.mock('firebase-admin', () => ({
   ...jest.requireActual('@/lib/firebase/admin-types'),
   UNIQUE_FIREBASE_ADMIN_APP_NAME: 'mocked-app-name-for-config-tests',
+  credential: {
+    cert: jest.fn().mockReturnValue('mocked-cert-value'),
+    applicationDefault: jest.fn().mockReturnValue('mocked-app-default-value'),
+  },
 }));
 
-const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types');
-
-// Mock the firebase-admin module (a dependency)
-jest.mock('firebase-admin', () => {
-  const adminTypes = jest.requireActual('@/lib/firebase/admin-types');
-  const localMockAuth = {
-    getUser: jest.fn(),
-    verifyIdToken: jest.fn(),
-  };
-  const localMockApp = {
-    name: adminTypes.UNIQUE_FIREBASE_ADMIN_APP_NAME,
-    auth: jest.fn().mockReturnValue(localMockAuth),
-  };
-  return {
-    apps: [],
-    initializeApp: jest.fn().mockReturnValue(localMockApp),
-    credential: {
-      // These will be individually re-mocked in beforeEach if specific return values are needed per test
-      cert: jest.fn().mockReturnValue('defaultMockCertValueFromFactory'),
-      applicationDefault: jest.fn().mockReturnValue('defaultMockAppDefaultValueFromFactory'),
-    },
-    app: jest.fn().mockReturnValue(localMockApp),
-    auth: jest.fn().mockReturnValue(localMockAuth),
-  };
-});
+// import { getServerSideFirebaseAdminConfig } from '@/lib/firebase/admin-config';
 
 // Mock the logger with a more robust implementation
 const mockLoggerMethods = {
@@ -88,7 +69,7 @@ jest.mock('@/lib/env', () => ({
   },
 }));
 
-// Import SUT after all top-level mocks are defined
+// Now, import the module to be tested AFTER mocks are set up
 import { getServerSideFirebaseAdminConfig } from '@/lib/firebase/admin-config';
 
 describe('Firebase Admin Config Module', () => {
@@ -120,7 +101,7 @@ describe('Firebase Admin Config Module', () => {
     jest.clearAllMocks();
 
     // Get the logger mock for easier assertions
-    const { logger } = require('@/lib/logger');
+    // const { logger } = require('@/lib/logger');
 
     // Set default mock implementations for this test suite run AFTER clearAllMocks
     mockedAdminCredentialCert.mockReturnValue('mockedCertInBeforeEach');

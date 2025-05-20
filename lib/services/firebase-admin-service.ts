@@ -51,56 +51,39 @@ export class FirebaseAdminService {
   }
 
   // Standard getInstance method
+  // eslint-disable-next-line max-statements -- Singleton with locking has inherent statement count
   public static getInstance(logger: pino.Logger): FirebaseAdminService {
-    // First check: quick return if instance already exists
     if (FirebaseAdminService.instance) {
-      logger.debug(
-        'FirebaseAdminService returning existing instance via getInstance (early return)'
-      );
       return FirebaseAdminService.instance;
     }
 
-    // If we're already in the process of creating an instance, wait
     if (FirebaseAdminService.instanceLock) {
-      logger.debug('FirebaseAdminService initialization in progress, waiting...');
-      // Simple blocking wait - better would be to use a promise-based approach
-      while (FirebaseAdminService.instanceLock) {
-        // Micro-wait
-      }
+      while (FirebaseAdminService.instanceLock); // Busy wait for lock release
 
-      // After waiting, check if instance now exists
       if (FirebaseAdminService.instance) {
-        logger.debug('FirebaseAdminService returning instance created during wait');
         return FirebaseAdminService.instance;
       }
     }
 
-    // Set lock to prevent multiple simultaneous initializations
     FirebaseAdminService.instanceLock = true;
 
     try {
-      // Double-check pattern - verify again after acquiring lock
       if (!FirebaseAdminService.instance) {
-        const app = getFirebaseAdminApp(); // Ensure app is initialized via singleton
+        const app = getFirebaseAdminApp();
         if (!app) {
-          // This is a critical failure if the app is not available when getInstance is called.
           logger.error(
             '[FirebaseAdminService.getInstance] Firebase Admin App is not available via getFirebaseAdminApp(). Cannot create service instance.'
           );
-          // Throw to make the issue very clear.
           throw new Error(
             'FirebaseAdminService.getInstance: Firebase Admin App not initialized or available. Check earlier logs.'
           );
         }
-
         FirebaseAdminService.instance = new FirebaseAdminService(app, logger);
         logger.info('FirebaseAdminService new instance created via getInstance');
       }
     } finally {
-      // Always release the lock regardless of success or failure
       FirebaseAdminService.instanceLock = false;
     }
-
     return FirebaseAdminService.instance as FirebaseAdminService;
   }
 
@@ -167,10 +150,10 @@ export class FirebaseAdminService {
         // If not the first attempt, wait before retrying
         if (retryCount > 0) {
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * retryCount));
-          this.logger.info(
+          /* this.logger.info(
             { operationName, retryCount, ...context },
             `Retrying Firebase Admin operation (attempt ${retryCount + 1}/${MAX_RETRIES})`
-          );
+          ); */ // Log removed
         }
 
         return await operation();
@@ -186,10 +169,10 @@ export class FirebaseAdminService {
 
         // Check if the error is retryable
         if (!this.isRetryableError(error)) {
-          this.logger.info(
+          /* this.logger.info(
             { operationName, errorMessage: error instanceof Error ? error.message : String(error) },
             'Error not deemed retryable, will not attempt further retries'
-          );
+          ); */ // Log removed
           break; // Don't retry non-connection errors
         }
       }

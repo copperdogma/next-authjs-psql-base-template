@@ -37,44 +37,32 @@ type GlobalWithNextAuth = typeof globalThis & {
  * Ensures that NextAuth is initialized only once using a lock-based singleton pattern.
  */
 function getNextAuthInstance(): NextAuthInstance {
-  // Check if the instance already exists on the global object
   const globalWithNextAuth = globalThis as GlobalWithNextAuth;
 
-  // Fast path: return existing instance
   if (globalWithNextAuth[NEXTAUTH_INSTANCE]) {
-    logger.debug('[Auth Edge Config] Reusing existing NextAuth instance (fast path)');
     return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
   }
 
-  // Wait for any in-progress initialization
   if (globalWithNextAuth[NEXTAUTH_LOCK]) {
-    logger.debug('[Auth Edge Config] Waiting for NextAuth initialization to complete...');
-    // Simple blocking wait - in a real system, consider using async mechanisms
-    while (globalWithNextAuth[NEXTAUTH_LOCK]) {
-      // Micro-wait
-    }
-    // Check if instance is now available
+    while (globalWithNextAuth[NEXTAUTH_LOCK]); // Busy wait for lock release
+
     if (globalWithNextAuth[NEXTAUTH_INSTANCE]) {
-      logger.debug('[Auth Edge Config] NextAuth instance now available after waiting');
       return globalWithNextAuth[NEXTAUTH_INSTANCE] as NextAuthInstance;
     }
   }
 
-  // Set the initialization lock
   globalWithNextAuth[NEXTAUTH_LOCK] = true;
 
   try {
-    // Double-check pattern: verify again after acquiring lock
+    // Double-check after acquiring lock
     if (!globalWithNextAuth[NEXTAUTH_INSTANCE]) {
-      logger.info('[Auth Edge Config] Initializing Edge-compatible NextAuth (Singleton)...');
       const instance = NextAuth(authConfigEdge);
       globalWithNextAuth[NEXTAUTH_INSTANCE] = instance;
       logger.info(
-        '[Auth Edge Config] Edge-compatible NextAuth initialization complete (Singleton).'
+        '[Auth Edge Config] Edge-compatible NextAuth initialization COMPLETE (Singleton).'
       );
     }
   } finally {
-    // Always release the lock
     globalWithNextAuth[NEXTAUTH_LOCK] = false;
   }
 

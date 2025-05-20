@@ -14,9 +14,9 @@ import { HTTP_STATUS, AUTH } from '@/tests/utils/test-constants';
 // import { logger as mockedLogger } from '@/lib/client-logger';
 
 // --- Variable Placeholders ---
-// These will be assigned fresh mock instances or imported modules in beforeEach
-let POST_handler: any;
-let DELETE_handler: any;
+// These will be assigned fresh mock instances or imported modules in beforeEach OR via jest.isolateModulesAsync
+let POST_handler_isolated: any;
+let DELETE_handler_isolated: any;
 let prismaUserFindUniqueMock: jest.Mock;
 let prismaSessionCreateMock: jest.Mock;
 let prismaSessionDeleteManyMock: jest.Mock;
@@ -109,8 +109,13 @@ jest.doMock('@/lib/services/firebase-admin-service', () => ({
 // --- Test Suite ---
 describe('API Route: /api/auth/session', () => {
   beforeEach(async () => {
-    jest.resetModules(); // Clears the cache for all modules. jest.setup.api.js mocks should re-apply.
+    // Set NODE_ENV to test explicitly here before any module loading for the test
+    process.env.NODE_ENV = 'test';
+    jest.resetModules(); // Still useful for other mocks not handled by isolateModulesAsync
 
+    // Re-configure standard mocks for prisma, logger, firebase-admin-service etc.
+    // This is the same as your existing beforeEach mock setup for these services.
+    // (Ensure prismaUserFindUniqueMock, prismaSessionCreateMock, loggerMock etc. are set up here)
     // --- Re-configure mocks for this specific test run (AFTER resetModules) ---
 
     // Prisma Mocks (re-assigning to the top-level variables)
@@ -149,17 +154,21 @@ describe('API Route: /api/auth/session', () => {
     // No need for jest.doMock('next/server', ...) here.
     // No need to acquire ActualNextResponse here for the SUT.
 
-    // Dynamically import SUT. It will use the globally mocked 'next/server'.
-    const routeFile = await import('@/app/api/auth/session/route');
-    POST_handler = routeFile.POST;
-    DELETE_handler = routeFile.DELETE;
+    // Dynamically import SUT using jest.isolateModulesAsync to ensure fresh state and NODE_ENV is respected
+    await jest.isolateModulesAsync(async () => {
+      const routeModule = await import('@/app/api/auth/session/route');
+      POST_handler_isolated = routeModule.POST;
+      DELETE_handler_isolated = routeModule.DELETE;
+    });
   });
 
   afterEach(() => {
-    jest.clearAllMocks(); // Use clearAllMocks as per jest.setup.api.js, instead of restoreAllMocks
+    jest.clearAllMocks();
+    // Optional: Restore NODE_ENV if it was changed, though jest.setup.env.js should handle the baseline
+    // process.env.NODE_ENV = originalNodeEnv; // If you had an originalNodeEnv variable
   });
 
-  // --- POST Tests ---
+  // --- POST Tests (use POST_handler_isolated) ---
   describe('POST /api/auth/session', () => {
     it('should create a session and return 200 on valid Firebase ID token', async () => {
       const requestBody = { token: 'mock-firebase-id-token' };
@@ -178,7 +187,7 @@ describe('API Route: /api/auth/session', () => {
         },
       } as unknown as NextRequestType;
 
-      const response = (await POST_handler(req)) as NextResponseType & {
+      const response = (await POST_handler_isolated(req)) as NextResponseType & {
         cookies: { set: jest.Mock; get: jest.Mock };
       }; // Cast to include mocked cookies for assertion
 
@@ -194,7 +203,7 @@ describe('API Route: /api/auth/session', () => {
         name: AUTH.COOKIE_NAME,
         value: MOCK_SESSION_COOKIE,
         httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
+        secure: false,
         path: '/',
         maxAge: AUTH.SESSION_COOKIE_EXPIRES_IN_SECONDS,
       });
@@ -224,7 +233,7 @@ describe('API Route: /api/auth/session', () => {
         url: 'http://localhost/api/auth/session',
         cookies: { get: jest.fn() },
       } as unknown as NextRequestType;
-      const response = await POST_handler(req);
+      const response = await POST_handler_isolated(req);
       expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
       const responseBody = await response.json(); // This might still fail if NextResponse.json is broken
       expect(responseBody.error).toBe('Token is required');
@@ -240,7 +249,7 @@ describe('API Route: /api/auth/session', () => {
         url: 'http://localhost/api/auth/session',
         cookies: { get: jest.fn() },
       } as unknown as NextRequestType;
-      const response = await POST_handler(req);
+      const response = await POST_handler_isolated(req);
       expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);
       const responseBody = await response.json();
       expect(responseBody.error).toContain('Invalid Firebase ID token');
@@ -256,7 +265,7 @@ describe('API Route: /api/auth/session', () => {
         url: 'http://localhost/api/auth/session',
         cookies: { get: jest.fn() },
       } as unknown as NextRequestType;
-      const response = await POST_handler(req);
+      const response = await POST_handler_isolated(req);
       expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
       const responseBody = await response.json();
       expect(responseBody.error).toBe('User not found in database for session creation.');
@@ -272,7 +281,7 @@ describe('API Route: /api/auth/session', () => {
         url: 'http://localhost/api/auth/session',
         cookies: { get: jest.fn() },
       } as unknown as NextRequestType;
-      const response = await POST_handler(req);
+      const response = await POST_handler_isolated(req);
       expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
       const responseBody = await response.json();
       expect(responseBody.error).toBe('DB session create error');
@@ -289,7 +298,7 @@ describe('API Route: /api/auth/session', () => {
         url: 'http://localhost/api/auth/session',
         cookies: { get: jest.fn() },
       } as unknown as NextRequestType;
-      const response = await POST_handler(req);
+      const response = await POST_handler_isolated(req);
       expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
       const responseBody = await response.json();
       expect(responseBody.error).toBe('Session cookie creation failed');
@@ -297,21 +306,28 @@ describe('API Route: /api/auth/session', () => {
     });
   });
 
-  // --- DELETE Tests ---
+  // --- DELETE Tests (use DELETE_handler_isolated) ---
   describe('DELETE /api/auth/session', () => {
     it('should delete the session cookie, returning 200', async () => {
       const req = {
         headers: new Headers(),
         method: 'DELETE',
         url: 'http://localhost/api/auth/session',
-        cookies: { get: jest.fn(), clear: jest.fn() },
+        cookies: {
+          get: jest.fn().mockReturnValue({ name: AUTH.COOKIE_NAME, value: MOCK_SESSION_COOKIE }),
+          set: jest.fn(),
+          delete: jest.fn(),
+          clear: jest.fn(),
+          getAll: jest.fn(),
+          has: jest.fn().mockReturnValue(true),
+        },
       } as unknown as NextRequestType;
 
-      const response = (await DELETE_handler(req)) as NextResponseType & {
-        cookies: { set: jest.Mock };
+      const response = (await DELETE_handler_isolated(req)) as NextResponseType & {
+        cookies: { set: jest.Mock; get: jest.Mock };
       };
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(HTTP_STATUS.OK);
       const responseBody = await response.json();
       expect(responseBody).toEqual({ status: 'success', message: 'Session deleted' });
 

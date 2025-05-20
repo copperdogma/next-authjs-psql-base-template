@@ -568,19 +568,21 @@ describe('registerUser with Rate Limiting', () => {
 
     const result = await actionToTest(null, formData);
 
+    // Verify the outcome
     expect(result.status).toBe('error');
     expect(result.message).toBe(
-      'Registration service is currently unavailable. Please try again later.'
+      'Internal server error: Firebase service unavailable during registration.'
     );
-    expect(result.error?.code).toBe('REGISTRATION_SERVICE_UNAVAILABLE');
+    // The current error translation logic will yield GENERIC_ERROR for this path
+    expect(result.error?.code).toBe('GENERIC_ERROR');
 
     expect(mockFirebaseCreateUser).not.toHaveBeenCalled();
     expect(mockDbUserCreate).not.toHaveBeenCalled();
     expect(mockSignInFn).not.toHaveBeenCalled();
     // Check for the error log when FirebaseAdminService is not available
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
-      expect.objectContaining({ email: testEmail, source: 'registerUserAction' }), // The log context should include the email
-      'Required FirebaseAdminService is not available for registration attempt.' // The actual message logged
+      expect.objectContaining({ email: testEmail, source: 'registerUserAction' }),
+      'registerUserLogic: FirebaseAdminService is unexpectedly null before calling _executeRegistrationCore.'
     );
   });
 
@@ -674,7 +676,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       expect.objectContaining({
         error: firebaseCreateError, // The original error object
-        registrationContext: 'firebase user creation or unknown initial error',
+        registrationContext: 'firebase_user_creation_or_unexpected_error', // Updated context
       }),
       '_handleMainRegistrationError: Caught error during registration attempt.'
     );

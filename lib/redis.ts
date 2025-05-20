@@ -213,25 +213,16 @@ export const redisClient = getRedisClient();
  * @returns {Redis | null} The ioredis client instance or null.
  */
 export function getOptionalRedisClient(): Redis | null {
-  const currentClient = getRedisClient(); // Renamed for clarity
-  const globalState = getRedisGlobal(); // Renamed for clarity
+  const currentClient = getRedisClient();
+  const globalState = getRedisGlobal();
 
   if (globalState.redisExplicitlyDisabled) {
-    // True if REDIS_URL was not set
-    // Informative log already happened in getRedisClient
     return null;
   }
 
-  // If connection has failed (according to global flag)
   if (globalState.redisConnectionFailed) {
-    let statusDetail = 'unknown (client state undetermined)';
-
-    // Handle the type safely without using @ts-expect-error
-    if (currentClient instanceof Redis) {
-      statusDetail = currentClient.status;
-    } else {
-      statusDetail = 'unknown (client was null)';
-    }
+    const statusDetail =
+      currentClient instanceof Redis ? currentClient.status : 'unknown (client was null)';
     logger.warn(
       { redisUrl: env.REDIS_URL, status: statusDetail },
       'getOptionalRedisClient: Initial Redis connection attempt failed or client is in an error state. Returning null.'
@@ -239,18 +230,13 @@ export function getOptionalRedisClient(): Redis | null {
     return null;
   }
 
-  // If, despite connection not being marked as failed globally, we still don't have a client
   if (!currentClient) {
-    // This path should ideally be less common if redisConnectionFailed is comprehensive
     logger.warn(
       'getOptionalRedisClient: Redis client instance is unexpectedly null (and connection not marked as globally failed). Redis is unavailable. Returning null.'
     );
     return null;
   }
 
-  // Now, currentClient is definitely a Redis instance.
-  // And globalState.redisConnectionFailed is false.
-  // Final check on current status before returning a client instance
   if (
     currentClient.status !== 'ready' &&
     currentClient.status !== 'connecting' &&

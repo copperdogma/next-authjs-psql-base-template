@@ -141,13 +141,15 @@ describe('authorizeLogic', () => {
 
   it('should return null if credentials validation fails', async () => {
     const localMockDependencies = createMockDependencies();
+    const zodError = new z.ZodError([]); // Define zodError
     const mockValidator = {
-      safeParse: jest.fn().mockReturnValue({ success: false, error: new z.ZodError([]) }),
+      safeParse: jest.fn().mockReturnValue({ success: false, error: zodError }),
     };
     localMockDependencies.validator = mockValidator as unknown as typeof CredentialsSchema;
+    // Expect null when validation fails, not a thrown error
     await expect(
       authorizeLogic({ email: '', password: '' }, localMockDependencies, mockLogContext)
-    ).rejects.toThrow('Invalid credentials provided.');
+    ).resolves.toBeNull();
     expect(mockValidator.safeParse).toHaveBeenCalledTimes(1);
     // Check logger call *within* _validateCredentials (indirectly tested)
     expect(logger.warn).toHaveBeenCalledWith(

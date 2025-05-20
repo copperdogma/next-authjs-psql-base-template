@@ -39,7 +39,7 @@ jest.mock('@/lib/firebase/admin-types', () => ({
 
 jest.mock('firebase-admin', () => {
   // Need to return an object where apps has all the proper array methods
-  const mockApps = [] as any[];
+  // const mockApps = [] as any[]; // This was causing TS6133
 
   return {
     // Using get accessor to ensure apps is always the current mockAppsList
@@ -74,14 +74,17 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 // 3. Import modules being tested
-import * as admin from 'firebase-admin';
-import { logger } from '@/lib/logger';
+// import * as admin from 'firebase-admin';
+// import { logger } from '@/lib/logger';
 import { getFirebaseAdminApp, getFirebaseAdminAuth } from '@/lib/firebase/admin-access';
 
 // 4. Tests
 describe('Firebase Admin Access', () => {
+  // const mockApps = [] as any[];
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    // const mockApps = [] as any[]; // Commenting out unused variable
 
     // Reset shared state
     globalAppInstance = undefined;

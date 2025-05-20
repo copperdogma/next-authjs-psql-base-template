@@ -224,45 +224,54 @@ function _handlePostRegistrationSignIn(
   credentials: unknown,
   extendedLogContext: Record<string, unknown>
 ): NextAuthUser | null {
-  if (!credentials || typeof credentials !== 'object') {
-    return null;
-  }
-  const creds = credentials as Record<string, unknown>;
+  const {
+    isPostRegistration,
+    postRegistrationUserId,
+    postRegistrationUserEmail,
+    // postRegistrationUserName, // Retain comment for context if it was there
+  } = credentials as Record<string, unknown>;
 
-  const isPostRegFlag = creds.isPostRegistration;
-  const isActuallyPostRegistration = isPostRegFlag === true || isPostRegFlag === 'true';
-  if (!isActuallyPostRegistration) {
-    return null;
-  }
+  const { correlationId = '', provider = 'credentials' } = extendedLogContext;
 
-  const hasUserId =
-    'postRegistrationUserId' in creds && typeof creds.postRegistrationUserId === 'string';
-  const hasUserEmail =
-    'postRegistrationUserEmail' in creds && typeof creds.postRegistrationUserEmail === 'string';
-
-  if (!hasUserId || !hasUserEmail) {
-    logger.warn(
-      { ...extendedLogContext, credsProvided: creds },
-      '[Credentials Authorize Logic] Post-registration sign-in attempt missing required userId or email.'
+  if (!isPostRegistration || !postRegistrationUserId || !postRegistrationUserEmail) {
+    logger.debug(
+      { correlationId, provider, ...extendedLogContext },
+      '[_handlePostRegistrationSignIn] Not a post-registration sign-in or missing required fields.'
     );
     return null;
   }
 
-  const userId = creds.postRegistrationUserId as string;
-  const email = creds.postRegistrationUserEmail as string;
-  const name = _extractPostRegName(creds); // Use new helper
-
   logger.info(
-    { ...extendedLogContext, userId, email, nameObtained: name },
-    '[Credentials Authorize Logic] Post-registration sign-in detected. Bypassing DB lookup and password check.'
+    {
+      correlationId,
+      provider,
+      userId: postRegistrationUserId,
+      email: postRegistrationUserEmail,
+      name: _extractPostRegName(credentials as Record<string, unknown>), // Call directly in log
+      ...extendedLogContext,
+    },
+    '[_handlePostRegistrationSignIn] Handling special post-registration sign-in.'
   );
-  return {
-    id: userId,
-    email: email,
-    name: name,
+
+  const user: NextAuthUser = {
+    id: postRegistrationUserId as string,
+    email: postRegistrationUserEmail as string,
+    name: _extractPostRegName(credentials as Record<string, unknown>), // Inlined here as well
     image: null,
     role: UserRole.USER,
   };
+
+  // logger.debug(
+  //   {
+  //     correlationId,
+  //     provider,
+  //     constructedUser: user,
+  //     ...extendedLogContext,
+  //   },
+  //   '[_handlePostRegistrationSignIn] Constructed user for post-registration flow.'
+  // ); // Removed this debug log
+
+  return user;
 }
 
 // Exported for use in the CredentialsProvider configuration
@@ -271,50 +280,37 @@ export async function authorizeLogic(
   dependencies: AuthorizeDependencies,
   logContext?: Record<string, unknown>
 ): Promise<NextAuthUser | null> {
-  const { db, hasher, validator } = dependencies;
+  const { validator } = dependencies;
   const { correlationId, extendedLogContext } = _prepareAuthContext(dependencies, logContext);
 
-  logger.info(
-    { ...extendedLogContext, receivedCredentials: credentials },
-    '[Credentials Authorize Logic] Received credentials for authorization.'
-  );
+  // logger.debug(extendedLogContext, '[Credentials Authorize Logic] Starting authorization attempt'); // Removed
 
-  // --- Special handling for post-registration sign-in ---
+  // Handle special post-registration sign-in (bypasses normal validation)
   const postRegUser = _handlePostRegistrationSignIn(credentials, extendedLogContext);
   if (postRegUser) {
     return postRegUser;
   }
-  // --- End special handling ---
 
-  // --- Normal Validation (if not post-registration) ---
-  const validationResult = _validateCredentials(credentials, validator, correlationId);
-  if (validationResult.error || !validationResult.data) {
-    // Validation errors are logged within the helper, throw a generic error here
-    throw new Error('Invalid credentials provided.');
+  // Validate credentials format and content
+  const validation = _validateCredentials(credentials, validator, correlationId);
+  if (validation.error || !validation.data) {
+    logger.warn(extendedLogContext, '[Credentials Authorize Logic] Credential validation failed.');
+    return null;
   }
+  const { email, password } = validation.data;
+  const authLogContext = { ...extendedLogContext, email };
 
-  const { email, password } = validationResult.data;
   logger.debug(
-    { ...extendedLogContext, email },
-    '[Credentials Authorize Logic] Validated credentials successfully'
+    authLogContext,
+    '[Credentials Authorize Logic] Credentials validated, attempting to find and verify user.'
   );
 
-  try {
-    // --- DB Lookup & Password Check ---
-    const verifiedDbUser = await _findAndVerifyUserCredentials(
-      email,
-      password,
-      { db, hasher },
-      correlationId
-    );
+  const verifiedDbUser = await _findAndVerifyUserCredentials(
+    email,
+    password,
+    dependencies, // Pass db and hasher via dependencies
+    correlationId
+  );
 
-    return await _processAuthenticationResult(verifiedDbUser, extendedLogContext);
-  } catch (error) {
-    // Handle system errors during DB/Hash operation
-    logger.error(
-      { ...extendedLogContext, err: error },
-      '[Credentials Authorize Logic] System error during authorization process'
-    );
-    return null; // Return null on system error
-  }
+  return _processAuthenticationResult(verifiedDbUser, authLogContext);
 }

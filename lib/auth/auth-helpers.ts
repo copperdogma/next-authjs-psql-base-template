@@ -131,95 +131,118 @@ async function _createNewUserWithAccount(
 
 /**
  * Handles an existing user: checks if the provider account exists and creates it if not.
- * @param dbUserWithAccounts - The existing user data including accounts.
- * @param provider - The OAuth provider name.
  * @param providerAccountId - The user's ID for the provider.
  * @param correlationId - Correlation ID for logging.
  * @returns The user data in AuthUserInternal format.
  */
+interface HandleExistingUserParams {
+  dbUserWithAccounts: ExistingUserWithAccountsFromDB;
+  profileData: { id: string; name?: string | null; email: string; image?: string | null };
+  provider: string;
+  providerAccountId: string;
+  correlationId: string;
+}
+
 async function _handleExistingUser(
-  dbUserWithAccounts: ExistingUserWithAccountsFromDB,
-  provider: string,
-  providerAccountId: string,
-  correlationId: string
-): Promise<AuthUserInternal> {
-  logger.info(
-    { userId: dbUserWithAccounts.id, provider, correlationId },
-    '[_handleExistingUser] Processing existing user'
-  );
+  params: HandleExistingUserParams
+): Promise<AuthUserInternal | null> {
+  const { dbUserWithAccounts, profileData, provider, providerAccountId, correlationId } = params;
+  const { email, name, image } = profileData;
+  const logContext = {
+    email,
+    provider,
+    userId: dbUserWithAccounts.id,
+    providerAccountId,
+    correlationId,
+  };
+
+  logger.debug(logContext, '[_handleExistingUser] User found. Checking accounts.');
+
   const accountExists = dbUserWithAccounts.accounts.some(
-    (account: { provider: string; providerAccountId: string }) =>
-      account.provider === provider && account.providerAccountId === providerAccountId
+    acc => acc.provider === provider && acc.providerAccountId === providerAccountId
   );
 
   if (!accountExists) {
     logger.info(
-      { userId: dbUserWithAccounts.id, provider, correlationId },
-      '[_handleExistingUser] Account does not exist, creating...'
+      logContext,
+      '[_handleExistingUser] Account not found for this provider. Attempting to link.'
     );
-    await _createAccountForExistingUser(
-      dbUserWithAccounts.id, // Prisma ID is string
-      provider,
-      providerAccountId,
-      correlationId
-    );
-  } else {
-    logger.info(
-      { userId: dbUserWithAccounts.id, provider, correlationId },
-      '[_handleExistingUser] Account already exists'
-    );
+    try {
+      await _createAccountForExistingUser(
+        dbUserWithAccounts.id,
+        provider,
+        providerAccountId,
+        correlationId
+      );
+      logger.info(logContext, '[_handleExistingUser] Successfully linked new account.');
+    } catch (error) {
+      logger.error(
+        {
+          ...logContext,
+          err: error instanceof Error ? error : new Error(String(error)),
+        },
+        '[_handleExistingUser] Error during _createAccountForExistingUser. Returning null.'
+      );
+      return null; // Return null instead of re-throwing
+    }
   }
 
-  // Convert Prisma user to internal format explicitly - replacing the faulty spread operator
+  // Update user profile info if changed (optional, consider if this is desired behavior)
+  // For now, assume we don't update on every sign-in, only on account creation/linking if needed
+
   const resultUser: AuthUserInternal = {
     id: dbUserWithAccounts.id,
-    name: dbUserWithAccounts.name,
-    email: dbUserWithAccounts.email,
-    image: dbUserWithAccounts.image,
-    role: dbUserWithAccounts.role as UserRole,
+    name: dbUserWithAccounts.name ?? name,
+    email: dbUserWithAccounts.email ?? email,
+    image: dbUserWithAccounts.image ?? image,
+    role: dbUserWithAccounts.role as UserRole, // Assuming role is correctly typed on dbUser
   };
+
+  logger.info(logContext, '[_handleExistingUser] Successfully processed existing user.');
   return resultUser;
 }
 
-// Finds or creates a user and associated account record.
-export async function findOrCreateUserAndAccountInternal({
-  email,
-  profileData,
-  providerAccountId,
-  provider,
-  correlationId,
-}: FindOrCreateUserParams): Promise<AuthUserInternal | null> {
-  const logContext = { email, provider, correlationId };
-
+/**
+ * Internal helper to find or create a user and link/create an account.
+ * This function encapsulates the core logic for provider-based sign-in.
+ */
+export async function findOrCreateUserAndAccountInternal(
+  params: FindOrCreateUserParams
+): Promise<AuthUserInternal | null> {
+  const { email, profileData, providerAccountId, provider, correlationId } = params;
   try {
-    // 1. Find user by email, including their accounts and necessary fields
     const dbUserWithAccounts = await prisma.user.findUnique({
       where: { email },
-      // Select fields needed by _handleExistingUser and for AuthUserInternal
       select: {
         id: true,
         name: true,
         email: true,
         image: true,
-        role: true,
-        accounts: { select: { provider: true, providerAccountId: true } },
+        role: true, // Compacted simple fields
+        accounts: {
+          select: { provider: true, providerAccountId: true },
+        },
       },
     });
 
-    let resultUser: AuthUserInternal | null = null;
-
     if (dbUserWithAccounts) {
-      // 2a. User exists: Handle potential new account linking
-      resultUser = await _handleExistingUser(
-        dbUserWithAccounts,
+      logger.info(
+        { email, provider, correlationId, userId: dbUserWithAccounts.id },
+        '[findOrCreateUserAndAccountInternal] User found, handling existing user account linking.'
+      );
+      return _handleExistingUser({
+        dbUserWithAccounts: dbUserWithAccounts as ExistingUserWithAccountsFromDB,
+        profileData,
         provider,
         providerAccountId,
-        correlationId
-      );
+        correlationId,
+      });
     } else {
-      // 2b. User does not exist: Create new user and account
-      logger.info(logContext, '[findOrCreateUserInternal] User not found, attempting creation...');
-      resultUser = await _createNewUserWithAccount({
+      logger.info(
+        { email, provider, correlationId },
+        '[findOrCreateUserAndAccountInternal] User not found, creating new user and account.'
+      );
+      return _createNewUserWithAccount({
         email,
         profileData,
         provider,
@@ -227,20 +250,11 @@ export async function findOrCreateUserAndAccountInternal({
         correlationId,
       });
     }
-
-    // 3. Final check and return
-    if (!resultUser) {
-      logger.error(logContext, '[findOrCreateUserInternal] Failed to find or create user.');
-      return null;
-    }
-    return resultUser;
   } catch (error) {
-    logger.error({
-      ...logContext,
-      msg: '[findOrCreateUserInternal] Error during find/create process',
-      error:
-        error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
-    });
+    logger.error(
+      { err: error, email, provider, correlationId },
+      '[findOrCreateUserAndAccountInternal] Error during find or create user/account process'
+    );
     return null;
   }
 }
