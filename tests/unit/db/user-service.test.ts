@@ -1,14 +1,14 @@
 import {
-  getUsersWithSessions,
-  getUserWithSessions,
-  getUsersWithActiveSessions,
-  getUsersWithSessionCounts,
-} from '../../../lib/db/user-service';
-// Remove direct import of real prisma
-// import { prisma } from '../../../lib/prisma';
+  // Remove direct import of real prisma
+  // import { prisma } from '../../../lib/prisma';
 
-// Import the singleton mock
-import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks';
+  // Import the singleton mock
+  prismaMock,
+  resetPrismaMock,
+} from '../../mocks/db/prismaMocks';
+
+// Import the instance directly
+import { userServiceInstance } from '../../../lib/db/user-service';
 
 /**
  * DB User Service Unit Tests
@@ -79,7 +79,7 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any); // Use `as any` if types are complex/incomplete
 
-      const result = await getUsersWithSessions();
+      const result = await userServiceInstance.getUsersWithSessions();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
@@ -109,7 +109,7 @@ describe('UserService (static methods)', () => {
         where: { email: { contains: 'example.com' } },
       };
 
-      const result = await getUsersWithSessions(options);
+      const result = await userServiceInstance.getUsersWithSessions(options);
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
@@ -135,7 +135,7 @@ describe('UserService (static methods)', () => {
       prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
       const userId = 'user-1';
-      const result = await getUserWithSessions(userId);
+      const result = await userServiceInstance.getUserWithSessions(userId);
 
       // Use prismaMock
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
@@ -165,7 +165,7 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await getUsersWithActiveSessions();
+      const result = await userServiceInstance.getUsersWithActiveSessions();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith(
@@ -199,7 +199,7 @@ describe('UserService (static methods)', () => {
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
       const expiresAfter = new Date('2023-01-01');
-      const result = await getUsersWithActiveSessions({
+      const result = await userServiceInstance.getUsersWithActiveSessions({
         skip: 5,
         take: 10,
         expiresAfter,
@@ -234,7 +234,7 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await getUsersWithSessionCounts();
+      const result = await userServiceInstance.getUsersWithSessionCounts();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
@@ -267,7 +267,7 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await getUsersWithSessionCounts({
+      const result = await userServiceInstance.getUsersWithSessionCounts({
         skip: 0,
         take: 5,
       });

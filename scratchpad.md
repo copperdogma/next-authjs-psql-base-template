@@ -158,7 +158,7 @@ DOCS Todo - we'll do this at the end when all changes are done
 
 ### Database Service Functions:
 
-- [ ] **Task:** Remove deprecated static wrapper functions in `lib/db/user-service.ts`.
+- [x] **Task:** Remove deprecated static wrapper functions in `lib/db/user-service.ts`.
   - **Observation:** `lib/db/user-service.ts` exports static functions (e.g., `getUsersWithSessions`) that wrap instance methods of the `UserService` class. These are marked `@deprecated`.
   - **Reasoning:** Removing deprecated patterns makes the codebase cleaner and promotes a consistent instance-based service usage, which is generally a better practice for testability and managing dependencies.
   - **Implementation Steps:**
