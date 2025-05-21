@@ -10,7 +10,11 @@ import * as admin from 'firebase-admin';
 // @ts-expect-error AsyncLock types are not available but the package works correctly
 import AsyncLock from 'async-lock';
 
-import { initializeFirebaseAdmin, getServerSideFirebaseAdminConfig } from '@/lib/firebase-admin';
+import {
+  initializeFirebaseAdmin,
+  getServerSideFirebaseAdminConfig,
+  FirebaseAdminConfig,
+} from '@/lib/firebase-admin';
 import { FirebaseAdminService } from '@/lib/services/firebase-admin-service';
 // Import or define RedisService if used
 // import { RedisService } from '@/lib/services/redis-service';
@@ -77,24 +81,37 @@ function _logFirebaseAdminInitWarning(initResult: { error?: string; app?: admin.
   }
 }
 
+// Helper for Firebase admin app initialization steps 3 & 4
+function _performFirebaseAppInitialization(adminConfig: FirebaseAdminConfig): boolean {
+  const initResult = initializeFirebaseAdmin(adminConfig);
+  const success = _handleFirebaseAdminInitResult(initResult);
+  if (!success) {
+    return false;
+  }
+  // At this point, currentAdminApp should be valid if success is true
+  if (!currentAdminApp) {
+    setupLogger.error(
+      'Firebase Admin App is undefined after successful _handleFirebaseAdminInitResult in _performFirebaseAppInitialization. This should not happen.'
+    );
+    return false;
+  }
+  _logFirebaseAdminInitSuccess();
+  _logFirebaseAdminInitWarning(initResult);
+  return true;
+}
+
 async function _initializeFirebaseAdminApp(): Promise<boolean> {
   if (currentAdminApp) {
-    return true; // Already initialized
+    setupLogger.info(
+      { appName: currentAdminApp.name },
+      'Firebase Admin App already initialized and available in services.ts'
+    );
+    return true;
   }
 
   try {
     const adminConfig = getServerSideFirebaseAdminConfig();
-    const initResult = initializeFirebaseAdmin(adminConfig);
-
-    const success = _handleFirebaseAdminInitResult(initResult);
-    if (!success) {
-      return false;
-    }
-
-    _logFirebaseAdminInitSuccess();
-    _logFirebaseAdminInitWarning(initResult);
-
-    return true;
+    return _performFirebaseAppInitialization(adminConfig);
   } catch (error) {
     setupLogger.error(
       { err: error },
@@ -105,31 +122,55 @@ async function _initializeFirebaseAdminApp(): Promise<boolean> {
   }
 }
 
-async function _initializeFirebaseAdminService(): Promise<boolean> {
-  if (currentAdminApp && !firebaseAdminServiceInstance) {
-    try {
-      const serviceLogger = setupLogger.child({ service: 'FirebaseAdminService' });
-      const serviceInstance = await FirebaseAdminService.getInstance(serviceLogger);
-
-      if (serviceInstance.isInitialized()) {
-        firebaseAdminServiceInstance = serviceInstance;
-        setupLogger.info('FirebaseAdminService initialized successfully in services.ts');
-        return true;
-      } else {
-        setupLogger.warn(
-          'FirebaseAdminService.getInstance was called, but service reported not initialized.'
-        );
-        return false;
-      }
-    } catch (error) {
-      setupLogger.error(
-        { err: error },
-        'Failed to initialize FirebaseAdminService instance in services.ts'
-      );
-      return false;
-    }
+// Helper for FirebaseAdminService initialization steps 3 & 4
+// eslint-disable-next-line max-statements
+function _createAndSetFirebaseAdminServiceInstance(): boolean {
+  // Explicit check to satisfy linter and for robustness, though currentAdminApp should be validated by the caller
+  if (!currentAdminApp) {
+    setupLogger.error(
+      'CRITICAL: _createAndSetFirebaseAdminServiceInstance called but currentAdminApp is null. This should have been caught by the caller.'
+    );
+    return false;
   }
-  return !!firebaseAdminServiceInstance; // Already initialized or no admin app
+  try {
+    const serviceLogger = setupLogger.child({ service: 'FirebaseAdminService' });
+    const serviceInstance = FirebaseAdminService.getInstance(currentAdminApp, serviceLogger);
+
+    if (serviceInstance.isInitialized()) {
+      firebaseAdminServiceInstance = serviceInstance;
+      setupLogger.info('FirebaseAdminService initialized successfully in services.ts');
+      return true;
+    }
+
+    // If not initialized:
+    setupLogger.warn(
+      'FirebaseAdminService.getInstance was called, but service reported not initialized.'
+    );
+    firebaseAdminServiceInstance = null;
+    return false;
+  } catch (error) {
+    setupLogger.error(
+      { err: error },
+      'Failed to initialize FirebaseAdminService instance in services.ts'
+    );
+    firebaseAdminServiceInstance = null;
+    return false;
+  }
+}
+
+function _initializeFirebaseAdminService(): boolean {
+  if (!currentAdminApp) {
+    setupLogger.warn(
+      'Attempted to initialize FirebaseAdminService, but Firebase Admin App is not available. Skipping.'
+    );
+    return false;
+  }
+
+  if (firebaseAdminServiceInstance) {
+    return true; // Already initialized
+  }
+
+  return _createAndSetFirebaseAdminServiceInstance();
 }
 
 async function initializeServicesIfNeeded(): Promise<void> {
@@ -139,35 +180,47 @@ async function initializeServicesIfNeeded(): Promise<void> {
       return;
     }
 
+    // Step 1: Initialize Firebase Admin App (this remains async)
     const adminAppInitialized = await _initializeFirebaseAdminApp();
-    if (!adminAppInitialized) {
+    if (!adminAppInitialized || !currentAdminApp) {
+      // Also check currentAdminApp directly
       setupLogger.error(
-        'Aborting further service initialization due to Firebase Admin App failure.'
+        'Aborting further service initialization due to Firebase Admin App failure or unavailability.'
       );
       return;
     }
 
-    const adminServiceInitialized = await _initializeFirebaseAdminService();
-    if (!adminServiceInitialized) {
-      // setupLogger.error(
-      //   'Aborting further service initialization due to Firebase Admin Service failure.'
-      // ); // Removed this log as the final status log should cover it.
-    }
+    // Step 2: Initialize Firebase Admin Service (now synchronous, depends on currentAdminApp)
+    // This call happens *after* currentAdminApp is confirmed to be initialized.
+    const adminServiceInitialized = _initializeFirebaseAdminService();
+    // No need to abort here if adminService fails, as other services might not depend on it.
+    // The final log will indicate its status.
 
-    if (firebaseAdminServiceInstance && firebaseAdminServiceInstance.isInitialized()) {
+    // servicesInitialized can be set to true if at least the app is up,
+    // specific services can be checked for their availability.
+    // Or, if FirebaseAdminService is critical, keep this logic.
+    // For this refactor, we'll assume FirebaseAdminService is critical for "servicesInitialized"
+    if (
+      adminServiceInitialized &&
+      firebaseAdminServiceInstance &&
+      firebaseAdminServiceInstance.isInitialized()
+    ) {
       servicesInitialized = true;
-      setupLogger.info('Core services marked as initialized.');
+      setupLogger.info('Core services (including FirebaseAdminService) marked as initialized.');
     } else {
       setupLogger.error(
-        'Core services (specifically FirebaseAdminService) FAILED to initialize or Admin App failed. servicesInitialized remains false.'
+        'Core services FAILED to initialize (specifically FirebaseAdminService or its prerequisite Admin App). servicesInitialized remains false.'
       );
     }
   });
 }
 
-(async () => {
-  await initializeServicesIfNeeded();
-})();
+// Only auto-initialize if not in a test environment
+if (process.env.NODE_ENV !== 'test') {
+  (async () => {
+    await initializeServicesIfNeeded();
+  })();
+}
 
 export async function getFirebaseAdminService(): Promise<FirebaseAdminService | null> {
   await initializeServicesIfNeeded();

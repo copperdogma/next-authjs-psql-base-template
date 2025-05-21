@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { AUTH, HTTP_STATUS } from '@/tests/utils/test-constants'; // Using test constants for cookie name/duration, consider moving to app constants
 // import { FirebaseError } from 'firebase-admin'; // REMOVED by linter fix for unused var
 import { prisma } from '@/lib/prisma'; // ADD THIS - To use the mocked instance
+import { getFirebaseAdminService } from '@/lib/server/services'; // Import the getter
 
 // Get the initialized Firebase Admin App - This is now handled by FirebaseAdminService.getInstance
 // const adminApp = getFirebaseAdminApp();
@@ -199,7 +200,17 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const adminService = await FirebaseAdminService.getInstance(logger);
+    // const adminService = await FirebaseAdminService.getInstance(logger); // Old way
+    const adminService = await getFirebaseAdminService(); // New way
+
+    if (!adminService) {
+      logger.error('Session POST: FirebaseAdminService not available.');
+      return NextResponse.json(
+        { error: 'Authentication service is currently unavailable.' },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+      );
+    }
+
     const body = (await request.json()) as SessionPostBody;
 
     if (!body || !body.token) {

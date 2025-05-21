@@ -84,26 +84,31 @@ jest.doMock('@/lib/logger', () => ({
 }));
 
 // 3. Mock Firebase Admin SDK utility (used by FirebaseAdminService internally or elsewhere)
-mockGetFirebaseAdminApp = jest.fn().mockReturnValue({ name: 'mocked-app-via-doMock-utility' });
+// This mock can remain if other parts of the system (or a more detailed FirebaseAdminService mock) use it.
+// However, for the session route, it's less direct now.
+mockGetFirebaseAdminApp = jest
+  .fn()
+  .mockReturnValue({ name: 'mocked-app-via-doMock-utility-lib-firebase-firebase-admin' });
 jest.doMock('@/lib/firebase/firebase-admin', () => ({
   getFirebaseAdminApp: mockGetFirebaseAdminApp,
 }));
 
-// 4. Mock FirebaseAdminService (the entire service module)
-const mockFirebaseAdminServiceInstance = {
-  // This is the object that getInstance() will return
+// 4. MOCK THE NEW ENTRY POINT: lib/server/services.ts for getFirebaseAdminService
+const mockFirebaseAdminServiceInstanceFromGetter = {
   verifyIdToken: jest.fn(),
   createSessionCookie: jest.fn(),
-  getApp: jest.fn(), // This is the .getApp() method on the service instance
+  isInitialized: jest.fn().mockReturnValue(true), // Assume initialized by default for tests
+  // Add getAuth or other methods if the session route uses them directly on the service instance
+  getAuth: jest.fn(), // Example: if sessionRoute calls adminService.getAuth()
 };
+const mockGetFirebaseAdminService = jest
+  .fn()
+  .mockResolvedValue(mockFirebaseAdminServiceInstanceFromGetter);
 
-const mockFirebaseAdminServiceStatic = {
-  // This mocks the static parts of the class, e.g., FirebaseAdminService.getInstance
-  getInstance: jest.fn().mockReturnValue(mockFirebaseAdminServiceInstance),
-};
-
-jest.doMock('@/lib/services/firebase-admin-service', () => ({
-  FirebaseAdminService: mockFirebaseAdminServiceStatic, // Mock the class itself (specifically its static methods like getInstance)
+jest.doMock('@/lib/server/services', () => ({
+  __esModule: true,
+  getFirebaseAdminService: mockGetFirebaseAdminService,
+  // Mock other exports from lib/server/services if session.test.ts or its dependencies use them
 }));
 
 // --- Test Suite ---
@@ -138,17 +143,33 @@ describe('API Route: /api/auth/session', () => {
     actualLoggerMocks.child.mockReturnThis(); // Ensure child returns the logger instance for chaining
 
     // Firebase Admin Service and its method mocks
-    const FirebaseAdminServiceMockedStaticCtrl = jest.requireMock(
-      '@/lib/services/firebase-admin-service'
-    ).FirebaseAdminService;
-    FirebaseAdminServiceMockedStaticCtrl.getInstance.mockClear();
-    mockVerifyIdToken = mockFirebaseAdminServiceInstance.verifyIdToken;
-    mockCreateSessionCookie = mockFirebaseAdminServiceInstance.createSessionCookie;
-    mockGetServiceAccountApp = mockFirebaseAdminServiceInstance.getApp;
+    // We now primarily configure the mock returned by getFirebaseAdminService
+    mockGetFirebaseAdminService
+      .mockClear()
+      .mockResolvedValue(mockFirebaseAdminServiceInstanceFromGetter);
+
+    // Assign the method mocks from the instance that getFirebaseAdminService will return
+    mockVerifyIdToken = mockFirebaseAdminServiceInstanceFromGetter.verifyIdToken;
+    mockCreateSessionCookie = mockFirebaseAdminServiceInstanceFromGetter.createSessionCookie;
+    // Ensure these are reset and configured for each test
     mockVerifyIdToken.mockReset().mockResolvedValue(mockDecodedToken as admin.auth.DecodedIdToken);
     mockCreateSessionCookie.mockReset().mockResolvedValue(MOCK_SESSION_COOKIE);
-    mockGetFirebaseAdminApp.mockClear().mockReturnValue({ name: 'mocked-app-in-beforeEach' });
-    mockGetServiceAccountApp.mockReset().mockReturnValue(mockGetFirebaseAdminApp());
+    (mockFirebaseAdminServiceInstanceFromGetter.isInitialized as jest.Mock)
+      .mockReset()
+      .mockReturnValue(true);
+    // Configure getAuth if used by the SUT
+    (mockFirebaseAdminServiceInstanceFromGetter.getAuth as jest.Mock).mockReset().mockReturnValue({
+      /* your mock auth object */
+    });
+
+    // The old way of mocking FirebaseAdminService.getInstance is no longer needed here:
+    // const FirebaseAdminServiceMockedStaticCtrl = jest.requireMock(
+    //   '@/lib/services/firebase-admin-service'
+    // ).FirebaseAdminService;
+    // FirebaseAdminServiceMockedStaticCtrl.getInstance.mockClear();
+    // mockGetServiceAccountApp = mockFirebaseAdminServiceInstance.getApp; // This was for the old service instance mock
+    // mockGetFirebaseAdminApp.mockClear().mockReturnValue({ name: 'mocked-app-in-beforeEach' }); // This is for the @/lib/firebase/firebase-admin utility, might still be relevant if other parts use it
+    // mockGetServiceAccountApp.mockReset().mockReturnValue(mockGetFirebaseAdminApp());
 
     // We are now relying on the global mock of 'next/server' from jest.setup.api.js.
     // No need for jest.doMock('next/server', ...) here.
@@ -191,6 +212,7 @@ describe('API Route: /api/auth/session', () => {
         cookies: { set: jest.Mock; get: jest.Mock };
       }; // Cast to include mocked cookies for assertion
 
+      expect(mockGetFirebaseAdminService).toHaveBeenCalledTimes(1); // Verify the new getter was called
       expect(response.status).toBe(200);
       const responseBody = await response.json();
       expect(responseBody).toEqual({ status: 'success', message: 'Session created' });
@@ -237,6 +259,28 @@ describe('API Route: /api/auth/session', () => {
       expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
       const responseBody = await response.json(); // This might still fail if NextResponse.json is broken
       expect(responseBody.error).toBe('Token is required');
+    });
+
+    it('should return 503 if getFirebaseAdminService returns null (service unavailable)', async () => {
+      mockGetFirebaseAdminService.mockResolvedValue(null);
+
+      const requestBody = { token: 'mock-firebase-id-token' };
+      const req = {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: jest.fn().mockResolvedValue(requestBody),
+        method: 'POST',
+        url: 'http://localhost/api/auth/session',
+        cookies: { get: jest.fn() },
+      } as unknown as NextRequestType;
+
+      const response = await POST_handler_isolated(req);
+      expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR); // Or 503 if your route maps it
+      const responseBody = await response.json();
+      expect(responseBody.error).toBe('Authentication service is currently unavailable.');
+      // Check logger if the route logs this specific scenario
+      expect(loggerMock.error).toHaveBeenCalledWith(
+        'Session POST: FirebaseAdminService not available.'
+      );
     });
 
     it('should return 401 if Firebase token verification fails', async () => {

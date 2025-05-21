@@ -1,3 +1,6 @@
+/**
+ * @deprecated This entire module is deprecated. Firebase Admin App initialization is now centralized in 'lib/firebase/admin-initialization.ts' and managed via 'lib/server/services.ts'. Please update your code to use 'initializeFirebaseAdmin' for setup and then obtain the FirebaseAdminService or the app instance through the service layer. Direct use of 'getFirebaseAdminApp' from this module is discouraged and will be removed. For direct app access after initialization, consider using getFirebaseAdminApp from '@lib/firebase/admin-access'.
+ */
 import * as admin from 'firebase-admin';
 import { logger } from '@/lib/logger';
 
@@ -86,11 +89,19 @@ function performAppInitialization(): admin.app.App | undefined {
 }
 
 /**
+ * @deprecated This function is deprecated. Initialization is now handled by 'initializeFirebaseAdmin' in 'lib/firebase/admin-initialization.ts'. Access the app instance via 'lib/server/services.ts' or 'lib/firebase/admin-access.ts' after ensuring services are initialized.
+ *
  * Initializes and returns the Firebase Admin SDK App instance (Singleton).
  * Uses environment variables for configuration.
  * Implements double-check locking pattern for thread safety.
  */
 export function getFirebaseAdminApp(): admin.app.App | undefined {
+  logger.warn(
+    "DEPRECATED: getFirebaseAdminApp() from 'lib/firebase/firebase-admin.ts' is deprecated. " +
+      "Use 'initializeFirebaseAdmin' for setup and access the app via " +
+      "'lib/server/services.ts' or 'getFirebaseAdminApp' from '@lib/firebase/admin-access'."
+  );
+
   // Fast path: return immediately if initialized
   if (app) {
     return app;
@@ -121,4 +132,4 @@ export function getFirebaseAdminApp(): admin.app.App | undefined {
 }
 
 // Initialize on load (optional, alternative is to call getFirebaseAdminApp() when needed)
-// getFirebaseAdminApp();
+// getFirebaseAdminApp(); // Comment out or remove eager initialization if present.

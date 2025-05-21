@@ -79,127 +79,109 @@ const mockLogger = {
 describe('FirebaseAdminServiceImpl', () => {
   let service: FirebaseAdminService;
 
-  beforeEach(() => {
-    resetFirebaseAdminMocks(); // Clears all mocks, including auth method mocks
+  // A mock app instance to pass to getInstance
+  let mockProvidedApp: admin.app.App;
 
-    // Clear our logger spies
+  beforeEach(() => {
+    resetFirebaseAdminMocks();
     mockLoggerErrorFn.mockClear();
     mockLoggerInfoFn.mockClear();
     mockLoggerWarnFn.mockClear();
-    mockLoggerDebugFn.mockClear();
-    mockLoggerTraceFn.mockClear();
-    (mockLogger.child as jest.Mock).mockClear(); // Clear calls to child itself
+    (mockLogger.child as jest.Mock).mockClear().mockImplementation(() => mockLogger);
 
-    // Re-ensure child returns mockLogger itself
-    (mockLogger.child as jest.Mock).mockImplementation(() => mockLogger);
-
+    // This service instance is created using createTestInstance for other tests
     service = FirebaseAdminService.createTestInstance(
-      authMethodsMockObject as unknown as admin.auth.Auth, // Cast to satisfy Auth type
+      authMethodsMockObject as unknown as admin.auth.Auth,
       mockLogger
     );
-    // Add this log:
-    // console.log( // Removed
-    //   '[DEBUG] firebase-admin-service.test.ts: Is authMethodsMockObject.getUser === getUserMock? ',
-    //   authMethodsMockObject.getUser === getUserMock
-    // );
+
+    // Prepare a valid mock app to be passed to getInstance in its specific tests
+    mockProvidedApp = {
+      auth: jest.fn().mockReturnValue(authMethodsMockObject),
+      name: 'mock-app-for-getinstance',
+    } as unknown as admin.app.App;
+
+    (FirebaseAdminService as any).instance = null;
   });
 
   describe('getInstance', () => {
-    let mockGetFirebaseAdminApp: jest.Mock;
-    let mockAppFromGetAdminApp: { auth: jest.Mock };
-
-    beforeEach(() => {
-      // Reset the singleton instance before each test in this block
-      (FirebaseAdminService as any).instance = null;
-
-      // Prepare a mock app that getFirebaseAdminApp will return
-      // This mock app needs an auth() method that returns our main authMethodsMockObject
-      mockAppFromGetAdminApp = {
-        auth: jest.fn().mockReturnValue(authMethodsMockObject),
-        // Add other app properties if needed by the FirebaseAdminService constructor
-        // name: 'mock-app-from-getFirebaseAdminApp' // Example
-      };
-
-      mockGetFirebaseAdminApp = jest.fn().mockReturnValue(mockAppFromGetAdminApp);
-
-      // Mock the getFirebaseAdminApp module specifically for these getInstance tests
-      // This is separate from the top-level 'firebase-admin' mock
-      jest.doMock('@/lib/firebase/firebase-admin', () => ({
-        getFirebaseAdminApp: mockGetFirebaseAdminApp,
-      }));
-
-      // We need to re-require FirebaseAdminService *after* the doMock for getFirebaseAdminApp
-      // if getInstance itself is not static or if its module has already been loaded
-      // However, since getInstance IS static and we reset its internal static 'instance' property,
-      // and the constructor uses the (now mocked) getFirebaseAdminApp, this should be okay.
-      // If issues arise, use jest.isolateModules or resetModules + require.
-    });
-
-    afterEach(() => {
-      // Clean up the specific mock for getFirebaseAdminApp to not interfere with other tests
-      jest.unmock('@/lib/firebase/firebase-admin');
-      // Alternatively, if using jest.isolateModules, this cleanup is usually automatic.
-    });
-
-    it('should create a new instance if one does not exist, using getFirebaseAdminApp', async () => {
-      // Act
-      let serviceInstance: FirebaseAdminService | null = null;
-      // Initialize with a type definition that will be overwritten
-      let FreshFirebaseAdminServiceClass: any;
-
-      await jest.isolateModulesAsync(async () => {
-        const {
-          FirebaseAdminService: IsolatedFirebaseAdminService,
-        } = require('@/lib/services/firebase-admin-service');
-        FreshFirebaseAdminServiceClass = IsolatedFirebaseAdminService;
-        (FreshFirebaseAdminServiceClass as any).instance = null;
-        serviceInstance = await FreshFirebaseAdminServiceClass.getInstance(mockLogger);
-      });
-
-      // Assert
-      expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1);
-      expect(mockAppFromGetAdminApp.auth).toHaveBeenCalledTimes(1);
+    it('should create a new instance if one does not exist, with a provided app', () => {
+      const serviceInstance = FirebaseAdminService.getInstance(mockProvidedApp, mockLogger);
+      expect(mockProvidedApp.auth).toHaveBeenCalledTimes(1);
       expect(serviceInstance).not.toBeNull();
-      expect(serviceInstance).toBeInstanceOf(FreshFirebaseAdminServiceClass); // Use the isolated class definition
-      expect(serviceInstance!.getAuth()).toBe(authMethodsMockObject);
+      expect(serviceInstance).toBeInstanceOf(FirebaseAdminService);
+      expect(serviceInstance.getAuth()).toBe(authMethodsMockObject);
       expect(mockLoggerInfoFn).toHaveBeenCalledWith(
-        expect.stringContaining('FirebaseAdminService new instance created via getInstance')
+        'FirebaseAdminService new instance created via getInstance with provided app.'
+      );
+      expect(mockLoggerInfoFn).toHaveBeenCalledWith(
+        'FirebaseAdminService initialized via constructor with provided app.'
       );
     });
 
-    it('should throw an error if authInstance is not available', () => {
-      // Arrange: service is already created in beforeEach using createTestInstance
-      // Manually nullify the authInstance to simulate a failure state
-      (service as any).authInstance = null;
-
-      // Act & Assert
-      expect(() => service.getAuth()).toThrow('FirebaseAdminService: Auth instance not available.');
-      expect(mockLoggerErrorFn).toHaveBeenCalledWith('Auth instance not initialized!');
-    });
-
-    it('should return the existing instance on subsequent calls', async () => {
-      // Define variables outside with proper typing
-      let firstInstance: FirebaseAdminService | null = null;
-      let secondInstance: FirebaseAdminService | null = null;
-
-      await jest.isolateModulesAsync(async () => {
-        const {
-          FirebaseAdminService: FreshFirebaseAdminService,
-        } = require('@/lib/services/firebase-admin-service');
-        (FreshFirebaseAdminService as any).instance = null;
-        firstInstance = await FreshFirebaseAdminService.getInstance(mockLogger);
-        secondInstance = await FreshFirebaseAdminService.getInstance(mockLogger);
-      });
-
-      // Assert - only if both instances were properly created
-      expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1); // Should only be called once for the first instance
+    it('should return the existing instance on subsequent calls', () => {
+      const firstInstance = FirebaseAdminService.getInstance(mockProvidedApp, mockLogger);
+      const secondInstance = FirebaseAdminService.getInstance(mockProvidedApp, mockLogger);
+      expect(mockProvidedApp.auth).toHaveBeenCalledTimes(1);
       expect(firstInstance).not.toBeNull();
       expect(secondInstance).not.toBeNull();
       expect(secondInstance).toBe(firstInstance);
     });
+
+    it('should throw an error if a null app is provided', () => {
+      expect(() => {
+        FirebaseAdminService.getInstance(null as any, mockLogger);
+      }).toThrow('FirebaseAdminService.getInstance: Firebase Admin App not provided.');
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        '[FirebaseAdminService.getInstance] providedApp is null or undefined. Cannot create service instance.'
+      );
+    });
+
+    it('should throw an error if an app without a name is provided', () => {
+      const invalidAppNoName = { auth: jest.fn() } as any;
+      expect(() => {
+        FirebaseAdminService.getInstance(invalidAppNoName, mockLogger);
+      }).toThrow('Provided app instance appears uninitialized (missing name).');
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        '[FirebaseAdminService.getInstance] providedApp does not have a name. It may not be a fully initialized Firebase App instance.'
+      );
+    });
+
+    it('should throw an error if an app without an auth method is provided', () => {
+      const invalidAppNoAuth = { name: 'app-no-auth' } as any;
+      expect(() => {
+        FirebaseAdminService.getInstance(invalidAppNoAuth, mockLogger);
+      }).toThrow('Provided app instance is invalid (missing auth method or name).');
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith(
+        '[FirebaseAdminService.getInstance] providedApp does not have an auth() method or a valid name. It may not be a valid Firebase App instance.'
+      );
+    });
+
+    it('should throw if getInstance is called concurrently (simplified lock check)', () => {
+      (FirebaseAdminService as any).instanceLock = true;
+      expect(() => {
+        FirebaseAdminService.getInstance(mockProvidedApp, mockLogger);
+      }).toThrow(
+        'Concurrent FirebaseAdminService.getInstance call detected during instance creation.'
+      );
+      (FirebaseAdminService as any).instanceLock = false;
+    });
   });
 
-  // Tests remain the same...
+  describe('getAuth after manual authInstance manipulation', () => {
+    it('should throw an error if authInstance is not available', () => {
+      const testService = FirebaseAdminService.createTestInstance(
+        authMethodsMockObject as any,
+        mockLogger
+      );
+      (testService as any).authInstance = null;
+      expect(() => testService.getAuth()).toThrow(
+        'FirebaseAdminService: Auth instance not available.'
+      );
+      expect(mockLoggerErrorFn).toHaveBeenCalledWith('Auth instance not initialized!');
+    });
+  });
+
   describe('isInitialized', () => {
     it('should return true when service is created with createTestInstance', () => {
       expect(service.isInitialized()).toBe(true);
