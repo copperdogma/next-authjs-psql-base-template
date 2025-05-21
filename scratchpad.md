@@ -98,7 +98,7 @@ This document tracks progress, decisions, and issues encountered during the proj
 - **Critical: Post-registration sign-in fails (user created, but must log in manually).**
 - ~~**Warning: Persistent `[JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing` during sign-in and post-registration.**~~ - FIXED
 - ~~**Warning/Potential Bug: Firebase Admin Service initialization shows `WARN: Firebase Admin Service could not be initialized...` followed by later success, indicating potential race condition.**~~ - FIXED
-- Minor: Middleware protects `/.well-known/appspecific/com.chrome.devtools.json`, causing redirects.
+- [x] **Minor: Review Middleware Protection for `/.well-known/` Paths**
 - Observation: Frequent `/api/log/client` calls.
 - Observation: `INFO (test):` log prefixes appearing in server logs.
 
@@ -383,7 +383,7 @@ advanced/large-codebases
     - The global Firebase Admin SDK initialization logic (likely in `lib/firebase/firebase-admin.ts`).
     - Ensure robust singleton patterns for both the SDK instance and the service, and verify correct initialization order and dependency injection.
 
-- [ ] **Minor: Review Middleware Protection for `/.well-known/` Paths**
+- [x] **Minor: Review Middleware Protection for `/.well-known/` Paths**
 
   - **Symptom:** Requests to `/.well-known/appspecific/com.chrome.devtools.json` are being redirected to `/login` by the authentication middleware.
   - **Log Evidence:** (e.g., at timestamp `[2025-05-19 21:05:19.282 -0600]` in the provided server logs, showing a 302 redirect for this path due to `[Auth Edge Callback] Unauthorized access to protected route, redirecting...`)

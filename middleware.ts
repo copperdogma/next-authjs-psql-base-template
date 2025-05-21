@@ -26,7 +26,7 @@ export default auth;
 // Config for route matching: apply this middleware to all routes except for
 // Next.js internals (_next), static assets (favicon.ico), and NextAuth API routes (/api/auth).
 export const config = {
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|\.well-known\/).*)'],
 };
 
 // Note: Custom rate-limiting logic for specific API endpoints (e.g., /api/log/client)
