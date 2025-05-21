@@ -35,16 +35,18 @@ export default function SessionErrorHandler({
     window.addEventListener('error', handleSessionError);
 
     // The unhandledrejection handler looks good as it already checks for session/auth keywords
-    window.addEventListener('unhandledrejection', event => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (event.reason?.message?.includes('session') || event.reason?.message?.includes('auth')) {
         clientLogger.error('Unhandled session promise rejection', { reason: event.reason });
         setSessionError(event.reason);
       }
-    });
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
     return () => {
       window.removeEventListener('error', handleSessionError);
-      window.removeEventListener('unhandledrejection', handleSessionError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [setSessionError]);
 
