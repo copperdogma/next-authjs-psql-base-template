@@ -149,13 +149,12 @@ DOCS Todo - we'll do this at the end when all changes are done
 
 ### Layout Components:
 
-- [ ] **Task:** Remove potentially redundant layout components: `components/layouts/ApplicationHeader.tsx` and `components/layouts/ApplicationFooter.tsx`.
+- [x] **Task:** Remove potentially redundant layout components: `components/layouts/ApplicationHeader.tsx` and `components/layouts/ApplicationFooter.tsx`.
   - **Observation:** The root layout (`app/layout.tsx`) uses `components/layouts/Header.tsx` and `components/layouts/Footer.tsx`. The `ApplicationHeader` and `ApplicationFooter` components might be unused or remnants of an older structure.
   - **Reasoning:** Eliminating unused or redundant components simplifies the codebase, reduces potential confusion for new users/AI, and makes the project structure cleaner.
   - **Implementation Steps:**
-    1.  Verify if `components/layouts/ApplicationHeader.tsx` and `components/layouts/ApplicationFooter.tsx` are imported or used anywhere in the application.
-    2.  If they are not used, delete these two files.
-    3.  If they are used but their functionality is duplicated by `Header.tsx` and `Footer.tsx`, refactor the code to use the canonical components and then delete `ApplicationHeader.tsx` and `ApplicationFooter.tsx`.
+    1.  Verified if `components/layouts/ApplicationHeader.tsx` and `components/layouts/ApplicationFooter.tsx` are imported or used anywhere in the application. (Done - found no usages)
+    2.  Deleted these two files. (Done)
 
 ### Database Service Functions:
 
