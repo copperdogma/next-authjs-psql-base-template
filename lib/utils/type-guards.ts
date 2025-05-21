@@ -23,4 +23,4 @@ export function isValidUserResult(result: unknown): result is { id: string } {
     !(result instanceof Error) &&
     typeof (result as { id: unknown }).id === 'string'
   );
-} 
+}

@@ -179,10 +179,15 @@ async function _handlePrismaCreateErrorAndRollback(
 async function _createPrismaUser(
   firebaseUser: admin.auth.UserRecord,
   passwordToHash: string,
-  services: { db: RegisterUserDbClient; hasher: Hasher; fbService: FirebaseAdminService; log: Logger },
+  services: {
+    db: RegisterUserDbClient;
+    hasher: Hasher;
+    fbService: FirebaseAdminService;
+    log: Logger;
+  },
   options: CreatePrismaUserOptions
 ): Promise<User | RegistrationResult> {
-  const { db, hasher, fbService, log } = services;
+  const { db, hasher, fbService, log: _log } = services;
   const { logContext, tx } = options;
   const prismaOps = tx || db;
   const email = firebaseUser.email;
@@ -686,13 +691,14 @@ interface RegistrationCoreServices {
 /**
  * Standardized error logging for authentication actions
  */
-function _logAuthActionError(
-  logger: Logger,
-  context: Record<string, unknown>,
-  error: unknown,
-  message: string,
-  level: 'warn' | 'error' = 'error'
-): void {
+function _logAuthActionError(options: {
+  logger: Logger;
+  context: Record<string, unknown>;
+  error: unknown;
+  message: string;
+  level?: 'warn' | 'error';
+}): void {
+  const { logger, context, error, message, level = 'error' } = options;
   const logData = { ...context, error };
 
   if (level === 'warn') {
@@ -717,20 +723,18 @@ async function _executeRegistrationCore(
     );
 
     // Handle the registration attempt result
-    return _processRegistrationAttemptResult(
-      registrationAttemptResult,
-      validatedData,
+    return _processRegistrationAttemptResult(registrationAttemptResult, validatedData, {
       log,
       logContextWithEmail,
-      db
-    );
+      _db: db,
+    });
   } catch (e: unknown) {
-    _logAuthActionError(
-      log,
-      { ...logContextWithEmail },
-      e,
-      'Critical unexpected error in _executeRegistrationCore'
-    );
+    _logAuthActionError({
+      logger: log,
+      context: { ...logContextWithEmail },
+      error: e,
+      message: 'Critical unexpected error in _executeRegistrationCore',
+    });
     return _handleMainRegistrationError(e, 'critical_execute_registration_core_error', log);
   }
 }
@@ -741,10 +745,13 @@ async function _executeRegistrationCore(
 function _processRegistrationAttemptResult(
   registrationAttemptResult: RegistrationResult | null | User,
   validatedData: RegistrationInput,
-  log: Logger,
-  logContextWithEmail: LogContext,
-  db: RegisterUserDbClient
+  options: {
+    log: Logger;
+    logContextWithEmail: LogContext;
+    _db: RegisterUserDbClient;
+  }
 ): Promise<RegistrationResult> {
+  const { log, logContextWithEmail, _db } = options;
   if (isValidUserResult(registrationAttemptResult)) {
     const createdUser = registrationAttemptResult;
     return _handleSuccessfulRegistration(
@@ -754,25 +761,26 @@ function _processRegistrationAttemptResult(
       log
     ) as Promise<RegistrationResult>;
   } else if (registrationAttemptResult === null) {
-    _logAuthActionError(
-      log,
-      logContextWithEmail,
-      new Error('Unexpected null result'),
-      '_executeRegistrationCore: _performRegistrationAttempt returned unexpected null. This should be a User object or RegistrationResult. Cannot proceed with post-registration sign-in reliably.'
-    );
+    _logAuthActionError({
+      logger: log,
+      context: logContextWithEmail,
+      error: new Error('Unexpected null result'),
+      message:
+        '_executeRegistrationCore: _performRegistrationAttempt returned unexpected null. This should be a User object or RegistrationResult. Cannot proceed with post-registration sign-in reliably.',
+    });
     return Promise.resolve({
       status: 'error',
       message: 'Internal error during registration: User data not available for sign-in.',
       error: { code: 'InternalError', message: 'User data missing post-creation' },
     });
   } else {
-    _logAuthActionError(
-      log,
-      logContextWithEmail,
-      registrationAttemptResult,
-      'Registration attempt failed within core execution. Returning error response.',
-      'warn'
-    );
+    _logAuthActionError({
+      logger: log,
+      context: logContextWithEmail,
+      error: registrationAttemptResult,
+      message: 'Registration attempt failed within core execution. Returning error response.',
+      level: 'warn',
+    });
     return Promise.resolve(registrationAttemptResult as RegistrationResult);
   }
 }
@@ -1060,9 +1068,9 @@ function _logFailedSignInDetails(
   logContextWithEmail: LogContext,
   log: Logger
 ) {
-  _logAuthActionError(
-    log,
-    {
+  _logAuthActionError({
+    logger: log,
+    context: {
       ...logContextWithEmail,
       userId,
       signInError:
@@ -1074,10 +1082,11 @@ function _logFailedSignInDetails(
       signInUrl: isObject(results.typedResult) ? results.typedResult.url : undefined,
       fullSignInResult: results.originalInput, // Log the original input for full context
     },
-    results.typedResult,
-    'Post-registration sign-in failed or response was not indicative of success. See fullSignInResult for details.',
-    'warn'
-  );
+    error: results.typedResult,
+    message:
+      'Post-registration sign-in failed or response was not indicative of success. See fullSignInResult for details.',
+    level: 'warn',
+  });
 }
 
 /**

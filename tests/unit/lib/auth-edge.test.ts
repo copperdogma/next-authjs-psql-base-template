@@ -221,6 +221,75 @@ describe('authConfigEdge', () => {
     });
   });
 
+  describe('jwt callback - user population', () => {
+    let jwtCallback: any;
+    beforeEach(async () => {
+      process.env.NEXTAUTH_SECRET = 'test-secret';
+      const { authConfigEdge } = await import('@/lib/auth-edge');
+      jwtCallback = authConfigEdge.callbacks?.jwt;
+    });
+
+    it('should populate token from user object with all fields', async () => {
+      const mockUser = {
+        id: 'user-id-123',
+        role: UserRole.ADMIN,
+        name: 'Test User Name',
+        email: 'testuser@example.com',
+        image: 'test-image.jpg',
+      } as NextAuthUser & { id: string; role: UserRole };
+      const mockToken: JWT = {}; // Empty token
+      const resultToken = await jwtCallback({ token: mockToken, user: mockUser });
+
+      expect(resultToken.sub).toBe('user-id-123');
+      expect(resultToken.role).toBe(UserRole.ADMIN);
+      expect(resultToken.name).toBe('Test User Name');
+      expect(resultToken.email).toBe('testuser@example.com');
+      expect(resultToken.picture).toBe('test-image.jpg');
+    });
+
+    it('should handle session update trigger correctly', async () => {
+      const mockToken: JWT = { sub: 'existing-user-id', name: 'Old Name' };
+      const mockSession = { user: { name: 'New Name' } } as Session;
+      const resultToken = await jwtCallback({
+        token: mockToken,
+        trigger: 'update',
+        session: mockSession,
+      });
+      expect(resultToken.name).toBe('New Name');
+    });
+  });
+
+  describe('initNextAuth - already initialized', () => {
+    it('should return existing instance if NextAuth already initialized', async () => {
+      process.env.NEXTAUTH_SECRET = 'test-secret'; // Ensure it's set for import
+
+      // First import to initialize
+      const { auth: authInstance1, signIn: signInInstance1 } = await import('@/lib/auth-edge');
+      expect(authInstance1).toBeDefined();
+      expect(signInInstance1).toBeDefined();
+
+      // Spy on logger.debug before second import
+      const debugSpy = jest.spyOn(mockLogger, 'debug');
+
+      // Reset modules to ensure re-import executes init logic again if not truly singleton
+      jest.resetModules();
+      // Re-set the secret as resetModules will clear it from process.env if set by the module itself
+      process.env.NEXTAUTH_SECRET = 'test-secret';
+
+      // Second import should use existing instance due to global symbol check
+      const { auth: authInstance2, signIn: signInInstance2 } = await import('@/lib/auth-edge');
+
+      expect(authInstance2).toBeDefined(); // Check it's defined
+      expect(signInInstance2).toBeDefined(); // Check it's defined
+      // With jest.resetModules(), the instances will be different if not truly a singleton across module reloads.
+      // The critical part is that the logger message for "already initialized" should be hit.
+      expect(debugSpy).toHaveBeenCalledWith(
+        '[Auth Edge Config] NextAuth already initialized at module level'
+      );
+      debugSpy.mockRestore();
+    });
+  });
+
   describe('authorized callback', () => {
     let authorizedCallback: any;
     let redirectSpy: any;

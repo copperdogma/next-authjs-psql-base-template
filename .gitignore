@@ -61,7 +61,6 @@ tests/e2e/auth.setup.json
 /screenshots
 .env.local.example
 .cursor/rules/scratchpad.mdc
-scratchpad.md
 combined_codebase.txt
 
 # debug
