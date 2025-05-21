@@ -1,11 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { UserRole } from '@/types';
-import type { User as NextAuthUser } from 'next-auth';
+import type { User as NextAuthUser, User, Session } from 'next-auth';
 import type { AdapterUser } from 'next-auth/adapters';
 import type { Profile } from 'next-auth';
 import { isObject as _isObject } from '../utils/type-guards';
-import type { Logger } from 'pino';
 
 // ====================================
 // Interfaces (Copied from auth-node.ts)
@@ -306,21 +305,14 @@ export function prepareProfileDataForDb(
   };
 }
 
-interface LogAuthErrorParams {
-  logger: Logger;
-  context: Record<string, unknown>;
-  error: unknown;
-  message: string;
-  level?: 'warn' | 'error';
-}
-
-function _logAuthError(params: LogAuthErrorParams): void {
-  const { logger, context, error, message, level = 'error' } = params;
-  const logData = { ...context, error };
-
-  if (level === 'warn') {
-    logger.warn(logData, message);
-  } else {
-    logger.error(logData, message);
+export function determineUserRole(user: Session['user'] | User | AdapterUser): UserRole {
+  // Basic role determination logic, can be expanded
+  if (user && 'role' in user && user.role) {
+    // Ensure user.role is a valid UserRole enum member
+    if (Object.values(UserRole).includes(user.role as UserRole)) {
+      return user.role as UserRole;
+    }
   }
+  // Default to USER role if no specific role is found or if it's invalid
+  return UserRole.USER;
 }

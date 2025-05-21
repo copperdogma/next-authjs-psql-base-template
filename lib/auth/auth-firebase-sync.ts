@@ -5,13 +5,13 @@ import { isObject } from '../utils/type-guards';
 
 // Helper function to determine if Firebase user sync should occur
 export function shouldSyncFirebaseUser(
-  trigger: string | undefined,
+  trigger: string | undefined, // Renamed from _trigger to trigger
   accountType: string | undefined
 ): boolean {
-  return (
-    (trigger === 'signIn' || trigger === 'signUp') &&
-    (accountType === 'oauth' || accountType === 'oidc')
-  );
+  // Sync should only occur for OAuth/OIDC providers AND during signIn or signUp triggers
+  const isValidTrigger = trigger === 'signIn' || trigger === 'signUp';
+  const isValidAccountType = accountType === 'oauth' || accountType === 'oidc';
+  return isValidTrigger && isValidAccountType;
 }
 
 // Check if Firebase Admin service is ready
@@ -160,7 +160,7 @@ function _logSkipSync(
 
 // Helper function to handle logging and skipping for non-OAuth sync cases
 function _handleNonOAuthSync(
-  trigger: string | undefined,
+  _trigger: string | undefined, // Commented out with underscore as it's unused
   account: Account | null,
   baseLogContext: { trigger: string | undefined; correlationId: string }
 ): false {

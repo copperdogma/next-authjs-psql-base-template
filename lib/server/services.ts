@@ -108,9 +108,9 @@ async function _initializeFirebaseAdminApp(): Promise<boolean> {
 async function _initializeFirebaseAdminService(): Promise<boolean> {
   if (currentAdminApp && !firebaseAdminServiceInstance) {
     try {
-      const serviceInstance = FirebaseAdminService.getInstance(
-        setupLogger.child({ service: 'FirebaseAdminService' })
-      );
+      const serviceLogger = setupLogger.child({ service: 'FirebaseAdminService' });
+      const serviceInstance = await FirebaseAdminService.getInstance(serviceLogger);
+
       if (serviceInstance.isInitialized()) {
         firebaseAdminServiceInstance = serviceInstance;
         setupLogger.info('FirebaseAdminService initialized successfully in services.ts');

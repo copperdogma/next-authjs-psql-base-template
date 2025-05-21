@@ -1,4 +1,4 @@
-import { mock } from 'jest-mock-extended';
+// import { mock } from 'jest-mock-extended'; // Removed unused import
 import { shouldSyncFirebaseUser, syncFirebaseUserForOAuth } from '@/lib/auth/auth-firebase-sync';
 import { logger } from '@/lib/logger';
 import { getFirebaseAdminAuth } from '@/lib/firebase-admin';

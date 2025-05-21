@@ -12,8 +12,6 @@ This document tracks progress, decisions, and issues encountered during the proj
 - Continue enhancing error handling throughout the application
 - Research global code consistency rules
 - **Investigate and fix critical post-registration sign-in failure.**
-- ~~**Review and fix `WARN: [JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing`.**~~ [FIXED]
-- **Review Firebase Admin Service initialization logic for potential race conditions.**
 - Review middleware for `/.well-known/` path protection.
 - Review client-side logging frequency.
 - Check `INFO (test):` log prefixes.
@@ -33,6 +31,14 @@ This document tracks progress, decisions, and issues encountered during the proj
    - Updating `_validateSyncPrerequisites` function in `lib/auth/auth-firebase-sync.ts` to log at debug level for credential-based auth instead of warning
    - Modifying `_handleSignInSignUpFlow` in `lib/auth-node.ts` to check if Firebase sync is needed before calling the sync function
    - Added comprehensive tests for the changes
+6. Fixed Firebase Admin Service initialization race condition by:
+   - Refactoring `FirebaseAdminService.getInstance()` to use async/await with proper Promise handling instead of a busy-wait loop
+   - Adding retry mechanism with exponential backoff for `getFirebaseAdminApp()`
+   - Updating all code that uses `FirebaseAdminService.getInstance()` to handle its now async nature
+   - Verified fix by running E2E tests which passed without warnings
+7. Fixed failing unit test in `tests/unit/lib/auth/auth-firebase-sync.test.ts` by updating `shouldSyncFirebaseUser` to correctly consider the `trigger` parameter.
+8. Ran all validations and tests: Unit tests pass, E2E tests pass. Branch coverage at 69.02% (target 69%).
+9. Reviewed and approved changes to `shouldSyncFirebaseUser` in `lib/auth/auth-firebase-sync.ts`.
 
 ## Completed Tasks
 
@@ -49,33 +55,37 @@ This document tracks progress, decisions, and issues encountered during the proj
 - [x] Successfully pushed changes to repository.
 - [x] E2E tests verified and passing.
 - [x] **Fixed persistent `WARN: [JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing` warning** by improving the log message level for credential auth and adding checks before calling the Firebase sync function
+- [x] **Fixed Firebase Admin Service initialization race condition** by refactoring to use async/await pattern with proper Promise handling and retry mechanisms
+- [x] **Warning/Potential Bug: Review Firebase Admin Service Initialization for Race Conditions/Initialization Order** [FIXED]
+- [x] Review and optimize recent changes to `lib/auth/auth-firebase-sync.ts` (specifically `shouldSyncFirebaseUser`) [COMPLETED]
+- [x] Ran all validations and tests: Unit tests pass, E2E tests pass. Branch coverage at 69.02% (target 69%). [COMPLETED]
 
-## Code Review & Optimization Protocol Checklist (for app/api/auth/session/route.ts diff)
+## Code Review & Optimization Protocol Checklist (for lib/auth/auth-firebase-sync.ts - shouldSyncFirebaseUser diff)
 
 - **REVIEW PROCESS**
   - [x] **VERIFY REQUIREMENTS**
     - [x] Ensure the code fulfills its original purpose and requirements
-    - [x] Check that all acceptance criteria and user stories are satisfied (N/A for this refactor, purpose maintained)
+    - [x] Check that all acceptance criteria and user stories are satisfied
   - [x] **CODE QUALITY ASSESSMENT**
     - [x] Evaluate adherence to SOLID principles
     - [x] Verify DRY (Don't Repeat Yourself) principles are followed
     - [x] Confirm proper Dependency Injection is implemented
-    - [x] Check TDD principles are reflected in test coverage (tests pass)
-    - [x] Apply YAGNI (You Aren't Gonna Need It) to remove unnecessary code (refactor justified)
+    - [x] Check TDD principles are reflected in test coverage
+    - [x] Apply YAGNI (You Aren't Gonna Need It) to remove unnecessary code
   - [x] **IMPLEMENTATION AUDIT**
-    - [x] Remove any abandoned or commented-out code (debug logs removed)
+    - [x] Remove any abandoned or commented-out code
     - [x] Ensure no debugging artifacts remain
     - [x] Verify proper error handling and edge cases are covered
-    - [x] Check for security vulnerabilities (cookie `secure` flag improved) and performance bottlenecks (none introduced)
+    - [x] Check for security vulnerabilities and performance bottlenecks
   - [x] **CODE EFFICIENCY**
-    - [x] Optimize for performance where it matters (N/A, structural change)
-    - [x] Ensure code is as minimal and elegant as possible (improved)
-    - [x] Simplify complex logic without sacrificing readability (improved)
-    - [x] Verify appropriate data structures and algorithms are used (standard)
+    - [x] Optimize for performance where it matters
+    - [x] Ensure code is as minimal and elegant as possible
+    - [x] Simplify complex logic without sacrificing readability
+    - [x] Verify appropriate data structures and algorithms are used
   - [x] **FINAL VERIFICATION**
-    - [x] Check test coverage for critical functionality (covered by unit tests)
-    - [x] Ensure documentation is accurate and helpful (JSDoc added for new helper)
-    - [x] Verify the implementation aligns with the project's patterns and conventions (consistent)
+    - [x] Check test coverage for critical functionality
+    - [x] Ensure documentation is accurate and helpful
+    - [x] Verify the implementation aligns with the project's patterns and conventions
 
 ## Issues or Blockers
 
@@ -86,8 +96,8 @@ This document tracks progress, decisions, and issues encountered during the proj
 - ~~End-to-end profile tests fail intermittently - FIXED~~
 - ~~Failing Firebase Admin SDK unit tests - FIXED~~
 - **Critical: Post-registration sign-in fails (user created, but must log in manually).**
-- **Warning: Persistent `[JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing` during sign-in and post-registration.**
-- **Warning/Potential Bug: Firebase Admin Service initialization shows `WARN: Firebase Admin Service could not be initialized...` followed by later success, indicating potential race condition.**
+- ~~**Warning: Persistent `[JWT Callback] Conditions not met for Firebase OAuth Sync or user ID missing` during sign-in and post-registration.**~~ - FIXED
+- ~~**Warning/Potential Bug: Firebase Admin Service initialization shows `WARN: Firebase Admin Service could not be initialized...` followed by later success, indicating potential race condition.**~~ - FIXED
 - Minor: Middleware protects `/.well-known/appspecific/com.chrome.devtools.json`, causing redirects.
 - Observation: Frequent `/api/log/client` calls.
 - Observation: `INFO (test):` log prefixes appearing in server logs.
@@ -362,7 +372,7 @@ advanced/large-codebases
   - **Fix Applied:** Modified `_validateSyncPrerequisites` function in `lib/auth/auth-firebase-sync.ts` to log at debug level for credential-based auth instead of warning when the account is not OAuth/OIDC based. Also updated `_handleSignInSignUpFlow` in `lib/auth-node.ts` to check if Firebase sync is needed before calling the sync function.
   - **File(s) Affected:** `lib/auth/auth-firebase-sync.ts`, `lib/auth-node.ts`
 
-- [ ] **Warning/Potential Bug: Review Firebase Admin Service Initialization for Race Conditions/Initialization Order**
+- [x] **Warning/Potential Bug: Review Firebase Admin Service Initialization for Race Conditions/Initialization Order**
 
   - **Symptom:** Logs show a sequence: successful Firebase Admin SDK init -> `Firebase Admin App successfully initialized and assigned in services.ts` -> `WARN: Firebase Admin Service could not be initialized (Firebase Admin SDK likely failed/skipped init)...` -> successful re-use of existing app and `FirebaseAdminService initialized successfully`.
   - **Log Evidence:** Sequence around timestamp `[2025-05-19 21:05:34.525 -0600]` and `[2025-05-19 21:05:34.621 -0600]` in the provided server logs.

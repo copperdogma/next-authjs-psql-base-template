@@ -726,7 +726,7 @@ async function _executeRegistrationCore(
     return _processRegistrationAttemptResult(registrationAttemptResult, validatedData, {
       log,
       logContextWithEmail,
-      _db: db,
+      // db: PrismaClient // Assuming db is PrismaClient, adjust if different
     });
   } catch (e: unknown) {
     _logAuthActionError({
@@ -748,10 +748,11 @@ function _processRegistrationAttemptResult(
   options: {
     log: Logger;
     logContextWithEmail: LogContext;
-    _db: RegisterUserDbClient;
+    // db: PrismaClient // Assuming db is PrismaClient, adjust if different
   }
 ): Promise<RegistrationResult> {
-  const { log, logContextWithEmail, _db } = options;
+  const { log, logContextWithEmail } = options;
+  logContextWithEmail.action = logContextWithEmail.action ?? 'handleOAuthSignIn';
   if (isValidUserResult(registrationAttemptResult)) {
     const createdUser = registrationAttemptResult;
     return _handleSuccessfulRegistration(

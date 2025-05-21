@@ -141,27 +141,27 @@ describe('FirebaseAdminServiceImpl', () => {
       // Alternatively, if using jest.isolateModules, this cleanup is usually automatic.
     });
 
-    it('should create a new instance if one does not exist, using getFirebaseAdminApp', () => {
+    it('should create a new instance if one does not exist, using getFirebaseAdminApp', async () => {
       // Act
-      let serviceInstance: FirebaseAdminService;
-      let FreshFirebaseAdminServiceClass: typeof FirebaseAdminService;
+      let serviceInstance: FirebaseAdminService | null = null;
+      // Initialize with a type definition that will be overwritten
+      let FreshFirebaseAdminServiceClass: any;
 
-      jest.isolateModules(() => {
+      await jest.isolateModulesAsync(async () => {
         const {
           FirebaseAdminService: IsolatedFirebaseAdminService,
         } = require('@/lib/services/firebase-admin-service');
         FreshFirebaseAdminServiceClass = IsolatedFirebaseAdminService;
         (FreshFirebaseAdminServiceClass as any).instance = null;
-        serviceInstance = FreshFirebaseAdminServiceClass.getInstance(mockLogger);
+        serviceInstance = await FreshFirebaseAdminServiceClass.getInstance(mockLogger);
       });
 
       // Assert
       expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1);
       expect(mockAppFromGetAdminApp.auth).toHaveBeenCalledTimes(1);
-      // @ts-ignore
+      expect(serviceInstance).not.toBeNull();
       expect(serviceInstance).toBeInstanceOf(FreshFirebaseAdminServiceClass); // Use the isolated class definition
-      // @ts-ignore
-      expect(serviceInstance.getAuth()).toBe(authMethodsMockObject);
+      expect(serviceInstance!.getAuth()).toBe(authMethodsMockObject);
       expect(mockLoggerInfoFn).toHaveBeenCalledWith(
         expect.stringContaining('FirebaseAdminService new instance created via getInstance')
       );
@@ -177,22 +177,24 @@ describe('FirebaseAdminServiceImpl', () => {
       expect(mockLoggerErrorFn).toHaveBeenCalledWith('Auth instance not initialized!');
     });
 
-    it('should return the existing instance on subsequent calls', () => {
-      let firstInstance: FirebaseAdminService;
-      let secondInstance: FirebaseAdminService;
+    it('should return the existing instance on subsequent calls', async () => {
+      // Define variables outside with proper typing
+      let firstInstance: FirebaseAdminService | null = null;
+      let secondInstance: FirebaseAdminService | null = null;
 
-      jest.isolateModules(() => {
+      await jest.isolateModulesAsync(async () => {
         const {
           FirebaseAdminService: FreshFirebaseAdminService,
         } = require('@/lib/services/firebase-admin-service');
         (FreshFirebaseAdminService as any).instance = null;
-        firstInstance = FreshFirebaseAdminService.getInstance(mockLogger);
-        secondInstance = FreshFirebaseAdminService.getInstance(mockLogger);
+        firstInstance = await FreshFirebaseAdminService.getInstance(mockLogger);
+        secondInstance = await FreshFirebaseAdminService.getInstance(mockLogger);
       });
 
-      // Assert
+      // Assert - only if both instances were properly created
       expect(mockGetFirebaseAdminApp).toHaveBeenCalledTimes(1); // Should only be called once for the first instance
-      // @ts-ignore
+      expect(firstInstance).not.toBeNull();
+      expect(secondInstance).not.toBeNull();
       expect(secondInstance).toBe(firstInstance);
     });
   });

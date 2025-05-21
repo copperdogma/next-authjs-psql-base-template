@@ -198,8 +198,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const adminService = FirebaseAdminService.getInstance(logger);
   try {
+    const adminService = await FirebaseAdminService.getInstance(logger);
     const body = (await request.json()) as SessionPostBody;
 
     if (!body || !body.token) {

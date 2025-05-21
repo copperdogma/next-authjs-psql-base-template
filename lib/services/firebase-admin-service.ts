@@ -35,6 +35,7 @@ export class FirebaseAdminService {
   private static readonly SERVICE_NAME = 'FirebaseAdminService';
   private static instance: FirebaseAdminService | null = null;
   private static instanceLock = false; // Lock to prevent simultaneous initializations
+  private static initializationPromise: Promise<FirebaseAdminService> | null = null; // Track the initialization promise
 
   private logger: pino.Logger;
   private app: admin.app.App;
@@ -50,41 +51,115 @@ export class FirebaseAdminService {
     this.logger.info('FirebaseAdminService initialized via constructor');
   }
 
-  // Standard getInstance method
-  // eslint-disable-next-line max-statements -- Singleton with locking has inherent statement count
-  public static getInstance(logger: pino.Logger): FirebaseAdminService {
+  // Standard getInstance method - now returns Promise<FirebaseAdminService>
+  // eslint-disable-next-line max-lines-per-function, max-statements
+  public static async getInstance(logger: pino.Logger): Promise<FirebaseAdminService> {
     if (FirebaseAdminService.instance) {
       return FirebaseAdminService.instance;
     }
 
-    if (FirebaseAdminService.instanceLock) {
-      while (FirebaseAdminService.instanceLock); // Busy wait for lock release
+    // If initialization is already in progress, return the promise result
+    if (FirebaseAdminService.initializationPromise) {
+      return FirebaseAdminService.initializationPromise;
+    }
 
-      if (FirebaseAdminService.instance) {
-        return FirebaseAdminService.instance;
-      }
+    // Prevent concurrent initializations with a promise-based approach
+    if (FirebaseAdminService.instanceLock) {
+      // Create a promise that resolves when initialization completes
+      FirebaseAdminService.initializationPromise = new Promise((resolve, reject) => {
+        const checkInterval = 50; // ms
+        const maxWaitTime = 5000; // 5 seconds maximum wait
+        let waitedTime = 0;
+
+        const checkInstance = () => {
+          if (FirebaseAdminService.instance) {
+            resolve(FirebaseAdminService.instance);
+            return;
+          }
+
+          if (waitedTime >= maxWaitTime) {
+            const error = new Error('Timed out waiting for FirebaseAdminService initialization');
+            logger.error(error.message);
+            reject(error);
+            return;
+          }
+
+          waitedTime += checkInterval;
+          setTimeout(checkInstance, checkInterval);
+        };
+
+        checkInstance();
+      });
+
+      return FirebaseAdminService.initializationPromise;
     }
 
     FirebaseAdminService.instanceLock = true;
 
-    try {
-      if (!FirebaseAdminService.instance) {
+    // Implement retry mechanism for getFirebaseAdminApp
+    const getAppWithRetry = async (
+      retries = 3,
+      delay = 500
+    ): Promise<admin.app.App | undefined> => {
+      try {
         const app = getFirebaseAdminApp();
-        if (!app) {
-          logger.error(
-            '[FirebaseAdminService.getInstance] Firebase Admin App is not available via getFirebaseAdminApp(). Cannot create service instance.'
+        if (app) return app;
+
+        // If no app and we have retries left, wait and try again
+        if (retries > 0) {
+          logger.info(
+            `No Firebase Admin App yet, retrying in ${delay}ms (${retries} retries left)`
           );
-          throw new Error(
-            'FirebaseAdminService.getInstance: Firebase Admin App not initialized or available. Check earlier logs.'
-          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return getAppWithRetry(retries - 1, delay * 1.5); // Exponential backoff
         }
-        FirebaseAdminService.instance = new FirebaseAdminService(app, logger);
-        logger.info('FirebaseAdminService new instance created via getInstance');
+
+        return undefined;
+      } catch (error) {
+        logger.error({ err: error }, 'Error getting Firebase Admin App');
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return getAppWithRetry(retries - 1, delay * 1.5);
+        }
+        throw error;
       }
-    } finally {
+    };
+
+    try {
+      // Handle the actual initialization
+      if (!FirebaseAdminService.instance) {
+        // Create initialization promise
+        FirebaseAdminService.initializationPromise = getAppWithRetry()
+          .then(app => {
+            if (!app) {
+              logger.error(
+                '[FirebaseAdminService.getInstance] Firebase Admin App is not available via getFirebaseAdminApp(). Cannot create service instance.'
+              );
+              throw new Error(
+                'FirebaseAdminService.getInstance: Firebase Admin App not initialized or available. Check earlier logs.'
+              );
+            }
+
+            FirebaseAdminService.instance = new FirebaseAdminService(app, logger);
+            logger.info('FirebaseAdminService new instance created via getInstance');
+            return FirebaseAdminService.instance;
+          })
+          .finally(() => {
+            FirebaseAdminService.instanceLock = false;
+            FirebaseAdminService.initializationPromise = null; // Clear the promise once done
+          });
+
+        return FirebaseAdminService.initializationPromise;
+      }
+    } catch (error) {
       FirebaseAdminService.instanceLock = false;
+      FirebaseAdminService.initializationPromise = null;
+      logger.error({ err: error }, 'Error creating FirebaseAdminService instance');
+      throw error;
     }
-    return FirebaseAdminService.instance as FirebaseAdminService;
+
+    FirebaseAdminService.instanceLock = false;
+    return FirebaseAdminService.instance;
   }
 
   // Factory method for creating instances, especially for tests with mocked dependencies
