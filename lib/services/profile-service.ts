@@ -14,7 +14,18 @@ export class ProfileService {
     private readonly userService: UserService,
     private readonly firebaseAdminService: FirebaseAdminService,
     private readonly logger: pino.Logger = serviceLogger
-  ) {}
+  ) {
+    if (!userService) {
+      const errorMsg = 'UserService dependency is required for ProfileService.';
+      this.logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    if (!firebaseAdminService) {
+      const errorMsg = 'FirebaseAdminService dependency is required for ProfileService.';
+      this.logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }
 
   /**
    * Try to update a user's display name in Firebase if possible

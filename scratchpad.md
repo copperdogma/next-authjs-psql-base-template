@@ -196,26 +196,14 @@ DOCS Todo - we'll do this at the end when all changes are done
 
 ### Service Initialization (`lib/server/services.ts`):
 
-- [ ] **Task:** Make `profileServiceInstance` initialization more robust or explicit about potential failures.
+- [x] **Task:** Make `profileServiceInstance` initialization more robust or explicit about potential failures.
   - **Observation:** `profileServiceInstance` is conditionally defined. If its dependencies (`firebaseAdminServiceInstance` or `userServiceInstance`) are not ready, it will be `undefined`. Code consuming `profileService` needs to handle this.
   - **Reasoning:** Making dependency failures more explicit improves debuggability and reduces runtime errors from attempting to use an uninitialized service.
-  - **Implementation Options (choose one or combine):**
-    1.  **Option A (Throw in constructor):** Modify the `ProfileService` constructor to check for its essential dependencies. If `userService` or `firebaseAdminService` is not provided or invalid, throw an error. This makes initialization failure immediate.
-    2.  **Option B (Guarded Access Function):** Instead of exporting `profileServiceInstance` directly, export a `getProfileService()` function. This function would internally check if `profileServiceInstance` is initialized and its dependencies are met. If not, it could throw a specific error or return `null` with clear logging.
-        - Example `getProfileService()`:
-          ```typescript
-          // In lib/server/services.ts
-          export function getProfileService(): ProfileService | null {
-            if (profileServiceInstance) {
-              return profileServiceInstance;
-            }
-            setupLogger.error(
-              'ProfileService is not available due to missing dependencies (FirebaseAdminService or UserService).'
-            );
-            return null;
-          }
-          ```
-        - Consumers would then call `getProfileService()` and handle the potential `null` return.
+  - **Implementation:**
+    1. Modified the `ProfileService` constructor in `lib/services/profile-service.ts` to check for its essential dependencies (`userService` and `firebaseAdminService`).
+    2. If `userService` or `firebaseAdminService` is not provided or invalid, the constructor now logs an error and throws an Error.
+    3. This makes initialization failure immediate and prevents `profileServiceInstance` from being `undefined` due to missing core dependencies, instead causing a startup error.
+  - **Validation:** The change directly addresses the issue by making the failure explicit. The existing conditional instantiation in `lib/server/services.ts` will now lead to an error throw if dependencies are null, which is caught by the service initialization logging.
 
 ### Minor Code & Config Considerations:
 

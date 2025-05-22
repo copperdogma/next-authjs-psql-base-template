@@ -94,11 +94,44 @@ describe('ProfileService', () => {
     mockFirebaseAdminService = mockDeep<FirebaseAdminService>();
 
     // ProfileService uses a default logger parameter that pulls from the mocked module
-    profileService = new ProfileService(
-      mockUserService,
-      mockFirebaseAdminService,
-      mockLogger // Explicitly pass the mockLogger
-    );
+    // NB: We don't instantiate profileService here for constructor tests
+  });
+
+  describe('Constructor', () => {
+    it('should throw an error if UserService is not provided', () => {
+      const expectedErrorMessage = 'UserService dependency is required for ProfileService.';
+      try {
+        // @ts-expect-error Testing invalid constructor arguments
+        new ProfileService(null, mockFirebaseAdminService, mockLogger);
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(Error);
+        expect((e as Error).message).toBe(expectedErrorMessage);
+      }
+      expect(mockLogger.error).toHaveBeenCalledWith(expectedErrorMessage);
+      // Ensure it was called because of the throw, not just a random call
+      expect.assertions(3); // Error instance, message, and logger call
+    });
+
+    it('should throw an error if FirebaseAdminService is not provided', () => {
+      const expectedErrorMessage =
+        'FirebaseAdminService dependency is required for ProfileService.';
+      try {
+        // @ts-expect-error Testing invalid constructor arguments
+        new ProfileService(mockUserService, null, mockLogger);
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(Error);
+        expect((e as Error).message).toBe(expectedErrorMessage);
+      }
+      expect(mockLogger.error).toHaveBeenCalledWith(expectedErrorMessage);
+      expect.assertions(3); // Error instance, message, and logger call
+    });
+
+    it('should successfully instantiate if all dependencies are provided', () => {
+      expect(
+        () => new ProfileService(mockUserService, mockFirebaseAdminService, mockLogger)
+      ).not.toThrow();
+      expect(mockLogger.error).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateUserName', () => {
@@ -110,6 +143,13 @@ describe('ProfileService', () => {
 
     const mockInitialUser = createMockUser({ id: userId, name: oldName, email: userEmail });
     const mockUpdatedUser = createMockUser({ ...mockInitialUser, name: newName });
+
+    // Add beforeEach here to initialize profileService for updateUserName tests
+    beforeEach(() => {
+      // Ensure mocks are fresh for each test in this suite if needed, though top-level beforeEach already clears
+      // Re-initialize profileService here as it's not done in the top-level beforeEach anymore
+      profileService = new ProfileService(mockUserService, mockFirebaseAdminService, mockLogger);
+    });
 
     it('should successfully update username in DB and Firebase, and return success', async () => {
       // Arrange: DB and Firebase operations succeed
