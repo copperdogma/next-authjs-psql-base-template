@@ -105,3 +105,6 @@ serviceAccountKey.json
 *.old
 *.tmp
 *.skip
+
+# Generated .env file compilation
+combined_env.txt

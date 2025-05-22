@@ -168,15 +168,15 @@ DOCS Todo - we'll do this at the end when all changes are done
 
 ### Environment Variable Configuration (`.env.example`):
 
-- [ ] **Task:** Enhance clarity for `FIREBASE_PRIVATE_KEY` formatting.
+- [x] **Task:** Enhance clarity for `FIREBASE_PRIVATE_KEY` formatting.
 
   - **Observation:** Multi-line environment variables, like Firebase private keys, are often a source of setup errors if not formatted correctly in `.env` files.
   - **Reasoning:** Clear instructions improve developer experience and reduce common setup friction.
   - **Implementation Steps:**
-    1.  In `.env.example`, add a comment above `FIREBASE_PRIVATE_KEY` explaining:
+    1.  In `.env.example`, added a comment above `FIREBASE_PRIVATE_KEY` explaining:
         - How to handle newlines (e.g., replace actual newlines with `\\n` if the key is pasted as a single line).
         - Alternatively, suggest base64 encoding the key and decoding it in the application (though `\\n` is simpler for a template).
-        - Example comment: `# For FIREBASE_PRIVATE_KEY: Ensure to replace actual newlines with '\\n' if pasting as a single line, OR ensure the variable spans multiple lines correctly as provided by Firebase.`
+        - Example comment: `# For FIREBASE_PRIVATE_KEY: Ensure to replace actual newlines with '\\n' if pasting as a single line, OR ensure the variable spans multiple lines correctly as provided by Firebase, enclosed in double quotes.`
 
 - [ ] **Task:** Add a comment explaining the importance of `NEXTAUTH_URL`.
   - **Observation:** The `NEXTAUTH_URL` variable's role, especially for OAuth redirects in non-localhost environments, might not be immediately obvious.
