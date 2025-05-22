@@ -155,6 +155,10 @@ npm run format    # Format with Prettier
 npm run firebase:emulators         # Start Firebase emulators
 ```
 
+## Deployment Considerations
+
+**Important Note on Rate Limiting:** The default rate limiting setup uses an in-memory store (`RateLimiterMemory`), which is suitable for development and single-instance deployments. For production environments, especially those that are serverless or distributed, you **must** switch to a persistent store like Redis (using `RateLimiterRedis`). This project includes Redis in its stack, so integrating it for rate limiting is recommended for production.
+
 ## ESLint Configuration
 
 This project uses a modern ESLint setup with the new flat config format (`eslint.config.mjs`). The configuration is designed to provide comprehensive linting for TypeScript, React, and Next.js while maintaining good performance.

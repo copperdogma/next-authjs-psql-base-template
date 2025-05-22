@@ -187,7 +187,7 @@ DOCS Todo - we'll do this at the end when all changes are done
 
 ### Rate Limiting Strategy for Production:
 
-- [ ] **Task:** Add a prominent note in the documentation (e.g., README) about the production suitability of the current `RateLimiterMemory`.
+- [x] **Task:** Add a prominent note in the documentation (e.g., README) about the production suitability of the current `RateLimiterMemory`.
   - **Observation:** `lib/utils/rate-limiters-middleware.ts` uses `RateLimiterMemory`, which is not suitable for multi-instance deployments or production environments requiring persistence.
   - **Reasoning:** Users need to be aware of this limitation to avoid issues in production. The template should guide them towards a more robust solution if needed.
   - **Implementation Steps:**
