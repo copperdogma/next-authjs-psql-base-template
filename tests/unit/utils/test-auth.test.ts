@@ -27,7 +27,7 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('setupTestAuth', () => {
-    test('should setup test auth cookies and return a session ID', async () => {
+    it('should setup test auth cookies and return a session ID', async () => {
       const result = await setupTestAuth(mockContext as any, mockPage as any, TEST_USER);
 
       // Check that page.goto was called with correct args
@@ -64,7 +64,7 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('navigateWithTestAuth', () => {
-    test('should navigate to a URL with test session ID', async () => {
+    it('should navigate to a URL with test session ID', async () => {
       const testSessionId = 'test-session-123';
       const url = '/dashboard';
 
@@ -77,7 +77,7 @@ describe('test-auth.ts utilities', () => {
       });
     });
 
-    test('should append testSessionId to URLs that already have query params', async () => {
+    it('should append testSessionId to URLs that already have query params', async () => {
       const testSessionId = 'test-session-123';
       const url = '/dashboard?param=value';
 
@@ -95,19 +95,19 @@ describe('test-auth.ts utilities', () => {
   });
 
   describe('isRedirectedToLogin', () => {
-    test('should return true if URL contains /login', () => {
+    it('should return true if URL contains /login', () => {
       expect(isRedirectedToLogin('http://localhost:3000/login')).toBe(true);
       expect(isRedirectedToLogin('/login?callbackUrl=%2Fdashboard')).toBe(true);
     });
 
-    test('should return false if URL does not contain /login', () => {
+    it('should return false if URL does not contain /login', () => {
       expect(isRedirectedToLogin('http://localhost:3000/dashboard')).toBe(false);
       expect(isRedirectedToLogin('/profile')).toBe(false);
     });
   });
 
   describe('getTestUserFromCookies', () => {
-    test('should return user data from cookies', async () => {
+    it('should return user data from cookies', async () => {
       mockPage.evaluate.mockImplementation(() => {
         return `__playwright_test_user=${encodeURIComponent(JSON.stringify(mockUser))}`;
       });
@@ -126,7 +126,7 @@ describe('test-auth.ts utilities', () => {
       expect(result).toEqual(comparableMockUser);
     });
 
-    test('should return null if no user cookie is found', async () => {
+    it('should return null if no user cookie is found', async () => {
       mockPage.evaluate.mockImplementation(() => null);
 
       const result = await getTestUserFromCookies(mockPage as any);
@@ -135,7 +135,7 @@ describe('test-auth.ts utilities', () => {
       expect(result).toBeNull();
     });
 
-    test('should handle JSON parsing errors', async () => {
+    it('should handle JSON parsing errors', async () => {
       // Temporarily suppress console.error for this specific test
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 

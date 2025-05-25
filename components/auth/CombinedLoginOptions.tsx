@@ -40,7 +40,6 @@ function GoogleSignInButton({ onClick, disabled }: GoogleSignInButtonProps) {
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- Component structure including state, handler, and rendering is clear at this length; further extraction would complicate prop drilling.
 export function CombinedLoginOptions() {
   // Keep shared state here if needed across different login methods
   const [isLoading, setIsLoading] = useState(false);

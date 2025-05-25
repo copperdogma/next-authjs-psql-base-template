@@ -259,7 +259,7 @@ async function processOauthUserAndCreateJwt(params: {
 /**
  * Creates an OAuth sign-in callback that returns a function for the OAuth flow.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export function createOAuthSignInCallback(params: {
   jwt: JWT;
   token: JWT;

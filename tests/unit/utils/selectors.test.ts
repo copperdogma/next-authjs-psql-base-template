@@ -30,20 +30,20 @@ const createMockPage = () => ({
     .mockResolvedValue('<html><body>Some content that is long enough</body></html>'),
 });
 
-// Mock console.log to avoid cluttering test output
-const originalConsoleLog = console.log;
-beforeEach(() => {
-  console.log = jest.fn();
-});
-
-afterEach(() => {
-  console.log = originalConsoleLog;
-  jest.clearAllMocks();
-});
-
 describe('Selector Utilities', () => {
+  // Mock console.log to avoid cluttering test output
+  const originalConsoleLog = console.log;
+  beforeEach(() => {
+    console.log = jest.fn();
+  });
+
+  afterEach(() => {
+    console.log = originalConsoleLog;
+    jest.clearAllMocks();
+  });
+
   describe('getElementLocator', () => {
-    test('should use role selector when available', async () => {
+    it('should use role selector when available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         role: 'button' as any,
@@ -54,7 +54,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.getByRole).toHaveBeenCalledWith('button');
     });
 
-    test('should use text selector when role is not available', async () => {
+    it('should use text selector when role is not available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         text: 'Click me',
@@ -65,7 +65,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.getByText).toHaveBeenCalledWith('Click me', { exact: undefined });
     });
 
-    test('should use testId selector when role and text are not available', async () => {
+    it('should use testId selector when role and text are not available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         testId: 'test-button',
@@ -76,7 +76,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.getByTestId).toHaveBeenCalledWith('test-button');
     });
 
-    test('should use CSS selector when other selectors are not available', async () => {
+    it('should use CSS selector when other selectors are not available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         css: '.test-button',
@@ -87,7 +87,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.locator).toHaveBeenCalledWith('.test-button');
     });
 
-    test('should try all CSS selectors when an array is provided', async () => {
+    it('should try all CSS selectors when an array is provided', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         css: ['.test-button', '.fallback-button'],
@@ -98,7 +98,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.locator).toHaveBeenCalledWith('.test-button');
     });
 
-    test('should use tag selector when other selectors are not available', async () => {
+    it('should use tag selector when other selectors are not available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         tag: 'button',
@@ -109,7 +109,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.locator).toHaveBeenCalledWith('button');
     });
 
-    test('should fall back to body when no selectors are available', async () => {
+    it('should fall back to body when no selectors are available', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const element = {
         description: 'Test element with no selectors',
@@ -121,7 +121,7 @@ describe('Selector Utilities', () => {
   });
 
   describe('waitForElementToBeVisible', () => {
-    test('should find element using UI_ELEMENTS mapping', async () => {
+    it('should find element using UI_ELEMENTS mapping', async () => {
       const mockPage = createMockPage() as unknown as Page;
 
       await waitForElementToBeVisible(mockPage, 'AUTH.SIGN_IN_BUTTON');
@@ -130,7 +130,7 @@ describe('Selector Utilities', () => {
       expect(mockPage.getByRole).toHaveBeenCalled();
     });
 
-    test('should throw error for unknown element key', async () => {
+    it('should throw error for unknown element key', async () => {
       const mockPage = createMockPage() as unknown as Page;
 
       await expect(waitForElementToBeVisible(mockPage, 'UNKNOWN.ELEMENT')).rejects.toThrow(
@@ -138,7 +138,7 @@ describe('Selector Utilities', () => {
       );
     });
 
-    test('should try fallback strategies when primary selector fails', async () => {
+    it('should try fallback strategies when primary selector fails', async () => {
       const mockPage = createMockPage() as unknown as Page;
 
       // Mock waitFor to fail on first call but succeed on fallback
@@ -167,7 +167,7 @@ describe('Selector Utilities', () => {
   });
 
   describe('waitForElement', () => {
-    test('should wait for element with default state', async () => {
+    it('should wait for element with default state', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const mockLocator = {
         waitFor: jest.fn().mockResolvedValue(undefined),
@@ -181,7 +181,7 @@ describe('Selector Utilities', () => {
       expect(mockLocator.waitFor).toHaveBeenCalled();
     });
 
-    test('should wait for element with custom state', async () => {
+    it('should wait for element with custom state', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const mockLocator = {
         waitFor: jest.fn().mockResolvedValue(undefined),
@@ -197,7 +197,7 @@ describe('Selector Utilities', () => {
   });
 
   describe('waitForElementToBeHidden', () => {
-    test('should wait for element to be hidden successfully', async () => {
+    it('should wait for element to be hidden successfully', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const mockLocator = {
         waitFor: jest.fn().mockResolvedValue(undefined),
@@ -211,7 +211,7 @@ describe('Selector Utilities', () => {
       expect(mockLocator.waitFor).toHaveBeenCalledWith({ state: 'hidden' });
     });
 
-    test('should throw error when element does not become hidden', async () => {
+    it('should throw error when element does not become hidden', async () => {
       const mockPage = createMockPage() as unknown as Page;
       const mockLocator = {
         waitFor: jest.fn().mockRejectedValue(new Error('Timeout')),

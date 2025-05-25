@@ -24,7 +24,7 @@ interface CredentialsFormUIProps {
 }
 
 // Extracted UI component for the form elements
-// eslint-disable-next-line max-lines-per-function -- UI component length is due to necessary MUI props and structure for form elements; further breakdown would be excessive.
+
 function CredentialsFormUI({
   email,
   password,
@@ -130,7 +130,6 @@ export function CredentialsLoginForm({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // eslint-disable-next-line max-statements -- Statement count is slightly high due to essential error handling/branching for signIn result; further extraction would obscure the flow.
   const handleCredentialsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);

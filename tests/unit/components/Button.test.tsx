@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Button } from '../../../components/ui/Button';
 
 describe('Button', () => {
-  test('renders correctly with default props', () => {
+  it('renders correctly with default props', () => {
     // Arrange & Act
     render(<Button>Click me</Button>);
 
@@ -14,7 +14,7 @@ describe('Button', () => {
     expect(button).not.toBeDisabled();
   });
 
-  test('displays loading state correctly with start position', () => {
+  it('displays loading state correctly with start position', () => {
     // Arrange & Act
     render(
       <Button isLoading loadingText="Loading..." loadingPosition="start">
@@ -29,7 +29,7 @@ describe('Button', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  test('displays loading state correctly with end position', () => {
+  it('displays loading state correctly with end position', () => {
     // Arrange & Act
     render(
       <Button isLoading loadingText="Loading..." loadingPosition="end">
@@ -44,7 +44,7 @@ describe('Button', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  test('displays loading state correctly with center position', () => {
+  it('displays loading state correctly with center position', () => {
     // Arrange & Act
     render(
       <Button isLoading loadingText="Loading..." loadingPosition="center">
@@ -59,7 +59,7 @@ describe('Button', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  test('applies fixed width when specified', () => {
+  it('applies fixed width when specified', () => {
     // Arrange & Act
     render(<Button fixedWidth>Click me</Button>);
 
@@ -70,7 +70,7 @@ describe('Button', () => {
     expect(button).toBeInTheDocument();
   });
 
-  test('passes through MUI button props correctly', () => {
+  it('passes through MUI button props correctly', () => {
     // Arrange & Act
     render(
       <Button variant="contained" color="secondary" size="small" disabled>
@@ -84,7 +84,7 @@ describe('Button', () => {
     expect(button).toBeDisabled();
   });
 
-  test('handles click events when not loading or disabled', async () => {
+  it('handles click events when not loading or disabled', async () => {
     // Arrange
     const handleClick = jest.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
@@ -98,7 +98,7 @@ describe('Button', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
-  test('does not trigger click events when loading', () => {
+  it('does not trigger click events when loading', () => {
     // Arrange
     const handleClick = jest.fn();
     render(

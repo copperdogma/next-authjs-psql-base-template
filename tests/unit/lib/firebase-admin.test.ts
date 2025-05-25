@@ -35,12 +35,11 @@ jest.mock('firebase-admin', () => ({
   // Use a getter for 'apps' to return the current state of _apps
   get apps(): admin.app.App[] {
     // Define a getter for apps
-    // @ts-ignore - Accessing mocked module's internal state
     return this._apps;
   },
   // Define app() to return the first app if it exists, simulating admin.app()
   app: jest.fn(() => {
-    // @ts-ignore - Accessing mocked module's internal state
+    // @ts-expect-error - Accessing mocked module's internal state (`this._apps`)
     return this._apps.length > 0 ? this._apps[0] : undefined;
   }),
   auth: mockAdminAuthImplementation, // Use the dedicated mock function

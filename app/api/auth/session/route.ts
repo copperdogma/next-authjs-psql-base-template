@@ -232,16 +232,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function DELETE(_request: NextRequest): Promise<NextResponse> {
-  // console.log('[ROUTE_DEBUG] DELETE handler started');
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const currentFunctionName = DELETE.name;
+  const loggerInstance = logger.child({
+    handler: currentFunctionName,
+  });
+
   try {
-    // console.log('[ROUTE_DEBUG] DELETE: typeof NextResponse.json:', typeof NextResponse?.json);
+    loggerInstance.info('Attempting to delete session cookie');
+    const sessionCookie = request.cookies.get(AUTH.COOKIE_NAME);
+
+    if (!sessionCookie) {
+      loggerInstance.warn('No session cookie found to delete.');
+      const response = NextResponse.json(
+        { status: 'success', message: 'No active session to delete.' },
+        { status: HTTP_STATUS.OK }
+      );
+      // Assuming COMMON_COOKIE_CONFIG_DELETE is correctly defined and imported in actual SUT code
+      // For now, using an approximation of its likely values if it were available
+      response.cookies.set({
+        name: AUTH.COOKIE_NAME,
+        value: '',
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== 'development',
+        path: '/',
+        maxAge: 0,
+      });
+      return response;
+    }
+
+    loggerInstance.info({ cookieName: AUTH.COOKIE_NAME }, 'Session cookie found, clearing it.');
     const response = NextResponse.json(
       { status: 'success', message: 'Session deleted' },
       { status: HTTP_STATUS.OK }
     );
-    // console.log('[ROUTE_DEBUG] DELETE response created');
-
+    // Assuming COMMON_COOKIE_CONFIG_DELETE is correctly defined and imported
     response.cookies.set({
       name: AUTH.COOKIE_NAME,
       value: '',
@@ -250,12 +275,15 @@ export async function DELETE(_request: NextRequest): Promise<NextResponse> {
       path: '/',
       maxAge: 0,
     });
-    // console.log('[ROUTE_DEBUG] DELETE after cookies.set. Cookie name:', AUTH.COOKIE_NAME);
-
     return response;
-  } catch (error: unknown) {
-    // console.log('[ROUTE_DEBUG] RAW ERROR IN DELETE CATCH - Type:', typeof error, 'Stringified:', String(error));
-    logger.error({ error }, 'Error in DELETE /api/auth/session');
+  } catch (err: unknown) {
+    loggerInstance.error(
+      {
+        error: err,
+        originalErrorMessage: err instanceof Error ? err.message : String(err),
+      },
+      `Error in ${currentFunctionName} /api/auth/session`
+    );
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

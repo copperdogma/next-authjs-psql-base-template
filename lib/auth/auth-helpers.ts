@@ -276,7 +276,7 @@ export function validateSignInInputs(
 }
 
 // Helper to prepare profile data for DB insertion/update
-// eslint-disable-next-line complexity
+
 export function prepareProfileDataForDb(
   userId: string,
   userEmail: string,

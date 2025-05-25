@@ -347,7 +347,7 @@ describe('registerUser with Rate Limiting', () => {
     currentRegisterUserAction = authActionsModule.registerUserAction;
   });
 
-  test('successful registration when under the rate limit', async () => {
+  it('successful registration when under the rate limit', async () => {
     // Mock the user check to NOT find an existing user (allows registration to proceed)
     mockUserFindUnique.mockResolvedValue(null);
 
@@ -392,7 +392,7 @@ describe('registerUser with Rate Limiting', () => {
     // expect(mockSignInFn).toHaveBeenCalledTimes(1);
   });
 
-  test('throws specific error when rate limit is exceeded', async () => {
+  it('throws specific error when rate limit is exceeded', async () => {
     sharedPipelineInstance.exec.mockResolvedValueOnce([
       [null, mockEnv.RATE_LIMIT_REGISTER_MAX_ATTEMPTS + 1],
       [null, 1],
@@ -416,7 +416,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockSignInFn).not.toHaveBeenCalled();
   });
 
-  test('rate limit count increments correctly and expire is set on first attempt', async () => {
+  it('rate limit count increments correctly and expire is set on first attempt', async () => {
     const formData = new FormData();
     formData.append('email', testEmail);
     formData.append('password', testPassword);
@@ -433,7 +433,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(sharedPipelineInstance.exec).toHaveBeenCalledTimes(1);
   });
 
-  test('handles missing IP address gracefully (uses fallback IP)', async () => {
+  it('handles missing IP address gracefully (uses fallback IP)', async () => {
     mockGetClientIp.mockReturnValue(fallbackIp);
 
     const formData = new FormData();
@@ -460,7 +460,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockFirebaseCreateUser).toHaveBeenCalledTimes(1);
   });
 
-  test('fails open and logs error if Redis pipeline.exec itself throws', async () => {
+  it('fails open and logs error if Redis pipeline.exec itself throws', async () => {
     const pipelineExecError = new Error('Simulated pipeline.exec error');
     sharedPipelineInstance.exec.mockReset();
     sharedPipelineInstance.exec.mockRejectedValueOnce(pipelineExecError);
@@ -490,7 +490,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockFirebaseCreateUser).toHaveBeenCalledTimes(1);
   });
 
-  test('fails open and logs error if Redis INCR result is not a number', async () => {
+  it('fails open and logs error if Redis INCR result is not a number', async () => {
     sharedPipelineInstance.exec.mockReset();
     sharedPipelineInstance.exec.mockResolvedValueOnce([
       [null, 'not-a-number'],
@@ -522,7 +522,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockFirebaseCreateUser).toHaveBeenCalledTimes(1);
   });
 
-  test('skips rate limiting and logs warning if Redis client is unavailable (getOptionalRedisClient returns null)', async () => {
+  it('skips rate limiting and logs warning if Redis client is unavailable (getOptionalRedisClient returns null)', async () => {
     // Mock getOptionalRedisClient to return null in this test
     mockGetOptionalRedisClient.mockReturnValue(null);
 
@@ -551,7 +551,7 @@ describe('registerUser with Rate Limiting', () => {
     // expect(mockSignInFn).toHaveBeenCalledTimes(1);
   });
 
-  test('returns an error if Firebase Admin Service is unavailable', async () => {
+  it('returns an error if Firebase Admin Service is unavailable', async () => {
     // Get the mock function for getFirebaseAdminService
     const { getFirebaseAdminService: mockGetFirebaseAdminService } =
       jest.requireMock('@/lib/server/services');
@@ -586,7 +586,7 @@ describe('registerUser with Rate Limiting', () => {
     );
   });
 
-  test('returns an error if user already exists in the database', async () => {
+  it('returns an error if user already exists in the database', async () => {
     const existingUser = {
       id: 'existing-user-id',
       email: testEmail,
@@ -627,7 +627,7 @@ describe('registerUser with Rate Limiting', () => {
     );
   });
 
-  test('returns an error if Firebase user creation fails', async () => {
+  it('returns an error if Firebase user creation fails', async () => {
     const firebaseCreateError = new Error('Simulated Firebase createUser error');
     (firebaseCreateError as any).code = 'GENERIC_ERROR';
     const testSpecificDeleteUserMock = jest.fn();
@@ -685,7 +685,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockDbUserCreate).not.toHaveBeenCalled();
   });
 
-  test('rolls back Firebase user if Prisma user creation fails', async () => {
+  it('rolls back Firebase user if Prisma user creation fails', async () => {
     const prismaCreateError = new Error('Simulated Prisma create error');
     const mockFirebaseUser = { uid: 'fb-uid-rollback', email: testEmail };
 
@@ -712,7 +712,7 @@ describe('registerUser with Rate Limiting', () => {
     expect(mockSignInFn).not.toHaveBeenCalled();
   });
 
-  test('returns validation errors if input is invalid', async () => {
+  it('returns validation errors if input is invalid', async () => {
     const formData = new FormData();
     formData.append('email', testEmail);
     formData.append('password', 'short');

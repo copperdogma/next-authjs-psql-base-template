@@ -336,7 +336,6 @@ function logSuccessfulRequest<T extends NextResponse | Response>(
 export function withApiLogger<T extends NextResponse | Response>(
   handler: (req: NextRequest, logger: pino.Logger) => Promise<T> // Update logger type hint
 ): (req: NextRequest) => Promise<T | NextResponse> {
-  // eslint-disable-next-line max-statements
   return async (req: NextRequest) => {
     let loggerInstance: pino.Logger;
     let requestStartTime: number;

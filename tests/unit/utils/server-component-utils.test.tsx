@@ -16,7 +16,7 @@ const TestServerComponent = ({ text }: { text: string }) => {
 };
 
 describe('Server Component Utils', () => {
-  test('should render a server component to HTML', async () => {
+  it('should render a server component to HTML', async () => {
     // Arrange & Act
     const { html } = await renderServerComponent(TestServerComponent, { text: 'Hello World' });
 
@@ -25,7 +25,7 @@ describe('Server Component Utils', () => {
     expect(html).toContain('<p data-testid="test-content">Hello World</p>');
   });
 
-  test('should provide a container with the rendered content', async () => {
+  it('should provide a container with the rendered content', async () => {
     // Arrange & Act
     const { container } = await renderServerComponent(TestServerComponent, {
       text: 'Test Content',
@@ -37,7 +37,7 @@ describe('Server Component Utils', () => {
     expect(container?.innerHTML).toContain('Test Content');
   });
 
-  test('should provide a getByText helper that works correctly', async () => {
+  it('should provide a getByText helper that works correctly', async () => {
     // Arrange & Act
     const { getByText } = await renderServerComponent(TestServerComponent, { text: 'Find Me' });
 
@@ -47,7 +47,7 @@ describe('Server Component Utils', () => {
     expect(element?.textContent).toContain('Find Me');
   });
 
-  test('should provide a queryBySelector helper that works correctly', async () => {
+  it('should provide a queryBySelector helper that works correctly', async () => {
     // Arrange & Act
     const { queryBySelector } = await renderServerComponent(TestServerComponent, { text: 'Test' });
 
@@ -61,7 +61,7 @@ describe('Server Component Utils', () => {
     expect(nonExistent).toBeNull();
   });
 
-  test('should provide a queryAllBySelector helper that works correctly', async () => {
+  it('should provide a queryAllBySelector helper that works correctly', async () => {
     // Arrange & Act
     const { queryAllBySelector } = await renderServerComponent(TestServerComponent, {
       text: 'Test',

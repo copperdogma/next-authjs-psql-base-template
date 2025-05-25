@@ -37,16 +37,6 @@ const mockUuidV4 = jest.fn(() => mockUuid);
 // Explicitly type the mock implementation
 const mockDbUserFindUnique = jest.fn<() => Promise<User | null>>();
 
-// Reset mocks before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-  // Setup default successful mocks
-  mockUuidV4.mockReturnValue(mockUuid);
-  // Call mockResolvedValue directly on the correctly typed mock
-  mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
-  mockHasherCompare.mockResolvedValue(true);
-});
-
 // --- Test Data ---
 const validCredentials = {
   email: 'test@example.com',
@@ -97,6 +87,16 @@ describe('authorizeLogic', () => {
     hasher: { compare: mockHasherCompare },
     validator: CredentialsSchema, // Use the real schema as the validator
     uuidv4: mockUuidV4,
+  });
+
+  // Reset mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Setup default successful mocks
+    mockUuidV4.mockReturnValue(mockUuid);
+    // Call mockResolvedValue directly on the correctly typed mock
+    mockDbUserFindUnique.mockResolvedValue(mockPrismaUser);
+    mockHasherCompare.mockResolvedValue(true);
   });
 
   // Create a mock logContext

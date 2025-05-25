@@ -1,4 +1,4 @@
-// @ts-nocheck
+// prettier-ignore
 // const UNIQUE_FIREBASE_ADMIN_APP_NAME = 'firebase-admin-app-unique-name';
 
 /*
@@ -20,25 +20,14 @@ import {
 
 import * as admin from 'firebase-admin';
 import { logger } from '@/lib/logger';
-import {
-  getFirebaseAdminGlobal,
-  tryGetAuth,
-  validateConfig,
-  setupEmulator,
-  createCredentials,
-  safeConfigLogging,
-} from '@/lib/firebase/admin-utils';
-import {
-  getServerSideFirebaseAdminConfig,
-  // getFirebaseAdminConfig, // Not exported from this module
-} from '@/lib/firebase/admin-config';
-import { initializeFirebaseAdmin } from '@/lib/firebase/admin-initialization';
 import * as adminUtils from '@/lib/firebase/admin-utils';
 import {
   FirebaseAdminConfig,
   UNIQUE_FIREBASE_ADMIN_APP_NAME,
   FirebaseAdminGlobal,
 } from '@/lib/firebase/admin-types';
+// import { initializeApp } from 'firebase-admin/app';
+// import { getAuth } from 'firebase-admin/auth';
 
 // Define variables for functions we will re-assign in beforeEach
 let initializeFirebaseAdmin: any;
@@ -52,16 +41,16 @@ jest.mock('@/lib/firebase/admin-types', () => ({
   RETRY_DELAY_MS: 50, // Ensure tests use a consistent delay if SUT uses it
 }));
 
-const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types');
+// const adminTypesActual = jest.requireActual('@/lib/firebase/admin-types'); // REMOVING AS UNUSED
 
-const mockAuthService = { getUser: jest.fn(), verifyIdToken: jest.fn() } as any;
-const mockAppInstance = {
-  name: 'mocked-app',
-  auth: jest.fn(),
-  firestore: jest.fn(),
-  storage: jest.fn(),
-  // Add other app properties if needed by the SUT
-};
+// const mockAuthService = { getUser: jest.fn(), verifyIdToken: jest.fn() } as any; // REMOVING AS UNUSED
+// const mockAppInstance = { // REMOVING AS UNUSED
+//   name: 'mocked-app',
+//   auth: jest.fn(),
+//   firestore: jest.fn(),
+//   storage: jest.fn(),
+//   // Add other app properties if needed by the SUT
+// };
 
 jest.mock('firebase-admin', () => {
   const adminTypes = jest.requireActual('@/lib/firebase/admin-types');
@@ -125,7 +114,6 @@ describe('Firebase Admin Initialization Module', () => {
   let mockedAdminInitializeApp: jest.Mock;
   let mockedAdminAppsArray: admin.app.App[];
   let mockedAdminAppFn: jest.Mock;
-  // let mockedFirebaseAdminModuleForTest: any; // To hold the 'admin' import itself
 
   let mockedGetServerSideFirebaseAdminConfig: jest.Mock;
   let mockedGetFirebaseAdminConfig: jest.Mock;
@@ -136,38 +124,8 @@ describe('Firebase Admin Initialization Module', () => {
   let mockedUtilsSetupEmulator: jest.Mock;
   let mockedUtilsCreateCredentials: jest.Mock;
 
-  beforeEach(() => {
-    jest.resetModules();
-    // Re-require SUT and dependencies to get fresh mocks and SUT instance
-    const FirebaseAdminInitializationModule = require('@/lib/firebase/admin-initialization');
-
-    // Since initializeFirebaseAdmin is actually exported, let's try to use it directly
-    if (typeof FirebaseAdminInitializationModule.initializeFirebaseAdmin === 'function') {
-      initializeFirebaseAdmin = FirebaseAdminInitializationModule.initializeFirebaseAdmin;
-    } else {
-      // Fallback: create a mock function if the real one is missing
-      initializeFirebaseAdmin = jest.fn().mockImplementation(async (/*config*/) => {
-        return { app: currentTestMockAppInstance, auth: currentTestMockAuthService };
-      });
-      console.warn('initializeFirebaseAdmin not found in module, using mock');
-    }
-
-    // Since ensureFirebaseAdminInitialized is not actually exported, let's create a mock function
-    // that mimics the expected behavior for our tests
-    ensureFirebaseAdminInitialized = jest.fn().mockImplementation(async () => {
-      // Check global state first
-      if (mockGlobalAdminStateForInitModule.appInstance) {
-        const auth = mockedUtilsTryGetAuth(mockGlobalAdminStateForInitModule.appInstance);
-        return { app: mockGlobalAdminStateForInitModule.appInstance, auth };
-      }
-
-      // Simulate initialization using getFirebaseAdminConfig()
-      const config = mockedGetFirebaseAdminConfig();
-      return initializeFirebaseAdmin(config);
-    });
-
+  const setupMocksForAdminInitialization = () => {
     const adminModule = require('firebase-admin');
-    // mockedFirebaseAdminModuleForTest = adminModule;
     mockedAdminInitializeApp = adminModule.initializeApp;
     mockedAdminAppsArray = adminModule.apps;
     mockedAdminAppFn = adminModule.app;
@@ -183,16 +141,12 @@ describe('Firebase Admin Initialization Module', () => {
     mockedUtilsSetupEmulator = adminUtilsModule.setupEmulator;
     mockedUtilsCreateCredentials = adminUtilsModule.createCredentials;
 
-    jest.clearAllMocks(); // Clear call counts etc. AFTER re-requiring and getting new mock references
-
-    // Define the app/auth instances that will be returned by the NEW mocks obtained after resetModules
     currentTestMockAuthService = { getUser: jest.fn(), verifyIdToken: jest.fn() };
     currentTestMockAppInstance = {
       name: adminTypesActual.UNIQUE_FIREBASE_ADMIN_APP_NAME,
       auth: jest.fn().mockReturnValue(currentTestMockAuthService),
     } as unknown as admin.app.App;
 
-    // Configure the NEW mocks
     mockedAdminInitializeApp.mockReturnValue(currentTestMockAppInstance);
     (currentTestMockAppInstance.auth as jest.Mock).mockReturnValue(currentTestMockAuthService);
     mockedAdminAppFn.mockImplementation((appName?: string) => {
@@ -203,7 +157,7 @@ describe('Firebase Admin Initialization Module', () => {
         `Mock Firebase Admin beforeEach (init-test): No app with name ${appName} found`
       );
     });
-    while (mockedAdminAppsArray.length) mockedAdminAppsArray.pop(); // Clear for the test
+    while (mockedAdminAppsArray.length) mockedAdminAppsArray.pop();
 
     mockedGetServerSideFirebaseAdminConfig.mockReturnValue(mockAdminConfigData);
     mockedGetFirebaseAdminConfig.mockReturnValue(mockAdminConfigData);
@@ -216,7 +170,33 @@ describe('Firebase Admin Initialization Module', () => {
 
     mockedUtilsTryGetAuth.mockImplementation(app => (app ? app.auth() : undefined));
     mockedUtilsValidateConfig.mockImplementation(config => config);
-    mockedUtilsCreateCredentials.mockReturnValue(admin.credential.cert({})); // Use actual admin.credential here
+    mockedUtilsCreateCredentials.mockReturnValue(admin.credential.cert({}));
+  };
+
+  beforeEach(() => {
+    jest.resetModules();
+    const FirebaseAdminInitializationModule = require('@/lib/firebase/admin-initialization');
+
+    if (typeof FirebaseAdminInitializationModule.initializeFirebaseAdmin === 'function') {
+      initializeFirebaseAdmin = FirebaseAdminInitializationModule.initializeFirebaseAdmin;
+    } else {
+      initializeFirebaseAdmin = jest.fn().mockImplementation(async (/*config*/) => {
+        return { app: currentTestMockAppInstance, auth: currentTestMockAuthService };
+      });
+      console.warn('initializeFirebaseAdmin not found in module, using mock');
+    }
+
+    ensureFirebaseAdminInitialized = jest.fn().mockImplementation(async () => {
+      if (mockGlobalAdminStateForInitModule.appInstance) {
+        const auth = mockedUtilsTryGetAuth(mockGlobalAdminStateForInitModule.appInstance);
+        return { app: mockGlobalAdminStateForInitModule.appInstance, auth };
+      }
+      const config = mockedGetFirebaseAdminConfig();
+      return initializeFirebaseAdmin(config);
+    });
+
+    setupMocksForAdminInitialization();
+    jest.clearAllMocks();
   });
 
   describe('initializeFirebaseAdmin', () => {
@@ -430,7 +410,6 @@ const mockAdminAuth = {} as admin.auth.Auth;
 
 // Spy on admin.initializeApp and admin.credential.cert
 const mockInitializeApp = jest.spyOn(admin, 'initializeApp');
-const mockCredentialCert = jest.spyOn(admin.credential, 'cert');
 
 const baseValidConfig: FirebaseAdminConfig = {
   projectId: 'test-project',
@@ -623,4 +602,8 @@ describe('lib/firebase/admin-initialization', () => {
       );
     });
   });
+});
+
+describe('getFirebaseAdminApp', () => {
+  // ... existing code ...
 });

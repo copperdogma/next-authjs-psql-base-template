@@ -19,7 +19,7 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 
 - **Frontend**: Next.js, React, Material UI (MUI)
 - **Backend**: Node.js/TypeScript
-- **Auth**: Firebase Authentication
+- **Auth**: Firebase Authentication, NextAuth.js v5 (Note: v5 is currently in beta. Be aware that APIs might evolve until a stable release.)
 - **Data**: PostgreSQL, Redis (caching)
 - **Deployment**: fly.io
 

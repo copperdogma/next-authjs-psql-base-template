@@ -123,7 +123,7 @@ async function _initializeFirebaseAdminApp(): Promise<boolean> {
 }
 
 // Helper for FirebaseAdminService initialization steps 3 & 4
-// eslint-disable-next-line max-statements
+
 function _createAndSetFirebaseAdminServiceInstance(): boolean {
   // Explicit check to satisfy linter and for robustness, though currentAdminApp should be validated by the caller
   if (!currentAdminApp) {

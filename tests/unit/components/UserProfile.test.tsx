@@ -26,13 +26,13 @@ describe('UserProfile', () => {
     jest.clearAllMocks();
   });
 
-  test('renders nothing when user is not authenticated (no ID in store)', () => {
+  it('renders nothing when user is not authenticated (no ID in store)', () => {
     render(<UserProfile />);
     const profileChip = screen.queryByTestId('user-profile-chip');
     expect(profileChip).not.toBeInTheDocument();
   });
 
-  test('renders authenticated user information correctly with image', () => {
+  it('renders authenticated user information correctly with image', () => {
     const mockUser = {
       id: 'user-123',
       name: 'Test User',
@@ -50,11 +50,11 @@ describe('UserProfile', () => {
     expect(avatarImg).toBeInTheDocument();
     expect(avatarImg).toHaveAttribute('src', mockUser.image);
 
-    const displayName = within(profileChip).getByText(mockUser.name!);
+    const displayName = within(profileChip).getByText(mockUser.name || '');
     expect(displayName).toBeInTheDocument();
   });
 
-  test('renders avatar with initials when user has no image', () => {
+  it('renders avatar with initials when user has no image', () => {
     const mockUserNoImage = {
       id: 'user-456',
       name: 'Test User No Image',
@@ -68,14 +68,14 @@ describe('UserProfile', () => {
     const profileChip = screen.getByTestId('user-profile-chip');
     expect(profileChip).toBeInTheDocument();
 
-    const displayName = within(profileChip).getByText(mockUserNoImage.name!);
+    const displayName = within(profileChip).getByText(mockUserNoImage.name || '');
     expect(displayName).toBeInTheDocument();
 
     const fallbackIcon = within(profileChip).getByTestId('PersonIcon');
     expect(fallbackIcon).toBeInTheDocument();
   });
 
-  test('uses email as display name when name is not available', () => {
+  it('uses email as display name when name is not available', () => {
     const mockUserNoName = {
       id: 'user-789',
       name: null,
@@ -89,14 +89,14 @@ describe('UserProfile', () => {
     const profileChip = screen.getByTestId('user-profile-chip');
     expect(profileChip).toBeInTheDocument();
 
-    const displayName = within(profileChip).getByText(mockUserNoName.email!);
+    const displayName = within(profileChip).getByText(mockUserNoName.email || '');
     expect(displayName).toBeInTheDocument();
 
     const fallbackIcon = within(profileChip).getByTestId('PersonIcon');
     expect(fallbackIcon).toBeInTheDocument();
   });
 
-  test('renders nothing when user is explicitly unauthenticated', () => {
+  it('renders nothing when user is explicitly unauthenticated', () => {
     useUserStore.setState({ id: null, name: null, email: null, image: null });
     render(<UserProfile />);
     const profileChip = screen.queryByTestId('user-profile-chip');

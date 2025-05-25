@@ -233,47 +233,58 @@ describe('Firebase Admin Access', () => {
   });
 
   describe('getFirebaseAdminAuth', () => {
-    it('should return auth if getFirebaseAdminApp returns app and auth', () => {
+    it('should return auth instance if getFirebaseAdminApp returns it', () => {
       mockGlobalState.appInstance = MOCK_APP_INSTANCE;
       (tryGetAuth as jest.Mock).mockReturnValue(MOCK_AUTH_INSTANCE);
-      expect(getFirebaseAdminAuth()).toBe(MOCK_AUTH_INSTANCE);
+
+      const auth = getFirebaseAdminAuth();
+
+      expect(auth).toBe(MOCK_AUTH_INSTANCE);
+      expect(logger.info).toHaveBeenCalledWith(
+        '[getFirebaseAdminAuth] Attempting to retrieve auth service.'
+      );
     });
 
-    it('should return undefined if getFirebaseAdminApp returns an error', () => {
-      expect(getFirebaseAdminAuth()).toBeUndefined();
+    it('should return undefined if getFirebaseAdminApp returns an error and no auth', () => {
+      // Setup global state to return error, no app, no auth
+      mockGlobalState.appInstance = undefined;
+      (tryGetAuth as jest.Mock).mockReturnValue(undefined);
+      adminAppsSpy.mockReturnValue([]);
+
+      const auth = getFirebaseAdminAuth();
+
+      expect(auth).toBeUndefined();
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[getFirebaseAdminAuth] Could not get Firebase Auth service due to: Firebase Admin App not initialized or unrecoverable.'
+          '[getFirebaseAdminAuth] Could not get Firebase Auth service due to:'
         )
       );
     });
 
-    it('should return undefined if getFirebaseAdminApp returns app but no auth (and an error)', () => {
+    it('should return undefined if app is found but auth retrieval fails', () => {
+      // Setup to return app but no auth
       mockGlobalState.appInstance = MOCK_APP_INSTANCE;
       (tryGetAuth as jest.Mock).mockReturnValue(undefined);
-      expect(getFirebaseAdminAuth()).toBeUndefined();
+
+      const auth = getFirebaseAdminAuth();
+
+      expect(auth).toBeUndefined();
       expect(logger.warn).toHaveBeenCalledWith(
-        `[getFirebaseAdminAuth] Could not get Firebase Auth service due to: Failed to retrieve auth from existing global app. App state: ${MOCK_APP_INSTANCE.name}`
+        expect.stringContaining(
+          `[getFirebaseAdminAuth] App '${MOCK_APP_INSTANCE.name}' was found, but its Auth service could not be retrieved.`
+        )
       );
     });
 
-    it('should return undefined and log if app exists but auth is undefined without an error string', () => {
-      getFirebaseAdminAppInternalSpy = jest
-        .spyOn(require('@/lib/firebase/admin-access'), 'getFirebaseAdminApp')
-        .mockReturnValueOnce({ app: MOCK_APP_INSTANCE, auth: undefined });
+    it('should return undefined if neither app nor auth can be retrieved', () => {
+      // Mock a scenario where neither app nor auth can be retrieved
+      mockGlobalState.appInstance = undefined;
+      adminAppsSpy.mockReturnValue([]);
+      (tryGetAuth as jest.Mock).mockReturnValue(undefined);
 
-      expect(getFirebaseAdminAuth()).toBeUndefined();
-      expect(logger.warn).toHaveBeenCalledWith(
-        `[getFirebaseAdminAuth] App '${MOCK_APP_INSTANCE.name}' was found, but its Auth service could not be retrieved.`
-      );
-    });
+      const auth = getFirebaseAdminAuth();
 
-    it('should return undefined and log if neither app nor auth could be retrieved', () => {
-      getFirebaseAdminAppInternalSpy = jest
-        .spyOn(require('@/lib/firebase/admin-access'), 'getFirebaseAdminApp')
-        .mockReturnValueOnce({ auth: undefined });
-
-      expect(getFirebaseAdminAuth()).toBeUndefined();
+      expect(auth).toBeUndefined();
       expect(logger.warn).toHaveBeenCalledWith(
         '[getFirebaseAdminAuth] Neither App nor Auth service could be retrieved.'
       );

@@ -130,7 +130,6 @@ function handleRegistrationSubmitError(
   }
 }
 
-// eslint-disable-next-line max-lines-per-function
 export function useRegistrationForm() {
   const router = useRouter();
   const { update: updateSession } = useSession();

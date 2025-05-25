@@ -104,7 +104,6 @@ interface LoginFormProps {
   isSubmitting?: boolean;
 }
 
-// eslint-disable-next-line max-lines-per-function -- Slightly over limit due to structure
 const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, errorMessage, isSubmitting }) => {
   // Use the custom hook
   const { form, submitting, handleFormSubmit } = useLoginForm(onSubmit, isSubmitting);

@@ -13,7 +13,7 @@ jest.mock('../../../lib/logger', () => ({
 
 describe('Firebase Error Utilities', () => {
   describe('getFirebaseAuthErrorMessage', () => {
-    test('should return correct message for invalid-email error', () => {
+    it('should return correct message for invalid-email error', () => {
       const error = new FirebaseError(
         'auth/invalid-email',
         'Firebase: Error (auth/invalid-email).'
@@ -21,7 +21,7 @@ describe('Firebase Error Utilities', () => {
       expect(getFirebaseAuthErrorMessage(error)).toBe('The email address is not valid.');
     });
 
-    test('should return correct message for wrong-password error', () => {
+    it('should return correct message for wrong-password error', () => {
       const error = new FirebaseError(
         'auth/wrong-password',
         'Firebase: Error (auth/wrong-password).'
@@ -31,7 +31,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for user-not-found error', () => {
+    it('should return correct message for user-not-found error', () => {
       const error = new FirebaseError(
         'auth/user-not-found',
         'Firebase: Error (auth/user-not-found).'
@@ -39,7 +39,7 @@ describe('Firebase Error Utilities', () => {
       expect(getFirebaseAuthErrorMessage(error)).toBe('No user found with this email address.');
     });
 
-    test('should return correct message for email-already-in-use error', () => {
+    it('should return correct message for email-already-in-use error', () => {
       const error = new FirebaseError(
         'auth/email-already-in-use',
         'Firebase: Error (auth/email-already-in-use).'
@@ -49,7 +49,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for weak-password error', () => {
+    it('should return correct message for weak-password error', () => {
       const error = new FirebaseError(
         'auth/weak-password',
         'Firebase: Error (auth/weak-password).'
@@ -59,7 +59,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for account-exists-with-different-credential error', () => {
+    it('should return correct message for account-exists-with-different-credential error', () => {
       const error = new FirebaseError(
         'auth/account-exists-with-different-credential',
         'Firebase: Error (auth/account-exists-with-different-credential).'
@@ -69,7 +69,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for popup-closed-by-user error', () => {
+    it('should return correct message for popup-closed-by-user error', () => {
       const error = new FirebaseError(
         'auth/popup-closed-by-user',
         'Firebase: Error (auth/popup-closed-by-user).'
@@ -79,7 +79,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for network-request-failed error', () => {
+    it('should return correct message for network-request-failed error', () => {
       const error = new FirebaseError(
         'auth/network-request-failed',
         'Firebase: Error (auth/network-request-failed).'
@@ -89,7 +89,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for too-many-requests error', () => {
+    it('should return correct message for too-many-requests error', () => {
       const error = new FirebaseError(
         'auth/too-many-requests',
         'Firebase: Error (auth/too-many-requests).'
@@ -99,7 +99,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for cancelled-popup-request error', () => {
+    it('should return correct message for cancelled-popup-request error', () => {
       const error = new FirebaseError(
         'auth/cancelled-popup-request',
         'Firebase: Error (auth/cancelled-popup-request).'
@@ -109,7 +109,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for expired-action-code error', () => {
+    it('should return correct message for expired-action-code error', () => {
       const error = new FirebaseError(
         'auth/expired-action-code',
         'Firebase: Error (auth/expired-action-code).'
@@ -119,7 +119,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for popup-blocked error', () => {
+    it('should return correct message for popup-blocked error', () => {
       const error = new FirebaseError(
         'auth/popup-blocked',
         'Firebase: Error (auth/popup-blocked).'
@@ -129,7 +129,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return correct message for unauthorized-domain error', () => {
+    it('should return correct message for unauthorized-domain error', () => {
       const error = new FirebaseError(
         'auth/unauthorized-domain',
         'Firebase: Error (auth/unauthorized-domain).'
@@ -139,7 +139,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return the error message for unknown Firebase Auth errors', () => {
+    it('should return the error message for unknown Firebase Auth errors', () => {
       const error = new FirebaseError(
         'auth/some-unknown-error',
         'Firebase: This is a custom error message.'
@@ -149,14 +149,14 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should return a generic message for non-Firebase errors', () => {
+    it('should return a generic message for non-Firebase errors', () => {
       const error = new Error('This is a generic error');
       expect(getFirebaseAuthErrorMessage(error)).toBe(
         'An unexpected authentication error occurred. Please try again.'
       );
     });
 
-    test('should handle error objects without messages', () => {
+    it('should handle error objects without messages', () => {
       const error = { code: 'auth/timeout' } as unknown as Error;
       expect(getFirebaseAuthErrorMessage(error)).toBe(
         'An unexpected authentication error occurred. Please try again.'
@@ -170,7 +170,7 @@ describe('Firebase Error Utilities', () => {
       (logger.error as jest.Mock).mockClear();
     });
 
-    test('should handle known FirebaseError codes', () => {
+    it('should handle known FirebaseError codes', () => {
       const knownError = new FirebaseError('auth/user-not-found', 'User not found');
       const message = handleFirebaseError(knownError, 'Login');
 
@@ -185,7 +185,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should handle unknown FirebaseError codes', () => {
+    it('should handle unknown FirebaseError codes', () => {
       const unknownError = new FirebaseError('auth/some-other-error', 'Something else happened');
       const message = handleFirebaseError(unknownError, 'Auth Operation');
 
@@ -203,7 +203,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should handle generic Error objects', () => {
+    it('should handle generic Error objects', () => {
       const genericError = new Error('Network issue');
       const message = handleFirebaseError(genericError, 'Network Request');
 
@@ -218,7 +218,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should handle non-Error types', () => {
+    it('should handle non-Error types', () => {
       const nonError = { some: 'object' };
       const message = handleFirebaseError(nonError, 'Processing');
 
@@ -233,7 +233,7 @@ describe('Firebase Error Utilities', () => {
       );
     });
 
-    test('should use default context if not provided', () => {
+    it('should use default context if not provided', () => {
       const genericError = new Error('Default context test');
       handleFirebaseError(genericError);
 

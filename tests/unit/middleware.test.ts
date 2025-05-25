@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // import middleware from '../../middleware'; // No longer calling middleware directly
 import { getToken } from 'next-auth/jwt';
 import type { Session } from 'next-auth';
-// @ts-ignore - TODO: Investigate Prisma type resolution issue
+// TODO: Investigate Prisma type resolution issue (Note: @ts-expect-error was unused here)
 import { UserRole } from '@prisma/client';
 
 // Define paths locally for testing purposes, mirroring middleware logic
@@ -125,14 +125,14 @@ describe('Middleware Logic Simulation (Auth.js v5)', () => {
       mockGetToken.mockResolvedValue(null); // Simulate no token
     });
 
-    test.each(testPublicPaths)('should allow access to public path: %s', async (path: string) => {
+    it.each(testPublicPaths)('should allow access to public path: %s', async (path: string) => {
       const request = createMockRequest(path);
       const result = await simulateAuthCheck(request);
       expect(result).toBe(true);
       expect(NextResponse.redirect).not.toHaveBeenCalled();
     });
 
-    test.each(testProtectedPaths)(
+    it.each(testProtectedPaths)(
       'should redirect access to protected path: %s to /login',
       async (path: string) => {
         const request = createMockRequest(path);
@@ -145,7 +145,7 @@ describe('Middleware Logic Simulation (Auth.js v5)', () => {
       }
     );
 
-    test('should include search params in callbackUrl on redirect', async () => {
+    it('should include search params in callbackUrl on redirect', async () => {
       const path = '/dashboard';
       const search = '?param1=value1'; // Ensure leading ?
       const request = createMockRequest(path, search);
@@ -162,7 +162,7 @@ describe('Middleware Logic Simulation (Auth.js v5)', () => {
       mockGetToken.mockResolvedValue(mockAuthenticatedSession); // Simulate valid session/token
     });
 
-    test.each(testPublicPaths.filter(p => p !== '/login'))(
+    it.each(testPublicPaths.filter(p => p !== '/login'))(
       'should allow access to public path: %s',
       async (path: string) => {
         const request = createMockRequest(path);
@@ -172,7 +172,7 @@ describe('Middleware Logic Simulation (Auth.js v5)', () => {
       }
     );
 
-    test.each(testProtectedPaths)(
+    it.each(testProtectedPaths)(
       'should allow access to protected path: %s',
       async (path: string) => {
         const request = createMockRequest(path);
@@ -182,7 +182,7 @@ describe('Middleware Logic Simulation (Auth.js v5)', () => {
       }
     );
 
-    test('should redirect access to /login path to /dashboard', async () => {
+    it('should redirect access to /login path to /dashboard', async () => {
       const request = createMockRequest('/login');
       const result = await simulateAuthCheck(request);
       expect(result).not.toBe(true);

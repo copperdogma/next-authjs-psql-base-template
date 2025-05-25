@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
 // const UNIQUE_FIREBASE_ADMIN_APP_NAME = 'firebase-admin-app-unique-name';
 
-// import * as admin from 'firebase-admin';
+// import * as admin from 'firebase-admin'; // REMOVING AS UNUSED
 // import { logger } from '@/lib/logger';
 // import { adminTypes } from '@/lib/firebase/admin-types';
 
@@ -70,7 +68,8 @@ jest.mock('@/lib/env', () => ({
 }));
 
 // Now, import the module to be tested AFTER mocks are set up
-import { getServerSideFirebaseAdminConfig } from '@/lib/firebase/admin-config';
+// import { getServerSideFirebaseAdminConfig } from '@/lib/firebase/admin-config';
+// import { getServerSideFirebaseAdminConfig } from '@/lib/firebase/admin-config'; // This is a duplicate, removing
 
 describe('Firebase Admin Config Module', () => {
   let getServerSideFirebaseAdminConfigInTest: any;

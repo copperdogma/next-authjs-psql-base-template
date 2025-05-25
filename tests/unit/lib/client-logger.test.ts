@@ -21,16 +21,16 @@ const originalEnv = { ...process.env };
 const consoleErrorMock = jest.fn();
 const consoleWarnMock = jest.fn();
 
-// Restore original console and env after all tests
-afterAll(() => {
-  global.console = originalConsole;
-  process.env = originalEnv; // Restore env
-});
-
 // --- Constants ---
 const mockEndpoint = '/api/log/client';
 
 describe('clientLogger', () => {
+  // Restore original console and env after all tests
+  afterAll(() => {
+    global.console = originalConsole;
+    process.env = originalEnv; // Restore env
+  });
+
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks();

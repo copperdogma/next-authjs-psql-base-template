@@ -60,7 +60,7 @@ describe('env module', () => {
 
     it('returns success: false for invalid data types', () => {
       setValidRequiredEnv();
-      // @ts-ignore - Intentionally set wrong type for testing
+      // @ts-expect-error - Intentionally set wrong type for testing
       process.env.DATABASE_URL = 12345;
 
       const result = validateEnv();

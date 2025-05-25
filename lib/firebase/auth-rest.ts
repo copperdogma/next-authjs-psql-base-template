@@ -28,7 +28,7 @@ interface FirebaseAuthErrorResponse {
 }
 
 // Helper function to call the Firebase Auth REST API
-// eslint-disable-next-line max-statements -- Function encapsulates the steps for making a Firebase Auth REST API call, including setup, execution, and basic error handling.
+
 async function callFirebaseAuthApi(payload: object): Promise<FirebaseAuthSuccessResponse> {
   const logger = createLogger('callFirebaseAuthApi');
   // Use specific type

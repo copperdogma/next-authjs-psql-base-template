@@ -4,18 +4,18 @@
  */
 
 describe('SWC Feature Transpilation', () => {
-  test('Optional Chaining', () => {
+  it('Optional Chaining', () => {
     const user = { profile: null as { name: string } | null };
     expect(user.profile?.name).toBeUndefined();
   });
 
-  test('Nullish Coalescing', () => {
+  it('Nullish Coalescing', () => {
     const value = 0;
     const result = value ?? 10;
     expect(result).toBe(0);
   });
 
-  test('Async/Await', async () => {
+  it('Async/Await', async () => {
     const fetchProfile = async (): Promise<{ profile?: { name: string } }> => ({
       profile: { name: 'Test User' },
     });
@@ -23,7 +23,7 @@ describe('SWC Feature Transpilation', () => {
     expect(result.profile?.name).toBe('Test User');
   });
 
-  test('Class Fields', () => {
+  it('Class Fields', () => {
     class User {
       // Using _ prefix instead of # for compatibility
       _privateField = 'private';
@@ -35,7 +35,7 @@ describe('SWC Feature Transpilation', () => {
     expect(user.getPrivateField()).toBe('private');
   });
 
-  test('Rest/Spread Operators', () => {
+  it('Rest/Spread Operators', () => {
     const obj1 = { a: 1, b: 2 };
     const obj2 = { c: 3, ...obj1 };
     expect(obj2).toEqual({ a: 1, b: 2, c: 3 });

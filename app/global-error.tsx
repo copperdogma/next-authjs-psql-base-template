@@ -9,7 +9,7 @@ import { ReportProblemOutlined } from '@mui/icons-material'; // A different icon
 
 let loggedError = false;
 
-/* eslint-disable max-lines-per-function */ // Acceptable for a global error boundary
+// Acceptable for a global error boundary
 // which needs to be self-contained and may include fallback styles and structure.
 export default function GlobalError({
   error,
@@ -121,4 +121,3 @@ export default function GlobalError({
     </html>
   );
 }
-/* eslint-enable max-lines-per-function */

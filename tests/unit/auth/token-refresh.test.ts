@@ -2,7 +2,7 @@ import { describe, expect /*, it */ } from '@jest/globals';
 import { calculateBackoffTime, BackoffOptions } from '../../../tests/mocks/lib/auth/token-refresh';
 
 describe('Exponential Backoff', () => {
-  test('should increase delay based on attempt number', () => {
+  it('should increase delay based on attempt number', () => {
     const delay1 = calculateBackoffTime(1);
     const delay2 = calculateBackoffTime(2);
     const delay3 = calculateBackoffTime(3);
@@ -12,7 +12,7 @@ describe('Exponential Backoff', () => {
     expect(delay3).toBeGreaterThan(delay2);
   });
 
-  test('should respect maximum delay', () => {
+  it('should respect maximum delay', () => {
     const options: BackoffOptions = {
       baseDelayMs: 1000,
       maxDelayMs: 5000,
@@ -24,12 +24,12 @@ describe('Exponential Backoff', () => {
     expect(delay).toBeLessThanOrEqual(options.maxDelayMs as number);
   });
 
-  test('should use default options if none provided', () => {
+  it('should use default options if none provided', () => {
     const delay = calculateBackoffTime(1);
     expect(delay).toBeGreaterThan(0);
   });
 
-  test('should apply jitter to the delay', () => {
+  it('should apply jitter to the delay', () => {
     // Use high jitter for testing
     const options: BackoffOptions = {
       baseDelayMs: 1000,

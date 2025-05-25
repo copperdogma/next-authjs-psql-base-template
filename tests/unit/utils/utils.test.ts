@@ -1,7 +1,7 @@
 import { classNames, cleanDbData } from '../../../lib/utils';
 
 describe('classNames and cn function', () => {
-  test('merges string class names correctly', () => {
+  it('merges string class names correctly', () => {
     // Arrange & Act
     const result = classNames('foo', 'bar');
 
@@ -9,7 +9,7 @@ describe('classNames and cn function', () => {
     expect(result).toBe('foo bar');
   });
 
-  test('filters out null and undefined values', () => {
+  it('filters out null and undefined values', () => {
     // Arrange & Act
     const result = classNames('foo', null, undefined, 'bar');
 
@@ -17,7 +17,7 @@ describe('classNames and cn function', () => {
     expect(result).toBe('foo bar');
   });
 
-  test('handles conditional classes as objects', () => {
+  it('handles conditional classes as objects', () => {
     // Arrange & Act
     const result = classNames('foo', { bar: true, baz: false });
 
@@ -25,7 +25,7 @@ describe('classNames and cn function', () => {
     expect(result).toBe('foo bar');
   });
 
-  test('handles complex combinations', () => {
+  it('handles complex combinations', () => {
     // Arrange & Act
     const result = classNames(
       'base-class',
@@ -40,7 +40,7 @@ describe('classNames and cn function', () => {
     expect(result).toBe('base-class conditional-a explicit-class conditional-c');
   });
 
-  test('trims whitespace from class names', () => {
+  it('trims whitespace from class names', () => {
     // Arrange & Act
     const result = classNames(' foo ', ' bar');
 
@@ -48,7 +48,7 @@ describe('classNames and cn function', () => {
     expect(result).toBe('foo bar');
   });
 
-  test('handles empty inputs correctly', () => {
+  it('handles empty inputs correctly', () => {
     // Arrange & Act
     const result1 = classNames();
     const result2 = classNames('');
@@ -60,7 +60,7 @@ describe('classNames and cn function', () => {
     expect(result3).toBe('');
   });
 
-  test('cn is an alias for classNames', () => {
+  it('cn is an alias for classNames', () => {
     // Arrange
     const args = ['foo', { bar: true, baz: false }];
 
@@ -73,7 +73,7 @@ describe('classNames and cn function', () => {
 });
 
 describe('cleanDbData function', () => {
-  test('removes password field from data object', () => {
+  it('removes password field from data object', () => {
     // Arrange
     const data = {
       id: 1,
@@ -96,7 +96,7 @@ describe('cleanDbData function', () => {
     expect(cleaned).not.toHaveProperty('password');
   });
 
-  test('returns original object when no password field exists', () => {
+  it('returns original object when no password field exists', () => {
     // Arrange
     const data = {
       id: 1,
@@ -111,7 +111,7 @@ describe('cleanDbData function', () => {
     expect(cleaned).toEqual(data);
   });
 
-  test('works with empty objects', () => {
+  it('works with empty objects', () => {
     // Arrange
     const data = {};
 

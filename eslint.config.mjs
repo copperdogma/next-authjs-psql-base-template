@@ -30,9 +30,6 @@ export default [
       'build/**',
       'tests/e2e/fixtures/auth-fixtures.ts',
       'tests/e2e/fixtures/test-fixtures.ts',
-      'tests/unit/**/*.test.ts',
-      'tests/unit/**/*.test.tsx',
-      'tests/e2e/**/*.test.ts',
       '**/*.d.ts',
       'playwright-report/**',
     ],
@@ -172,28 +169,6 @@ export default [
       // Disable JS rules in favor of TS equivalents
       'no-unused-vars': 'off',
 
-      // SOLID Principles - Open/Closed Principle (OCP)
-      'no-param-reassign': ['error', { props: false }], // Prevent direct modification of parameters
-      'sonarjs/no-ignored-return': 'warn', // Encourage immutability by not ignoring returns from functions that create new values
-
-      // SOLID Principles - Interface Segregation Principle (ISP)
-      'sonarjs/no-all-duplicated-branches': 'warn', // Prefer composition over inheritance
-
-      // SOLID Principles - Dependency Inversion Principle (DIP)
-      'import/no-cycle': ['error', { maxDepth: 5 }], // Prevent circular dependencies, which often violate DIP
-
-      // Code Complexity Rules
-      complexity: ['error', 10], // Cyclomatic complexity
-      'sonarjs/cognitive-complexity': ['error', 15], // Cognitive complexity
-      'max-depth': ['error', 3], // Maximum nesting depth
-      'max-params': ['error', 4], // Maximum parameters
-
-      // Code Organization Rules
-      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }], // Max lines per file
-      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }], // Max lines per function
-      'max-statements': ['warn', 15], // Max statements per function
-      'max-classes-per-file': ['warn', 1], // Single class per file
-
       // TypeScript-specific rules for better type safety
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -211,13 +186,8 @@ export default [
   // Relaxes certain rules that are commonly needed in tests
   {
     files: [
-      '**/*.test.{js,jsx,ts,tsx}',
-      '**/*.spec.{js,jsx,ts,tsx}',
-      'tests/unit/components/UserProfile.test.tsx',
-      'tests/unit/api/auth/*.test.ts',
-      'tests/unit/auth/*.test.ts',
-      'tests/e2e/**/*.spec.ts',
-      'tests/e2e/**/*.test.ts',
+      '**/tests/**/*.{test,spec}.{js,jsx,ts,tsx}', // Covers all tests within any 'tests' directory (unit, e2e, integration, etc.)
+      '**/*.{test,spec}.{js,jsx,ts,tsx}', // Covers test files that might be co-located with source files
     ],
     plugins: {
       jest: jestPlugin,

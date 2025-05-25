@@ -152,7 +152,7 @@ function _handleNoRedisUrl(baseLogger: pino.Logger): null {
  * Logs informative messages if Redis is not configured or if connection fails.
  * @returns {Redis | null} The ioredis client instance if configured and connection is attempted, otherwise null.
  */
-// eslint-disable-next-line complexity
+
 function getRedisClient(): Redis | null {
   const redisGlobal = getRedisGlobal();
 

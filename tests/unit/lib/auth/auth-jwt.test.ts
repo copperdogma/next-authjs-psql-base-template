@@ -12,7 +12,7 @@ import { type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt-types';
 import { UserRole } from '@prisma/client';
 import { mockUser } from '../../../mocks/data/mockData'; // Added import
 
-/* eslint-disable max-lines */ // Disable file length check for this large test file
+// Disable file length check for this large test file
 /* eslint-disable max-lines-per-function */ // Disable function length check for this large test file
 
 // --- Mocks ---
@@ -308,13 +308,13 @@ describe('auth-jwt Callbacks', () => {
     it('should assign default USER role if user role is missing/invalid (credentials path)', async () => {
       // Arrange
       // Use proper type casting for the test users
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const noRoleUser = { ...credentialsUser } as any;
       delete noRoleUser.role; // Remove role property completely
 
       const invalidRoleUser = {
         ...credentialsUser,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         role: 'INVALID_ROLE' as any,
       };
 

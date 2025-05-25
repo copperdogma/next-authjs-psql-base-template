@@ -72,7 +72,7 @@ describe('Firebase Config', () => {
   });
 
   describe('Module Exports', () => {
-    test('should not initialize Firebase on server side', () => {
+    it('should not initialize Firebase on server side', () => {
       // Simulate server-side environment by making the window property undefined
       const originalWindow = global.window;
       // Use type assertion to make TypeScript happy
@@ -87,7 +87,7 @@ describe('Firebase Config', () => {
       global.window = originalWindow;
     });
 
-    test('should initialize Firebase on client side', () => {
+    it('should initialize Firebase on client side', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -113,7 +113,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should use existing app if already initialized', () => {
+    it('should use existing app if already initialized', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -131,7 +131,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should connect to emulators when configured', () => {
+    it('should connect to emulators when configured', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -155,7 +155,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should handle errors when connecting to Auth emulator', () => {
+    it('should handle errors when connecting to Auth emulator', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -186,7 +186,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should not connect to emulators when not in development or test mode', () => {
+    it('should not connect to emulators when not in development or test mode', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -211,7 +211,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should not try to reconnect to Auth emulator if already connected', () => {
+    it('should not try to reconnect to Auth emulator if already connected', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -238,7 +238,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should not connect if emulator flag is set but hosts are missing', () => {
+    it('should not connect if emulator flag is set but hosts are missing', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -263,7 +263,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should log error or handle missing essential config on client', () => {
+    it('should log error or handle missing essential config on client', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 
@@ -307,7 +307,7 @@ describe('Firebase Config', () => {
       restoreWindow();
     });
 
-    test('should properly log debug information with clientLogger', () => {
+    it('should properly log debug information with clientLogger', () => {
       // Setup client environment
       const restoreWindow = createMockWindow();
 

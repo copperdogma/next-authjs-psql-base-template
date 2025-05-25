@@ -1,5 +1,5 @@
 import { mockDeep, mockReset, MockProxy } from 'jest-mock-extended';
-// @ts-ignore - TODO: Investigate Prisma type resolution issue
+// TODO: Investigate Prisma type resolution issue (Note: @ts-expect-error was unused here)
 import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import * as pino from 'pino';
 import { UserService } from '../../../../lib/services/user-service';

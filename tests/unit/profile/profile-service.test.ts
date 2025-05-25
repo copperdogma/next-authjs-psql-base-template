@@ -6,9 +6,9 @@ import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { ProfileService } from '../../../lib/services/profile-service';
 import { UserService } from '../../../lib/services/user-service';
 import { FirebaseAdminService } from '../../../lib/services/firebase-admin-service';
-// @ts-ignore - TODO: Investigate Prisma type resolution issue
+// @ts-expect-error - TODO: Investigate Prisma type resolution issue
 import { User as PrismaUser, UserRole } from '@prisma/client';
-// @ts-ignore - TODO: Investigate Firebase type resolution issue
+// @ts-expect-error - TODO: Investigate Firebase type resolution issue
 import type { UserRecord } from 'firebase-admin/auth';
 import { Logger } from 'pino';
 

@@ -10,7 +10,7 @@ interface ClientLogEntry {
 }
 
 // Internal function to send the log data
-// eslint-disable-next-line complexity, max-statements -- Complexity/Statements slightly high due to environment checks
+
 async function sendLog(entry: ClientLogEntry, useBeacon: boolean = false) {
   // --- Add check for disabling fetch during most tests --- //
   if (process.env.DISABLE_CLIENT_LOGGER_FETCH === 'true') {

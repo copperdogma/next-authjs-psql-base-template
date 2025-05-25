@@ -153,7 +153,6 @@ jest.mock('@/lib/auth/auth-credentials', () => ({
 }));
 
 // Mock auth-jwt modules
-// @ts-ignore
 const mockHandleJwtSignIn = jest.fn();
 const mockHandleJwtUpdate = jest.fn();
 
@@ -176,6 +175,7 @@ const mockSyncFirebaseUserForOAuth = jest.fn();
 
 jest.mock('@/lib/auth/auth-firebase-sync', () => ({
   syncFirebaseUserForOAuth: mockSyncFirebaseUserForOAuth,
+  shouldSyncFirebaseUser: jest.fn().mockImplementation((_, accountType) => accountType === 'oauth'),
 }));
 
 // Mock logger
@@ -198,6 +198,7 @@ type JWTCallbackParams = {
   account?: Account | null;
   profile?: Profile;
   trigger?: 'signIn' | 'signUp' | 'update';
+  session?: any; // Add session parameter to the type
 };
 
 // Create a mock JWT callback implementation
@@ -297,7 +298,7 @@ describe('auth-node.ts', () => {
       const mockUpdatedToken: JWT = { ...mockToken, name: 'Test User' };
 
       // Mock JWT sign-in handler to return updated token
-      // @ts-ignore - ignore TypeScript error for mockResolvedValue
+      // @ts-expect-error - Potential type mismatch with mockResolvedValue if actual function signature doesn't return Promise<JWT>
       mockHandleJwtSignIn.mockResolvedValue(mockUpdatedToken);
       mockEnsureJtiExists.mockReturnValue(mockUpdatedToken);
 
@@ -321,8 +322,94 @@ describe('auth-node.ts', () => {
         trigger: 'signIn',
       });
 
-      // Verify result
+      // Verify
       expect(result).toEqual(mockUpdatedToken);
+    });
+
+    // Add a new comprehensive test that tests branch coverage directly
+    it('should call the right functions based on the flow type', async () => {
+      // Clear mocks before the test
+      jest.clearAllMocks();
+
+      // Mock implementations for the helper functions
+      mockHandleJwtSignIn.mockImplementation((params: any) => Promise.resolve(params.token));
+      mockHandleJwtUpdate.mockImplementation((token: any) => Promise.resolve(token));
+      mockHandleSessionRefreshFlow.mockImplementation(() => Promise.resolve());
+      mockEnsureJtiExists.mockImplementation((token: any) => token);
+      mockSyncFirebaseUserForOAuth.mockImplementation(() => Promise.resolve());
+
+      // Import the SUT explicitly
+      jest.resetModules();
+      const authNodeModule = jest.requireActual('@/lib/auth-node') as any;
+
+      // Test case 1: Sign-in flow with OAuth provider
+      const token1 = { name: 'Test' };
+      const user1 = { id: 'user-123', name: 'Test User' };
+      const account1 = { provider: 'google', type: 'oauth' };
+
+      // Execute the JWT callback directly from the authNodeModule
+      await authNodeModule.authConfigNode.callbacks.jwt({
+        token: token1,
+        user: user1,
+        account: account1,
+        trigger: 'signIn',
+      });
+
+      // Check that sign-in flow was processed
+      expect(mockHandleJwtSignIn).toHaveBeenCalled();
+      expect(mockUpdateLastSignedInAt).toHaveBeenCalled();
+      expect(mockSyncFirebaseUserForOAuth).toHaveBeenCalled();
+
+      // Reset mocks for next test case
+      jest.clearAllMocks();
+
+      // Test case 2: Update flow
+      const token2 = { sub: 'user-123', name: 'Test' };
+      const session = { user: { name: 'Updated Name' } };
+
+      await authNodeModule.authConfigNode.callbacks.jwt({
+        token: token2,
+        trigger: 'update',
+        session,
+      });
+
+      // Check that update flow was processed
+      expect(mockHandleJwtUpdate).toHaveBeenCalled();
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+
+      // Reset mocks for next test case
+      jest.clearAllMocks();
+
+      // Test case 3: Session refresh flow (token with sub but no user/account)
+      const token3 = { sub: 'user-123' };
+
+      await authNodeModule.authConfigNode.callbacks.jwt({
+        token: token3,
+        trigger: 'signIn',
+      });
+
+      // Check that session refresh flow was processed
+      expect(mockHandleSessionRefreshFlow).toHaveBeenCalled();
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+
+      // Reset mocks for next test case
+      jest.clearAllMocks();
+
+      // Test case 4: Other flow (no specific criteria met)
+      const token4 = { name: 'Test' }; // No sub property
+
+      await authNodeModule.authConfigNode.callbacks.jwt({
+        token: token4,
+      });
+
+      // Check that no specific flow was processed
+      expect(mockHandleJwtSignIn).not.toHaveBeenCalled();
+      expect(mockHandleJwtUpdate).not.toHaveBeenCalled();
+      expect(mockHandleSessionRefreshFlow).not.toHaveBeenCalled();
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining('Other flow')
+      );
     });
   });
 

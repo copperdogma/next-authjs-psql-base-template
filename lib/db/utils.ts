@@ -92,7 +92,7 @@ export async function withDatabaseRetry<T>(
 
   let lastError: unknown;
 
-  for (let attempt = 0; attempt < retries; attempt++) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await operation();
     } catch (error) {
@@ -104,9 +104,18 @@ export async function withDatabaseRetry<T>(
         throw error;
       }
 
-      // Last attempt, don't delay just throw
-      if (attempt >= retries - 1) {
-        throw error;
+      // If this was the last possible attempt (initial + all retries)
+      if (attempt === retries) {
+        console.warn(
+          {
+            context: 'retryOperation',
+            attempt: attempt + 1,
+            maxRetries: retries + 1, // Total attempts = retries + 1
+            err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+          },
+          `Final attempt ${attempt + 1}/${retries + 1} failed.`
+        );
+        break; // Exit loop, will throw lastError after loop
       }
 
       // Wait with exponential backoff before retry
@@ -115,10 +124,10 @@ export async function withDatabaseRetry<T>(
         {
           context: 'retryOperation',
           attempt: attempt + 1,
-          maxRetries: retries,
+          maxRetries: retries + 1, // Total attempts = retries + 1
           err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
         },
-        `Retry attempt ${attempt + 1}/${retries} failed. Retrying in ${delay}ms...`
+        `Retry attempt ${attempt + 1}/${retries + 1} failed. Retrying in ${delay}ms...`
       );
       await new Promise(resolve => setTimeout(resolve, delay));
     }

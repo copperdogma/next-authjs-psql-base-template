@@ -28,12 +28,6 @@ jest.mock('@/lib/auth/auth-helpers', () => ({
 const mockUuidv4 = jest.fn();
 const mockValidateSignInInputs = validateSignInInputs as jest.Mock;
 
-// Reset mocks before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockUuidv4.mockReturnValue('mock-jti'); // Default mock value
-});
-
 const sampleUser: NextAuthUser | AdapterUser = {
   id: 'user-123',
   email: 'test@example.com',
@@ -60,6 +54,12 @@ const sampleCorrelationId = 'corr-id-123';
 const sampleBaseToken: JWT = { name: 'Test Token' };
 
 describe('lib/auth/oauth-validation-helpers', () => {
+  // Reset mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUuidv4.mockReturnValue('mock-jti'); // Default mock value
+  });
+
   describe('validateOAuthInputs', () => {
     it('should return isValid: true with userId and userEmail when inputs are valid', () => {
       const result = validateOAuthInputs(sampleUser, sampleAccount, sampleCorrelationId);

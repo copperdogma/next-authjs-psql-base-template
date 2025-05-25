@@ -68,7 +68,7 @@ describe('JWT Callback LastSignedIn', () => {
   // Extract JWT callback from auth config
   const jwtCallback = authConfigNode.callbacks?.jwt;
 
-  test('updates lastSignedInAt on sign-in', async () => {
+  it('updates lastSignedInAt on sign-in', async () => {
     // Verify the JWT callback exists
     expect(jwtCallback).toBeDefined();
 
@@ -103,7 +103,7 @@ describe('JWT Callback LastSignedIn', () => {
     expect(sqlParts[0]).toContain('WHERE "id" =');
   });
 
-  test('handles column not existing gracefully', async () => {
+  it('handles column not existing gracefully', async () => {
     // Mock the executeRaw to throw error simulating column not existing
     mockPrisma.$executeRaw.mockRejectedValueOnce(
       new Error('column "lastSignedInAt" does not exist')

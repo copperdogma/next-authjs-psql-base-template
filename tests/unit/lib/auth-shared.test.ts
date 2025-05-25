@@ -136,7 +136,7 @@ describe('lib/auth-shared', () => {
 
     it('should default to development settings if NODE_ENV is not set', async () => {
       const currentEnv = { ...OLD_ENV };
-      // @ts-ignore - Allow deleting potentially non-optional property from our copy
+      // @ts-expect-error - Allow deleting potentially non-optional property from our copy for testing purposes
       delete currentEnv.NODE_ENV; // Delete NODE_ENV from the copy
       // Use jest.replaceProperty to mock NODE_ENV
       jest.replaceProperty(process, 'env', currentEnv);

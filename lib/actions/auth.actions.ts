@@ -1,10 +1,5 @@
 'use server'; // Restore directive
 
-/* eslint-disable max-lines -- Disabled: This file contains multiple related server actions 
-   (registration, credentials auth) and their associated helper functions. 
-   Significant refactoring has already been done to break down logic internally. 
-   Further splitting might reduce clarity and cohesion more than the length limit warrants. */
-
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import type { User } from '@prisma/client';

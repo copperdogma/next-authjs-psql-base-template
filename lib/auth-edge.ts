@@ -213,7 +213,7 @@ export const authConfigEdge: NextAuthConfig = {
     ...sharedAuthConfig.callbacks,
 
     // --- authorized callback (Edge-specific logic) ---
-    // eslint-disable-next-line complexity, max-lines-per-function, max-statements
+
     async authorized({ auth, request }) {
       const { nextUrl } = request;
       const pathname = nextUrl.pathname;

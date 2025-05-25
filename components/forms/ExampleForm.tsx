@@ -34,7 +34,7 @@ interface ExampleFormProps {
 /**
  * Example form component demonstrating react-hook-form and Zod validation
  */
-// eslint-disable-next-line complexity
+
 const ExampleForm = ({
   onSubmit,
   submitButtonText = 'Submit',

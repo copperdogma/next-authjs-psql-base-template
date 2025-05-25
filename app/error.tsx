@@ -16,7 +16,7 @@ interface ErrorComponentProps {
   reset: () => void;
 }
 
-/* eslint-disable max-lines-per-function */ // Acceptable for error boundary components
+// Acceptable for error boundary components
 // which often contain detailed fallback UI and recovery logic within a single file for clarity.
 const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   // Log the error immediately on the client, sending it to the server
@@ -100,6 +100,5 @@ const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
     </PageLayout>
   );
 };
-/* eslint-enable max-lines-per-function */
 
 export default ErrorBoundary;

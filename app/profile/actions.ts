@@ -69,8 +69,6 @@ function _validateName(
   return { isValid: true };
 }
 
-/* eslint-disable max-statements -- Disabled: This function handles service check, update, revalidation, and error handling. Splitting further reduces clarity. */
-// eslint-disable-next-line max-lines-per-function -- Slightly long due to detailed steps, acceptable
 async function _performNameUpdate(
   userId: string,
   name: string,
@@ -127,7 +125,6 @@ async function _performNameUpdate(
     };
   }
 }
-/* eslint-enable max-statements */
 
 // --- Server Action ---
 
