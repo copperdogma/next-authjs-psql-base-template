@@ -13,7 +13,7 @@ import { UserRole } from '@prisma/client';
 import { mockUser } from '../../../mocks/data/mockData'; // Added import
 
 // Disable file length check for this large test file
-/* eslint-disable max-lines-per-function */ // Disable function length check for this large test file
+// Disable function length check for this large test file
 
 // --- Mocks ---
 
