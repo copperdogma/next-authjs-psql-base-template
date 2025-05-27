@@ -69,7 +69,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 debug.log
-firebase-debug.log*
 ui-debug.log*
 *.log
 
@@ -93,9 +92,6 @@ next-env.d.ts
 
 # Test screenshots
 # Removed duplicate: tests/e2e/screenshots/
-
-# Firebase Admin SDK Credentials
-serviceAccountKey.json
 
 # Secrets folder
 /secrets/

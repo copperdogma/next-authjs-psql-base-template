@@ -4,21 +4,16 @@ import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import type { User } from '@prisma/client';
 import { Prisma } from '@prisma/client';
-// import * as admin from 'firebase-admin'; // Removed Firebase Admin
 import type { Logger } from 'pino';
-// import type { Session } from 'next-auth'; // Removed unused import
 
 import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-// import { getFirebaseAdminService } from '@/lib/server/services'; // Removed Firebase Admin Service
 import { signIn } from '@/lib/auth-node';
 import type { ServiceResponse } from '@/types';
 import { type Redis } from 'ioredis';
-// import { FirebaseAdminService } from '@/lib/services/firebase-admin-service'; // Removed Firebase Admin Service
 import { getOptionalRedisClient } from '@/lib/redis';
 import { getClientIp } from '@/lib/utils/server-utils';
 import { env } from '@/lib/env';
-// import { isObject, isValidUserResult } from '../utils/type-guards'; // isObject seems unused
 import { isValidUserResult } from '../utils/type-guards'; // Keep isValidUserResult if used
 
 // Constants

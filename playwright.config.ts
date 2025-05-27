@@ -171,7 +171,7 @@ const config: PlaywrightTestConfig = defineConfig({
      * Fallback to a simpler command if E2E_SERVER_COMMAND is not set.
      */
     // command: `npm run dev:testserver`, // Original command
-    // command: `FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099" npm run dev:testserver`, // With Firebase Auth Emulator
+    // Removed Firebase Auth Emulator command
     command: './scripts/run-e2e-server.sh',
     url: `http://127.0.0.1:${PORT}/api/health`,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for server start

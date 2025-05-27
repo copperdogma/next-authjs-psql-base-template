@@ -64,7 +64,7 @@ export type OAuthDbUser = {
   name?: string | null | undefined;
   image?: string | null | undefined;
   role?: UserRole | null | undefined;
-  // firebaseUid: string; // DB ID (userId) will be used as firebaseUid <- This is removed as userId serves this purpose
+  // Removed firebaseUid reference
 };
 
 // Define a type for the DB user step result

@@ -400,7 +400,6 @@ export async function createOrUpdateOAuthUser(
           name: existingAccount.user.name,
           image: existingAccount.user.image,
           role: existingAccount.user.role as UserRole,
-          // firebaseUid: existingAccount.user.firebaseUid, // REMOVE: firebaseUid does not exist
         };
         // Optionally update user.name/image from profile if changed
         // This part needs careful consideration of data freshness and override logic
@@ -447,7 +446,6 @@ export async function createOrUpdateOAuthUser(
           name: existingUserByEmail.name,
           image: existingUserByEmail.image,
           role: existingUserByEmail.role as UserRole,
-          // firebaseUid: existingUserByEmail.firebaseUid, // REMOVE: firebaseUid does not exist
         };
 
         // Create the account and link it to the user

@@ -10,6 +10,39 @@ For each item in these lists, I want to find the best practices for each using t
 
 Keep in mind this project is meant to be an easy-to-use template for getting projects started, so best practices that are costly and mostly relevant to larger features/installations, or future features that may not be required, should not be included. The user of the template can add those later if required. The project is meant to be a clean, simple, elegant, easy to use starting point.
 
+## Firebase Removal Checklist
+
+- [x] Remove Firebase-related dependencies from package-lock.json
+  - [x] firebase
+  - [x] firebase-admin
+  - [x] firebase-tools
+  - [x] @firebase/\* packages
+- [x] Remove Firebase utility files
+  - [x] lib/utils/firebase-errors.ts
+- [x] Remove Firebase references in environment setup
+  - [x] jest.setup.env.js - Remove all FIREBASE\_\* environment variables
+  - [x] jest.setup.ts - Remove commented-out Firebase mock imports/resets
+- [x] Clean up Firebase references in code files
+  - [x] playwright.config.ts - Remove Firebase Auth Emulator comment
+  - [x] lib/actions/auth.actions.ts - Remove commented-out Firebase imports
+  - [x] lib/auth/auth-jwt-types.ts - Remove commented-out firebaseUid references
+  - [x] lib/auth/oauth-helpers.ts - Remove commented-out firebaseUid references
+  - [x] lib/**mocks**/server/services.ts - Remove getFirebaseAdminService mock
+- [x] Remove Firebase documentation
+  - [x] docs/firebase/ directory and all contents
+- [x] Remove Firebase test files and mocks
+  - [x] tests/config/setup/firebase-setup.js
+  - [x] tests/e2e/utils/firebase-admin-utils.ts
+  - [x] tests/unit/utils/firebase-errors.test.ts
+  - [x] tests/mocks/firebase/ directory
+- [x] Remove Firebase references from .gitignore
+  - [x] firebase-debug.log\*
+  - [x] Firebase Admin SDK Credentials entry
+- [x] Remove Firebase-related files in project root
+  - [x] firebase-debug.log
+  - [x] firestore-debug.log
+  - [x] firebase-seed-data directory
+
 ## Codebase AnalysisAI Prompt
 
 I'm creating a github template with nextjs, firebase, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
@@ -25,6 +58,10 @@ I want you to analyze it for best practices. This should be a simple, elegant, r
 - Redundant Cursor Rules: Just ignore them. They're mind to deal with.
 
 Here is the code:
+
+---
+
+Make a comprehensive list of all of your suggestions to improve the codebase as a markdown checklist. Be sure to include as much detail as possible as I'll be giving it to another AI to implement.
 
 ---
 
@@ -48,253 +85,135 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [ ] AI needs a solid way to interact/query the UI. Modern UIs are often too complex for the AI to understand how it will end up being rendered.
   - [ ] AI needs a way to add items to the log, spin up the server, run their manual tests (or a scripted e2e test perhaps), and check the logs afterward.
 
----
+Okay, here's a comprehensive markdown checklist of suggestions to improve the codebase, with details to guide another AI in implementing them:
 
-Okay, here's a comprehensive markdown checklist incorporating all previous recommendations, with a primary focus on removing Firebase for core authentication and simplifying the template. This checklist is designed to be actionable by another AI model.
+## Codebase Improvement Checklist
 
----
+### 1. Firebase Integration Clarification & Streamlining
 
-# Template Refinement & Simplification Checklist
+- **Current:** The template name includes "firebase" and there are some Firebase-related utility files and commented-out code, but core authentication and database are NextAuth.js + PostgreSQL.
+- **Goal:** Ensure the template's core functionality is clear and that any Firebase integration is presented as an optional, well-defined extension.
 
-**Overall Goal:** Transform the current Next.js, Firebase, and PSQL template into a simpler, more elegant, and ready-to-use out-of-the-box base project. The primary strategy involves removing Firebase as a core authentication component and relying on NextAuth.js with Prisma for a streamlined PostgreSQL-centric user management system. This will reduce complexity, dependencies, and setup overhead for users of the template.
+- **Tasks:**
+  - `[x]` **Review Template Name vs. Core Stack:**
+    - **Detail:** If Firebase is not a _core, out-of-the-box_ component for primary functions (auth, DB), consider if the name `next-firebase-psql-base-template` is potentially misleading. If the intent is to easily _add_ Firebase services, this should be the primary message.
+    - **Action:** No direct code change, but this influences documentation and how the template is presented.
+  - `[ ]` **Remove Dead Firebase Auth Code from `lib/actions/auth.actions.ts`:**
+    - **Detail:** This file contains commented-out Firebase Admin SDK code for user creation (`// import * as admin from 'firebase-admin';`, `// const firebaseAdminService = getFirebaseAdminService();`, etc.). The active authentication logic uses NextAuth.js with Prisma.
+    - **Action:** Delete all commented-out Firebase Admin SDK import statements and related user creation logic within `registerUserAction` (and its helpers like `_createFirebaseUser`) in `lib/actions/auth.actions.ts`. Ensure the existing Prisma-based user creation path remains the sole active method.
+    - **Benefit:** Reduces confusion, removes dead code, and focuses the template on its primary NextAuth.js authentication mechanism.
+  - `[ ]` **Clarify Role of Optional Firebase Utilities:**
+    - **Files:** `lib/utils/firebase-errors.ts`, `app/api/test/firebase-config/route.ts`.
+    - **Detail:** These files are useful if the end-user decides to integrate Firebase services that use the Firebase Client SDK (e.g., Firestore, client-side Firebase Auth for specific providers not in NextAuth, etc.).
+    - **Action (Option 1 - Keep with Docs):** Retain these files. Add prominent comments at the top of each file and in the main project documentation explaining that they are for _optional Firebase service integration_ and are not used by the core template's NextAuth/PostgreSQL setup.
+    - **Action (Option 2 - Remove for Minimalism):** Remove these files. Users can add similar utilities if they choose to integrate Firebase services later.
+    - **Recommendation:** Option 1 (Keep with Docs) seems aligned with the template name, but documentation must be very clear about their optional nature.
+    - **Benefit:** Prevents confusion about whether Firebase is required for the base template to function.
 
----
+### 2. Component and Example Streamlining
 
-## I. Core Authentication Overhaul: Removing Firebase for Authentication
+- **Goal:** Remove redundant or purely illustrative components to create a leaner template.
 
-**Rationale:** The current setup uses NextAuth.js alongside a custom Firebase session mechanism and Firebase for user identity management (even for email/password). This creates redundancy and unnecessary complexity. NextAuth.js with its Google Provider and Credentials Provider, backed directly by Prisma/PostgreSQL, will provide a simpler, more maintainable architecture.
+- **Tasks:**
+  - `[ ]` **Consolidate or Remove Redundant Login Form:**
+    - **Files:** `app/login/components/LoginForm.tsx` and `app/login/components/CredentialsLoginForm.tsx`.
+    - **Detail:** `CombinedLoginOptions.tsx` (used by `app/login/page.tsx`) currently imports and uses `CredentialsLoginForm.tsx`. `LoginForm.tsx` seems to be an alternative or older version using `react-hook-form` more directly.
+    - **Action:**
+      1.  Verify if `app/login/components/LoginForm.tsx` is actively used or referenced in any critical path not immediately obvious.
+      2.  If it's unused or serves only as an example that's duplicated by `components/forms/ExampleForm.tsx`, remove `app/login/components/LoginForm.tsx`.
+      3.  Ensure `app/login/page.tsx` and `components/auth/CombinedLoginOptions.tsx` correctly use the intended primary credentials form (`CredentialsLoginForm.tsx`).
+    - **Benefit:** Reduces code duplication and simplifies the login component structure. `components/forms/ExampleForm.tsx` can serve as the primary example for `react-hook-form` + Zod.
+  - `[ ]` **Remove Purely Example Component `components/examples/CleanupExample.tsx`:**
+    - **Detail:** This component demonstrates `useEffect` cleanup, which is good knowledge but not essential for a base template's core functionality.
+    - **Action:** Delete the `components/examples/CleanupExample.tsx` file and its associated test file `tests/unit/components/examples/CleanupExample.test.tsx`.
+    - **Benefit:** Makes the template more focused on core features rather than general React examples. Such examples are better suited for documentation or a separate example repository.
 
-- [x] Remove Firebase Auth SDK dependencies
-- [x] Update NextAuth.js configuration to use Prisma adapter for PostgreSQL
-- [x] Implement Credentials provider for email/password auth
-- [x] Integrate Google OAuth provider directly through NextAuth.js
-- [x] Refactor login/register flows for the simplified auth system
-- [x] Update session handling to use NextAuth.js JWT strategy
-- [x] Add proper error handling for auth operations
-- [x] Implement username/password validation
-- [x] Create efficient database migration scripts
-- [x] Update middleware for route protection
-- [x] Simplify user profile management using direct Prisma queries
+### 3. Setup and Developer Experience Enhancements
 
-## II. Data Layer Simplification
+- **Goal:** Make the template easier and faster to get started with, especially for an AI.
 
-**Rationale:** Having both Firebase and PostgreSQL as data stores creates confusion and complexity. A single database approach with PostgreSQL will simplify development and operations.
+- **Tasks:**
+  - `[ ]` **Enhance `scripts/setup.js` for Environment Configuration:**
+    - **Detail:** The current `setup.js` replaces placeholders in files. It should also handle `.env` setup.
+    - **Action:**
+      1.  Modify `scripts/setup.js` to copy `.env.example` to `.env.local` if `.env.local` does not already exist.
+      2.  Add prompts (using `inquirer`) within `scripts/setup.js` to ask the user for critical environment variables:
+          - `DATABASE_URL` (e.g., `postgresql://USER:PASSWORD@HOST:PORT/{{YOUR_DATABASE_NAME_DEV}}?schema=public`)
+          - `NEXTAUTH_SECRET` (suggest generating one with `openssl rand -base64 32`)
+          - `GOOGLE_CLIENT_ID`
+          - `GOOGLE_CLIENT_SECRET`
+          - Optionally, `REDIS_URL` if Redis is intended as a common setup.
+      3.  The script should then populate these values into the newly created `.env.local` file.
+      4.  Ensure placeholder replacement in `SETUP.md` or other docs correctly points to the new `.env.local` behavior.
+    - **Benefit:** Significantly improves the "ready to use out of the box" aspect by partially automating environment setup.
+  - `[ ]` **Ensure Comprehensive Placeholder Replacement in `scripts/setup.js`:**
+    - **Detail:** Verify that the existing placeholder replacement logic in `scripts/setup.js` covers all intended files and all placeholder tokens (e.g., `{{YOUR_APP_NAME}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, `{{YOUR_REPOSITORY_URL}}`, etc.).
+    - **Files to check/add to `FILES_TO_PROCESS` in `setup.js`:** `README.md`, `package.json` (name, description, repository.url), `LICENSE` (copyright holder), `app/layout.tsx` (metadata), `app/manifest.ts`, and any other files containing these placeholders.
+    - **Benefit:** Ensures the project is fully customized after running the setup script.
+  - `[ ]` **Secure or Document `app/api/test/firebase-config/route.ts` for Production:**
+    - **Detail:** This route exposes Firebase configuration, which is useful for debugging but a security risk in production.
+    - **Action (Recommended):**
+      1.  Keep the route but add a more robust check than just `process.env.NODE_ENV === 'production'`. For example, require a specific environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to be set for it to function, which would not be set in production.
+      2.  Alternatively, add prominent comments and documentation stating this route _must_ be removed or secured before any production deployment.
+      3.  Consider commenting out its registration or the file itself in the template by default, with instructions on how to enable it for debugging.
+    - **Benefit:** Enhances security out-of-the-box.
 
-- [x] Identify all Firestore data collections in use
-- [x] Create equivalent PostgreSQL schema definitions
-- [x] Migrate profile data management to PostgreSQL
-- [x] Implement data access services for PostgreSQL
-- [x] Update existing components to use the new data services
-- [x] Remove Firebase data layer code and dependencies
-- [x] Provide migration utilities for any existing Firebase data
+### 4. Error Handling Integration Review
 
-## III. Configuration and Environment Setup
+- **Goal:** Ensure specialized error handling components are correctly integrated or documented.
 
-**Rationale:** The current template has a complex setup involving Firebase configuration alongside NextAuth and PostgreSQL. A streamlined environment setup will make it easier for new developers to get started.
+- **Tasks:**
+  - `[ ]` **Review and Integrate Session Error Components:**
+    - **Files:** `app/providers/SessionErrorDisplay.tsx`, `app/providers/SessionErrorHandler.tsx`.
+    - **Detail:** These components seem designed to handle global session-related errors.
+    - **Action:**
+      1.  Determine if these components are intended for a specific, documented use case or if they should be part of the global error handling flow for session issues.
+      2.  If global, ensure `SessionErrorHandler.tsx` (and potentially `SessionErrorDisplay.tsx` via the handler) is integrated into `app/layout.tsx` or a high-level client component within the `SessionProviderWrapper` tree, so it can effectively catch and manage session errors.
+      3.  If for specific use cases, ensure clear documentation or examples are provided.
+      4.  If their utility is niche for a base template, consider removing them for simplicity and document how such a pattern could be added.
+    - **Benefit:** Makes error handling more robust or simplifies the template if these are too specialized for a base.
 
-- [x] Simplify environment variable requirements
-- [x] Update configuration files for database connections
-- [x] Remove Firebase-specific configuration
-- [x] Create comprehensive sample environment files
-- [x] Update documentation with clear setup instructions
-- [x] Simplify server initialization process
+### 5. Code and Configuration Refinements
 
-## IV. Testing Infrastructure Updates
+- **Goal:** Minor tweaks for better clarity and efficiency.
 
-**Rationale:** The existing testing setup involves mocking both Firebase and PostgreSQL. Streamlining to a single database approach will simplify the test environment.
+- **Tasks:**
+  - `[ ]` **PWA Configuration (`next.config.ts`):**
+    - **Detail:** The `next-pwa` configuration is commented out. `app/manifest.ts` exists for basic installability.
+    - **Action:** This is a good default. Ensure documentation clearly explains:
+      1.  The template provides basic PWA installability via `manifest.ts`.
+      2.  For full offline support and advanced PWA features, the user needs to uncomment and configure `next-pwa` in `next.config.ts` and potentially implement a service worker.
+    - **Benefit:** Clear guidance for users wanting to enhance PWA capabilities.
+  - `[ ]` **Zustand Store Usage (`lib/store/userStore.ts`):**
+    - **Detail:** The store is used to sync NextAuth session data for client-side access.
+    - **Action:** Add a comment in `userStore.ts` or related documentation guiding the AI/user: "This store is primarily for syncing NextAuth session data. For other client-side state, consider local component state or React Context first. Use this global store for genuinely global state that doesn't fit well into the component tree."
+    - **Benefit:** Promotes good state management practices.
+  - `[ ]` **Review `app/page.tsx` Logic for Authenticated vs. Unauthenticated Users:**
+    - **Detail:** The home page (`app/page.tsx`) currently shows `CombinedLoginOptions` if unauthenticated, and a "Welcome" section if authenticated.
+    - **Action:** This logic is fine for a template. Confirm this is the desired out-of-the-box experience. Ensure the "Welcome" section for authenticated users is a good, minimal placeholder.
+    - **Benefit:** Ensures the landing page provides a sensible default for both states.
 
-- [x] Update unit tests to work with PostgreSQL-only setup
-- [x] Fix E2E tests to work with new auth mechanisms
-- [x] Remove Firebase-specific test utilities and mocks
-- [x] Ensure all existing tests pass with the new architecture
-- [✅] Validate the entire test suite runs successfully
+### 6. Documentation (Post-Implementation)
 
-## V. Documentation Updates
+- **Goal:** Ensure all documentation accurately reflects the refined codebase.
 
-**Rationale:** Clear documentation will help users understand the simplified architecture and get started quickly.
-
-- [x] Update README with new architecture overview
-- [x] Create clear setup instructions for NextAuth.js and PostgreSQL
-- [x] Document authentication flows and customization options
-- [x] Update API documentation to reflect changes
-- [x] Provide examples of common customization scenarios
-
-## Completed Tasks
-
-- [x] Removed Firebase Auth SDK dependencies
-- [x] Migrated user authentication to NextAuth.js with Prisma adapter
-- [x] Implemented direct PostgreSQL data access layer
-- [x] Updated session management to use NextAuth.js JWT strategy
-- [x] Simplified environment configuration
-- [x] Updated testing infrastructure
-- [x] Updated documentation for the new architecture
-- [✅] All tests are now passing - Fixed auth-jwt test, auth-node test, and profile service test issues. All unit tests and E2E tests now run successfully.
-
----
-
-## Post-Refactor Verification Checklist (Manual Code Inspection)
-
-This checklist is based on the review of the "Template Refinement & Simplification Checklist" and the `cnew-task-review-optimize-diff` protocol. It focuses on areas for manual code inspection.
-
-### 1. Security Verification
-
-- [x] **Input Validation:**
-  - [x] Authentication inputs are validated using Zod schemas in `lib/actions/auth.actions.ts` for registration and in `app/register/hooks/useRegistrationForm.ts` for the client-side form
-  - [x] Email format and password length (min 8 chars) are properly validated
-  - [x] Password confirmation is verified client-side with matching validation
-- [x] **NextAuth.js Configuration:**
-  - [x] `NEXTAUTH_SECRET` is properly required and validated in `lib/env.ts` using Zod schema
-  - [x] Tests verify that production environment will throw an error if NEXTAUTH_SECRET is missing
-  - [x] Development environment has a fallback default secret with appropriate warnings
-  - [x] CSRF protection is active via NextAuth.js default protections
-  - [x] Session strategy (JWT) settings are properly configured:
-    - [x] Cookie settings include httpOnly, secure (in production), and sameSite: 'lax'
-    - [x] Cookies use the `__Secure-` prefix in production
-    - [x] Sessions expire after 30 days (maxAge: 30 _ 24 _ 60 \* 60)
-    - [x] Unit tests verify these security settings
-- [x] **Prisma Usage:**
-  - [x] No direct SQL injection vulnerabilities found
-  - [x] Raw SQL queries are properly parameterized using Prisma's $queryRaw with Prisma.raw for safe parameter handling
-  - [x] RawQueryService follows best practices for handling raw queries with proper error handling
-- [x] **Dependency Audit:**
-  - [x] Firebase auth dependencies successfully removed
-  - [x] Current dependencies are from trusted sources and up-to-date (Next.js 15.3.0, NextAuth 5.0.0-beta.25)
-  - [x] Security-focused packages like bcryptjs for password hashing are properly implemented
-
-### 2. Error Handling Verification
-
-- [x] **Comprehensive Auth Error Handling:**
-  - [x] API routes for NextAuth have robust error handling (auth-node.ts, auth-edge.ts)
-  - [x] Registration flows have detailed error handling in `lib/actions/auth.actions.ts`:
-    - [x] Input validation errors are returned with specific details
-    - [x] Database errors during user creation are properly caught and handled
-    - [x] Existing user checks prevent duplicate registrations
-    - [x] Rate limiting errors are handled when Redis is configured
-  - [x] Login form has error handling for invalid credentials via NextAuth's error system
-  - [x] Error messages are user-friendly and don't expose sensitive backend details
-  - [x] Errors are properly logged with context for debugging (via Pino logger)
-- [x] **Client-Side Error Management:**
-  - [x] Form validation with Zod schemas provides immediate feedback
-  - [x] Registration form has proper error state handling in useRegistrationForm hook
-  - [x] Login form handles authentication errors appropriately
-  - [x] Session state errors are properly handled during post-registration flow
-
-### 3. Completeness of Firebase Removal (for Authentication)
-
-- [x] **Orphaned Code:**
-  - [x] Firebase Auth SDK calls and imports have been successfully removed from core authentication files
-  - [x] There is a `firebase-errors.ts` utility file remaining with a note that it's for optional Firebase services and not used in the core authentication flow
-  - [x] All references to Firebase Auth in the authentication system (both client and server) have been removed
-  - [x] Firebase-related comments have been appropriately updated or removed
-- [x] **Configuration Files:**
-  - [x] Firebase Auth specific configurations for NextAuth core authentication have been removed
-  - [x] Some Firebase configuration remains for optional Firebase services as documented in the project readme
-- [x] **Dependencies:**
-  - [x] Firebase Admin SDK for authentication has been removed
-  - [x] Client-side Firebase Auth SDKs for core authentication have been removed
-  - [x] `FirebaseError` is still imported in the utility file but properly documented as optional
-
-### 4. Test Coverage Verification
-
-- [x] **Critical Auth Paths:**
-  - [x] Unit tests verify email/password login functionality via `CredentialsLoginForm.test.tsx`
-  - [x] Unit tests verify registration functionality via `RegistrationForm.test.tsx`
-  - [x] E2E tests cover successful login and registration flows
-  - [x] E2E tests verify session creation, retrieval, and invalidation (logout) in `login-logout-cycle.spec.ts`
-  - [x] E2E tests verify middleware route protection for authenticated routes in `auth.login-logout.spec.ts`
-- [x] **Error Scenarios:**
-  - [x] Tests cover invalid credentials scenarios
-  - [x] Tests verify handling of "email already exists" during registration
-  - [x] Tests check error display for OAuth failures
-  - [x] Tests verify proper error handling for session update issues
-- [x] **Profile Management:**
-  - [x] Profile service tests in `profile-service.test.ts` verify CRUD operations
-  - [x] E2E tests in `edit-profile.spec.ts` verify profile management via Prisma
-- [x] **Auth Persistence:**
-  - [x] Tests verify proper cookie handling and JWT strategy
-  - [x] Tests check that protected routes remain protected without auth
-  - [x] Tests verify automatic redirects to login when not authenticated
-
-### 5. Documentation Accuracy Verification
-
-- [x] **README.md:**
-  - [x] The architecture overview accurately reflects the NextAuth.js/Prisma setup
-  - [x] Setup instructions are clear and complete, including environment variables and database migration
-  - [x] Project structure documentation matches the actual codebase structure
-- [x] **Authentication Flow Documentation:**
-  - [x] Clear explanation of NextAuth.js authentication flow provided
-  - [x] Note about optional Firebase services properly documented
-  - [x] Documentation distinguishes between core authentication (NextAuth.js) and optional Firebase services
-- [x] **API Documentation:**
-  - [x] Authentication endpoints are properly documented
-  - [x] NextAuth.js route explanations are correct
-- [x] **Environment Variables:**
-  - [x] `.env.example` template in README includes all necessary variables
-  - [x] Environment variable validation in `lib/env.ts` matches documented requirements
-  - [x] Clear instructions for generating NEXTAUTH_SECRET
-
-### 6. Code Clarity & Maintainability Verification
-
-- [x] **NextAuth.js Configuration:**
-  - [x] Code organization is logical with separation into:
-    - [x] `auth-shared.ts`: Common configuration shared between Node and Edge runtimes
-    - [x] `auth-node.ts`: Node.js specific configuration (includes Prisma adapter)
-    - [x] `auth-edge.ts`: Edge runtime configuration (used in middleware)
-    - [x] `auth.ts`: Main NextAuth initialization
-  - [x] Configuration files are well-commented with clear explanations
-  - [x] Modular organization allows for runtime-specific configurations
-- [x] **Prisma Schema:**
-  - [x] User model is well-defined with proper relations for NextAuth.js
-  - [x] Database schema includes all necessary tables for NextAuth.js (User, Account, Session, VerificationToken)
-  - [x] Indexes are properly defined for common query patterns
-  - [x] Schema includes enums for role-based access control
-- [x] **Data Access Logic:**
-  - [x] Clean separation between database access and business logic
-  - [x] Profile service provides a clean interface for user data operations
-  - [x] Error handling is consistent throughout data access code
-- [x] **Frontend Components:**
-  - [x] Authentication components (login/register) have clear separation of concerns
-  - [x] Form handling logic is encapsulated in custom hooks
-  - [x] Components follow consistent patterns for state management and error handling
-- [x] **Project Conventions:**
-  - [x] Code follows consistent naming conventions
-  - [x] File organization is logical and follows the documented project structure
-  - [x] TypeScript interfaces and types are properly defined and reused
-
-### 7. SOLID Principles & DRY Verification
-
-- [x] **Single Responsibility:**
-  - [x] Services are well-organized with clear, focused responsibilities:
-    - [x] `ProfileService` handles only profile-related operations
-    - [x] Authentication logic is separated from user management
-    - [x] Form handling logic is isolated in custom hooks
-- [x] **Interface Segregation:**
-  - [x] Service interfaces are lean and focused (e.g., `ProfileServiceInterface`)
-  - [x] Clear separation between edge and node authentication configurations
-  - [x] Type definitions maintain consistent interfaces across the system
-- [x] **Dependency Inversion:**
-  - [x] Services use constructor dependency injection (e.g., `ProfileService`, `RawQueryServiceImpl`)
-  - [x] Service initialization is centralized in `lib/server/services.ts`
-  - [x] Default dependencies with ability to override for testing
-- [x] **DRY (Don't Repeat Yourself):**
-  - [x] Shared authentication configuration prevents duplication
-  - [x] Helper functions for common tasks (e.g., validation, error handling)
-  - [x] Reusable types and interfaces across the codebase
-  - [x] Common logic extracted to shared utilities
-
-### 8. YAGNI Application
-
-- [x] **Removal of Unnecessary Code:**
-  - [x] Most Firebase Auth code has been successfully removed
-  - [x] `firebase-errors.ts` utility file is kept but properly documented as optional for future Firebase services integration
-  - [x] Commented-out imports and code in `auth.actions.ts` could be fully removed
-  - [x] Some Firebase-related test constants and types remain but aren't used in the core authentication flow
-- [x] **Focused Implementation:**
-  - [x] Authentication focuses on NextAuth.js + Prisma without unnecessary complexity
-  - [x] Profile management is streamlined to use Prisma directly
-  - [x] Error handling is comprehensive but not overly complex
-  - [x] Documentation makes clear distinction between core auth and optional Firebase services
-- [x] **Future Extensibility:**
-  - [x] Design allows for adding additional authentication providers through NextAuth.js configuration
-  - [x] Service interfaces and dependency injection support testing and future enhancements
-  - [x] Optional Firebase services can be integrated if needed without affecting core authentication
+- **Tasks:**
+  - `[ ]` **Update `project-reference.mdc`:**
+    - **Detail:** This is the AI's primary context file. It needs to be accurate.
+    - **Action:** After all code changes are made, review and update `project-reference.mdc` to reflect:
+      - The final project structure.
+      - The core authentication mechanism (NextAuth.js + Prisma) and the _optional_ nature of any Firebase services.
+      - Correct component lists and their purposes.
+      - Updated command references if any scripts changed.
+      - Accurate environment variable list and explanations.
+  - `[ ]` **Update Code-Level Comments:**
+    - **Detail:** Review key files (especially those modified, like `auth.actions.ts`, `setup.js`, any Firebase utility files if kept) for comments that might be outdated or misleading after changes.
+    - **Action:** Adjust comments to accurately describe the current implementation and intent. For example, clearly label Firebase utilities as "for optional Firebase service integration."
+  - `[ ]` **Consolidate and Streamline General Documentation (`README.md`, `docs/` folder):**
+    - **Detail:** As noted by the user, project documentation is planned for an overhaul.
+    - **Action (Long-term, post-code changes):**
+      - Update `README.md` to be a concise entry point.
+      - Refactor the `docs/` folder. Consolidate information where possible (e.g., a single `AUTHENTICATION.md` covering NextAuth.js, Prisma Adapter, and how to add other providers).
+      - Create a clear `FIREBASE_INTEGRATION.md` if Firebase utilities are kept, explaining they are for _adding services_, not for the core template functionality.
+      - Ensure all setup instructions reflect the enhanced `scripts/setup.js`.
+    - **Benefit:** Provides clear, accurate, and easy-to-navigate documentation for both AI and human developers.
