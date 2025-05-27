@@ -3,8 +3,19 @@
 const { execSync } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 
-const inquirer = require('inquirer');
+// For inquirer v12+, we need to use dynamic import
+async function getInquirer() {
+  try {
+    // Use dynamic import for ESM compatibility
+    return await import('inquirer');
+  } catch (error) {
+    console.error('Error importing inquirer:', error);
+    console.log('You may need to run: npm install inquirer');
+    process.exit(1);
+  }
+}
 
 // Define our placeholder tokens
 const PLACEHOLDERS = {
@@ -12,6 +23,8 @@ const PLACEHOLDERS = {
   PROJECT_DESCRIPTION: '{{YOUR_PROJECT_DESCRIPTION}}',
   REPOSITORY_URL: '{{YOUR_REPOSITORY_URL}}',
   DATABASE_NAME: '{{YOUR_DATABASE_NAME}}',
+  DATABASE_NAME_DEV: '{{YOUR_DATABASE_NAME_DEV}}',
+  DATABASE_NAME_TEST: '{{YOUR_DATABASE_NAME_TEST}}',
   APP_TITLE: '{{YOUR_APP_TITLE}}',
   APP_SHORT_NAME: '{{YOUR_APP_SHORT_NAME}}',
   COPYRIGHT_HOLDER: '{{YOUR_COPYRIGHT_HOLDER}}',
@@ -20,6 +33,7 @@ const PLACEHOLDERS = {
 // Files that need to be processed
 const FILES_TO_PROCESS = [
   'package.json',
+  'package-lock.json',
   'README.md',
   '.env.example',
   'app/manifest.ts',
@@ -30,6 +44,16 @@ const FILES_TO_PROCESS = [
   'docs/design.md',
   'docs/architecture.md',
   'docs/stories.md',
+  'docs/testing/index.md',
+  'docs/testing/main.md',
+  'docs/testing/e2e-testing.md',
+  'tests/utils/test-constants.ts',
+  'tests/README-main.md',
+  'tests/simple-layout-test.js',
+  'SETUP.md',
+  'LICENSE',
+  '.cursor/rules/project-reference.mdc',
+  '.cursor/rules/testing.mdc',
 ];
 
 async function replaceInFile(filePath, replacements) {
@@ -50,13 +74,17 @@ async function replaceInFile(filePath, replacements) {
 }
 
 async function updateFiles(answers) {
+  const projectNameSlug = answers.projectName.toLowerCase().replace(/\s+/g, '-');
+  
   const replacements = {
-    '{{YOUR_PROJECT_NAME}}': answers.projectName.toLowerCase().replace(/\s+/g, '-'),
+    '{{YOUR_PROJECT_NAME}}': projectNameSlug,
     '{{YOUR_PROJECT_TITLE}}': answers.projectTitle,
     '{{YOUR_PROJECT_SHORT_NAME}}': answers.projectShortName,
     [PLACEHOLDERS.PROJECT_DESCRIPTION]: answers.projectDescription,
     [PLACEHOLDERS.REPOSITORY_URL]: answers.repositoryUrl,
-    [PLACEHOLDERS.DATABASE_NAME]: `${answers.projectName.toLowerCase().replace(/\s+/g, '-')}-db`,
+    [PLACEHOLDERS.DATABASE_NAME]: `${projectNameSlug}-db`,
+    [PLACEHOLDERS.DATABASE_NAME_DEV]: `${projectNameSlug}-dev`,
+    [PLACEHOLDERS.DATABASE_NAME_TEST]: `${projectNameSlug}-test`,
     [PLACEHOLDERS.APP_TITLE]: answers.projectTitle,
     [PLACEHOLDERS.APP_SHORT_NAME]: answers.projectShortName,
     [PLACEHOLDERS.COPYRIGHT_HOLDER]: answers.copyrightHolder,
@@ -68,10 +96,74 @@ async function updateFiles(answers) {
 }
 
 /**
+ * Generate a secure random string for NEXTAUTH_SECRET
+ */
+function generateNextAuthSecret() {
+  return crypto.randomBytes(32).toString('base64');
+}
+
+/**
+ * Check if .env.local exists and create it from .env.example if needed
+ */
+async function setupEnvFile(answers) {
+  const projectNameSlug = answers.projectName.toLowerCase().replace(/\s+/g, '-');
+  const envLocalPath = '.env.local';
+  
+  try {
+    await fs.access(envLocalPath);
+    console.log('⚠️ .env.local already exists. Skipping creation.');
+    return false;
+  } catch (error) {
+    // File doesn't exist, we'll create it
+    try {
+      let envExample = await fs.readFile('.env.example', 'utf8');
+      
+      // Generate NEXTAUTH_SECRET
+      const nextAuthSecret = generateNextAuthSecret();
+      
+      // Replace placeholders with actual values
+      envExample = envExample
+        .replace('NEXT_PUBLIC_APP_NAME="{{YOUR_APP_TITLE}}"', `NEXT_PUBLIC_APP_NAME="${answers.projectTitle}"`)
+        .replace('NEXT_PUBLIC_APP_SHORT_NAME="{{YOUR_APP_SHORT_NAME}}"', `NEXT_PUBLIC_APP_SHORT_NAME="${answers.projectShortName}"`)
+        .replace('NEXT_PUBLIC_APP_DESCRIPTION="{{YOUR_PROJECT_DESCRIPTION}}"', `NEXT_PUBLIC_APP_DESCRIPTION="${answers.projectDescription}"`)
+        .replace('NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET"', `NEXTAUTH_SECRET="${nextAuthSecret}"`)
+        .replace(/{{YOUR_DATABASE_NAME_DEV}}/g, `${projectNameSlug}-dev`)
+        .replace(/{{YOUR_DATABASE_NAME_TEST}}/g, `${projectNameSlug}-test`);
+      
+      // Apply user-provided values from prompts
+      if (answers.databaseUrl) {
+        envExample = envExample.replace(/DATABASE_URL="postgresql:\/\/.*"/g, `DATABASE_URL="${answers.databaseUrl}"`);
+      }
+      
+      if (answers.googleClientId) {
+        envExample = envExample.replace(/GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"/g, `GOOGLE_CLIENT_ID="${answers.googleClientId}"`);
+      }
+      
+      if (answers.googleClientSecret) {
+        envExample = envExample.replace(/GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"/g, `GOOGLE_CLIENT_SECRET="${answers.googleClientSecret}"`);
+      }
+      
+      if (answers.redisUrl) {
+        envExample = envExample.replace(/REDIS_URL=""/g, `REDIS_URL="${answers.redisUrl}"`);
+      }
+      
+      await fs.writeFile(envLocalPath, envExample, 'utf8');
+      console.log(`✅ Created ${envLocalPath} with your configuration`);
+      return true;
+    } catch (createError) {
+      console.error(`❌ Error creating ${envLocalPath}:`, createError.message);
+      return false;
+    }
+  }
+}
+
+/**
  * Gather user inputs through prompts
  */
 async function promptUserForInputs() {
-  return inquirer.prompt([
+  const inquirer = await getInquirer();
+  
+  const projectQuestions = [
     {
       type: 'input',
       name: 'projectName',
@@ -88,13 +180,13 @@ async function promptUserForInputs() {
       type: 'input',
       name: 'projectShortName',
       message: 'What is your project short name (for PWA)?',
-      default: answers => answers.projectName,
+      default: answers => answers.projectName.replace(/\s+/g, ''),
     },
     {
       type: 'input',
       name: 'projectDescription',
       message: 'Enter a brief project description:',
-      default: 'A Next.js application with PostgreSQL',
+      default: 'A Next.js application with NextAuth.js and PostgreSQL',
     },
     {
       type: 'input',
@@ -108,7 +200,43 @@ async function promptUserForInputs() {
       message: 'Enter the copyright holder name:',
       default: answers => answers.projectName,
     },
-  ]);
+  ];
+
+  const projectAnswers = await inquirer.default.prompt(projectQuestions);
+  
+  const envQuestions = [
+    {
+      type: 'input',
+      name: 'databaseUrl',
+      message: 'Enter your PostgreSQL database URL (or leave empty for default):',
+      default: () => {
+        const dbName = projectAnswers.projectName.toLowerCase().replace(/\s+/g, '-') + '-dev';
+        return `postgresql://postgres:postgres@localhost:5432/${dbName}?schema=public`;
+      },
+    },
+    {
+      type: 'input',
+      name: 'googleClientId',
+      message: 'Enter your Google OAuth Client ID (or leave empty to configure later):',
+      default: '',
+    },
+    {
+      type: 'input',
+      name: 'googleClientSecret',
+      message: 'Enter your Google OAuth Client Secret (or leave empty to configure later):',
+      default: '',
+    },
+    {
+      type: 'input',
+      name: 'redisUrl',
+      message: 'Enter your Redis URL (or leave empty if not using Redis):',
+      default: '',
+    },
+  ];
+  
+  const envAnswers = await inquirer.default.prompt(envQuestions);
+  
+  return { ...projectAnswers, ...envAnswers };
 }
 
 /**
@@ -127,12 +255,18 @@ async function updateDependencies() {
 /**
  * Display completion message with next steps
  */
-function displayCompletionMessage() {
+function displayCompletionMessage(envCreated) {
   console.log('\n✨ Setup complete! Next steps:');
   console.log('1. Review the changes in your files');
-  console.log('2. Update your .env file with your credentials');
-  console.log("3. Run npm install if you haven't already");
-  console.log('4. Start developing with npm run dev\n');
+  
+  if (envCreated) {
+    console.log('2. Review your .env.local file and update any missing credentials');
+  } else {
+    console.log('2. Update your .env.local file with your credentials');
+  }
+  
+  console.log('3. Run your database migrations with: npx prisma migrate dev');
+  console.log('4. Start developing with: npm run dev\n');
 }
 
 async function main() {
@@ -144,12 +278,16 @@ async function main() {
   // Update project files
   console.log('\n🔄 Updating project files...');
   await updateFiles(answers);
+  
+  // Setup environment file
+  console.log('\n🔄 Setting up environment configuration...');
+  const envCreated = await setupEnvFile(answers);
 
   // Update dependencies
   await updateDependencies();
 
   // Show next steps
-  displayCompletionMessage();
+  displayCompletionMessage(envCreated);
 }
 
 main().catch(error => {

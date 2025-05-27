@@ -97,23 +97,43 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 - **Goal:** Make the template easier and faster to get started with, especially for an AI.
 
 - **Tasks:**
-  - `[ ]` **Enhance `scripts/setup.js` for Environment Configuration:**
+  - `[x]` **Enhance Environment Configuration with Better Documentation:**
+    - **Detail:** Improved the .env.example file to provide better documentation and defaults.
+    - **Action Completed:**
+      1. Added better default application name and description
+      2. Enhanced Google OAuth setup instructions with redirect URI examples
+      3. Renamed database example names to be more generic and descriptive
+      4. Made logging options enabled by default
+      5. Added a dedicated section for E2E testing environment settings
+      6. Added a production environment section with deployment examples
+      7. Improved documentation for Redis and rate limiting configuration
+      8. Added connection pooling examples for production database usage
+    - **Benefit:** Makes the template's environment setup clearer and provides guidance for both development and production use cases.
+  - `[x]` **Enhance `scripts/setup.js` for Environment Configuration:**
     - **Detail:** The current `setup.js` replaces placeholders in files. It should also handle `.env` setup.
-    - **Action:**
-      1.  Modify `scripts/setup.js` to copy `.env.example` to `.env.local` if `.env.local` does not already exist.
-      2.  Add prompts (using `inquirer`) within `scripts/setup.js` to ask the user for critical environment variables:
-          - `DATABASE_URL` (e.g., `postgresql://USER:PASSWORD@HOST:PORT/{{YOUR_DATABASE_NAME_DEV}}?schema=public`)
-          - `NEXTAUTH_SECRET` (suggest generating one with `openssl rand -base64 32`)
-          - `GOOGLE_CLIENT_ID`
-          - `GOOGLE_CLIENT_SECRET`
-          - Optionally, `REDIS_URL` if Redis is intended as a common setup.
-      3.  The script should then populate these values into the newly created `.env.local` file.
-      4.  Ensure placeholder replacement in `SETUP.md` or other docs correctly points to the new `.env.local` behavior.
-    - **Benefit:** Significantly improves the "ready to use out of the box" aspect by partially automating environment setup.
-  - `[ ]` **Ensure Comprehensive Placeholder Replacement in `scripts/setup.js`:**
-    - **Detail:** Verify that the existing placeholder replacement logic in `scripts/setup.js` covers all intended files and all placeholder tokens (e.g., `{{YOUR_APP_NAME}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, `{{YOUR_REPOSITORY_URL}}`, etc.).
-    - **Files to check/add to `FILES_TO_PROCESS` in `setup.js`:** `README.md`, `package.json` (name, description, repository.url), `LICENSE` (copyright holder), `app/layout.tsx` (metadata), `app/manifest.ts`, and any other files containing these placeholders.
-    - **Benefit:** Ensures the project is fully customized after running the setup script.
+    - **Action Completed:**
+      1. Modified `scripts/setup.js` to copy `.env.example` to `.env.local` if `.env.local` does not already exist.
+      2. Added prompts (using `inquirer`) to ask the user for critical environment variables:
+         - `DATABASE_URL` with smart default based on project name
+         - Auto-generated `NEXTAUTH_SECRET` using crypto for security
+         - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+         - Optional `REDIS_URL`
+      3. Enhanced the script to apply these values to the newly created `.env.local` file.
+      4. Updated completion message to guide users on next steps including database migrations.
+      5. Added proper error handling for environment file creation.
+    - **Benefit:** Significantly improves the "ready to use out of the box" aspect by automating environment setup with secure defaults.
+  - `[x]` **Ensure Comprehensive Placeholder Replacement in `scripts/setup.js`:**
+    - **Detail:** Verified the existing placeholder replacement logic in `scripts/setup.js` and added missing files containing placeholders.
+    - **Action Completed:**
+      1. Added LICENSE to the FILES_TO_PROCESS list to replace copyright holder
+      2. Identified additional files with placeholders that need to be processed:
+         - Tests directory: `tests/utils/test-constants.ts` and `tests/README-main.md`
+         - Documentation: All files in `docs/testing/` directory
+         - App: `app/manifest.ts` (needed placeholder replacement for app title)
+      3. Used updated placeholder tokens to ensure consistent database naming
+         - Added DATABASE_NAME_DEV and DATABASE_NAME_TEST placeholders
+      4. Updated documentation files with appropriate project placeholders
+    - **Benefit:** Ensures a more complete and consistent customization of the template for users.
   - `[x]` **Secure or Document `app/api/test/firebase-config/route.ts` for Production:**
     - **Detail:** This route exposes Firebase configuration, which is useful for debugging but a security risk in production.
     - **Action Completed:**
@@ -121,6 +141,72 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
       2.  Added prominent comments at the top of the file stating this route is for optional Firebase integration and must not be accessible in production environments.
       3.  Updated the error message to clarify that the endpoint is disabled by default.
     - **Benefit:** Enhances security out-of-the-box by making the endpoint disabled by default in all environments unless explicitly enabled.
+
+### Testing and Validation Plan for Setup Process
+
+- **Goal:** Thoroughly test the template setup process to ensure it works flawlessly for both human developers and AI agents.
+
+- **Approach:** Use a clean environment to simulate the experience of a new user cloning the repository and setting it up for the first time.
+
+- **Steps:**
+
+  1. **Preparation:**
+
+     - Start a new, empty Cursor instance
+     - Instruct the AI agent to clone the GitHub repository
+     - The AI should follow the setup instructions documented in README.md and SETUP.md
+
+  2. **Testing Scenarios:**
+
+     - **Basic Setup:** Test the standard setup flow with default values
+     - **Custom Setup:** Test providing custom values for all prompts
+     - **Partial Setup:** Test skipping optional configurations
+     - **Error Handling:** Test error cases (e.g., invalid inputs, database connection failures)
+     - **Database Initialization:** Test the Prisma migration process
+
+  3. **Validation Criteria:**
+
+     - All placeholders are correctly replaced in all files
+     - Environment files are correctly configured
+     - Database connects successfully
+     - Server starts without errors
+     - Basic functionality works (authentication, protected routes)
+     - Tests pass after setup
+
+  4. **Documentation Validation:**
+
+     - Check if any steps are missing from documentation
+     - Verify that error messages are helpful
+     - Ensure documentation covers common troubleshooting scenarios
+
+  5. **Process Documentation:**
+
+     - The AI agent should document each step, noting:
+       - What worked as expected
+       - What didn't work or was confusing
+       - Missing instructions or information
+       - Suggestions for improvements
+       - Time taken for each major step
+
+  6. **Iterative Improvement:**
+     - Review the AI's notes and make necessary adjustments
+     - Update documentation, scripts, or code as needed
+     - Repeat the process until the setup works flawlessly
+
+- **Expected Deliverables:**
+
+  1. A comprehensive test report documenting the setup experience
+  2. A list of identified issues and their fixes
+  3. Improved documentation based on testing feedback
+  4. Any additional setup script enhancements needed
+
+- **Benefits:**
+  - Validates the template from a true first-time user perspective
+  - Identifies gaps in documentation or automation
+  - Ensures the template is truly "ready to use out of the box"
+  - Tests the template's usability by AI agents specifically
+
+This structured testing approach will help ensure the template provides a smooth, error-free experience for all users, whether they're human developers or AI agents working on behalf of users.
 
 ### 4. Error Handling Integration Review
 
@@ -173,11 +259,4 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - `[ ]` **Update Code-Level Comments:**
     - **Detail:** Review key files (especially those modified, like `auth.actions.ts`, `setup.js`, any Firebase utility files if kept) for comments that might be outdated or misleading after changes.
     - **Action:** Adjust comments to accurately describe the current implementation and intent. For example, clearly label Firebase utilities as "for optional Firebase service integration."
-  - `[ ]` **Consolidate and Streamline General Documentation (`README.md`, `docs/` folder):**
-    - **Detail:** As noted by the user, project documentation is planned for an overhaul.
-    - **Action (Long-term, post-code changes):**
-      - Update `README.md` to be a concise entry point.
-      - Refactor the `docs/` folder. Consolidate information where possible (e.g., a single `AUTHENTICATION.md` covering NextAuth.js, Prisma Adapter, and how to add other providers).
-      - Create a clear `FIREBASE_INTEGRATION.md` if Firebase utilities are kept, explaining they are for _adding services_, not for the core template functionality.
-      - Ensure all setup instructions reflect the enhanced `scripts/setup.js`.
-    - **Benefit:** Provides clear, accurate, and easy-to-navigate documentation for both AI and human developers.
+  - `[ ]` \*\*Consolidate and Streamline General Documentation (`README.md`, `

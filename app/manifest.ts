@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Next Firebase Base Template',
-    short_name: 'NextFirebaseBase',
-    description: 'A starter template for Next.js, Firebase, and PostgreSQL.',
+    name: '{{YOUR_APP_TITLE}}',
+    short_name: '{{YOUR_APP_SHORT_NAME}}',
+    description: '{{YOUR_PROJECT_DESCRIPTION}}',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
