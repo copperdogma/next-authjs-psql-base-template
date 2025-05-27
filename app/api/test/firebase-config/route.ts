@@ -2,18 +2,27 @@ import { NextResponse } from 'next/server';
 
 /**
  * API route to expose relevant Firebase configuration for debugging/testing purposes.
- * IMPORTANT: Never expose sensitive credentials like the private key here.
+ * IMPORTANT:
+ * 1. Never expose sensitive credentials like the private key here.
+ * 2. This endpoint should NOT be accessible in production environments.
+ * 3. To enable this endpoint, set ALLOW_FIREBASE_CONFIG_ENDPOINT=true in your environment.
  */
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
+  // Enhanced security check - requires explicit environment variable
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.ALLOW_FIREBASE_CONFIG_ENDPOINT !== 'true'
+  ) {
     return NextResponse.json(
-      { message: 'Forbidden: This endpoint is not available in production.' },
+      {
+        message: 'Forbidden: This endpoint is disabled by default and not available in production.',
+      },
       { status: 403 }
     );
   }
 
   return NextResponse.json({
-    message: 'Firebase Configuration',
+    message: 'Firebase Configuration (Optional Integration)',
     clientConfig: {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

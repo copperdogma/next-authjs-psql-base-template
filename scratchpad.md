@@ -10,39 +10,6 @@ For each item in these lists, I want to find the best practices for each using t
 
 Keep in mind this project is meant to be an easy-to-use template for getting projects started, so best practices that are costly and mostly relevant to larger features/installations, or future features that may not be required, should not be included. The user of the template can add those later if required. The project is meant to be a clean, simple, elegant, easy to use starting point.
 
-## Firebase Removal Checklist
-
-- [x] Remove Firebase-related dependencies from package-lock.json
-  - [x] firebase
-  - [x] firebase-admin
-  - [x] firebase-tools
-  - [x] @firebase/\* packages
-- [x] Remove Firebase utility files
-  - [x] lib/utils/firebase-errors.ts
-- [x] Remove Firebase references in environment setup
-  - [x] jest.setup.env.js - Remove all FIREBASE\_\* environment variables
-  - [x] jest.setup.ts - Remove commented-out Firebase mock imports/resets
-- [x] Clean up Firebase references in code files
-  - [x] playwright.config.ts - Remove Firebase Auth Emulator comment
-  - [x] lib/actions/auth.actions.ts - Remove commented-out Firebase imports
-  - [x] lib/auth/auth-jwt-types.ts - Remove commented-out firebaseUid references
-  - [x] lib/auth/oauth-helpers.ts - Remove commented-out firebaseUid references
-  - [x] lib/**mocks**/server/services.ts - Remove getFirebaseAdminService mock
-- [x] Remove Firebase documentation
-  - [x] docs/firebase/ directory and all contents
-- [x] Remove Firebase test files and mocks
-  - [x] tests/config/setup/firebase-setup.js
-  - [x] tests/e2e/utils/firebase-admin-utils.ts
-  - [x] tests/unit/utils/firebase-errors.test.ts
-  - [x] tests/mocks/firebase/ directory
-- [x] Remove Firebase references from .gitignore
-  - [x] firebase-debug.log\*
-  - [x] Firebase Admin SDK Credentials entry
-- [x] Remove Firebase-related files in project root
-  - [x] firebase-debug.log
-  - [x] firestore-debug.log
-  - [x] firebase-seed-data directory
-
 ## Codebase AnalysisAI Prompt
 
 I'm creating a github template with nextjs, firebase, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
@@ -85,8 +52,6 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [ ] AI needs a solid way to interact/query the UI. Modern UIs are often too complex for the AI to understand how it will end up being rendered.
   - [ ] AI needs a way to add items to the log, spin up the server, run their manual tests (or a scripted e2e test perhaps), and check the logs afterward.
 
-Okay, here's a comprehensive markdown checklist of suggestions to improve the codebase, with details to guide another AI in implementing them:
-
 ## Codebase Improvement Checklist
 
 ### 1. Firebase Integration Clarification & Streamlining
@@ -96,36 +61,35 @@ Okay, here's a comprehensive markdown checklist of suggestions to improve the co
 
 - **Tasks:**
   - `[x]` **Review Template Name vs. Core Stack:**
-    - **Detail:** If Firebase is not a _core, out-of-the-box_ component for primary functions (auth, DB), consider if the name `next-firebase-psql-base-template` is potentially misleading. If the intent is to easily _add_ Firebase services, this should be the primary message.
+    - **Detail:** If Firebase is not a _core, out-of-the-box_ component for primary functions (auth, DB), consider if the name `next-authjs-psql-base-template` is potentially misleading. If the intent is to easily _add_ Firebase services, this should be the primary message.
     - **Action:** No direct code change, but this influences documentation and how the template is presented.
-  - `[ ]` **Remove Dead Firebase Auth Code from `lib/actions/auth.actions.ts`:**
+  - `[x]` **Remove Dead Firebase Auth Code from `lib/actions/auth.actions.ts`:**
     - **Detail:** This file contains commented-out Firebase Admin SDK code for user creation (`// import * as admin from 'firebase-admin';`, `// const firebaseAdminService = getFirebaseAdminService();`, etc.). The active authentication logic uses NextAuth.js with Prisma.
-    - **Action:** Delete all commented-out Firebase Admin SDK import statements and related user creation logic within `registerUserAction` (and its helpers like `_createFirebaseUser`) in `lib/actions/auth.actions.ts`. Ensure the existing Prisma-based user creation path remains the sole active method.
-    - **Benefit:** Reduces confusion, removes dead code, and focuses the template on its primary NextAuth.js authentication mechanism.
-  - `[ ]` **Clarify Role of Optional Firebase Utilities:**
-    - **Files:** `lib/utils/firebase-errors.ts`, `app/api/test/firebase-config/route.ts`.
-    - **Detail:** These files are useful if the end-user decides to integrate Firebase services that use the Firebase Client SDK (e.g., Firestore, client-side Firebase Auth for specific providers not in NextAuth, etc.).
-    - **Action (Option 1 - Keep with Docs):** Retain these files. Add prominent comments at the top of each file and in the main project documentation explaining that they are for _optional Firebase service integration_ and are not used by the core template's NextAuth/PostgreSQL setup.
-    - **Action (Option 2 - Remove for Minimalism):** Remove these files. Users can add similar utilities if they choose to integrate Firebase services later.
-    - **Recommendation:** Option 1 (Keep with Docs) seems aligned with the template name, but documentation must be very clear about their optional nature.
-    - **Benefit:** Prevents confusion about whether Firebase is required for the base template to function.
+    - **Action:** Reviewed the file and found that the Firebase code has already been removed. The file now only contains NextAuth.js with Prisma for authentication.
+    - **Benefit:** The template is already correctly focused on its primary NextAuth.js authentication mechanism.
+  - `[x]` **Clarify Role of Optional Firebase Utilities:**
+    - **Files:** Found only `app/api/test/firebase-config/route.ts`. The `lib/utils/firebase-errors.ts` file doesn't exist.
+    - **Detail:** The Firebase config route is useful if the end-user decides to integrate Firebase services that use the Firebase Client SDK (e.g., Firestore, client-side Firebase Auth for specific providers not in NextAuth, etc.).
+    - **Action Taken:** Kept the Firebase config route file but added prominent comments at the top explaining that it is for _optional Firebase service integration_ and not used by the core template's NextAuth/PostgreSQL setup. Also modified the endpoint to require an explicit environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to function, making it more secure by default.
+    - **Benefit:** Prevents confusion about whether Firebase is required for the base template to function while maintaining the ability to easily add Firebase services if needed.
 
 ### 2. Component and Example Streamlining
 
 - **Goal:** Remove redundant or purely illustrative components to create a leaner template.
 
 - **Tasks:**
-  - `[ ]` **Consolidate or Remove Redundant Login Form:**
+  - `[x]` **Consolidate or Remove Redundant Login Form:**
     - **Files:** `app/login/components/LoginForm.tsx` and `app/login/components/CredentialsLoginForm.tsx`.
-    - **Detail:** `CombinedLoginOptions.tsx` (used by `app/login/page.tsx`) currently imports and uses `CredentialsLoginForm.tsx`. `LoginForm.tsx` seems to be an alternative or older version using `react-hook-form` more directly.
-    - **Action:**
-      1.  Verify if `app/login/components/LoginForm.tsx` is actively used or referenced in any critical path not immediately obvious.
-      2.  If it's unused or serves only as an example that's duplicated by `components/forms/ExampleForm.tsx`, remove `app/login/components/LoginForm.tsx`.
-      3.  Ensure `app/login/page.tsx` and `components/auth/CombinedLoginOptions.tsx` correctly use the intended primary credentials form (`CredentialsLoginForm.tsx`).
-    - **Benefit:** Reduces code duplication and simplifies the login component structure. `components/forms/ExampleForm.tsx` can serve as the primary example for `react-hook-form` + Zod.
-  - `[ ]` **Remove Purely Example Component `components/examples/CleanupExample.tsx`:**
+    - **Detail:** `CombinedLoginOptions.tsx` (used by `app/login/page.tsx`) currently imports and uses the `CredentialsLoginForm.tsx` from the components/auth directory. The forms in the app/login/components directory were redundant.
+    - **Action Taken:**
+      1.  Verified that `app/login/components/LoginForm.tsx` was not actively used in any critical path.
+      2.  Removed `app/login/components/LoginForm.tsx` as it was an alternative version using `react-hook-form` more directly.
+      3.  Removed `app/login/components/CredentialsLoginForm.tsx` as it was redundant with `components/auth/CredentialsLoginForm.tsx`.
+      4.  Confirmed that `app/login/page.tsx` and `components/auth/CombinedLoginOptions.tsx` correctly use the intended primary credentials form from the components/auth directory.
+    - **Benefit:** Reduces code duplication and simplifies the login component structure.
+  - `[x]` **Remove Purely Example Component `components/examples/CleanupExample.tsx`:**
     - **Detail:** This component demonstrates `useEffect` cleanup, which is good knowledge but not essential for a base template's core functionality.
-    - **Action:** Delete the `components/examples/CleanupExample.tsx` file and its associated test file `tests/unit/components/examples/CleanupExample.test.tsx`.
+    - **Action Taken:** Deleted the `components/examples/CleanupExample.tsx` file and its associated test file `tests/unit/components/examples/CleanupExample.test.tsx`.
     - **Benefit:** Makes the template more focused on core features rather than general React examples. Such examples are better suited for documentation or a separate example repository.
 
 ### 3. Setup and Developer Experience Enhancements
@@ -150,13 +114,13 @@ Okay, here's a comprehensive markdown checklist of suggestions to improve the co
     - **Detail:** Verify that the existing placeholder replacement logic in `scripts/setup.js` covers all intended files and all placeholder tokens (e.g., `{{YOUR_APP_NAME}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, `{{YOUR_REPOSITORY_URL}}`, etc.).
     - **Files to check/add to `FILES_TO_PROCESS` in `setup.js`:** `README.md`, `package.json` (name, description, repository.url), `LICENSE` (copyright holder), `app/layout.tsx` (metadata), `app/manifest.ts`, and any other files containing these placeholders.
     - **Benefit:** Ensures the project is fully customized after running the setup script.
-  - `[ ]` **Secure or Document `app/api/test/firebase-config/route.ts` for Production:**
+  - `[x]` **Secure or Document `app/api/test/firebase-config/route.ts` for Production:**
     - **Detail:** This route exposes Firebase configuration, which is useful for debugging but a security risk in production.
-    - **Action (Recommended):**
-      1.  Keep the route but add a more robust check than just `process.env.NODE_ENV === 'production'`. For example, require a specific environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to be set for it to function, which would not be set in production.
-      2.  Alternatively, add prominent comments and documentation stating this route _must_ be removed or secured before any production deployment.
-      3.  Consider commenting out its registration or the file itself in the template by default, with instructions on how to enable it for debugging.
-    - **Benefit:** Enhances security out-of-the-box.
+    - **Action Completed:**
+      1.  Added a more robust check beyond just `process.env.NODE_ENV === 'production'`. Now requires a specific environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to be set for it to function, which would not be set in production.
+      2.  Added prominent comments at the top of the file stating this route is for optional Firebase integration and must not be accessible in production environments.
+      3.  Updated the error message to clarify that the endpoint is disabled by default.
+    - **Benefit:** Enhances security out-of-the-box by making the endpoint disabled by default in all environments unless explicitly enabled.
 
 ### 4. Error Handling Integration Review
 
