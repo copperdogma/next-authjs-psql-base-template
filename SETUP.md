@@ -1,6 +1,6 @@
 # Setting Up Your Project
 
-This template provides a starting point for building a Next.js application with Firebase Authentication and PostgreSQL. Follow these steps to get started with your new project.
+This template provides a starting point for building a Next.js application with NextAuth.js Authentication (using PostgreSQL for user data) and PostgreSQL for general database needs. Follow these steps to get started with your new project.
 
 ## Quick Start
 

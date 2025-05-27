@@ -257,7 +257,6 @@ describe('auth-jwt Callbacks', () => {
         jti: expect.any(String), // JTI is generated, so check for type
         userId: testDbUser.id, // from OAuthDbUser.userId
         userRole: UserRole.USER, // from OAuthDbUser.role
-        firebaseUid: testDbUser.id, // Added: firebaseUid should be the user's DB ID
       });
       expect(mockValidateInputs).toHaveBeenCalledWith(args.user, args.account, correlationId);
       expect(mockPrepareProfile).toHaveBeenCalledWith(

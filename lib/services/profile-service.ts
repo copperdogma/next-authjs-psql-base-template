@@ -1,96 +1,140 @@
 import * as pino from 'pino';
-import { UserService } from './user-service';
-import { FirebaseAdminService } from './firebase-admin-service';
+import { PrismaClient, User } from '@prisma/client';
 import { logger as rootLogger } from '../logger';
+import { ServiceResponse } from '@/types';
 
 // Create a logger specific to this service
 const serviceLogger = rootLogger.child({ service: 'profile' });
 
 /**
- * ProfileService handles profile-related operations
+ * ProfileService handles profile-related operations directly with Prisma.
  */
 export class ProfileService {
   constructor(
-    private readonly userService: UserService,
-    private readonly firebaseAdminService: FirebaseAdminService,
+    private readonly prismaClient: PrismaClient,
     private readonly logger: pino.Logger = serviceLogger
   ) {
-    if (!userService) {
-      const errorMsg = 'UserService dependency is required for ProfileService.';
-      this.logger.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-    if (!firebaseAdminService) {
-      const errorMsg = 'FirebaseAdminService dependency is required for ProfileService.';
+    if (!prismaClient) {
+      const errorMsg = 'PrismaClient dependency is required for ProfileService.';
       this.logger.error(errorMsg);
       throw new Error(errorMsg);
     }
   }
 
   /**
-   * Try to update a user's display name in Firebase if possible
-   * @private
-   */
-  private async tryUpdateFirebaseUserName(
-    userEmail: string,
-    name: string,
-    userId: string
-  ): Promise<void> {
-    try {
-      // Try to find the user in Firebase
-      const firebaseUser = await this.firebaseAdminService.getUserByEmail(userEmail);
-
-      if (firebaseUser) {
-        // Update Firebase user display name
-        await this.firebaseAdminService.updateUser(firebaseUser.uid, { displayName: name });
-        this.logger.info(
-          { userId, firebaseUid: firebaseUser.uid },
-          'Firebase user displayName updated'
-        );
-      }
-    } catch (firebaseError: unknown) {
-      // Log but don't fail if Firebase update fails
-      this.logger.warn(
-        {
-          userId,
-          error: firebaseError instanceof Error ? firebaseError.message : String(firebaseError),
-        },
-        'Could not update Firebase user - continuing'
-      );
-    }
-  }
-
-  /**
-   * Updates a user's display name in both the database and Firebase Auth (if available)
+   * Updates a user's display name in the database.
    */
   async updateUserName(
     userId: string,
     name: string
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<ServiceResponse<User, { originalError?: unknown }>> {
+    const logContext = { userId, newName: name, function: 'updateUserName' };
+    this.logger.debug(logContext, 'Attempting to update user name in DB');
+
+    if (!userId) {
+      this.logger.warn(logContext, 'Attempted to update user name with an empty user ID.');
+      return {
+        status: 'error',
+        message: 'User ID validation failed.',
+        error: {
+          message: 'User ID cannot be empty.',
+          code: 'VALIDATION_ERROR',
+        },
+      };
+    }
+    if (!name) {
+      this.logger.warn(logContext, 'Attempted to update user name with an empty string.');
+      return {
+        status: 'error',
+        message: 'Name validation failed.',
+        error: {
+          message: 'New name cannot be empty.',
+          code: 'VALIDATION_ERROR',
+        },
+      };
+    }
+
     try {
-      // Update in database
-      await this.userService.updateUserName(userId, name);
+      const updatedUser = await this.prismaClient.user.update({
+        where: { id: userId },
+        data: { name },
+      });
 
-      // If user has email, also update in Firebase
-      const user = await this.userService.findUserById(userId);
+      this.logger.info(logContext, 'User name updated successfully in DB.');
+      return {
+        status: 'success',
+        data: updatedUser,
+        message: 'User name updated successfully.',
+      };
+    } catch (error: unknown) {
+      this.logger.error({ ...logContext, error }, 'Failed to update user name in database.');
+      return {
+        status: 'error',
+        message: 'Failed to update user name in database.',
+        error: {
+          message: 'A database error occurred while updating the user name.',
+          code: 'DB_UPDATE_FAILED',
+          details: { originalError: error },
+        },
+      };
+    }
+  }
 
-      if (!user || !user.email) {
-        this.logger.info({ userId }, 'User name updated successfully (no Firebase update needed)');
-        return { success: true };
+  /**
+   * Fetches a user's profile from the database.
+   */
+  async getUserProfile(
+    userId: string
+  ): Promise<ServiceResponse<User, { originalError?: unknown }>> {
+    const logContext = { userId, function: 'getUserProfile' };
+    this.logger.debug(logContext, 'Attempting to fetch user profile from DB');
+
+    if (!userId) {
+      this.logger.warn(logContext, 'Attempted to fetch user profile with an empty user ID.');
+      return {
+        status: 'error',
+        message: 'User ID validation failed.',
+        error: {
+          message: 'User ID cannot be empty.',
+          code: 'VALIDATION_ERROR',
+        },
+      };
+    }
+
+    try {
+      const user = await this.prismaClient.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        this.logger.warn(logContext, 'User profile not found.');
+        return {
+          status: 'error',
+          message: 'User profile not found.',
+          error: {
+            message: 'No user found with the provided ID.',
+            code: 'USER_NOT_FOUND',
+          },
+        };
       }
 
-      // Try Firebase update separately
-      await this.tryUpdateFirebaseUserName(user.email, name, userId);
-
-      this.logger.info({ userId }, 'User name updated successfully');
-      return { success: true };
+      this.logger.info(logContext, 'User profile fetched successfully.');
+      return {
+        status: 'success',
+        data: user,
+        message: 'User profile fetched successfully.',
+      };
     } catch (error: unknown) {
-      this.logger.error({
-        msg: 'Error updating user name in database',
-        error: error instanceof Error ? error.message : String(error),
-        userId,
-      });
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      this.logger.error({ ...logContext, error }, 'Failed to fetch user profile from database.');
+      return {
+        status: 'error',
+        message: 'Failed to fetch user profile from database.',
+        error: {
+          message: 'A database error occurred while fetching the user profile.',
+          code: 'DB_FETCH_FAILED',
+          details: { originalError: error },
+        },
+      };
     }
   }
 }

@@ -35,7 +35,7 @@ const pinoOptions: pino.LoggerOptions = {
   },
   base: {
     env: process.env.NODE_ENV,
-    app: 'next-firebase-psql-template',
+    app: 'next-psql-template',
   },
   // Use a simple timestamp function instead of stdTimeFunctions
   timestamp: () => `,"time":"${new Date().toISOString()}"`,

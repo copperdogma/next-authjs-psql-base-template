@@ -1,3 +1,7 @@
+// NOTE: This utility is designed to handle errors specifically from the Firebase SDK.
+// It is relevant if you choose to integrate Firebase services (e.g., Firebase Auth for social providers not covered by NextAuth, Firestore, Storage)
+// that use the Firebase client SDK. It is not directly used by the core NextAuth.js + Prisma authentication flow.
+
 import { FirebaseError } from '@firebase/util';
 import { logger } from '@/lib/logger';
 
@@ -19,6 +23,7 @@ type FirebaseAuthErrorCode =
 
 /**
  * A mapping of Firebase Auth error codes to user-friendly error messages
+ * (Relevant for optional Firebase SDK usage)
  */
 const AUTH_ERROR_MESSAGES: Record<FirebaseAuthErrorCode, string> = {
   'auth/invalid-email': 'The email address is not valid.',
@@ -44,6 +49,7 @@ const AUTH_ERROR_MESSAGES: Record<FirebaseAuthErrorCode, string> = {
 
 /**
  * Extracts a user-friendly error message from a Firebase Auth error
+ * (Relevant for optional Firebase SDK usage)
  * @param error The error object thrown by Firebase
  * @returns A user-friendly error message string
  */
@@ -68,6 +74,7 @@ export function getFirebaseAuthErrorMessage(error: unknown): string {
 
 /**
  * Logs Firebase errors with extra context and returns a user-friendly message
+ * (Relevant for optional Firebase SDK usage)
  * @param context The context where the error occurred (e.g., 'Sign In', 'Profile Update')
  * @param error The error object
  * @returns A user-friendly error message string

@@ -6,7 +6,7 @@ import fs from 'fs';
 /**
  * Root-level Playwright configuration
  *
- * Follows best practices for Next.js and Firebase Auth E2E testing
+ * Follows best practices for Next.js and E2E testing
  */
 
 // Load test environment variables
@@ -101,7 +101,6 @@ const config: PlaywrightTestConfig = defineConfig({
         // Specific auth tests to ignore for this unauthenticated 'ui-tests' project
         /auth\/login-logout-cycle\.spec\.ts/,
         /auth\/redirect\.test\.ts/,
-        /auth\/oauth-firebase-sync\.spec\.ts/, // Assuming this needs auth
         /auth\/auth-flow\.spec\.ts/, // Assuming this needs auth or is complex
         // General patterns for other categories
         /profile\/.*\.spec\.ts/,
@@ -120,9 +119,9 @@ const config: PlaywrightTestConfig = defineConfig({
       testMatch: [
         /auth\/login-logout-cycle\.spec\.ts/,
         /auth\/redirect\.test\.ts/,
-        /profile\/.*\.spec\.ts/,
-        /dashboard\.spec\.ts/,
-        // Add other auth-dependent test files/patterns here
+        /auth\/auth-flow\.spec\.ts/, // Assuming this needs auth or is complex
+        // General patterns for other categories
+        /profile\/.*/, // All tests in the profile directory
       ],
       // You might still want to explicitly ignore the non-auth tests if patterns overlap
       testIgnore: [
@@ -167,14 +166,15 @@ const config: PlaywrightTestConfig = defineConfig({
   // Built-in webServer configuration - manages Next.js server for tests
 
   webServer: {
-    // Enhanced command that:
-    // 1. Clears ports (including app port 3777)
-    // 2. Removes .next directory
-    // 3. Starts Firebase emulators with seed data
-    // 4. Runs the dev:test script which captures logs
-    command: `npx kill-port 3777 8080 9099 || true && rm -rf .next && ./scripts/run-e2e-server.sh`,
-    url: BASE_URL,
-    timeout: TIMEOUT_SERVER, // Keep a generous timeout for emulators + server
+    /**
+     * Use E2E_SERVER_COMMAND for local development and CI.
+     * Fallback to a simpler command if E2E_SERVER_COMMAND is not set.
+     */
+    // command: `npm run dev:testserver`, // Original command
+    // command: `FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099" npm run dev:testserver`, // With Firebase Auth Emulator
+    command: './scripts/run-e2e-server.sh',
+    url: `http://127.0.0.1:${PORT}/api/health`,
+    timeout: TIMEOUT_SERVER, // Keep a generous timeout for server start
     reuseExistingServer: !process.env.CI,
     // Let stdout/stderr pass through for better debugging if needed
     stdout: 'pipe',

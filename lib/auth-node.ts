@@ -17,7 +17,6 @@ import {
   handleSessionRefreshFlow,
   ensureJtiExists,
 } from './auth/auth-jwt-helpers';
-import { syncFirebaseUserForOAuth, shouldSyncFirebaseUser } from './auth/auth-firebase-sync';
 import type { Account, Profile, User as NextAuthUser, Session } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 
@@ -76,17 +75,6 @@ async function _handleSignInSignUpFlow(params: {
   // Update lastSignedInAt for new sign-in/sign-up
   if ((trigger === 'signIn' || trigger === 'signUp') && user.id) {
     await updateLastSignedInAt(user.id, baseLogContext);
-  }
-
-  // Only attempt Firebase sync if this is an OAuth account type
-  // This check prevents warnings for credentials-based auth
-  if (shouldSyncFirebaseUser(trigger, account.type)) {
-    await syncFirebaseUserForOAuth({ trigger, account, user, profile }, baseLogContext);
-  } else {
-    logger.debug(
-      { ...baseLogContext, provider: account.provider, accountType: account.type },
-      '[JWT Callback] Skipping Firebase sync for non-OAuth account type'
-    );
   }
 
   return updatedToken;

@@ -94,7 +94,7 @@ async function promptUserForInputs() {
       type: 'input',
       name: 'projectDescription',
       message: 'Enter a brief project description:',
-      default: 'A Next.js application with Firebase Auth and PostgreSQL',
+      default: 'A Next.js application with PostgreSQL',
     },
     {
       type: 'input',
@@ -136,7 +136,7 @@ function displayCompletionMessage() {
 }
 
 async function main() {
-  console.log('🚀 Welcome to the Next.js Firebase PostgreSQL Template Setup!\n');
+  console.log('🚀 Welcome to the Next.js PostgreSQL Template Setup!\n');
 
   // Get user inputs
   const answers = await promptUserForInputs();

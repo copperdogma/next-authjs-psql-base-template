@@ -40,8 +40,6 @@ const IGNORE_PATTERNS = [
   /ExperimentalWarning/i, // Node.js experimental feature warnings
   /Failed to clear.+data/i, // Ignore warnings from clear-emulator-data.js if emulators weren't running
   /PWA support is disabled/i, // Known informational message in dev
-  /Finished shutting down workers/i, // Firebase emulator shutdown message
-  /emulators: Shutting down emulators/i, // Firebase emulator shutdown message
   /Failed to load environment variables/i, // Expected in some test environments
   /Converting circular structure to JSON/i, // Pino logger serialization warning - noisy
   /Task timed out/i, // Playwright might log this, not a server error itself

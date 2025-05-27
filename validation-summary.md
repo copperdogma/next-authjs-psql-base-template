@@ -25,7 +25,6 @@
 
 1. Code coverage is below thresholds in:
 
-   - lib/firebase-admin.ts
    - lib/db/raw-query-service.ts
    - lib/db/user-service.ts
    - components/examples/CleanupExample.tsx

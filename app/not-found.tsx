@@ -1,8 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck - We need to include useTheme for the proper theming, even though it's not directly used
 import Link from 'next/link';
 import PageLayout from '@/components/layouts/PageLayout';
-import { Typography, Button, Paper, useTheme } from '@mui/material';
+import { Typography, Button, Paper } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
 import React from 'react';
 

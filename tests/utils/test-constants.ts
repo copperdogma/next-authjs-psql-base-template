@@ -19,7 +19,6 @@ export const AUTH = {
   MOCK_SESSION_COOKIE: 'mock-session-cookie',
   COOKIE_NAME: 'session',
   SESSION_COOKIE_EXPIRES_IN_SECONDS: 5 * 24 * 60 * 60, // 5 days in seconds
-  FIREBASE_PROJECT_ID: 'test-project-id',
   INVALID_TOKEN: 'invalid-token',
 };
 
@@ -90,7 +89,7 @@ export const TEST_ENV_VARS = {
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'test-auth-domain.firebaseapp.com',
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'test-project-id', // Keep this as is for general config?
   // ... other NEXT_PUBLIC vars
-  FIREBASE_PROJECT_ID: 'next-firebase-base-template', // Align this with firebase.json
+  FIREBASE_PROJECT_ID: 'next-firebase-base-template', // For optional Firebase services, align this with firebase.json if used
   FIREBASE_CLIENT_EMAIL: 'test-client-email@example.com',
   FIREBASE_PRIVATE_KEY: 'test-private-key',
 };
@@ -99,7 +98,7 @@ export const TEST_CONSTANTS = {
   APP_NAME: 'TestApp',
   BASE_URL: 'http://localhost:3000', // Adjust port if needed for tests
   API_URL: 'http://localhost:3000/api',
-  PROJECT_ID: 'next-firebase-base-template', // Align this with firebase.json
+  PROJECT_ID: 'next-firebase-base-template', // For optional Firebase services, align this with firebase.json if used
   TEST_SESSION_TOKEN: 'mock-session-token-123',
   MOCK_CSRF_TOKEN: 'mock-csrf-token-456',
 };

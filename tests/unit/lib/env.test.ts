@@ -29,17 +29,14 @@ describe('env module', () => {
     // Helper to set all required vars for success cases
     const setValidRequiredEnv = () => {
       requiredEnvVars.forEach(varName => {
-        process.env[varName] =
-          varName === 'FIREBASE_PRIVATE_KEY'
-            ? '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----\n'
-            : 'test-value';
+        process.env[varName] = 'test-value';
       });
     };
 
     it('returns success: false when required env variables are missing', () => {
       // Setup: Ensure other required vars are set to isolate the missing one
       setValidRequiredEnv();
-      delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      delete process.env.DATABASE_URL;
 
       const result = validateEnv();
 
@@ -48,8 +45,8 @@ describe('env module', () => {
         expect(result.error.issues).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              path: ['NEXT_PUBLIC_FIREBASE_API_KEY'],
-              message: 'NEXT_PUBLIC_FIREBASE_API_KEY is required', // Check message
+              path: ['DATABASE_URL'],
+              message: 'DATABASE_URL is required', // Check message
             }),
           ])
         );
@@ -85,7 +82,7 @@ describe('env module', () => {
 
       // Setup invalid state (missing variable)
       setValidRequiredEnv();
-      delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      delete process.env.DATABASE_URL;
 
       // Expect validateEnv to throw
       expect(() => validateEnv()).toThrow('Invalid environment variables');
@@ -109,7 +106,7 @@ describe('env module', () => {
 
       if (result.success) {
         expect(result.data).toBeDefined();
-        expect(result.data.NEXT_PUBLIC_FIREBASE_API_KEY).toBe('test-value');
+        expect(result.data.DATABASE_URL).toBe('test-value');
       }
       expect(mockedLogger.error).not.toHaveBeenCalled();
     });

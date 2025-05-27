@@ -59,12 +59,12 @@ export const defaultDependencies = {
 
 // Type for OAuth DB User
 export type OAuthDbUser = {
-  userId: string;
+  userId: string; // This is the primary database user ID
   userEmail: string;
   name?: string | null | undefined;
   image?: string | null | undefined;
   role?: UserRole | null | undefined;
-  firebaseUid: string; // DB ID (userId) will be used as firebaseUid
+  // firebaseUid: string; // DB ID (userId) will be used as firebaseUid <- This is removed as userId serves this purpose
 };
 
 // Define a type for the DB user step result

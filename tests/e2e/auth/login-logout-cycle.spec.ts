@@ -160,17 +160,12 @@ async function tryLogoutByIcon(page: Page): Promise<boolean> {
  */
 async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
   console.log('Logout method 4: Clearing cookies and storage');
-  await page.context().clearCookies();
+  await page.context().clearCookies(); // This clears all cookies for the context, including NextAuth.js session cookies
   await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-    // Clear Firebase specific storage if necessary
-    Object.keys(localStorage)
-      .filter(key => key.startsWith('firebase:'))
-      .forEach(key => localStorage.removeItem(key));
+    localStorage.clear(); // General local storage clear
+    sessionStorage.clear(); // General session storage clear
+    // Firebase specific storage clearing removed
   });
-  // Reload to reflect cleared state - REMOVED
-  // await page.reload({ waitUntil: 'networkidle' });
   console.log('✅ Successfully cleared authentication cookies and storage');
   return true;
 }

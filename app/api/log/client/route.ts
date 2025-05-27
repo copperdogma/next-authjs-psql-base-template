@@ -71,14 +71,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     response = await handleLogProcessing(body);
   } catch (error) {
     // Log the error during processing on the server using the logger
+    const err = error instanceof Error ? error : new Error(String(error));
     logger.error(
       {
-        err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+        err: { name: err.name, message: err.message, stack: err.stack },
         location: 'client-log-api-post-handler',
       },
       'Error processing client log entry in POST handler'
     );
-    response = NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    response = NextResponse.json(
+      {
+        error: err.name === 'Error' ? 'InternalServerError' : err.name,
+        message: err.message,
+      },
+      { status: 500 }
+    );
   }
 
   // Add rate limit headers to the successful response or caught error response

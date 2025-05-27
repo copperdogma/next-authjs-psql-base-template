@@ -2,15 +2,15 @@
 
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 
-A modern web application template built with Next.js, Firebase, and PostgreSQL.
+A modern web application template built with Next.js, NextAuth.js, and PostgreSQL.
 
 ## Features
 
 - Next.js 13+ App Router
-- Firebase Authentication
-- PostgreSQL Database
-- Redis Caching
-- Comprehensive Testing Setup
+- NextAuth.js v5 for Authentication (with Prisma Adapter)
+- PostgreSQL Database (primary user and application data store)
+- Redis Caching (optional)
+- Comprehensive Testing Setup (Jest for unit, Playwright for E2E)
 - TypeScript
 - Material Design Components (MUI)
 - Consistent linting with ESLint flat config
@@ -19,9 +19,9 @@ A modern web application template built with Next.js, Firebase, and PostgreSQL.
 
 - **Frontend**: Next.js, React, Material UI (MUI)
 - **Backend**: Node.js/TypeScript
-- **Auth**: Firebase Authentication, NextAuth.js v5 (Note: v5 is currently in beta. Be aware that APIs might evolve until a stable release.)
-- **Data**: PostgreSQL, Redis (caching)
-- **Deployment**: fly.io
+- **Auth**: NextAuth.js v5 (using Google and Credentials providers, extensible)
+- **Data**: PostgreSQL, Redis (optional, for caching, rate limiting)
+- **Deployment**: (User to specify, e.g., Vercel, fly.io, AWS)
 
 ## Installation
 
@@ -35,7 +35,7 @@ cd {{YOUR_PROJECT_NAME}}
 # Install dependencies
 npm install
 
-# Set up environment variables (create a .env file based on .env.example)
+# Set up environment variables (create a .env.local file based on .env.example)
 
 # Run the development server
 npm run dev
@@ -43,10 +43,11 @@ npm run dev
 
 ## Configuration
 
-1. Create a Firebase project and enable Authentication
-2. Set up a PostgreSQL database
-3. Configure Redis (optional)
-4. Update environment variables in your .env file
+1. Set up a PostgreSQL database and get the connection URL.
+2. Configure Google OAuth credentials (Client ID and Secret) via Google Cloud Console if using Google Sign-In.
+3. Set up your NextAuth.js secret.
+4. Configure Redis (optional, if used for rate limiting or other features).
+5. Update environment variables in your `.env.local` file (copy from `.env.example` and fill in your values).
 
 ## Contributing
 
@@ -68,69 +69,59 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 {{YOUR_PROJECT_NAME}}/
 ├── app/                    # Next.js 13+ App Router
 │   ├── api/                # API routes
-│   │   ├── auth/           # Authentication endpoints
-│   │   │   └── session/    # Session management endpoints
+│   │   ├── auth/           # Authentication endpoints managed by NextAuth.js (e.g., /api/auth/signin)
 │   │   └── health/         # Health check endpoint
 │   ├── globals.css         # Global styles
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Home page
 ├── components/             # Reusable components
-│   ├── auth/               # Authentication components
-│   │   ├── SignInButton.tsx # Sign-in/sign-out button
-│   │   └── UserProfile.tsx  # User profile display
-│   ├── ui/                 # Base UI components
+│   ├── auth/               # Authentication components (e.g., SignInButton)
+│   ├── ui/                 # Base UI components (MUI based)
+│   └── forms/              # Form components (e.g., registration, login)
 ├── lib/                    # Utility functions and configurations
-│   ├── firebase.ts         # Firebase Web SDK configuration
-│   ├── firebase-admin.ts   # Firebase Admin SDK configuration
-│   └── session.ts          # Session management utilities
-├── middleware.ts           # Authentication middleware
-├── tests/                  # Centralized test directory
-│   ├── unit/               # Unit tests
-│   │   ├── components/     # Component tests
-│   │   └── api/            # API tests
-│   ├── integration/        # Integration tests
-│   ├── e2e/                # E2E tests with Playwright
-│   ├── mocks/              # Test mocks
-│   ├── utils/              # Test utilities
-│   └── config/             # Test configuration
-│       ├── jest.config.js  # Jest configuration
-│       └── setup/          # Test setup files
+│   ├── auth-node.ts      # NextAuth.js Node runtime configuration
+│   ├── auth-edge.ts      # NextAuth.js Edge runtime configuration (incl. middleware logic)
+│   ├── auth-shared.ts    # Shared NextAuth.js configuration (providers, callbacks)
+│   ├── prisma.ts         # Prisma client initialization
+│   └── redis.ts          # Redis client initialization (optional)
+├── middleware.ts           # Authentication middleware (delegates to NextAuth.js)
+├── tests/                  # Centralized test directory (Jest unit, Playwright E2E)
 ├── docs/                   # Project documentation
-│   └── testing/            # Testing documentation
-├── firebase.json           # Firebase configuration
+├── prisma/                 # Prisma schema, migrations, and seed scripts
 └── next.config.js          # Next.js configuration
 ```
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies with `npm install`
-3. Create a `.env.local` file with the required environment variables (see below)
-4. Run the development server with `npm run dev`
+1. Clone the repository.
+2. Install dependencies with `npm install`.
+3. Create a `.env.local` file by copying `.env.example` and fill in your specific environment variables (see below).
+4. Set up your PostgreSQL database and ensure the `DATABASE_URL` in `.env.local` is correct.
+5. (Optional) If using Google Sign-In, create OAuth credentials in Google Cloud Console and add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env.local`.
+6. Generate a `NEXTAUTH_SECRET` (e.g., `openssl rand -base64 32`) and add it to `.env.local`.
+7. Run database migrations: `npx prisma migrate dev`.
+8. (Optional) Seed the database: `npx prisma db seed` (if a seed script is configured in `package.json` and `prisma/seed.ts`).
+9. Run the development server: `npm run dev`.
 
 ## Environment Variables
 
-Required in `.env.local`:
+Required in `.env.local` (refer to `.env.example` for a full template):
 
 ```bash
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-
-# Firebase Admin SDK
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
-
 # Database
-DATABASE_URL=
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 
-# Redis (optional)
-REDIS_URL=
+# Google OAuth Credentials (if using Google Sign-In)
+# GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"
+# GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"
+
+# NextAuth Configuration
+# NEXTAUTH_URL is optional for Vercel deployments, but recommended for local development (e.g., http://localhost:3000)
+NEXTAUTH_URL=
+NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET_STRING" # Generate with `openssl rand -base64 32`
+
+# Redis (Optional)
+# REDIS_URL="redis://localhost:6379"
 ```
 
 ## Available Commands
@@ -141,18 +132,24 @@ npm run dev       # Start development server
 npm run build     # Build for production
 npm run start     # Start production server
 
+# Database (Prisma)
+npx prisma migrate dev # Create or apply database migrations in development
+npx prisma generate    # Generate Prisma Client after schema changes
+# npx prisma db seed     # Seed the database (if seed script is configured)
+
 # Testing
-npm test          # Run Jest tests
-npm test -- --watch   # Run tests in watch mode
-npm test -- --coverage # Run tests with coverage
+npm test          # Run Jest unit tests
+npm test:watch    # Run Jest unit tests in watch mode
+npm test:coverage # Run Jest unit tests with coverage report
+npm run test:e2e    # Run Playwright E2E tests
 
 # Linting & Formatting
 npm run lint      # Check ESLint issues
 npm run lint:fix  # Fix ESLint issues
 npm run format    # Format with Prettier
 
-# Firebase
-npm run firebase:emulators         # Start Firebase emulators
+# Firebase (Optional Services - Not for Core Auth)
+# npm run firebase:emulators         # Start Firebase emulators (if using Firestore, Storage, etc.)
 ```
 
 ## Deployment Considerations

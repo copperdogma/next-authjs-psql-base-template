@@ -6,7 +6,6 @@ import { ThemeProvider } from 'next-themes';
 import ThemeRegistry from '@/app/providers/ThemeRegistry';
 import SessionProviderWrapper from '@/app/providers/SessionProviderWrapper';
 import BaseLayout from '@/components/layouts/BaseLayout';
-import FirebaseClientInitializer from '@/components/internal/FirebaseClientInitializer';
 import { auth } from '@/lib/auth-edge';
 import { CssBaseline, Box } from '@mui/material';
 import Header from '@/components/layouts/Header';
@@ -19,8 +18,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  // TODO: Update this URL for production deployments
-  metadataBase: new URL('http://localhost:3000'),
+  // TODO: Update this URL for production deployments - now using NEXTAUTH_URL
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   title: 'Next.js + NextAuth + PostgreSQL',
   description: 'A Next.js starter template with NextAuth.js Authentication and PostgreSQL database',
 };
@@ -35,7 +34,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head></head>
       <body className={roboto.className}>
         {/* Visually hidden H1 moved inside main container */}
-        <FirebaseClientInitializer />
         <SessionProviderWrapper session={session}>
           <ThemeProvider
             attribute="class"

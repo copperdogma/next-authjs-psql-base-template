@@ -171,13 +171,6 @@ jest.mock('@/lib/auth/auth-jwt-helpers', () => ({
   ensureJtiExists: mockEnsureJtiExists,
 }));
 
-const mockSyncFirebaseUserForOAuth = jest.fn();
-
-jest.mock('@/lib/auth/auth-firebase-sync', () => ({
-  syncFirebaseUserForOAuth: mockSyncFirebaseUserForOAuth,
-  shouldSyncFirebaseUser: jest.fn().mockImplementation((_, accountType) => accountType === 'oauth'),
-}));
-
 // Mock logger
 const mockLogger = {
   info: jest.fn(),
@@ -336,7 +329,6 @@ describe('auth-node.ts', () => {
       mockHandleJwtUpdate.mockImplementation((token: any) => Promise.resolve(token));
       mockHandleSessionRefreshFlow.mockImplementation(() => Promise.resolve());
       mockEnsureJtiExists.mockImplementation((token: any) => token);
-      mockSyncFirebaseUserForOAuth.mockImplementation(() => Promise.resolve());
 
       // Import the SUT explicitly
       jest.resetModules();
@@ -358,7 +350,6 @@ describe('auth-node.ts', () => {
       // Check that sign-in flow was processed
       expect(mockHandleJwtSignIn).toHaveBeenCalled();
       expect(mockUpdateLastSignedInAt).toHaveBeenCalled();
-      expect(mockSyncFirebaseUserForOAuth).toHaveBeenCalled();
 
       // Reset mocks for next test case
       jest.clearAllMocks();

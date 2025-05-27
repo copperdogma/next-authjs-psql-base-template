@@ -4,25 +4,15 @@
 
 This project uses Playwright for end-to-end testing. There are several scripts available to run these tests:
 
-### Standard Test Scripts
+### Test Scripts
 
-- `npm run test:e2e` - Run all E2E tests (automatically starts Firebase emulators)
+- `npm run test:e2e` - Run all E2E tests
 - `npm run test:e2e:ui` - Run only UI tests that don't require authentication
 - `npm run test:e2e:auth` - Run authenticated tests using the pre-configured test user
 - `npm run test:e2e:api` - Run API endpoint tests without browser
 - `npm run test:e2e:debug` - Run tests in debug mode
 - `npm run test:e2e:headed` - Run tests with visible browser windows
 - `npm run test:e2e:report` - Show HTML report from the last test run
-
-### Firebase Emulator Integration
-
-The E2E tests are automatically configured to work with Firebase emulators:
-
-- Firebase Auth emulator is started automatically when running `npm run test:e2e`
-- A test user is automatically created in the Auth emulator
-- Emulator data is persisted in the `firebase-seed-data` directory
-- To manually export emulator data: `npm run firebase:emulators:export`
-- To manually start emulators with imported data: `npm run firebase:emulators:import`
 
 ### Test Architecture
 

@@ -4,20 +4,9 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { ProfileService } from '../../../lib/services/profile-service';
-import { UserService } from '../../../lib/services/user-service';
-import { FirebaseAdminService } from '../../../lib/services/firebase-admin-service';
-// @ts-expect-error - TODO: Investigate Prisma type resolution issue
-import { User as PrismaUser, UserRole } from '@prisma/client';
-// @ts-expect-error - TODO: Investigate Firebase type resolution issue
-import type { UserRecord } from 'firebase-admin/auth';
+import { User as PrismaUser, PrismaClient } from '@prisma/client';
 import { Logger } from 'pino';
 
-// Mocks for the service modules themselves
-jest.mock('../../../lib/services/user-service');
-jest.mock('../../../lib/services/firebase-admin-service');
-
-// Create a basic logger mock that satisfies our testing needs
-// Using a simpler approach than mockDeep<Logger>() to avoid type conflicts
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -27,10 +16,9 @@ const mockLogger = {
   trace: jest.fn(),
   silent: jest.fn(),
   level: 'info',
-  child: jest.fn().mockReturnThis(), // Returns itself for chained calls
+  child: jest.fn().mockReturnThis(),
 } as unknown as Logger;
 
-// Mock the logger module
 jest.mock('@/lib/logger', () => ({
   logger: mockLogger,
   loggers: {
@@ -43,7 +31,6 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
-// Helper to create mock PrismaUser
 const createMockUser = (overrides: Partial<PrismaUser> = {}): PrismaUser => ({
   id: 'default-id',
   name: 'Default Name',
@@ -58,254 +45,146 @@ const createMockUser = (overrides: Partial<PrismaUser> = {}): PrismaUser => ({
   ...overrides,
 });
 
-// Helper to create mock Firebase UserRecord
-const createMockFirebaseUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
-  uid: 'firebase-uid',
-  email: 'test@example.com',
-  emailVerified: true,
-  displayName: 'Test User',
-  photoURL: null,
-  phoneNumber: null,
-  disabled: false,
-  metadata: {
-    creationTime: new Date().toISOString(),
-    lastSignInTime: new Date().toISOString(),
-    lastRefreshTime: null,
-  },
-  providerData: [],
-  passwordHash: null,
-  passwordSalt: null,
-  tokensValidAfterTime: null,
-  tenantId: null,
-  toJSON: () => ({ ...createMockFirebaseUser(overrides) }),
-  ...overrides,
-});
-
 describe('ProfileService', () => {
   let profileService: ProfileService;
-  let mockUserService: DeepMockProxy<UserService>;
-  let mockFirebaseAdminService: DeepMockProxy<FirebaseAdminService>;
+  let mockPrisma: DeepMockProxy<PrismaClient>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Use jest-mock-extended for service mocks to get type safety
-    mockUserService = mockDeep<UserService>();
-    mockFirebaseAdminService = mockDeep<FirebaseAdminService>();
-
-    // ProfileService uses a default logger parameter that pulls from the mocked module
-    // NB: We don't instantiate profileService here for constructor tests
+    mockPrisma = mockDeep<PrismaClient>();
+    profileService = new ProfileService(mockPrisma, mockLogger);
   });
 
   describe('Constructor', () => {
-    it('should throw an error if UserService is not provided', () => {
-      const expectedErrorMessage = 'UserService dependency is required for ProfileService.';
+    it('should throw an error if PrismaClient is not provided', () => {
+      const expectedErrorMessage = 'PrismaClient dependency is required for ProfileService.';
       try {
-        // @ts-expect-error Testing invalid constructor arguments
-        new ProfileService(null, mockFirebaseAdminService, mockLogger);
+        new ProfileService(null as any, mockLogger);
       } catch (e: unknown) {
         expect(e).toBeInstanceOf(Error);
         expect((e as Error).message).toBe(expectedErrorMessage);
       }
-      expect(mockLogger.error).toHaveBeenCalledWith(expectedErrorMessage);
-      // Ensure it was called because of the throw, not just a random call
-      expect.assertions(3); // Error instance, message, and logger call
+      expect.assertions(2);
     });
 
-    it('should throw an error if FirebaseAdminService is not provided', () => {
-      const expectedErrorMessage =
-        'FirebaseAdminService dependency is required for ProfileService.';
-      try {
-        // @ts-expect-error Testing invalid constructor arguments
-        new ProfileService(mockUserService, null, mockLogger);
-      } catch (e: unknown) {
-        expect(e).toBeInstanceOf(Error);
-        expect((e as Error).message).toBe(expectedErrorMessage);
-      }
-      expect(mockLogger.error).toHaveBeenCalledWith(expectedErrorMessage);
-      expect.assertions(3); // Error instance, message, and logger call
-    });
-
-    it('should successfully instantiate if all dependencies are provided', () => {
-      expect(
-        () => new ProfileService(mockUserService, mockFirebaseAdminService, mockLogger)
-      ).not.toThrow();
-      expect(mockLogger.error).not.toHaveBeenCalled();
+    it('should successfully instantiate if PrismaClient and logger are provided', () => {
+      expect(() => new ProfileService(mockPrisma, mockLogger)).not.toThrow();
     });
   });
 
   describe('updateUserName', () => {
     const userId = 'test-user-123';
-    const oldName = 'Old Name';
     const newName = 'New Sparkly Name';
-    const userEmail = 'user@example.com';
-    const firebaseUid = 'firebase-uid-abc';
+    const mockUpdatedUser = createMockUser({ id: userId, name: newName });
 
-    const mockInitialUser = createMockUser({ id: userId, name: oldName, email: userEmail });
-    const mockUpdatedUser = createMockUser({ ...mockInitialUser, name: newName });
-
-    // Add beforeEach here to initialize profileService for updateUserName tests
-    beforeEach(() => {
-      // Ensure mocks are fresh for each test in this suite if needed, though top-level beforeEach already clears
-      // Re-initialize profileService here as it's not done in the top-level beforeEach anymore
-      profileService = new ProfileService(mockUserService, mockFirebaseAdminService, mockLogger);
-    });
-
-    it('should successfully update username in DB and Firebase, and return success', async () => {
-      // Arrange: DB and Firebase operations succeed
-      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
-      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser); // User has email
-      mockFirebaseAdminService.getUserByEmail.mockResolvedValue({ uid: firebaseUid } as UserRecord);
-      mockFirebaseAdminService.updateUser.mockResolvedValue({
-        uid: firebaseUid,
-        displayName: newName,
-      } as UserRecord);
-
-      // Act
+    it('should successfully update username and return success response', async () => {
+      mockPrisma.user.update.mockResolvedValue(mockUpdatedUser);
       const result = await profileService.updateUserName(userId, newName);
 
-      // Assert
-      expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).toHaveBeenCalledWith(userEmail);
-      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(firebaseUid, {
-        displayName: newName,
+      expect(result).toEqual({
+        status: 'success',
+        data: mockUpdatedUser,
+        message: 'User name updated successfully.',
+      });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: { name: newName },
       });
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId, firebaseUid }),
-        'Firebase user displayName updated'
+        { userId, newName, function: 'updateUserName' },
+        'User name updated successfully in DB.'
       );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId }),
-        'User name updated successfully'
-      );
-      expect(mockLogger.warn).not.toHaveBeenCalled();
-      expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
-    it('should return success if DB update succeeds, even if Firebase getUserByEmail fails', async () => {
-      // Arrange: DB succeeds, Firebase getUserByEmail fails
-      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
-      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser);
-      const firebaseGetError = new Error('Firebase getUserByEmail failed');
-      mockFirebaseAdminService.getUserByEmail.mockRejectedValue(firebaseGetError);
-
-      // Act
-      const result = await profileService.updateUserName(userId, newName);
-
-      // Assert: Overall success, Firebase issue logged as warning
-      expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled(); // updateUser should not be called
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ userId, error: firebaseGetError.message }),
-        'Could not update Firebase user - continuing'
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId }),
-        'User name updated successfully'
-      );
-      expect(mockLogger.error).not.toHaveBeenCalled();
-    });
-
-    it('should return success if DB update succeeds, even if Firebase updateUser fails', async () => {
-      // Arrange: DB succeeds, Firebase updateUser fails
-      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser);
-      mockUserService.findUserById.mockResolvedValue(mockUpdatedUser);
-      mockFirebaseAdminService.getUserByEmail.mockResolvedValue({ uid: firebaseUid } as UserRecord);
-      const firebaseUpdateError = new Error('Firebase updateUser failed');
-      mockFirebaseAdminService.updateUser.mockRejectedValue(firebaseUpdateError);
-
-      // Act
-      const result = await profileService.updateUserName(userId, newName);
-
-      // Assert: Overall success, Firebase issue logged as warning
-      expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockFirebaseAdminService.updateUser).toHaveBeenCalledWith(firebaseUid, {
-        displayName: newName,
-      });
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ userId, error: firebaseUpdateError.message }),
-        'Could not update Firebase user - continuing'
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId }),
-        'User name updated successfully'
-      );
-      expect(mockLogger.error).not.toHaveBeenCalled();
-    });
-
-    it('should return success if DB update succeeds and user has no email (skips Firebase)', async () => {
-      // Arrange: User has no email
-      const userWithoutEmail = createMockUser({ id: userId, name: oldName, email: null });
-      const updatedUserWithoutEmail = { ...userWithoutEmail, name: newName };
-      mockUserService.updateUserName.mockResolvedValue(updatedUserWithoutEmail);
-      mockUserService.findUserById.mockResolvedValue(updatedUserWithoutEmail);
-
-      // Act
-      const result = await profileService.updateUserName(userId, newName);
-
-      // Assert
-      expect(result).toEqual({ success: true });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
-      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId }),
-        'User name updated successfully (no Firebase update needed)'
-      );
-      expect(mockLogger.warn).not.toHaveBeenCalled();
-      expect(mockLogger.error).not.toHaveBeenCalled();
-    });
-
-    it('should return failure if userService.findUserById returns null after DB update', async () => {
-      // Arrange
-      mockUserService.updateUserName.mockResolvedValue(mockUpdatedUser); // DB update itself succeeds
-      mockUserService.findUserById.mockResolvedValue(null); // But then user is not found
-
-      // Act
-      const result = await profileService.updateUserName(userId, newName);
-
-      // Assert
-      expect(result).toEqual({ success: true }); // Still success, but with specific log
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockUserService.findUserById).toHaveBeenCalledWith(userId);
-      expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId }),
-        'User name updated successfully (no Firebase update needed)' // Because user or user.email was null
-      );
-      expect(mockLogger.warn).not.toHaveBeenCalled();
-      expect(mockLogger.error).not.toHaveBeenCalled();
-    });
-
-    it('should return failure if DB update (userService.updateUserName) fails', async () => {
-      // Arrange: DB update fails
+    it('should return failure response if DB update fails', async () => {
       const dbError = new Error('DB update failed');
-      mockUserService.updateUserName.mockRejectedValue(dbError);
-
-      // Act
+      mockPrisma.user.update.mockRejectedValue(dbError);
       const result = await profileService.updateUserName(userId, newName);
 
-      // Assert
-      expect(result).toEqual({ success: false, error: dbError.message });
-      expect(mockUserService.updateUserName).toHaveBeenCalledWith(userId, newName);
-      expect(mockUserService.findUserById).not.toHaveBeenCalled(); // Should not proceed to this
-      expect(mockFirebaseAdminService.getUserByEmail).not.toHaveBeenCalled();
-      expect(mockFirebaseAdminService.updateUser).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        status: 'error',
+        message: 'Failed to update user name in database.',
+        error: {
+          message: 'A database error occurred while updating the user name.',
+          code: 'DB_UPDATE_FAILED',
+          details: { originalError: dbError },
+        },
+      });
       expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.objectContaining({
-          msg: 'Error updating user name in database',
-          error: dbError.message,
-          userId,
-        })
-        // The service implementation doesn't pass a second string arg to logger.error when error is Error instance
+        { userId, newName, function: 'updateUserName', error: dbError },
+        'Failed to update user name in database.'
       );
-      expect(mockLogger.info).not.toHaveBeenCalled();
-      expect(mockLogger.warn).not.toHaveBeenCalled();
+    });
+
+    it('should return validation error if newName is empty', async () => {
+      const result = await profileService.updateUserName(userId, '');
+      expect(result).toEqual({
+        status: 'error',
+        message: 'Name validation failed.',
+        error: { message: 'New name cannot be empty.', code: 'VALIDATION_ERROR' },
+      });
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('should return validation error if userId is empty', async () => {
+      const result = await profileService.updateUserName('', newName);
+      expect(result).toEqual({
+        status: 'error',
+        message: 'User ID validation failed.',
+        error: { message: 'User ID cannot be empty.', code: 'VALIDATION_ERROR' },
+      });
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserProfile', () => {
+    const userId = 'test-user-123';
+    const mockUser = createMockUser({ id: userId });
+
+    it('should return user profile if user is found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      const result = await profileService.getUserProfile(userId);
+      expect(result).toEqual({
+        status: 'success',
+        data: mockUser,
+        message: 'User profile fetched successfully.',
+      });
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
+    });
+
+    it('should return error if user is not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const result = await profileService.getUserProfile(userId);
+      expect(result).toEqual({
+        status: 'error',
+        message: 'User profile not found.',
+        error: { message: 'No user found with the provided ID.', code: 'USER_NOT_FOUND' },
+      });
+    });
+
+    it('should return error if Prisma call fails', async () => {
+      const dbError = new Error('Prisma findUnique failed');
+      mockPrisma.user.findUnique.mockRejectedValue(dbError);
+      const result = await profileService.getUserProfile(userId);
+      expect(result).toEqual({
+        status: 'error',
+        message: 'Failed to fetch user profile from database.',
+        error: {
+          message: 'A database error occurred while fetching the user profile.',
+          code: 'DB_FETCH_FAILED',
+          details: { originalError: dbError },
+        },
+      });
+    });
+
+    it('should return validation error if userId is empty', async () => {
+      const result = await profileService.getUserProfile('');
+      expect(result).toEqual({
+        status: 'error',
+        message: 'User ID validation failed.',
+        error: { message: 'User ID cannot be empty.', code: 'VALIDATION_ERROR' },
+      });
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 });

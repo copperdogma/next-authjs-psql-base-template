@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // import middleware from '../../middleware'; // No longer calling middleware directly
 import { getToken } from 'next-auth/jwt';
 import type { Session } from 'next-auth';
-// TODO: Investigate Prisma type resolution issue (Note: @ts-expect-error was unused here)
 import { UserRole } from '@prisma/client';
 
 // Define paths locally for testing purposes, mirroring middleware logic

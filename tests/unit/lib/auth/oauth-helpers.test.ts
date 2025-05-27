@@ -79,25 +79,17 @@ let testScopeLogger: {
 };
 
 const createMockOAuthDbUser = (overrides: Partial<OAuthDbUser> = {}): OAuthDbUser => {
-  const baseUserProperties = {
+  const baseUserProperties: OAuthDbUser = {
     userId: mockAuthUserInternalGlobal.id,
     userEmail: mockAuthUserInternalGlobal.email as string,
     name: mockAuthUserInternalGlobal.name,
     image: mockAuthUserInternalGlobal.image,
     role: mockAuthUserInternalGlobal.role,
-    // Add any other non-firebaseUid properties from OAuthDbUser if they are consistently mocked or defaulted
   };
-
-  // Ensure firebaseUid is a string. If overrides provides it as a string, use that. Otherwise, use a default.
-  const firebaseUid =
-    typeof overrides.firebaseUid === 'string'
-      ? overrides.firebaseUid
-      : `mock-firebase-uid-for-${mockAuthUserInternalGlobal.id}`; // Default string value
 
   return {
     ...baseUserProperties,
     ...overrides, // Spread overrides to get other properties or override base ones
-    firebaseUid, // Explicitly set firebaseUid to ensure it's a string, potentially overwriting if override was undefined
   };
 };
 

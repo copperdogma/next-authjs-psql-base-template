@@ -6,6 +6,8 @@ import { UserRole } from '@/types';
 import { prepareProfileDataForDb, type AuthUserInternal } from './auth-helpers';
 import { defaultDependencies, type OAuthDbUser } from './auth-jwt-types';
 import { validateOAuthInputs } from './oauth-validation-helpers';
+import { Prisma, User as PrismaUser } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 /**
  * Interacts with the database to find or create a user based on OAuth details.
@@ -99,7 +101,6 @@ export async function findOrCreateOAuthDbUser(params: {
     name: dbUser.name ?? undefined,
     image: dbUser.image ?? undefined,
     role: (dbUser.role as UserRole) ?? undefined,
-    firebaseUid: dbUser.id,
   } as OAuthDbUser;
 }
 
@@ -134,7 +135,6 @@ export function createOAuthJwtPayload(params: {
     jti: dependencies.uuidv4(),
     userId: dbUser.userId,
     userRole: dbUser.role || UserRole.USER,
-    firebaseUid: dbUser.firebaseUid,
   };
 }
 
@@ -252,7 +252,6 @@ async function processOauthUserAndCreateJwt(params: {
     jti: localDeps.uuidv4(),
     userId: dbUser.userId,
     userRole: dbUser.role || UserRole.USER,
-    firebaseUid: dbUser.firebaseUid,
   };
 }
 
@@ -321,4 +320,161 @@ export function createOAuthSignInCallback(params: {
       return { jti: localDeps.uuidv4() }; // Minimal token on catch
     }
   };
+}
+
+// Define missing types
+type OAuthUserProfile = {
+  id: string;
+  email?: string;
+  name?: string | null;
+  image?: string | null;
+};
+
+type OAuthAccount = {
+  provider: string;
+  providerAccountId: string;
+  type: string;
+  refresh_token?: string;
+  access_token?: string;
+  expires_at?: number;
+  token_type?: string;
+  scope?: string;
+  id_token?: string;
+  session_state?: string;
+};
+
+type CreateOrUpdateOAuthUserOptions = {
+  services?: {
+    logger?: typeof logger;
+    db?: typeof prisma;
+  };
+};
+
+// Ensure actionLogger is imported or defined
+const actionLogger = logger;
+
+export async function createOrUpdateOAuthUser(
+  profile: OAuthUserProfile,
+  account: OAuthAccount,
+  options?: CreateOrUpdateOAuthUserOptions
+): Promise<OAuthDbUser & { isNewUser?: boolean }> {
+  const { logger: _logger, db: _db } = options?.services || {};
+  const log = _logger || actionLogger.child({ function: 'createOrUpdateOAuthUser' });
+  const prismaDb = _db || prisma; // Use provided db or global prisma
+
+  const email = profile.email;
+  if (!email) {
+    log.error(
+      { profileId: profile.id, provider: account.provider },
+      'Email missing from OAuth profile'
+    );
+    throw new Error('Email is required from OAuth provider.');
+  }
+
+  const logContext = {
+    email,
+    provider: account.provider,
+    providerAccountId: account.providerAccountId,
+  };
+
+  return prismaDb.$transaction(
+    async tx => {
+      let existingAccount = await tx.account.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          },
+        },
+        include: { user: true },
+      });
+
+      let appUser: OAuthDbUser;
+      let isNewUser = false;
+
+      if (existingAccount?.user) {
+        log.info(logContext, 'OAuth account and user found. Potentially updating user profile.');
+        appUser = {
+          userId: existingAccount.user.id,
+          userEmail: existingAccount.user.email as string, // Should always have email
+          name: existingAccount.user.name,
+          image: existingAccount.user.image,
+          role: existingAccount.user.role as UserRole,
+          // firebaseUid: existingAccount.user.firebaseUid, // REMOVE: firebaseUid does not exist
+        };
+        // Optionally update user.name/image from profile if changed
+        // This part needs careful consideration of data freshness and override logic
+        const updates: Partial<PrismaUser> = {};
+        if (profile.name && profile.name !== appUser.name) updates.name = profile.name;
+        if (profile.image && profile.image !== appUser.image) updates.image = profile.image;
+        if (Object.keys(updates).length > 0) {
+          const updatedPrismaUser = await tx.user.update({
+            where: { id: appUser.userId },
+            data: updates,
+          });
+          appUser.name = updatedPrismaUser.name;
+          appUser.image = updatedPrismaUser.image;
+        }
+      } else {
+        log.info(
+          logContext,
+          'OAuth account not found or user not linked. Creating or linking user.'
+        );
+        // Try to find user by email, otherwise create new user
+        let existingUserByEmail = await tx.user.findUnique({ where: { email } });
+        if (existingUserByEmail) {
+          log.info(
+            { ...logContext, userId: existingUserByEmail.id },
+            'User found by email. Linking account.'
+          );
+        } else {
+          isNewUser = true;
+          log.info(logContext, 'No existing user found by email. Creating new user.');
+          const newUserFields: Prisma.UserCreateInput = {
+            email,
+            name: profile.name,
+            image: profile.image,
+            emailVerified: new Date(), // Assume email is verified by OAuth provider
+            role: UserRole.USER, // Default role
+          };
+          existingUserByEmail = await tx.user.create({ data: newUserFields });
+          log.info({ ...logContext, userId: existingUserByEmail.id }, 'New user created.');
+        }
+
+        appUser = {
+          userId: existingUserByEmail.id,
+          userEmail: existingUserByEmail.email as string,
+          name: existingUserByEmail.name,
+          image: existingUserByEmail.image,
+          role: existingUserByEmail.role as UserRole,
+          // firebaseUid: existingUserByEmail.firebaseUid, // REMOVE: firebaseUid does not exist
+        };
+
+        // Create the account and link it to the user
+        await tx.account.create({
+          data: {
+            userId: appUser.userId,
+            type: account.type,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            refresh_token: account.refresh_token,
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            token_type: account.token_type,
+            scope: account.scope,
+            id_token: account.id_token,
+            session_state: account.session_state,
+          },
+        });
+        log.info(
+          { ...logContext, userId: appUser.userId },
+          'OAuth account created and linked to user.'
+        );
+      }
+      // The user object (appUser) here is of type OAuthDbUser.
+      // We add isNewUser to it for the return value.
+      return { ...appUser, isNewUser };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable } // Or appropriate level
+  );
 }

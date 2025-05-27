@@ -5,13 +5,6 @@ import { Page } from 'playwright';
 
 const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
 
-// Update Window type for modular Firebase SDK
-declare global {
-  interface Window {
-    firebase?: any; // Using 'any' for simplicity with modular SDK structure
-  }
-}
-
 // Test user information - should match the user created by setup-test-user.js
 const TEST_USER = {
   uid: 'test-uid-playwright-123',

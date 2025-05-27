@@ -196,6 +196,5 @@ export interface LoginCredentials {
  * Interface for auth fixtures in e2e tests
  */
 export interface AuthFixtures {
-  authUtils: any; // Will be FirebaseAuthUtils
   authenticatedPage: Page;
 }

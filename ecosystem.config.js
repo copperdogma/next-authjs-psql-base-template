@@ -14,8 +14,6 @@ module.exports = {
         NEXTAUTH_SECRET: 'test_nextauth_secret',
         PORT: process.env.PORT || 3000,
         NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-        NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'true',
-        FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
         TEST_USER_EMAIL: 'test@example.com',
         TEST_USER_PASSWORD: 'Test123!',
       },

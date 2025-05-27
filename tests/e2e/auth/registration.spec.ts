@@ -89,7 +89,7 @@ test.describe('User Registration', () => {
     // Check for the specific error message using a more specific selector
     // Update the expected text to match the actual error message
     await expect(page.locator('[role="alert"]:not(#__next-route-announcer__)')).toContainText(
-      'User with this email already exists',
+      'A user with this email already exists',
       { timeout: 10000 } // Increase timeout slightly
     );
     // Ensure still on registration page
