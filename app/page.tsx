@@ -17,8 +17,21 @@ import { CombinedLoginOptions } from '@/components/auth/CombinedLoginOptions';
 
 // --- Recreating Content Sections with MUI ---
 
+/**
+ * Home Page Components
+ * -------------------
+ * The components below provide a minimal, clean starting point for the authenticated home page.
+ * You should customize these components with your application's specific features and branding.
+ *
+ * Consider:
+ * - Replacing placeholder text with actual content relevant to your application
+ * - Adding real quick links to important features of your application
+ * - Including user-specific data summaries or statistics
+ * - Integrating your brand colors and styling
+ */
+
 // Example: Welcome Section (using Card)
-const WelcomeSection = () => (
+const WelcomeSection = ({ userName }: { userName: string | null }) => (
   <Card
     // variant="outlined"
     sx={{
@@ -27,13 +40,16 @@ const WelcomeSection = () => (
       backgroundImage: 'none',
     }}
   >
-    <CardHeader title="Welcome Back!" />
+    <CardHeader title={`Welcome ${userName || 'to your dashboard'}!`} />
     <CardContent>
       <Typography variant="body1" paragraph>
-        This is your main dashboard. You can add summaries, quick links, or other relevant
-        information here.
+        This is your personalized dashboard. Here you can access all the features of the application
+        and get an overview of your current status and activities.
       </Typography>
-      {/* Adjust content as needed for the actual home page */}
+      <Typography variant="body2" color="text.secondary">
+        Your account is active and fully set up. Use the quick links below to navigate to key
+        features.
+      </Typography>
     </CardContent>
   </Card>
 );
@@ -48,15 +64,33 @@ const FeaturesSection = () => (
       backgroundImage: 'none',
     }}
   >
-    <CardHeader title="Quick Links / Features" />
+    <CardHeader title="Quick Links" />
     <CardContent>
-      <Typography variant="body1" paragraph>
-        Placeholder for key features or quick links within the application.
-      </Typography>
-      {/* Add buttons, lists, or other feature representations */}
-      <Stack direction="row" spacing={2}>
-        <Button variant="contained">Feature 1</Button>
-        <Button variant="outlined">Feature 2</Button>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+        <Stack sx={{ flex: '1 1 30%', minWidth: '240px' }}>
+          <Button variant="contained" fullWidth sx={{ mb: 1 }}>
+            My Profile
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            View and edit your account details
+          </Typography>
+        </Stack>
+        <Stack sx={{ flex: '1 1 30%', minWidth: '240px' }}>
+          <Button variant="outlined" fullWidth sx={{ mb: 1 }}>
+            Settings
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            Configure your preferences
+          </Typography>
+        </Stack>
+        <Stack sx={{ flex: '1 1 30%', minWidth: '240px' }}>
+          <Button variant="outlined" fullWidth sx={{ mb: 1 }}>
+            Help Center
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            Documentation and support
+          </Typography>
+        </Stack>
       </Stack>
     </CardContent>
   </Card>
@@ -89,12 +123,12 @@ export default function HomePage() {
   return (
     <PageLayout
       title="Home" // Updated title
-      subtitle={`Welcome ${session?.user?.name ?? 'to {YOUR_APP_NAME}'}`} // Personalized subtitle
+      subtitle={`Dashboard`} // Simplified subtitle
     >
       <Stack spacing={3}>
         {' '}
         {/* Use Stack for vertical spacing */}
-        <WelcomeSection />
+        <WelcomeSection userName={session?.user?.name || null} />
         <FeaturesSection />
       </Stack>
     </PageLayout>

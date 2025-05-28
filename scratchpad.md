@@ -229,20 +229,30 @@ This structured testing approach will help ensure the template provides a smooth
 - **Goal:** Minor tweaks for better clarity and efficiency.
 
 - **Tasks:**
-  - `[ ]` **PWA Configuration (`next.config.ts`):**
+  - `[x]` **PWA Configuration (`next.config.ts`):**
     - **Detail:** The `next-pwa` configuration is commented out. `app/manifest.ts` exists for basic installability.
-    - **Action:** This is a good default. Ensure documentation clearly explains:
-      1.  The template provides basic PWA installability via `manifest.ts`.
-      2.  For full offline support and advanced PWA features, the user needs to uncomment and configure `next-pwa` in `next.config.ts` and potentially implement a service worker.
-    - **Benefit:** Clear guidance for users wanting to enhance PWA capabilities.
-  - `[ ]` **Zustand Store Usage (`lib/store/userStore.ts`):**
+    - **Action:** Added comprehensive documentation to the `next.config.ts` file that:
+      1. Explains the current basic PWA installability via `manifest.ts`.
+      2. Provides clear instructions for enabling full offline support and advanced PWA features.
+      3. References the `docs/pwa-testing.md` file for testing guidelines.
+      4. Includes a ready-to-uncomment configuration template for `next-pwa`.
+    - **Benefit:** Clear guidance for users wanting to enhance PWA capabilities without cluttering the default setup.
+  - `[x]` **Zustand Store Usage (`lib/store/userStore.ts`):**
     - **Detail:** The store is used to sync NextAuth session data for client-side access.
-    - **Action:** Add a comment in `userStore.ts` or related documentation guiding the AI/user: "This store is primarily for syncing NextAuth session data. For other client-side state, consider local component state or React Context first. Use this global store for genuinely global state that doesn't fit well into the component tree."
-    - **Benefit:** Promotes good state management practices.
-  - `[ ]` **Review `app/page.tsx` Logic for Authenticated vs. Unauthenticated Users:**
+    - **Action:** Added comprehensive comments at the top of `userStore.ts` that:
+      1. Clarify the store's primary purpose for syncing NextAuth session data.
+      2. Provide guidelines on when to use this global store versus alternatives.
+      3. Recommend local component state, React Context, URL state, or form libraries for non-global state.
+      4. Explain the types of properties that are appropriate to add to this store.
+    - **Benefit:** Promotes good state management practices and prevents overuse of global state.
+  - `[x]` **Review `app/page.tsx` Logic for Authenticated vs. Unauthenticated Users:**
     - **Detail:** The home page (`app/page.tsx`) currently shows `CombinedLoginOptions` if unauthenticated, and a "Welcome" section if authenticated.
-    - **Action:** This logic is fine for a template. Confirm this is the desired out-of-the-box experience. Ensure the "Welcome" section for authenticated users is a good, minimal placeholder.
-    - **Benefit:** Ensures the landing page provides a sensible default for both states.
+    - **Action:** Enhanced the authenticated home page experience by:
+      1. Improving the welcome section with personalized messaging.
+      2. Creating a more visually appealing dashboard layout with quick links.
+      3. Adding instructive comments for customizing the components.
+      4. Reorganizing the UI elements for better user experience.
+    - **Benefit:** Provides a more polished and professional default authenticated experience while maintaining customizability.
 
 ### 6. Documentation (Post-Implementation)
 

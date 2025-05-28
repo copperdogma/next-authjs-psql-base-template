@@ -2,6 +2,30 @@ import type { NextConfig } from 'next';
 // import type { RuntimeCaching } from 'next-pwa'; // Remove potentially outdated/incorrect type
 // import { loggers } from '@/lib/logger'; // Import logger
 
+/**
+ * Progressive Web App (PWA) Configuration
+ * --------------------------------------
+ * Current State: This template provides basic PWA installability via the native
+ * Next.js manifest.ts implementation.
+ *
+ * Features Enabled:
+ * - App installation via web app manifest (defined in app/manifest.ts)
+ * - Custom app icons
+ * - Theme colors
+ *
+ * To Enable Advanced PWA Features (Offline Support, Background Sync, Push Notifications):
+ * 1. Install a PWA library like Serwist or next-pwa:
+ *    npm install serwist
+ *    or
+ *    npm install next-pwa
+ *
+ * 2. Uncomment and configure the appropriate wrapper in this file
+ *
+ * 3. Implement a service worker for offline functionality and other advanced features
+ *
+ * 4. See docs/pwa-testing.md for testing guidelines
+ */
+
 // Use ESM imports instead of require
 import withBundleAnalyzer from '@next/bundle-analyzer';
 
@@ -12,6 +36,29 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
+
+// For next-pwa configuration (if you decide to use it)
+// const withPWA = require('next-pwa')({
+//   dest: 'public',
+//   disable: process.env.NODE_ENV === 'development',
+//   register: true,
+//   skipWaiting: true,
+//   // Define runtime caching rules if needed
+//   // runtimeCaching: [
+//   //   {
+//   //     urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
+//   //     handler: 'CacheFirst',
+//   //     options: {
+//   //       cacheName: 'google-fonts-webfonts',
+//   //       expiration: {
+//   //         maxEntries: 10,
+//   //         maxAgeSeconds: 60 * 60 * 24 * 365, // 365 days
+//   //       },
+//   //     },
+//   //   },
+//   //   // Add more caching strategies as needed
+//   // ],
+// });
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
