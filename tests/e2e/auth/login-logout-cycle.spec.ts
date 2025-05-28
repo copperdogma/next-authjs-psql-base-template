@@ -164,7 +164,6 @@ async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
   await page.evaluate(() => {
     localStorage.clear(); // General local storage clear
     sessionStorage.clear(); // General session storage clear
-    // Firebase specific storage clearing removed
   });
   console.log('✅ Successfully cleared authentication cookies and storage');
   return true;

@@ -41,10 +41,9 @@ The documentation should be reorganized into the following main areas:
 
   - **Purpose:** Modular, in-depth guides for specific areas. Link to official documentation for generic technology details; focus on project-specific implementation.
   - **Key Guides:**
-    - **`AUTH.md`**: NextAuth.js v5 and Firebase authentication flow, user creation, session management, critical environment variables. (Consolidates `docs/nextauth-prisma-adapter*.md`, parts of `docs/firebase/authentication.md`).
+    - **`AUTH.md`**: NextAuth.js v5 authentication flow, user creation, session management, critical environment variables. (Consolidates `docs/nextauth-prisma-adapter*.md`).
     - **`DATABASE.md`**: Prisma schema, data modeling, service patterns (`UserService`), migrations, performance reminders.
-    - **`FIREBASE_INTEGRATION.md`**: Centralized Firebase usage (Admin SDK, client SDK, emulators, security rules). (Consolidates `docs/firebase/*`).
-    - **`TESTING.md`**: Unified guide for unit, integration, and E2E testing (Jest, Playwright), running tests, writing new tests, Firebase testing. (Consolidates `docs/testing/*`, `docs/e2e-testing.md`, `docs/firebase-testing.md`).
+    - **`TESTING.md`**: Unified guide for unit, integration, and E2E testing (Jest, Playwright), running tests, writing new tests. (Consolidates `docs/testing/*`, `docs/e2e-testing.md`).
     - **`LOGGING_AND_MONITORING.md`**: Pino logger setup, client/server logging, log access, request tracing. (Consolidates `docs/log.md`, `docs/logging.md`).
     - **`THEMING.md`**: MUI theming structure, customization.
     - **`STATE_MANAGEMENT.md`**: Client-side state (React Context, local state, Zustand for global state), guidance on usage.
@@ -80,7 +79,7 @@ The documentation should be reorganized into the following main areas:
 **IV. Deprecated/Consolidated Existing Documentation:**
 
 The following existing documents will have their content merged into the new structure or will be removed if redundant/too generic:
-`docs/ai-agent-guide.md`, `docs/e2e-testing.md`, `docs/firebase/*`, `docs/firebase-testing.md`, `docs/formatting.md`, `docs/log.md`, `docs/logging.md`, `docs/nextauth-prisma-adapter*.md`, `docs/pwa-testing.md` (pending review of PWA feature relevance), `docs/solid-principles.md`, `docs/testing/*`, `docs/typescript-eslint-rules.md`, and `SETUP.md`.
+`docs/ai-agent-guide.md`, `docs/e2e-testing.md`, `docs/formatting.md`, `docs/log.md`, `docs/logging.md`, `docs/nextauth-prisma-adapter*.md`, `docs/pwa-testing.md` (pending review of PWA feature relevance), `docs/solid-principles.md`, `docs/testing/*`, `docs/typescript-eslint-rules.md`, and `SETUP.md`.
 
 By implementing these recommendations, the project will have a robust, AI-friendly documentation set that supports ongoing development and maintenance.
 
@@ -131,17 +130,12 @@ Okay, let's refine the ESLint configuration to strike that balance for an AI-dri
 
 DOCS Todo - we'll do this at the end when all changes are done
 
-- [ ] Update project-reference.mdc and anything test-running related (we now have e2e and firebase tests)
-- [ ] Make docs more succinct, especially whole folder of firebase docs.. probably just ONE doc there?
+- [ ] Update project-reference.mdc and anything test-running related (we now have e2e tests)
 - [ ] Topics: Theming system, pm2+browsertool use (esp login), auth flow
 - [ ] Redis: Where and how is it used?
 - [ ] **README.md**: (Present)
 - [ ] **Project Reference**: (`docs/project-reference.mdc` - Present)
   - [ ] Ensure current versions of components are present with links to docs (like MUI v7 where it constantly has trouble with the grid)
-- [ ] **Firebase Authentication Integration Details**:
-  - [ ] Explain how OAuth users (e.g., Google) are automatically in Firebase Auth.
-  - [ ] Detail how email/password users are programmatically added to Firebase Auth via Admin SDK in `registerUser` action upon registration (Postgres ID used as Firebase UID).
-  - [ ] Emphasize benefits: unified console view (optional), leveraging Firebase features (email actions, security rules for Firestore/Storage, Cloud Functions), and consistency for a "Firebase" template.
 - [x] **Code Comments**: (Clarity and necessity - Requires deeper code review)
 - [ ] **`.env.example`**:
   - [ ] Add comments explaining _why_ certain less obvious variables are needed (e.g., `NEXTAUTH_URL` for OAuth redirects, `NEXTAUTH_SECRET` for JWT encryption).
@@ -150,11 +144,9 @@ DOCS Todo - we'll do this at the end when all changes are done
   - [ ] Clarify that when using the `dev:test` script, `NODE_ENV=test` might influence application behavior (logging, mocks).
   - [ ] Strongly emphasize that the `NEXTAUTH_SECRET` fallback in `lib/auth-edge.ts` for dev/test _must_ be replaced with a strong, unique secret in production.
   - [ ] While Zustand is fine, ensure the AI is guided to use it for genuinely global client state and not as a default for all client-side state if React context or local component state is more appropriate.
-  - [ ] Note that the `app/api/test/firebase-config/route.ts` endpoint should be disabled or secured in production environments.
   - [ ] Add documentation stubs or reminders for the AI to document new API endpoints, components, or major architectural decisions.
   - [ ] Briefly document or include a placeholder for how more granular permission handling (beyond basic ADMIN/USER roles) could be implemented.
   - [ ] Add a simple example or documentation stub for caching strategies (e.g., with Redis).
-  - [ ] Include a prompt/reminder for the AI to tighten Firebase security rules (`firestore.rules`, `storage.rules`) based on application logic during development.
   - [ ] Consider mentioning common PostgreSQL-specific optimizations or features if they are likely to be relevant for projects built from the template.
   - [ ] Stress the importance of keeping `project-reference.mdc` (or the main AI context document) updated as the template evolves or is used.
   - [ ] Guide the AI to consistently use the Next.js `<Image>` component for image optimization.

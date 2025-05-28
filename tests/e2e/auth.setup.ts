@@ -5,7 +5,7 @@ import { Page } from 'playwright';
 
 const storageStatePath = path.join(process.cwd(), 'tests/e2e/auth.setup.json');
 
-// Test user information - should match the user created by setup-test-user.js
+// Test user information
 const TEST_USER = {
   uid: 'test-uid-playwright-123',
   email: process.env.TEST_USER_EMAIL || 'test@example.com',
@@ -16,8 +16,6 @@ const TEST_USER = {
 // ADDED LOGGING: Log environment setup
 console.log('🔧 E2E Auth Setup Environment Info:');
 console.log(`BASE_URL: ${process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777'}`);
-console.log(`USE_FIREBASE_EMULATOR: ${process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR}`);
-console.log(`AUTH_EMULATOR_HOST: ${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`);
 console.log(`TEST_PORT: ${process.env.TEST_PORT}`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 
@@ -63,13 +61,6 @@ async function setupAuthViaUiLogin(page: Page): Promise<boolean> {
     return false;
   }
 }
-
-/**
- * Sets up authentication using the Test API Endpoint and Modular Client-side Firebase SDK
- */
-// async function setupAuthViaApiAndModularClientSdk(page: Page): Promise<boolean> {
-// ... REMOVED OLD FUNCTION ...
-// }
 
 /**
  * This setup function now uses the UI Login method.

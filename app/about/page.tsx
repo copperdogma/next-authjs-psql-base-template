@@ -21,7 +21,7 @@ export default function AboutPage() {
   return (
     <PageLayout
       title="About This Template"
-      subtitle="Next.js, Firebase Authentication, and PostgreSQL Starter Template"
+      subtitle="Next.js, NextAuth.js, and PostgreSQL Starter Template"
     >
       <Stack spacing={4}>
         {/* Project Overview Section */}

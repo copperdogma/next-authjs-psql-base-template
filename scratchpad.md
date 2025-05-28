@@ -52,97 +52,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [ ] AI needs a solid way to interact/query the UI. Modern UIs are often too complex for the AI to understand how it will end up being rendered.
   - [ ] AI needs a way to add items to the log, spin up the server, run their manual tests (or a scripted e2e test perhaps), and check the logs afterward.
 
-## Codebase Improvement Checklist
-
-### 1. Firebase Integration Clarification & Streamlining
-
-- **Current:** The template name includes "firebase" and there are some Firebase-related utility files and commented-out code, but core authentication and database are NextAuth.js + PostgreSQL.
-- **Goal:** Ensure the template's core functionality is clear and that any Firebase integration is presented as an optional, well-defined extension.
-
-- **Tasks:**
-  - `[x]` **Review Template Name vs. Core Stack:**
-    - **Detail:** If Firebase is not a _core, out-of-the-box_ component for primary functions (auth, DB), consider if the name `next-authjs-psql-base-template` is potentially misleading. If the intent is to easily _add_ Firebase services, this should be the primary message.
-    - **Action:** No direct code change, but this influences documentation and how the template is presented.
-  - `[x]` **Remove Dead Firebase Auth Code from `lib/actions/auth.actions.ts`:**
-    - **Detail:** This file contains commented-out Firebase Admin SDK code for user creation (`// import * as admin from 'firebase-admin';`, `// const firebaseAdminService = getFirebaseAdminService();`, etc.). The active authentication logic uses NextAuth.js with Prisma.
-    - **Action:** Reviewed the file and found that the Firebase code has already been removed. The file now only contains NextAuth.js with Prisma for authentication.
-    - **Benefit:** The template is already correctly focused on its primary NextAuth.js authentication mechanism.
-  - `[x]` **Clarify Role of Optional Firebase Utilities:**
-    - **Files:** Found only `app/api/test/firebase-config/route.ts`. The `lib/utils/firebase-errors.ts` file doesn't exist.
-    - **Detail:** The Firebase config route is useful if the end-user decides to integrate Firebase services that use the Firebase Client SDK (e.g., Firestore, client-side Firebase Auth for specific providers not in NextAuth, etc.).
-    - **Action Taken:** Kept the Firebase config route file but added prominent comments at the top explaining that it is for _optional Firebase service integration_ and not used by the core template's NextAuth/PostgreSQL setup. Also modified the endpoint to require an explicit environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to function, making it more secure by default.
-    - **Benefit:** Prevents confusion about whether Firebase is required for the base template to function while maintaining the ability to easily add Firebase services if needed.
-
-### 2. Component and Example Streamlining
-
-- **Goal:** Remove redundant or purely illustrative components to create a leaner template.
-
-- **Tasks:**
-  - `[x]` **Consolidate or Remove Redundant Login Form:**
-    - **Files:** `app/login/components/LoginForm.tsx` and `app/login/components/CredentialsLoginForm.tsx`.
-    - **Detail:** `CombinedLoginOptions.tsx` (used by `app/login/page.tsx`) currently imports and uses the `CredentialsLoginForm.tsx` from the components/auth directory. The forms in the app/login/components directory were redundant.
-    - **Action Taken:**
-      1.  Verified that `app/login/components/LoginForm.tsx` was not actively used in any critical path.
-      2.  Removed `app/login/components/LoginForm.tsx` as it was an alternative version using `react-hook-form` more directly.
-      3.  Removed `app/login/components/CredentialsLoginForm.tsx` as it was redundant with `components/auth/CredentialsLoginForm.tsx`.
-      4.  Confirmed that `app/login/page.tsx` and `components/auth/CombinedLoginOptions.tsx` correctly use the intended primary credentials form from the components/auth directory.
-    - **Benefit:** Reduces code duplication and simplifies the login component structure.
-  - `[x]` **Remove Purely Example Component `components/examples/CleanupExample.tsx`:**
-    - **Detail:** This component demonstrates `useEffect` cleanup, which is good knowledge but not essential for a base template's core functionality.
-    - **Action Taken:** Deleted the `components/examples/CleanupExample.tsx` file and its associated test file `tests/unit/components/examples/CleanupExample.test.tsx`.
-    - **Benefit:** Makes the template more focused on core features rather than general React examples. Such examples are better suited for documentation or a separate example repository.
-
-### 3. Setup and Developer Experience Enhancements
-
-- **Goal:** Make the template easier and faster to get started with, especially for an AI.
-
-- **Tasks:**
-  - `[x]` **Enhance Environment Configuration with Better Documentation:**
-    - **Detail:** Improved the .env.example file to provide better documentation and defaults.
-    - **Action Completed:**
-      1. Added better default application name and description
-      2. Enhanced Google OAuth setup instructions with redirect URI examples
-      3. Renamed database example names to be more generic and descriptive
-      4. Made logging options enabled by default
-      5. Added a dedicated section for E2E testing environment settings
-      6. Added a production environment section with deployment examples
-      7. Improved documentation for Redis and rate limiting configuration
-      8. Added connection pooling examples for production database usage
-    - **Benefit:** Makes the template's environment setup clearer and provides guidance for both development and production use cases.
-  - `[x]` **Enhance `scripts/setup.js` for Environment Configuration:**
-    - **Detail:** The current `setup.js` replaces placeholders in files. It should also handle `.env` setup.
-    - **Action Completed:**
-      1. Modified `scripts/setup.js` to copy `.env.example` to `.env.local` if `.env.local` does not already exist.
-      2. Added prompts (using `inquirer`) to ask the user for critical environment variables:
-         - `DATABASE_URL` with smart default based on project name
-         - Auto-generated `NEXTAUTH_SECRET` using crypto for security
-         - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
-         - Optional `REDIS_URL`
-      3. Enhanced the script to apply these values to the newly created `.env.local` file.
-      4. Updated completion message to guide users on next steps including database migrations.
-      5. Added proper error handling for environment file creation.
-    - **Benefit:** Significantly improves the "ready to use out of the box" aspect by automating environment setup with secure defaults.
-  - `[x]` **Ensure Comprehensive Placeholder Replacement in `scripts/setup.js`:**
-    - **Detail:** Verified the existing placeholder replacement logic in `scripts/setup.js` and added missing files containing placeholders.
-    - **Action Completed:**
-      1. Added LICENSE to the FILES_TO_PROCESS list to replace copyright holder
-      2. Identified additional files with placeholders that need to be processed:
-         - Tests directory: `tests/utils/test-constants.ts` and `tests/README-main.md`
-         - Documentation: All files in `docs/testing/` directory
-         - App: `app/manifest.ts` (needed placeholder replacement for app title)
-      3. Used updated placeholder tokens to ensure consistent database naming
-         - Added DATABASE_NAME_DEV and DATABASE_NAME_TEST placeholders
-      4. Updated documentation files with appropriate project placeholders
-    - **Benefit:** Ensures a more complete and consistent customization of the template for users.
-  - `[x]` **Secure or Document `app/api/test/firebase-config/route.ts` for Production:**
-    - **Detail:** This route exposes Firebase configuration, which is useful for debugging but a security risk in production.
-    - **Action Completed:**
-      1.  Added a more robust check beyond just `process.env.NODE_ENV === 'production'`. Now requires a specific environment variable `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` to be set for it to function, which would not be set in production.
-      2.  Added prominent comments at the top of the file stating this route is for optional Firebase integration and must not be accessible in production environments.
-      3.  Updated the error message to clarify that the endpoint is disabled by default.
-    - **Benefit:** Enhances security out-of-the-box by making the endpoint disabled by default in all environments unless explicitly enabled.
-
-### Testing and Validation Plan for Setup Process
+### Testing and Validation Plan for Setup Process - We'll do this at the END of the project.
 
 - **Goal:** Thoroughly test the template setup process to ensure it works flawlessly for both human developers and AI agents.
 
@@ -208,68 +118,101 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 This structured testing approach will help ensure the template provides a smooth, error-free experience for all users, whether they're human developers or AI agents working on behalf of users.
 
-### 4. Error Handling Integration Review
+## Codebase Improvement Checklist
 
-- **Goal:** Ensure specialized error handling components are correctly integrated or documented.
+### I. Documentation & Code Consistency (Crucial for AI)
 
-- **Tasks:**
-  - `[x]` **Review and Integrate Session Error Components:**
-    - **Files:** `app/providers/SessionErrorDisplay.tsx`, `app/providers/SessionErrorHandler.tsx`.
-    - **Detail:** These components seem designed to handle global session-related errors.
-    - **Action:**
-      1. Determined that these components were intended for global session error handling but were not properly integrated in the application.
-      2. Integrated `SessionErrorHandler.tsx` and `SessionErrorDisplay.tsx` into the `SessionProviderWrapper` component to effectively catch and manage session errors.
-      3. Added proper state management for session errors in `SessionProviderWrapper`.
-      4. Added comprehensive JSDoc comments to document the purpose and usage of both components.
-      5. Created a unit test (`tests/unit/components/auth/SessionErrorHandling.test.tsx`) to verify the integration works correctly.
-    - **Benefit:** Improved error handling for session-related issues, providing a better user experience when auth problems occur, and making the error handling pattern clearer for developers using the template.
+- **\[ ] Update `KeyFeatures.tsx` to Reflect Correct Authentication**
 
-### 5. Code and Configuration Refinements
+  - **File(s) to Modify**: `app/about/components/KeyFeatures.tsx`
+  - **Current Issue**: The component states: _"Authentication: Firebase Authentication integration with Google sign-in"_.
+  - **Recommendation**: Change the text to accurately describe the authentication mechanism. For example: _"Authentication: NextAuth.js v5 with PostgreSQL integration (Google & Email/Password providers)"_.
+  - **Rationale**: Ensures the AI (and human users) have an accurate understanding of the template's core authentication system from the example UI itself. Prevents confusion and incorrect assumptions when the AI starts modifying or extending auth features.
 
-- **Goal:** Minor tweaks for better clarity and efficiency.
+- **\[ ] Review All Code Comments and Internal Documentation for Firebase Auth Misreferences**
+  - **File(s) to Modify**: Potentially any file with comments.
+  - **Current Issue**: While the main README and `project-reference.mdc` are accurate, there might be lingering comments in the codebase that incorrectly suggest Firebase is the _primary_ authentication system.
+  - **Recommendation**: Perform a project-wide search for terms like "Firebase Auth", "Firebase Authentication", "Firebase sign-in" (excluding contexts clearly related to optional Firebase services like `firebase.json` or the `/api/test/firebase-config` route). If any comments imply Firebase is the core auth, update them to reflect NextAuth.js with Prisma/PostgreSQL.
+  - **Rationale**: Guarantees consistent information across the codebase, preventing AI confusion when interpreting code logic or adding new features related to authentication.
 
-- **Tasks:**
-  - `[x]` **PWA Configuration (`next.config.ts`):**
-    - **Detail:** The `next-pwa` configuration is commented out. `app/manifest.ts` exists for basic installability.
-    - **Action:** Added comprehensive documentation to the `next.config.ts` file that:
-      1. Explains the current basic PWA installability via `manifest.ts`.
-      2. Provides clear instructions for enabling full offline support and advanced PWA features.
-      3. References the `docs/pwa-testing.md` file for testing guidelines.
-      4. Includes a ready-to-uncomment configuration template for `next-pwa`.
-    - **Benefit:** Clear guidance for users wanting to enhance PWA capabilities without cluttering the default setup.
-  - `[x]` **Zustand Store Usage (`lib/store/userStore.ts`):**
-    - **Detail:** The store is used to sync NextAuth session data for client-side access.
-    - **Action:** Added comprehensive comments at the top of `userStore.ts` that:
-      1. Clarify the store's primary purpose for syncing NextAuth session data.
-      2. Provide guidelines on when to use this global store versus alternatives.
-      3. Recommend local component state, React Context, URL state, or form libraries for non-global state.
-      4. Explain the types of properties that are appropriate to add to this store.
-    - **Benefit:** Promotes good state management practices and prevents overuse of global state.
-  - `[x]` **Review `app/page.tsx` Logic for Authenticated vs. Unauthenticated Users:**
-    - **Detail:** The home page (`app/page.tsx`) currently shows `CombinedLoginOptions` if unauthenticated, and a "Welcome" section if authenticated.
-    - **Action:** Enhanced the authenticated home page experience by:
-      1. Improving the welcome section with personalized messaging.
-      2. Creating a more visually appealing dashboard layout with quick links.
-      3. Adding instructive comments for customizing the components.
-      4. Reorganizing the UI elements for better user experience.
-    - **Benefit:** Provides a more polished and professional default authenticated experience while maintaining customizability.
+### II. Code Simplification & Elegance
 
-### 6. Documentation (Post-Implementation)
+- **\[ ] Simplify `ProfileService.updateUserName` Method**
 
-- **Goal:** Ensure all documentation accurately reflects the refined codebase.
+  - **File(s) to Modify**: `lib/server/services/profile.service.ts`
+  - **Current Issue**: The `updateUserName` method in `ProfileServiceImpl` currently attempts a raw SQL update (`_updateNameWithRawSql`) and then falls back to a Prisma ORM update (`_updateNameWithPrisma`), with a comment about "avoiding schema incompatibilities." This adds complexity.
+  - **Recommendation**:
+    1.  Refactor `updateUserName` to primarily (or solely) use the Prisma ORM update: `await this.db.user.update({ where: { id: userId }, data: { name: processedName } });`.
+    2.  Remove the `_updateNameWithRawSql` helper method unless there is a deeply compelling and documented reason _specific to the base template's schema_ that necessitates it. For a generic template, ORM-idiomatic updates are preferred.
+    3.  If the raw SQL method is removed, also remove its corresponding E2E test environment handling (`this._createMockUserForE2E`) if it was solely to bypass the raw SQL for tests. Prisma ORM updates are generally easier to mock or test.
+  - **Rationale**: Simplifies the codebase, makes it more idiomatic for a Prisma-based project, easier for an AI to understand and extend, and reduces the surface area for potential bugs. Raw SQL for basic field updates is often unnecessary with a powerful ORM like Prisma.
 
-- **Tasks:**
-  - `[x]` **Update `README.md`:**
-    - **Detail:** Reviewed and updated `README.md` to be more concise, AI-friendly, and accurate. Focused on core tech, quick start, project structure, key commands, and essential configurations.
-    - **Benefit:** Provides a clear and up-to-date entry point for understanding and using the template.
-  - `[x]` **Update `SETUP.md`:**
-    - **Detail:** Reviewed and updated `SETUP.md` to emphasize the `npm run setup` script, streamline manual setup instructions, and ensure consistency with `README.md`.
-    - **Benefit:** Offers a clearer guide for initializing the project, especially highlighting the automated setup process.
-  - `[x]` **Review and Update Code-Level Comments:**
-    - **Detail:** Checked comments in key files like `app/api/test/firebase-config/route.ts`, `lib/auth-shared.ts`, `lib/auth-node.ts`, `lib/auth-edge.ts`, and `middleware.ts`.
-    - **Action:** Verified that comments accurately describe the code's purpose, especially regarding authentication logic, optional Firebase integration, and middleware behavior. Confirmed that comments clearly distinguish between Node.js and Edge runtime configurations for NextAuth.js. No significant changes were needed as comments were largely up-to-date and informative.
-    - **Benefit:** Ensures that developers (and AI agents) can understand the nuances of the codebase directly from the source.
-  - `[x]` **Verify `project-reference.mdc` Alignment:**
-    - **Detail:** Cross-referenced the information in `project-reference.mdc` (provided in the initial prompt) with the updated documentation and code structure.
-    - **Action:** Confirmed that `project-reference.mdc` accurately reflects the project's structure, authentication mechanisms, command references, and core technologies. Noted a minor potential enhancement for `lib/` directory descriptions within `project-reference.mdc` for future consideration.
-    - **Benefit:** Validates that the primary AI context file is consistent with the actual state of the project.
+- **\[ ] Add Explanatory Comments to Registration Rate Limiting "Fail Open" Behavior**
+  - **File(s) to Modify**: `lib/actions/auth.actions.ts` (specifically the `_handleRegistrationRateLimit` function or where `getOptionalRedisClient` is used for this purpose) and potentially `.env.example`.
+  - **Current Issue**: The registration rate limiting currently "fails open" if Redis is unavailable or misconfigured (i.e., it allows the registration to proceed without rate limiting). While this is a good default for a template to prevent setup friction, it's important to be explicit about it.
+  - **Recommendation**:
+    1.  In `_handleRegistrationRateLimit` (or its caller), add a comment where it's decided to proceed without rate limiting (e.g., when `getOptionalRedisClient` returns null or `redisClient` is null). The comment should explain that rate limiting is skipped if Redis is not available/configured, and that for production, a robust Redis setup is recommended for this feature to be effective.
+    2.  In `.env.example`, next to `ENABLE_REDIS_RATE_LIMITING` and `REDIS_URL`, add a brief note: `# Note: If Redis is not configured or unavailable, rate limiting will be skipped (fail open).`
+  - **Rationale**: Manages expectations for users and AI regarding the rate limiting feature. Ensures the AI understands the implications of not having Redis configured for this specific functionality.
+
+### III. Testing Refinements
+
+- **\[ ] Evaluate and Refine Unit Tests for Server Actions**
+  - **File(s) to Modify**: `tests/unit/lib/actions/auth.actions.test.ts`
+  - **Current Issue**: This test file is currently a placeholder.
+  - **Recommendation**:
+    - **Option A (Simplicity First - Recommended for Template)**:
+      1.  Remove the placeholder file `tests/unit/lib/actions/auth.actions.test.ts`.
+      2.  Add a section to your main testing documentation (e.g., in `docs/testing/main.md` or as a comment in `project-reference.mdc`) stating: "Server Actions (e.g., `registerUserAction`) are primarily validated through End-to-End (E2E) tests. This approach ensures that the full flow, including data validation, database interaction, and NextAuth.js integration, is tested from the user's perspective. Unit testing server actions can be complex due to the need to mock database clients (Prisma), NextAuth.js session management, and other server-side dependencies. For this template, E2E tests provide comprehensive coverage for these actions."
+    - **Option B (If Basic Unit Tests are Desired)**:
+      1.  If choosing to keep unit tests, add 1-2 very simple tests to `auth.actions.test.ts` that focus _only_ on input validation (e.g., calling `registerUserAction` with invalid FormData and checking if it returns a `VALIDATION_ERROR` without actually mocking database calls). This keeps the unit tests lightweight.
+      2.  Example for Option B:
+          ```typescript
+          // In tests/unit/lib/actions/auth.actions.test.ts
+          it('should return a validation error if email is missing', async () => {
+            const formData = new FormData();
+            // formData.append('password', 'password123'); // Email is missing
+            const result = await registerUserAction(null, formData);
+            expect(result.status).toBe('error');
+            expect(result.error?.code).toBe('VALIDATION_ERROR');
+            // Potentially check result.errors for specific field error
+          });
+          ```
+  - **Rationale**: For a base template, E2E tests provide excellent coverage for server actions. Overly complex unit tests for actions with many external dependencies (DB, Auth) can be brittle and hard for an AI to maintain or extend. Option A prioritizes simplicity and robust E2E validation. Option B offers a minimal unit testing footprint.
+
+### IV. Environment Setup & Developer Experience (DX)
+
+- **\[ ] Enhance `.env.example` with More Explanations**
+
+  - **File(s) to Modify**: `.env.example`
+  - **Current Issue**: Some critical environment variables could benefit from more context.
+  - **Recommendation**:
+    1.  Next to `NEXTAUTH_URL`, add a comment: `NEXTAUTH_URL=http://localhost:3000 # Crucial for OAuth redirects in development and MUST match your production URL.`
+    2.  Next to `NEXTAUTH_SECRET`, add: `# Generate with: openssl rand -base64 32. Used for JWT signing and encryption.`
+    3.  If your E2E or integration testing strategy _might_ use a separate database connection string (even if not the default for this template), consider adding a commented-out example:
+        ```
+        # Example for a dedicated test database (optional, configure if your testing strategy requires it)
+        # TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/your_project_name_test?schema=public"
+        ```
+        (This relates to the `DATABASE_NAME_TEST` placeholder in `scripts/setup.js` – it's good to show where such a variable might be used, even if the template's default test setup doesn't require modifying `DATABASE_URL` directly for tests.)
+  - **Rationale**: Provides clearer guidance for developers (and AI) setting up the environment, reducing potential configuration errors, especially for critical variables like `NEXTAUTH_URL`.
+
+- **\[ ] Ensure Setup Script Handles All Placeholders**
+  - **File(s) to Modify**: `scripts/setup.js`, and verify all files listed in `FILES_TO_PROCESS` within `setup.js`.
+  - **Current Issue**: The setup script is designed to replace placeholders. A final check is needed.
+  - **Recommendation**:
+    1.  Manually review all files that are intended to have placeholders (e.g., `README.md`, `package.json`, `app/manifest.ts`, any copyright headers in code files).
+    2.  Ensure that `scripts/setup.js` correctly targets and replaces _all_ instances of `{{YOUR_PROJECT_NAME}}`, `{{YOUR_APP_NAME}}` (if different from project name), `{{YOUR_PROJECT_DESCRIPTION}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, `{{YOUR_APP_TITLE}}`, `{{YOUR_APP_SHORT_NAME}}`, etc.
+    3.  Pay special attention to `app/manifest.ts` as it uses `{{YOUR_APP_TITLE}}`, `{{YOUR_APP_SHORT_NAME}}`, and `{{YOUR_PROJECT_DESCRIPTION}}`.
+  - **Rationale**: A fully automated and accurate setup script is key for a good template experience, especially for AI that will rely on it for project initialization.
+
+### V. Code & Dependency Hygiene (Optional but good practice)
+
+- **\[ ] Final Review for Unused Code/Dependencies**
+  - **File(s) to Modify**: Entire codebase.
+  - **Current Issue**: Common for templates to accumulate minor unused elements over development.
+  - **Recommendation**:
+    1.  Run `npx depcheck` or a similar tool to identify unused dependencies in `package.json`. Review and remove any that are truly unnecessary for the base template.
+    2.  Use IDE features or linters (if configured) to find unused variables, functions, imports, or files.
+    3.  Manually scan for any commented-out code blocks that represent old logic and are no longer needed.
+  - **Rationale**: Keeps the template lean, reduces build times, and simplifies the codebase for AI comprehension.

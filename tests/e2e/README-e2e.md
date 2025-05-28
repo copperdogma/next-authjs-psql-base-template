@@ -1,11 +1,11 @@
-# E2E Testing with Playwright and Firebase Emulators
+# E2E Testing with Playwright
 
-This document provides an overview of the end-to-end testing setup for this project, which uses Playwright for browser automation and Firebase Emulators for backend testing.
+This document provides an overview of the end-to-end testing setup for this project, which uses Playwright for browser automation and NextAuth.js with PostgreSQL for authentication testing.
 
 ## Key Features
 
 - **Playwright Test Framework**: Automated browser testing with Chromium
-- **Firebase Emulator Integration**: Tests run against local Firebase emulators
+- **NextAuth.js Integration**: Tests run against the application with NextAuth.js
 - **Authentication Testing**: Pre-authenticated test user for protected routes
 - **Accessibility Testing**: Automated accessibility audits with Axe
 - **Responsive Design Testing**: Tests for both mobile and desktop viewports
@@ -25,20 +25,15 @@ The tests are organized into several projects within the Playwright configuratio
 ### Basic Test Commands
 
 - **Run all tests**: `npm run test:e2e`
-- **Run UI tests only**: `npm run test:e2e:ui`
-- **Run authenticated tests**: `npm run test:e2e:auth`
+- **Run UI tests only**: `npm run test:e2e:ui-only`
+- **Run authenticated tests**: `npm run test:e2e:auth-only`
 - **Run in debug mode**: `npm run test:e2e:debug`
 - **Run in headed mode**: `npm run test:e2e:headed`
 - **View test report**: `npm run test:e2e:report`
 
-### Tests with Firebase Emulators
-
-- **Run with emulators**: `npm run test:e2e:with-emulator`
-- **Complete test suite**: `npm run test:e2e:full`
-
 ### Authentication Setup
 
-- **Setup authentication state**: `npm run test:e2e:setup`
+- **Setup authentication state**: `npm run test:e2e:auth-setup`
 
 ## Test Development Guidelines
 
@@ -74,16 +69,16 @@ The tests are organized into several projects within the Playwright configuratio
 
 3. If your test requires authentication, make sure it's in a project that depends on the `setup` project.
 
-## Firebase Emulator Integration
+## NextAuth.js and PostgreSQL Integration
 
-Tests utilize local Firebase emulators for Auth, which provides several benefits:
+Tests utilize NextAuth.js with a dedicated test PostgreSQL database, which provides several benefits:
 
-- No interaction with production Firebase resources
+- No interaction with production database
 - Consistent, deterministic test environment
-- Fast test execution with no network delays
-- No billing costs for test operations
+- Fast test execution with isolated test data
+- Proper testing of authentication flows
 
-The Firebase emulators are automatically started before tests run and shut down afterward.
+The test database is automatically configured via environment variables when tests run.
 
 ## Troubleshooting
 
@@ -92,14 +87,14 @@ The Firebase emulators are automatically started before tests run and shut down 
 1. **Port conflicts**: If tests fail with port-in-use errors, ensure no previous test processes are running:
 
    ```
-   npx kill-port 3777 9099
+   npx kill-port 3777
    ```
 
 2. **Authentication issues**: If tests can't access protected routes:
 
-   - Make sure the emulators are running
-   - Check that auth setup is completed with `npm run test:e2e:setup`
-   - Verify the test user exists in the Auth emulator
+   - Make sure the test database is properly configured
+   - Check that auth setup is completed with `npm run test:e2e:auth-setup`
+   - Verify the test user exists in the database
 
 3. **Flaky tests**: Some tests may be timing-sensitive. Try running with `--retries=3` flag.
 
@@ -116,4 +111,4 @@ Tests run automatically on GitHub Actions when:
 - Code is pushed to the main branch
 - Pull requests are created against the main branch
 
-The workflow caches dependencies and emulators for faster execution.
+The workflow caches dependencies for faster execution.

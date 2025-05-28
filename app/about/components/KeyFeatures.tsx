@@ -24,7 +24,7 @@ export default function KeyFeatures() {
           <ListItem disableGutters>
             <ListItemText
               primary="Authentication"
-              secondary="Firebase Authentication integration with Google sign-in"
+              secondary="NextAuth.js v5 with PostgreSQL integration (Google & Email/Password providers)"
             />
           </ListItem>
           <ListItem disableGutters>

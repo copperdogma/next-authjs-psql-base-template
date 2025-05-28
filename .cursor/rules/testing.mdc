@@ -95,27 +95,28 @@ test('button handles click', async () => {
 });
 ```
 
-### Testing Firebase Authentication
+### Testing Authentication
 
-Firebase auth is mocked directly in test files:
+Authentication is mocked directly in test files:
 
 ```typescript
 // Mock modules before imports
-jest.mock('../../../lib/firebase', () => ({
-    getAuth: jest.fn(() => ({
-    currentUser: null
+jest.mock('next-auth', () => ({
+    auth: jest.fn(() => Promise.resolve({
+    user: null
   })),
-  signInWithPopup: jest.fn(),
+  signIn: jest.fn(),
   signOut: jest.fn()
 }));
 
-// Test with mocked Firebase
+// Test with mocked auth
 test('handles sign in', async () => {
-  (signInWithPopup as jest.Mock).mockResolvedValueOnce({
-    user: mockUser
+  const signIn = jest.fn().mockResolvedValueOnce({
+    ok: true,
+    error: null
   });
-  await fireEvent.click(screen.getByTestId('sign-in-button'));
-  expect(signInWithPopup).toHaveBeenCalled();
+  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });  await fireEvent.click(screen.getByTestId('sign-in-button'));
+  expect(signIn).toHaveBeenCalled();
 });
 ```
 
@@ -140,22 +141,9 @@ test('Health endpoint returns ok status', async () => {
 ### Authentication Testing
 
 ```typescript
-test('authentication mock should work', async ({ page }) => {
-  // Mock the Firebase auth response
-  await page.evaluate(() => {
-    const mockUser = {
-      uid: 'test-uid-123',
-      email: 'test@example.com',
-      displayName: 'Test User'
-    };
-    
-    // Store in localStorage to simulate auth state
-    localStorage.setItem('firebase:authUser:test-project-id', JSON.stringify(mockUser));
-    
-    // Dispatch auth state change event
-    window.dispatchEvent(new CustomEvent('authStateChanged'));
-  });
-});
+test('authentication should work', async ({ page }) => {
+  // Set up authentication state
+  await page.goto(x27/loginx27);n  await page.fill(x27[name="email"]x27, x27test@example.comx27);n  await page.fill(x27[name="password"]x27, x27password123x27);n  await page.click(x27button[type="submit"]x27);n  n  // Verify authentication workedn  await page.waitForURL(x27/dashboardx27);n  expect(page.url()).toContain(x27/dashboardx27);  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });});
 ```
 
 ### Accessibility Testing
@@ -186,7 +174,7 @@ const memoryInfo = await client.send('Memory.getBrowserMemoryUsage')
     console.log('Memory API not available, skipping test');
     return null;
   });
-
+  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });
 if (memoryInfo) {
   // Perform tests that require this API
 }
@@ -196,7 +184,7 @@ if (memoryInfo) {
 
 1. **Test Isolation**: Each test should be independent
 2. **Stable Selectors**: Use data-testid attributes instead of text or CSS classes
-3. **Mock External Services**: Mock API calls, Firebase, databases
+3. **Mock External Services**: Mock API calls, databases, external services
 4. **Clean Test Data**: Reset state between tests
 5. **Feature Detection**: Use try/catch for browser-specific features
 

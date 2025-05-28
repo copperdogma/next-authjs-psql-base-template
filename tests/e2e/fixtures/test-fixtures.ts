@@ -192,11 +192,6 @@ export const USER_ROLES = {
 
 // Define the types for our custom fixtures
 type TestFixtures = {
-  // Auth fixtures removed as FirebaseAuthUtils is likely gone
-  // authUtils: typeof FirebaseAuthUtils;
-  // authenticatedPage: Page;
-  // adminPage: Page;
-
   // UI fixtures
   selectors: TestSelectors;
   testUtils: typeof TestUtils;
@@ -209,32 +204,6 @@ type TestFixtures = {
 
 // Enhanced test fixture that extends base test with our custom fixtures
 export const test = base.extend<TestFixtures>({
-  // Auth fixtures removed
-  // authUtils: async ({}, use) => {
-  //   await use(FirebaseAuthUtils);
-  // },
-
-  // authenticatedPage: async ({ page }, use) => {
-  //   // Set up an authenticated page with standard test user
-  //   // await FirebaseAuthUtils.mockSignedInUser(page, TEST_USER); // Depends on removed util
-  //   await page.goto('/');
-  //   await use(page);
-  //   // await FirebaseAuthUtils.clearAuthState(page); // Depends on removed util
-  // },
-
-  // adminPage: async ({ page }, use) => {
-  //   // Set up an admin user page
-  //   // const adminUser = {
-  //   //   ...TEST_USER,
-  //   //   // Add admin-specific properties
-  //   //   customClaims: { admin: true },
-  //   // };
-  //   // await FirebaseAuthUtils.mockSignedInUser(page, adminUser); // Depends on removed util
-  //   await page.goto('/');
-  //   await use(page);
-  //   // await FirebaseAuthUtils.clearAuthState(page); // Depends on removed util
-  // },
-
   // UI fixtures
   selectors: async ({}, use) => {
     await use(UI_SELECTORS);

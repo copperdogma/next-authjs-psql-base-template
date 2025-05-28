@@ -55,10 +55,10 @@ We use realistic mocks that closely match actual behavior:
 
 ```typescript
 // Example from token.test.ts
-const createMockUser = (options: { lastSignInTime?: string; creationTime?: string }): User => {
+const createMockUser = (options: { lastLoginTime?: string; creationTime?: string }): User => {
   return {
     metadata: {
-      lastSignInTime: options.lastSignInTime,
+      lastLoginTime: options.lastLoginTime,
       creationTime: options.creationTime,
     },
   } as unknown as User;
@@ -111,7 +111,7 @@ describe('shouldRefreshToken', () => {
     // Test implementation...
   });
 
-  it('should use creation time if last sign in time is not available', () => {
+  it('should use creation time if last login time is not available', () => {
     // Test implementation...
   });
 
@@ -157,27 +157,24 @@ npm run test:e2e:debug
 npm run test:e2e:report
 ```
 
-### Authentication Testing with Firebase Emulators
+### Authentication Testing
 
-For testing authentication flows, this project uses Firebase Auth Emulators to avoid hitting production Firebase services during tests. The setup is configured to:
+For testing authentication flows, this project uses NextAuth.js with PostgreSQL. The setup is configured to:
 
-1. Run Firebase Auth Emulator locally
-2. Create a test user in the emulator
+1. Use a test database for authentication
+2. Create a test user in the database
 3. Perform login via the UI in a setup script
 4. Save the authentication state for authenticated tests
 5. Use the saved state for tests that require an authenticated user
 
-To run E2E tests with Firebase Emulators:
+To run E2E tests:
 
 ```bash
-# Run E2E tests with Firebase Auth Emulator
-npm run test:e2e:emulators
+# Run all E2E tests
+npm run test:e2e
 
-# Start just the Firebase Emulator (in a separate terminal)
-npm run firebase:emulators
-
-# Create a test user in the running emulator
-npm run firebase:setup-test-user
+# Run only authentication tests
+npm run test:e2e:auth-only
 ```
 
 ### E2E Test Structure
@@ -208,11 +205,8 @@ The project uses two approaches for authentication testing:
 
 ### Environment Configuration
 
-Authentication testing with emulators requires specific environment variables:
+Authentication testing requires specific environment variables:
 
-- `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true` - Enables emulator mode for client SDK
-- `NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` - Client-side emulator host
-- `FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` - Server-side emulator host
 - `TEST_USER_EMAIL` - Email for the test user
 - `TEST_USER_PASSWORD` - Password for the test user
 

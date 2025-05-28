@@ -125,7 +125,7 @@ This file summarizes key commands for development, testing, and code quality wit
 
 #### E2E Testing
 
-- `npm run test:e2e`: **Primary E2E command** - Starts the test server, runs all Playwright tests. (Note: Firebase emulators are no longer part of this core flow).
+- `npm run test:e2e`: **Primary E2E command** - Starts the test server, runs all Playwright tests.
 - `npm run test:e2e:ui-only`: Run only UI tests.
 - `npm run test:e2e:auth-only`: Run only authentication tests.
 - `npm run test:e2e:debug`: Run E2E tests with Playwright's debug mode enabled.

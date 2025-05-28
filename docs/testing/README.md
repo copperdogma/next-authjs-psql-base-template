@@ -29,7 +29,6 @@ All tests use the built-in `webServer` functionality to start a Next.js server a
 
 Before running tests, the system performs comprehensive health checks:
 
-- Verifies the Firebase Auth emulator is running
 - Confirms the application server is responding
 - Checks the health endpoint returns the expected status
 
@@ -47,7 +46,6 @@ The project uses Jest for unit and integration testing:
 Test environment configuration is stored in `.env.test`. When running E2E tests:
 
 - The server runs on port 3777 (configured in `.env.test` as TEST_PORT)
-- Firebase Auth emulator runs on port 9099
 
 ## Development Testing
 

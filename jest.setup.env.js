@@ -6,7 +6,6 @@ if (typeof global.TextEncoder === 'undefined') {
 }
 
 // Mock environment variables for testing
-// Firebase environment variables removed
 
 // Set app URL from environment or default to a consistent test port
 const TEST_PORT = process.env.TEST_PORT || '3000';

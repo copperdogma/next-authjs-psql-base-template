@@ -1,20 +1,14 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 import path from 'path';
-
 import dotenv from 'dotenv';
 import { defaultFallbackInView } from 'react-intersection-observer';
 import { TextEncoder, TextDecoder } from 'util';
-
 import { resetPrismaMock } from './tests/mocks/db/prismaMocks';
-// Firebase mock imports removed
-// import { resetFirebaseAdminMocks } from './tests/mocks/firebase/adminMocks';
-// import { resetFirebaseClientMocks } from './tests/mocks/firebase/clientMocks';
 
-// process.env.NODE_ENV = 'test'; // This is usually set by the test runner script (e.g., cross-env)
+// Environment configuration
 process.env.NEXTAUTH_SECRET = 'test-secret-key';
 process.env.ALLOW_TEST_ENDPOINTS = 'true';
-// process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099'; // Removed
 
 // Optional: Load environment variables from .env.test if it exists
 try {
@@ -115,8 +109,6 @@ if (typeof window !== 'undefined') {
 // Reset all mocks after each test
 afterEach(() => {
   jest.clearAllMocks();
-  // resetFirebaseClientMocks(); // Removed
-  // resetFirebaseAdminMocks(); // Removed
   resetPrismaMock();
   jest.restoreAllMocks();
 });

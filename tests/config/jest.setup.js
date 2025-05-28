@@ -5,13 +5,6 @@ import { TextEncoder, TextDecoder } from 'util';
 import { jest } from '@jest/globals';
 
 // Import mocks and setup utilities
-import {
-  mockAuth,
-  mockApp,
-  mockSignInWithPopup,
-  mockSignOut,
-  mockGoogleAuthProvider,
-} from '../mocks/firebase';
 import { setupBrowserMocks } from '../mocks/setup-browser-mocks';
 
 // Mock Next.js router
@@ -32,31 +25,7 @@ jest.mock('next/headers', () => ({
   })),
 }));
 
-// Mock environment variables for Firebase
-process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'mock-api-key';
-process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = 'mock-auth-domain';
-process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'mock-project-id';
-process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = 'mock-storage-bucket';
-process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = 'mock-messaging-sender-id';
-process.env.NEXT_PUBLIC_FIREBASE_APP_ID = 'mock-app-id';
-
-// Mock Firebase auth functions
-jest.mock('firebase/auth', () => ({
-  getAuth: jest.fn(() => mockAuth),
-  signInWithPopup: mockSignInWithPopup,
-  signOut: mockSignOut,
-  GoogleAuthProvider: mockGoogleAuthProvider,
-}));
-
-// Mock Firebase app
-jest.mock('firebase/app', () => ({
-  initializeApp: jest.fn(() => mockApp),
-  getApps: jest.fn(() => []),
-}));
-
 // Set up global mocks
-global.mockAuth = mockAuth;
-global.mockApp = mockApp;
 global.fetch = jest.fn();
 
 // Mock TextEncoder/TextDecoder

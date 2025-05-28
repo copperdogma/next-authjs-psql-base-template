@@ -7,7 +7,6 @@
 
 // Remove unused constants
 // const PORT = process.env.PORT || '3000';
-// const PROJECT_ID = 'next-firebase-base-template'; // Align this with firebase.json
 
 export const ROUTES = {
   // Public routes
@@ -45,11 +44,6 @@ export const TEST_CONFIG = {
     MOBILE: { width: 375, height: 667 },
     TABLET: { width: 768, height: 1024 },
     DESKTOP: { width: 1280, height: 800 },
-  },
-
-  // Firebase test configuration
-  FIREBASE: {
-    PROJECT_ID: 'next-firebase-base-template',
   },
 
   // Test data

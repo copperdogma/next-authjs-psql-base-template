@@ -1,6 +1,6 @@
-# Logging System Documentation
+# Logging System
 
-This document describes the logging system used in the Next.js Firebase PostgreSQL template.
+This document describes the logging system used in the Next.js PostgreSQL template.
 
 ## Overview
 

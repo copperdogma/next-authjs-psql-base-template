@@ -146,8 +146,4 @@ beforeEach(() => {
 // Note: In Jest setup files, you don't need to wrap everything in a describe block
 // This file is for global setup actions, not for containing tests
 
-// --- Optional mock setup for Firebase Admin --- //
-// jest.mock('@/lib/firebase-admin', () => ({
-//   auth: jest.fn(),
-//   // Add other Firebase Admin services you use
-// }));
+// --- Optional mock setup was removed --- //

@@ -75,9 +75,7 @@ async function _performNameUpdate(
   currentLogger: pino.Logger
 ): Promise<NameUpdateState> {
   if (!profileService) {
-    currentLogger.error(
-      'Profile service is unavailable. Firebase might not be configured correctly.'
-    );
+    currentLogger.error('Profile service is unavailable.');
     return {
       success: false,
       message: 'Profile service is unavailable.',

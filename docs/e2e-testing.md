@@ -1,14 +1,14 @@
 # End-to-End Testing Guide
 
-This document provides instructions for running and writing end-to-end (E2E) tests for the Next.js application using Playwright with Firebase Authentication.
+This document provides instructions for running and writing end-to-end (E2E) tests for the Next.js application using Playwright with NextAuth.js.
 
 ## Overview
 
-Our E2E testing follows industry best practices for testing Next.js applications with Firebase Auth. The setup uses Playwright's built-in capabilities to:
+Our E2E testing follows industry best practices for testing Next.js applications with NextAuth.js. The setup uses Playwright's built-in capabilities to:
 
 - **Manage Servers**: Automatically start and manage the Next.js development server
 - **Handle Authentication**: Set up and reuse authentication state
-- **Use Emulators**: Test against Firebase Auth emulators for consistent, isolated testing
+- **Use Test Database**: Test against a dedicated test database for consistent, isolated testing
 - **Provide Diagnostics**: Comprehensive debugging with trace files, screenshots, and logs
 
 ## Running Tests
@@ -16,13 +16,8 @@ Our E2E testing follows industry best practices for testing Next.js applications
 ### Prerequisites
 
 1. **Environment Setup**:
-
    - Create a `.env.test` file based on `.env.example`
    - Ensure all dependencies are installed: `npm install`
-
-2. **Firebase Emulators**:
-   - Make sure Firebase CLI is installed: `npm install -g firebase-tools`
-   - Data will be imported/exported from `./.firebase-emulator-data/`
 
 ### Recommended Commands
 
@@ -39,8 +34,8 @@ npm run test:e2e:debug
 # Run tests in headed mode (visible browser)
 npm run test:e2e:headed
 
-# Tests with Firebase Authentication
-npm run test:e2e:auth
+# Tests with authentication
+npm run test:e2e:auth-only
 
 # Auth tests with debugging enabled
 npm run test:e2e:auth:debug
@@ -56,30 +51,11 @@ npm run test:e2e:custom-url
 # or specify a custom URL directly with the original runner
 cross-env PLAYWRIGHT_TEST_BASE_URL=http://localhost:8000 playwright test
 
-# Complete flow: Start emulators, setup test user, and run all tests
-npm run test:e2e:with-emulator
-
-# Just run the tests (if emulators are already running)
-npm run test:e2e:run-tests
-
 # Run only UI tests (no authentication required)
-npm run test:e2e:ui
+npm run test:e2e:ui-only
 
 # View the HTML test report
 npm run test:e2e:report
-```
-
-### Additional Commands
-
-```bash
-# Set up a test user in the Auth emulator
-npm run firebase:setup-test-user
-
-# Run tests in CI environment (headless, with retries)
-npm run test:e2e:ci
-
-# Start Firebase emulators with imported data
-npm run firebase:emulators:import
 ```
 
 ## Configuration
@@ -91,24 +67,19 @@ The testing framework is configured in several key files:
    - Configures Playwright with test projects, browser settings, and server management
    - Defines the storage state path for authentication
 
-2. **firebase.json**:
-
-   - Configures Firebase auth emulator
-   - Defines ports and settings for emulators
-
-3. **.env.test**:
+2. **.env.test**:
 
    - Contains environment variables for testing
-   - Defines test user credentials and emulator settings
+   - Defines test user credentials and database settings
 
-4. **tests/e2e/auth.setup.ts**:
+3. **tests/e2e/auth.setup.ts**:
 
    - Sets up authentication for tests requiring auth
    - Saves authenticated state to `tests/.auth/user.json`
 
-5. **scripts/run-e2e-with-checks.js**:
+4. **scripts/run-e2e-with-checks.js**:
    - Orchestrates the test execution process
-   - Manages server and emulator startup/shutdown
+   - Manages server startup/shutdown
    - Scans server logs for errors after tests complete
    - Handles port conflicts automatically
 
@@ -153,19 +124,12 @@ We provide a robust testing approach to avoid common issues:
    - Distinguishes between test failures and server errors
    - Properly reports both types of issues for better debugging
 
-7. **Firebase Emulator Integration**:
-
-   - Automatically starts Firebase emulators when needed
-   - Sets up a test user for authentication tests
-   - Properly configures environment variables for emulator connections
-   - Cleans up emulator processes after tests complete
-
-8. **Standardized Configuration**:
+7. **Standardized Configuration**:
 
    - All settings are centralized in `.env.test`
    - Tests use consistent timeouts and navigation settings
 
-9. **Improved Error Handling**:
+8. **Improved Error Handling**:
    - Detailed logs of server activity and test execution
    - Human and AI-readable error messages with troubleshooting steps
    - Screenshots captured on test failures
@@ -210,10 +174,10 @@ Our system supports multiple authentication testing approaches:
    - Use `npm run test:e2e`
    - Good for testing UI components, navigation, and public pages
 
-2. **Firebase Emulator Auth Tests**:
+2. **NextAuth.js Tests**:
 
-   - Use `npm run test:e2e:auth`
-   - Automatically starts Firebase Auth emulator
+   - Use `npm run test:e2e:auth-only`
+   - Tests authentication with NextAuth.js and PostgreSQL
    - Sets up a test user with credentials from `.env.test`
    - Allows testing real login flows and protected routes
    - Great for testing authentication-dependent features
@@ -238,7 +202,7 @@ test('can navigate to about page', async ({ page }) => {
 });
 ```
 
-**Firebase Auth Test**:
+**Authentication Test**:
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -277,25 +241,6 @@ test('authenticated user can access dashboard', async ({ page }) => {
 });
 ```
 
-## Firebase Emulators
-
-We use Firebase emulators to provide a consistent, isolated testing environment:
-
-- **Auth Emulator**: Port 9099
-- **Emulator UI**: Port 4000
-
-A test user is automatically created using `scripts/setup-test-user.js` with:
-
-- Email: `test@example.com` (configurable in .env.test)
-- Password: `Test123!` (configurable in .env.test)
-
-The reliable runner will automatically:
-
-1. Start the Firebase emulators when using `--with-firebase` flag
-2. Set up the test user for authentication
-3. Configure the Next.js server to connect to the emulators
-4. Clean up all processes after tests complete
-
 ## Debugging
 
 When tests fail, you have several debugging options:
@@ -315,13 +260,9 @@ When tests fail, you have several debugging options:
 | Issue                        | Solution                                                                                                  |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Port conflicts               | Use the reliable testing approach which automatically handles port conflicts                              |
-| Authentication failures      | Ensure Firebase emulators are running and check screenshots in tests/e2e/screenshots/                     |
-| "auth/unauthorized-domain"   | Make sure your emulator is properly configured in firebase.json and .env.test                             |
+| Authentication failures      | Check screenshots in tests/e2e/screenshots/ and verify test database credentials                          |
 | Test timeouts                | Try increasing the timeouts in .env.test (TIMEOUT_TEST, TIMEOUT_SERVER)                                   |
-| Emulator data not persisting | Run `npm run firebase:emulators:export` to save state                                                     |
 | Tests hanging/stalling       | Use the `npm run test:e2e` script which has proper timeouts and cleanup                                   |
-| Firebase connection issues   | Check that emulator ports match in both `.env.test` and `firebase.json`                                   |
-| "auth/email-already-in-use"  | This is normal when the test user already exists, the script verifies it works                            |
 | "Server health check failed" | Ensure your server is running and accessible at the expected URL. Check console for detailed diagnostics. |
 | "Connection refused"         | The server process may have failed to start. Check server logs for errors.                                |
 | "Timeout waiting for server" | Try increasing TIMEOUT_SERVER in .env.test or check for server startup issues.                            |
@@ -334,7 +275,7 @@ When tests fail, you have several debugging options:
 2. **Add Diagnostics**: Include screenshots in key points of your test flow
 3. **Isolation**: Each test should be independent and not rely on state from other tests
 4. **Minimize Flakiness**: Use proper waiting mechanisms and avoid timing-dependent assertions
-5. **Mock External Services**: Always use Firebase emulators instead of production services
+5. **Mock External Services**: Use a dedicated test database instead of production database
 6. **Use the Reliable Runner**: The run-e2e-with-checks.js script handles many common issues automatically
 7. **Avoid Hardcoded URLs**: Never use hardcoded URLs like `http://localhost:3000` - always use relative paths or environment variables
 8. **Consistent State Management**: Use Playwright's `storageState` for authentication rather than custom cookie management
@@ -344,43 +285,27 @@ When tests fail, you have several debugging options:
 
 ### Current Status
 
-Our E2E testing framework includes authentication tests, but there are some known limitations when working with Firebase Auth emulator:
+Our E2E testing framework includes authentication tests using NextAuth.js with PostgreSQL:
 
-1. **Simple Authentication Flow**: The basic authentication tests (`tests/e2e/auth-basic.spec.ts`) verify that:
-
-   - The login page loads correctly and displays the Google sign-in button
-   - The auth utilities can set authentication cookies
-   - The app recognizes the authenticated state to some extent
-
-2. **Emulator Challenges**: There are currently challenges with Firebase Auth emulator integration:
-   - The Firebase Auth emulator sometimes doesn't properly connect with the Next.js app
-   - We're using a session cookie approach that bypasses some of the integration points
-   - Protected routes test is temporarily skipped until these issues are resolved
+1. **Authentication Flow**: The authentication tests verify that:
+   - The login page loads correctly and displays sign-in options
+   - Users can log in with valid credentials
+   - The app recognizes the authenticated state correctly
+   - Protected routes are properly secured
 
 ### Running Auth Tests
 
-To run authentication tests with Firebase emulators:
+To run authentication tests:
 
 ```sh
-npm run test:e2e:auth tests/e2e/auth-basic.spec.ts
+npm run test:e2e:auth-only
 ```
 
 When auth tests fail, check:
 
-- Firebase emulator logs in the console output
 - Screenshots captured in `tests/e2e/screenshots/`
 - Network traffic in the Playwright traces
-- Auth emulator UI at http://127.0.0.1:4000/auth during test execution
-
-### Future Improvements
-
-Planned improvements for authentication testing:
-
-1. Better integration between Firebase emulators and NextAuth
-2. Reliable cookie-based authentication mocking
-3. Complete end-to-end test of user login flow via UI
-4. Test for various authentication scenarios (new users, returning users, etc.)
-5. Implementation of `storageState` for more efficient authenticated tests
+- Server logs for authentication errors
 
 ## Advanced Usage
 

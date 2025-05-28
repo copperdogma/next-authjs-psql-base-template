@@ -75,43 +75,44 @@ Authentication is mocked directly in the test files to ensure proper isolation b
 
 ```typescript
 // Mock modules before imports (with relative path)
-jest.mock('../../../lib/firebase', () => ({
-  getAuth: jest.fn(() => ({
-    currentUser: null,
-  })),
-  signInWithPopup: jest.fn(),
-  signOut: jest.fn(),
-  GoogleAuthProvider: jest.fn(() => ({
-    addScope: jest.fn(),
-  })),
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(() => null),
 }));
 
-// Then import components and Firebase modules
+jest.mock('@/lib/auth', () => ({
+  getSession: jest.fn(() => null),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}));
+
+// Then import components and auth modules
 import SignInButton from '../../../components/auth/SignInButton';
 import { render, screen, fireEvent } from '../../utils/test-utils';
 ```
 
 ### Managing Auth State in Tests
 
-The authentication state is managed by directly manipulating the `currentUser` property:
+The authentication state is managed by directly manipulating the session data:
 
 ```typescript
 // Mock user data
-const mockUser = {
-  displayName: 'Test User',
-  email: 'test@example.com',
-  uid: 'test-user-id',
-  getIdToken: jest.fn().mockResolvedValue('mock-id-token'),
+const mockSession = {
+  user: {
+    name: 'Test User',
+    email: 'test@example.com',
+    id: 'test-user-id',
+  },
+  expires: new Date(Date.now() + 3600 * 1000).toISOString(),
 };
 
 beforeEach(() => {
   // Reset auth state
-  (auth as any).currentUser = null;
+  (getSession as jest.Mock).mockResolvedValue(null);
 });
 
 test('signed in state', () => {
-  // Set current user
-  (auth as any).currentUser = mockUser;
+  // Set current session
+  (getSession as jest.Mock).mockResolvedValue(mockSession);
 });
 ```
 

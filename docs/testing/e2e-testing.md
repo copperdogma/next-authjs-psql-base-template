@@ -23,11 +23,11 @@ Our E2E tests are organized into the following categories:
 
 ## Authentication Testing Strategy
 
-Since our application uses Firebase Authentication, we've adopted the following approaches for testing auth flows:
+Our application uses NextAuth.js with PostgreSQL for authentication. We've adopted the following approaches for testing auth flows:
 
-1. **Mocked Authentication**: For most tests, we mock the Firebase auth state to avoid actual OAuth flows
-2. **LocalStorage Simulation**: We simulate authenticated state by setting appropriate localStorage entries
-3. **Custom Events**: We dispatch custom events to notify the application of auth state changes
+1. **Mocked Authentication**: For most tests, we mock the authentication state
+2. **Cookie Simulation**: We simulate authenticated state by setting appropriate cookies
+3. **Session Management**: We leverage NextAuth.js session handling for tests
 4. **Protected Routes**: We verify that unauthenticated users are redirected to the login page
 
 ## Test Database Strategy

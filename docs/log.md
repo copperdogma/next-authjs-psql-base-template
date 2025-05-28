@@ -5,7 +5,6 @@
 Initial project setup completed:
 
 - Next.js 15 application scaffolding
-- Firebase authentication integration
 - PostgreSQL database setup
 - Material UI components
 - Unit tests (Jest)

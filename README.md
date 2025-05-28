@@ -19,7 +19,6 @@ Modern web application template: Next.js, NextAuth.js v5 (Prisma Adapter), Postg
 ## Optional Integrations
 
 - **Caching/Rate Limiting**: Redis
-- **Firebase Services**: Can be integrated for additional backend needs (e.g., Firestore, Storage). Not used for core authentication.
 
 ## Quick Start
 

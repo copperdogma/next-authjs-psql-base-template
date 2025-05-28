@@ -134,7 +134,7 @@ describe('useUserStore', () => {
       expect(state.role).toBe(initialDetails.role);
     });
 
-    // NEW TEST CASE: Granular checks for undefined updates
+    // Test for granular checks for undefined updates
     it('should retain existing state field if corresponding update field is undefined', () => {
       // Set initial full state
       const initialFullDetails = {
@@ -191,7 +191,73 @@ describe('useUserStore', () => {
       expect(finalState.image).toBe('Update 3');
       expect(finalState.role).toBe(UserRole.USER);
     });
-    // END NEW TEST CASE
+
+    // Add test cases for each conditional branch in setUserDetails
+    it('should handle all conditional branches in setUserDetails', () => {
+      // Test with empty update object
+      act(() => {
+        useUserStore.getState().setUserDetails({});
+      });
+      expect(useUserStore.getState().id).toBeNull();
+      expect(useUserStore.getState().name).toBeNull();
+      expect(useUserStore.getState().email).toBeNull();
+      expect(useUserStore.getState().image).toBeNull();
+      expect(useUserStore.getState().role).toBeNull();
+
+      // Test with only id defined
+      act(() => {
+        useUserStore.getState().setUserDetails({ id: 'only-id' });
+      });
+      expect(useUserStore.getState().id).toBe('only-id');
+      expect(useUserStore.getState().name).toBeNull();
+      expect(useUserStore.getState().email).toBeNull();
+      expect(useUserStore.getState().image).toBeNull();
+      expect(useUserStore.getState().role).toBeNull();
+
+      // Test with only name defined
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+        useUserStore.getState().setUserDetails({ name: 'only-name' });
+      });
+      expect(useUserStore.getState().id).toBeNull();
+      expect(useUserStore.getState().name).toBe('only-name');
+      expect(useUserStore.getState().email).toBeNull();
+      expect(useUserStore.getState().image).toBeNull();
+      expect(useUserStore.getState().role).toBeNull();
+
+      // Test with only email defined
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+        useUserStore.getState().setUserDetails({ email: 'only@email.com' });
+      });
+      expect(useUserStore.getState().id).toBeNull();
+      expect(useUserStore.getState().name).toBeNull();
+      expect(useUserStore.getState().email).toBe('only@email.com');
+      expect(useUserStore.getState().image).toBeNull();
+      expect(useUserStore.getState().role).toBeNull();
+
+      // Test with only image defined
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+        useUserStore.getState().setUserDetails({ image: 'only-image.jpg' });
+      });
+      expect(useUserStore.getState().id).toBeNull();
+      expect(useUserStore.getState().name).toBeNull();
+      expect(useUserStore.getState().email).toBeNull();
+      expect(useUserStore.getState().image).toBe('only-image.jpg');
+      expect(useUserStore.getState().role).toBeNull();
+
+      // Test with only role defined
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+        useUserStore.getState().setUserDetails({ role: UserRole.USER });
+      });
+      expect(useUserStore.getState().id).toBeNull();
+      expect(useUserStore.getState().name).toBeNull();
+      expect(useUserStore.getState().email).toBeNull();
+      expect(useUserStore.getState().image).toBeNull();
+      expect(useUserStore.getState().role).toBe(UserRole.USER);
+    });
   });
 
   describe('clearUserDetails', () => {
@@ -224,6 +290,74 @@ describe('useUserStore', () => {
       expect(state.email).toBeNull();
       expect(state.image).toBeNull();
       expect(state.role).toBeNull();
+    });
+
+    // Test clearUserDetails directly
+    it('should clear user details after setting partial state', () => {
+      // Set only some fields
+      act(() => {
+        useUserStore.getState().setUserDetails({
+          id: 'partial-id',
+          name: 'Partial Name',
+          // Leave email, image, and role null
+        });
+      });
+
+      // Verify partial state
+      let state = useUserStore.getState();
+      expect(state.id).toBe('partial-id');
+      expect(state.name).toBe('Partial Name');
+      expect(state.email).toBeNull();
+      expect(state.image).toBeNull();
+      expect(state.role).toBeNull();
+
+      // Clear the details
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+      });
+
+      // Verify all fields are null
+      state = useUserStore.getState();
+      expect(state.id).toBeNull();
+      expect(state.name).toBeNull();
+      expect(state.email).toBeNull();
+      expect(state.image).toBeNull();
+      expect(state.role).toBeNull();
+    });
+  });
+
+  // Test store subscription and unsubscription
+  describe('store subscription', () => {
+    it('should call subscribers when state changes', () => {
+      const mockSubscriber = jest.fn();
+
+      // Subscribe to store changes
+      const unsubscribe = useUserStore.subscribe(mockSubscriber);
+
+      // Initial state change should trigger subscriber
+      act(() => {
+        useUserStore.getState().setUserDetails({ name: 'New Name' });
+      });
+
+      expect(mockSubscriber).toHaveBeenCalledTimes(1);
+
+      // Another state change should trigger subscriber again
+      act(() => {
+        useUserStore.getState().setUserDetails({ email: 'new@example.com' });
+      });
+
+      expect(mockSubscriber).toHaveBeenCalledTimes(2);
+
+      // Unsubscribe
+      unsubscribe();
+
+      // State change after unsubscribe should not trigger subscriber
+      act(() => {
+        useUserStore.getState().setUserDetails({ id: 'another-id' });
+      });
+
+      // Should still be 2 calls
+      expect(mockSubscriber).toHaveBeenCalledTimes(2);
     });
   });
 });

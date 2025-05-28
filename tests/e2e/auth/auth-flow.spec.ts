@@ -1,7 +1,8 @@
 import { test, expect } from '../utils/test-base';
-// import { FirebaseAuthUtils, TEST_USER } from '../fixtures/auth-fixtures'; // Firebase-specific utils removed
 import { ROUTES } from '../../utils/routes';
 import { UI_ELEMENTS } from './auth-selectors';
+
+// Test 'authentication mock should work' removed as it relied on client-side mocking.
 
 // UI element selectors moved to auth-selectors.ts
 // export const UI_ELEMENTS = { ... }; // Removed
@@ -42,7 +43,6 @@ test.describe('Authentication Flow', () => {
     }
   });
 
-  // Test 'authentication mock should work' removed as it relied on Firebase client-side mocking.
   // Authentication state is now handled by Playwright's storageState from auth.setup.ts.
 
   test('protected route should require authentication and redirect to login', async ({

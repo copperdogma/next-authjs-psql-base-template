@@ -85,13 +85,13 @@ If you choose not to use `npm run setup` or need to make manual adjustments:
 - Supported providers (Google, Credentials) are configured in `lib/auth-shared.ts`.
 - Ensure `DATABASE_URL` and `NEXTAUTH_SECRET` are correctly set in `.env.local`.
 
-## Optional Firebase Services
+## Optional External Services
 
-- This template does **not** use Firebase for core authentication.
-- If you plan to integrate other Firebase services (e.g., Firestore, Storage, Firebase Functions):
-  1.  Set up a Firebase project in the Firebase Console.
-  2.  Add your Firebase client configuration variables to `.env.local`.
-  3.  The route `app/api/test/firebase-config/route.ts` can provide client-side Firebase config. For security, it requires `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` in `.env.local` to be active (intended for development/testing).
+- This template does not use any external services by default beyond PostgreSQL and NextAuth.js.
+- If you want to integrate additional services:
+  1. Set up the service following its documentation.
+  2. Add the necessary configuration variables to `.env.local`.
+  3. Update your code to use the service.
 
 ## Next Steps
 

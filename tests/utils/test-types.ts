@@ -9,7 +9,6 @@
  *
  * The `istanbul ignore file` comment above instructs the coverage tool to skip this file.
  */
-import { User, UserInfo, IdTokenResult } from '@firebase/auth';
 import { RenderResult } from '@testing-library/react';
 import { Page } from '@playwright/test';
 import { UserEvent } from '@testing-library/user-event';
@@ -56,7 +55,7 @@ export interface MockUserMetadata {
 /**
  * Strongly typed mock token result
  */
-export interface MockIdTokenResult extends Omit<IdTokenResult, 'claims'> {
+export interface MockIdTokenResult {
   token: string;
   expirationTime: string;
   authTime: string;
@@ -71,7 +70,7 @@ export interface MockIdTokenResult extends Omit<IdTokenResult, 'claims'> {
 /**
  * Extended provider data type with proper typing
  */
-export interface MockProviderData extends UserInfo {
+export interface MockProviderData {
   providerId: string;
   uid: string;
   displayName: string | null;
@@ -83,7 +82,7 @@ export interface MockProviderData extends UserInfo {
 /**
  * Strongly typed mock user for tests
  */
-export interface MockUser extends Omit<User, 'metadata' | 'providerData'> {
+export interface MockUser {
   uid: string;
   email: string | null;
   emailVerified: boolean;
@@ -95,14 +94,7 @@ export interface MockUser extends Omit<User, 'metadata' | 'providerData'> {
     creationTime?: string;
     lastSignInTime?: string;
   };
-  providerData: {
-    providerId: string;
-    uid: string;
-    displayName: string | null;
-    email: string | null;
-    phoneNumber: string | null;
-    photoURL: string | null;
-  }[];
+  providerData: MockProviderData[];
   getIdToken: () => Promise<string>;
   getIdTokenResult: () => Promise<MockIdTokenResult>;
 }

@@ -114,22 +114,13 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm test <test-file> -- --coverage --collectCoverageFrom=<source-file>`: Run a specific test file with coverage report limited to its corresponding source file.
 
 #### E2E Testing
-- `npm run test:e2e`: **Primary E2E command** - Starts the test server, runs all Playwright tests. (Firebase emulators may be started if configured for optional Firebase services).
+- `npm run test:e2e`: **Primary E2E command** - Starts the test server, runs all Playwright tests.
 - `npm run test:e2e:ui-only`: Run only UI tests.
 - `npm run test:e2e:auth-only`: Run only authentication tests.
-- `npm run test:e2e:with-emulator`: Run tests with optional Firebase emulators (if configured for other Firebase services).
 - `npm run test:e2e:debug`: Run E2E tests with Playwright's debug mode enabled.
 - `npm run test:e2e:headed`: Run E2E tests in headed mode (visible browser).
 - `npm run test:e2e:report`: View the HTML test report from previous test runs.
 - `npm run test:e2e:auth-setup`: Run only the auth setup script (useful for preparing authentication for manual testing).
-
-#### Firebase Emulators
-(These commands are relevant if you choose to integrate optional Firebase services like Firestore or Storage. They are not required for the core NextAuth.js authentication.)
-- `npm run firebase:emulators`: Start Firebase Auth, Firestore, Storage emulators with clean state.
-- `npm run firebase:emulators:import`: Start emulators with imported seed data.
-- `npm run firebase:setup-test-user`: Create a test user in the Auth emulator (if using Firebase Auth for other purposes).
-- `npm run firebase:update-seed-data`: Update the seed data used for testing with Firebase emulators.
-- `npm run firebase:emulators:export`: Export data from running emulators.
 
 ### Code Quality & Formatting
 - `npm run lint`: Check for ESLint issues.
@@ -176,8 +167,6 @@ NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET_STRING" # Generate with `openssl rand -bas
 - Playwright for E2E testing
 - Jest for unit testing
 - Redis (optional, for rate limiting, session storage if not JWT, etc.)
-# Optional Firebase services can be integrated (e.g., Firestore, Storage, Functions).
-# If Firebase Auth is used for these *other* services, it would be separate from the core template auth.
 
 ## Configuration Files
 - `next.config.ts` - Next.js configuration
@@ -187,7 +176,6 @@ NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET_STRING" # Generate with `openssl rand -bas
 - `.prettierrc` - Code formatting
 - `jest.config.js` - Jest test configuration
 - `playwright.config.ts` - Playwright E2E testing configuration
-- `firebase.json` - Firebase project configuration (for optional Firebase services like Hosting, Functions, Firestore, Storage)
 - `ecosystem.config.js` - PM2 configuration for AI agent server management
 
 ## CSS Architecture
@@ -224,7 +212,6 @@ NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET_STRING" # Generate with `openssl rand -bas
 - **Features**:
   - Automatic server management
   - Dynamic port handling
-  - Firebase emulator integration
   - Authentication state reuse
   - Comprehensive debugging tools
 
@@ -258,6 +245,5 @@ NEXTAUTH_SECRET="YOUR_NEXTAUTH_SECRET_STRING" # Generate with `openssl rand -bas
 - CORS configuration
 - Rate limiting
 - Input sanitization
-- Firebase token verification
 - Secure session cookies
 - Server-side Admin SDK operations
