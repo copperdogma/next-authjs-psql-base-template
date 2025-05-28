@@ -2,9 +2,11 @@
 
 import { SessionProvider, useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
 import { useUserStore } from '@/lib/store/userStore'; // Import the Zustand store
+import SessionErrorHandler from './SessionErrorHandler';
+import SessionErrorDisplay from './SessionErrorDisplay';
 
 interface SessionProviderWrapperProps {
   children: ReactNode;
@@ -42,6 +44,7 @@ const UserStoreSync = () => {
 
 const SessionProviderWrapper = ({ children, session }: SessionProviderWrapperProps) => {
   const log = logger.child({ component: 'SessionProviderWrapper' });
+  const [sessionError, setSessionError] = useState<Error | null>(null);
 
   log.info('Rendering SessionProviderWrapper', {
     hasInitialSession: !!session,
@@ -50,9 +53,12 @@ const SessionProviderWrapper = ({ children, session }: SessionProviderWrapperPro
 
   // SessionProvider manages the session state internally
   // UserStoreSync hooks into that state via useSession()
+  // SessionErrorHandler catches and manages session-related errors
   return (
     <SessionProvider session={session}>
       <UserStoreSync />
+      <SessionErrorHandler sessionError={sessionError} setSessionError={setSessionError} />
+      {sessionError && <SessionErrorDisplay error={sessionError} />}
       {children}
     </SessionProvider>
   );

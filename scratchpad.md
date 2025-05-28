@@ -213,15 +213,16 @@ This structured testing approach will help ensure the template provides a smooth
 - **Goal:** Ensure specialized error handling components are correctly integrated or documented.
 
 - **Tasks:**
-  - `[ ]` **Review and Integrate Session Error Components:**
+  - `[x]` **Review and Integrate Session Error Components:**
     - **Files:** `app/providers/SessionErrorDisplay.tsx`, `app/providers/SessionErrorHandler.tsx`.
     - **Detail:** These components seem designed to handle global session-related errors.
     - **Action:**
-      1.  Determine if these components are intended for a specific, documented use case or if they should be part of the global error handling flow for session issues.
-      2.  If global, ensure `SessionErrorHandler.tsx` (and potentially `SessionErrorDisplay.tsx` via the handler) is integrated into `app/layout.tsx` or a high-level client component within the `SessionProviderWrapper` tree, so it can effectively catch and manage session errors.
-      3.  If for specific use cases, ensure clear documentation or examples are provided.
-      4.  If their utility is niche for a base template, consider removing them for simplicity and document how such a pattern could be added.
-    - **Benefit:** Makes error handling more robust or simplifies the template if these are too specialized for a base.
+      1. Determined that these components were intended for global session error handling but were not properly integrated in the application.
+      2. Integrated `SessionErrorHandler.tsx` and `SessionErrorDisplay.tsx` into the `SessionProviderWrapper` component to effectively catch and manage session errors.
+      3. Added proper state management for session errors in `SessionProviderWrapper`.
+      4. Added comprehensive JSDoc comments to document the purpose and usage of both components.
+      5. Created a unit test (`tests/unit/components/auth/SessionErrorHandling.test.tsx`) to verify the integration works correctly.
+    - **Benefit:** Improved error handling for session-related issues, providing a better user experience when auth problems occur, and making the error handling pattern clearer for developers using the template.
 
 ### 5. Code and Configuration Refinements
 
@@ -259,4 +260,11 @@ This structured testing approach will help ensure the template provides a smooth
   - `[ ]` **Update Code-Level Comments:**
     - **Detail:** Review key files (especially those modified, like `auth.actions.ts`, `setup.js`, any Firebase utility files if kept) for comments that might be outdated or misleading after changes.
     - **Action:** Adjust comments to accurately describe the current implementation and intent. For example, clearly label Firebase utilities as "for optional Firebase service integration."
-  - `[ ]` \*\*Consolidate and Streamline General Documentation (`README.md`, `
+  - `[ ]` **Consolidate and Streamline General Documentation (`README.md`, `SETUP.md`):**
+    - **Detail:** Documentation may be inconsistent or outdated.
+    - **Action:** After all implementation changes, ensure that:
+      1.  `README.md` clearly states the core stack (NextAuth.js + PostgreSQL)
+      2.  The optional nature of Firebase is clearly communicated
+      3.  Setup instructions are accurate and complete
+      4.  Examples and snippets reflect the final code structure
+    - **Benefit:** Makes template onboarding clear and accurate.

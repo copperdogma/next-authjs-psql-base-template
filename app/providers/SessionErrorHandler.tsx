@@ -1,5 +1,38 @@
 'use client';
 
+/**
+ * SessionErrorHandler Component
+ *
+ * This component captures and manages session-related errors across the application.
+ * It listens for global errors and unhandled promise rejections that might be related
+ * to authentication or session handling, and processes them appropriately.
+ *
+ * Features:
+ * - Captures errors containing 'session' or 'auth' in their messages
+ * - Logs errors to the client logger for diagnostics
+ * - Attempts to recover from session errors by refreshing the page after a delay
+ * - Works with SessionErrorDisplay to show user-friendly error messages
+ *
+ * Integration:
+ * This component should be included high in the component tree within the SessionProvider
+ * wrapper, typically in the SessionProviderWrapper component.
+ *
+ * @example
+ * // In SessionProviderWrapper.tsx
+ * const [sessionError, setSessionError] = useState<Error | null>(null);
+ *
+ * return (
+ *   <SessionProvider session={session}>
+ *     <SessionErrorHandler
+ *       sessionError={sessionError}
+ *       setSessionError={setSessionError}
+ *     />
+ *     {sessionError && <SessionErrorDisplay error={sessionError} />}
+ *     {children}
+ *   </SessionProvider>
+ * );
+ */
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clientLogger } from '@/lib/client-logger';
