@@ -706,6 +706,24 @@ async function _resolveRegisterDependencies(
   };
 }
 
+/**
+ * Handles registration rate limiting based on client IP.
+ *
+ * IMPORTANT: This implementation uses a "fail-open" approach. If Redis is unavailable,
+ * misconfigured, or encounters errors, rate limiting will be SKIPPED and registration
+ * will be allowed to proceed. This design prioritizes service availability over
+ * strict rate limit enforcement.
+ *
+ * For production environments where strict rate limiting is critical, ensure:
+ * 1. Redis is properly configured and highly available
+ * 2. ENABLE_REDIS_RATE_LIMITING is set to "true"
+ * 3. REDIS_URL points to a valid Redis instance
+ *
+ * @param log Logger instance
+ * @param logContext Context for logging
+ * @param clientIp Client IP address for rate limiting
+ * @returns Rate limit error result or null to proceed with registration
+ */
 async function _handleRegistrationRateLimit(
   log: Logger,
   logContext: LogContext,
@@ -722,6 +740,10 @@ async function _handleRegistrationRateLimit(
 
   const redisClient = await getOptionalRedisClient();
   if (!redisClient) {
+    // FAIL-OPEN BEHAVIOR: If Redis is unavailable or misconfigured, we skip rate limiting entirely.
+    // This means registration attempts will not be limited if Redis is down or not properly configured.
+    // For production environments where rate limiting is critical for security, ensure Redis is properly
+    // configured and highly available. Consider implementing a fallback mechanism if needed.
     log.warn(logContext, 'Redis client not available, skipping rate limit check.');
     return null;
   }
@@ -733,6 +755,9 @@ async function _handleRegistrationRateLimit(
   );
 
   if (redisError) {
+    // FAIL-OPEN BEHAVIOR: If Redis encounters an error during the rate limit check,
+    // we proceed as if the user is not rate limited. This prioritizes service availability
+    // over strict rate limit enforcement.
     log.error(
       { ...logContext, error: redisError },
       'Error during rate limit check, proceeding as if not limited.'

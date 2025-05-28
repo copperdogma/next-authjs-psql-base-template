@@ -122,14 +122,14 @@ This structured testing approach will help ensure the template provides a smooth
 
 ### I. Documentation & Code Consistency (Crucial for AI)
 
-- **\[ ] Update `KeyFeatures.tsx` to Reflect Correct Authentication**
+- **[x] Update `KeyFeatures.tsx` to Reflect Correct Authentication**
 
   - **File(s) to Modify**: `app/about/components/KeyFeatures.tsx`
   - **Current Issue**: The component states: _"Authentication: Firebase Authentication integration with Google sign-in"_.
   - **Recommendation**: Change the text to accurately describe the authentication mechanism. For example: _"Authentication: NextAuth.js v5 with PostgreSQL integration (Google & Email/Password providers)"_.
   - **Rationale**: Ensures the AI (and human users) have an accurate understanding of the template's core authentication system from the example UI itself. Prevents confusion and incorrect assumptions when the AI starts modifying or extending auth features.
 
-- **\[ ] Review All Code Comments and Internal Documentation for Firebase Auth Misreferences**
+- **[x] Review All Code Comments and Internal Documentation for Firebase Auth Misreferences**
   - **File(s) to Modify**: Potentially any file with comments.
   - **Current Issue**: While the main README and `project-reference.mdc` are accurate, there might be lingering comments in the codebase that incorrectly suggest Firebase is the _primary_ authentication system.
   - **Recommendation**: Perform a project-wide search for terms like "Firebase Auth", "Firebase Authentication", "Firebase sign-in" (excluding contexts clearly related to optional Firebase services like `firebase.json` or the `/api/test/firebase-config` route). If any comments imply Firebase is the core auth, update them to reflect NextAuth.js with Prisma/PostgreSQL.
@@ -137,7 +137,7 @@ This structured testing approach will help ensure the template provides a smooth
 
 ### II. Code Simplification & Elegance
 
-- **\[ ] Simplify `ProfileService.updateUserName` Method**
+- **[x] Simplify `ProfileService.updateUserName` Method**
 
   - **File(s) to Modify**: `lib/server/services/profile.service.ts`
   - **Current Issue**: The `updateUserName` method in `ProfileServiceImpl` currently attempts a raw SQL update (`_updateNameWithRawSql`) and then falls back to a Prisma ORM update (`_updateNameWithPrisma`), with a comment about "avoiding schema incompatibilities." This adds complexity.
@@ -146,14 +146,16 @@ This structured testing approach will help ensure the template provides a smooth
     2.  Remove the `_updateNameWithRawSql` helper method unless there is a deeply compelling and documented reason _specific to the base template's schema_ that necessitates it. For a generic template, ORM-idiomatic updates are preferred.
     3.  If the raw SQL method is removed, also remove its corresponding E2E test environment handling (`this._createMockUserForE2E`) if it was solely to bypass the raw SQL for tests. Prisma ORM updates are generally easier to mock or test.
   - **Rationale**: Simplifies the codebase, makes it more idiomatic for a Prisma-based project, easier for an AI to understand and extend, and reduces the surface area for potential bugs. Raw SQL for basic field updates is often unnecessary with a powerful ORM like Prisma.
+  - **Implementation**: Completed. Simplified the code to use Prisma ORM exclusively, removed the raw SQL method, and updated the tests. All unit tests and E2E tests pass with the new implementation.
 
-- **\[ ] Add Explanatory Comments to Registration Rate Limiting "Fail Open" Behavior**
-  - **File(s) to Modify**: `lib/actions/auth.actions.ts` (specifically the `_handleRegistrationRateLimit` function or where `getOptionalRedisClient` is used for this purpose) and potentially `.env.example`.
+- **[x] Add Explanatory Comments to Registration Rate Limiting "Fail Open" Behavior**
+  - **File(s) Modified**: `lib/actions/auth.actions.ts`
   - **Current Issue**: The registration rate limiting currently "fails open" if Redis is unavailable or misconfigured (i.e., it allows the registration to proceed without rate limiting). While this is a good default for a template to prevent setup friction, it's important to be explicit about it.
-  - **Recommendation**:
-    1.  In `_handleRegistrationRateLimit` (or its caller), add a comment where it's decided to proceed without rate limiting (e.g., when `getOptionalRedisClient` returns null or `redisClient` is null). The comment should explain that rate limiting is skipped if Redis is not available/configured, and that for production, a robust Redis setup is recommended for this feature to be effective.
-    2.  In `.env.example`, next to `ENABLE_REDIS_RATE_LIMITING` and `REDIS_URL`, add a brief note: `# Note: If Redis is not configured or unavailable, rate limiting will be skipped (fail open).`
-  - **Rationale**: Manages expectations for users and AI regarding the rate limiting feature. Ensures the AI understands the implications of not having Redis configured for this specific functionality.
+  - **Implementation**:
+    1. Added comprehensive JSDoc comments to the `_handleRegistrationRateLimit` function explaining the fail-open behavior and recommendations for production environments.
+    2. Added specific comments in the code where the function "fails open" (returns null) when Redis is unavailable or encounters errors.
+    3. Attempted to update `.env.example` to add documentation about the fail-open behavior, but file access was restricted.
+  - **Rationale**: These comments improve code clarity and ensure developers understand the security implications of the fail-open behavior. The comments help manage expectations for users and AI regarding the rate limiting feature and ensure they understand the implications of not having Redis configured for this specific functionality.
 
 ### III. Testing Refinements
 

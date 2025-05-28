@@ -76,63 +76,6 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
     return { errorCode, message, stack, originalError: error };
   }
 
-  // Helper method to update the user name using raw SQL
-  private async _updateNameWithRawSql(
-    userId: string,
-    processedName: string,
-    logContext: Record<string, unknown>
-  ): Promise<User> {
-    // Use raw SQL to update only the name field, avoiding schema incompatibilities
-    await this.db.$executeRaw`
-      UPDATE "User" 
-      SET "name" = ${processedName}
-      WHERE "id" = ${userId}
-    `;
-
-    // Get the user after update
-    const updatedUser = await this.db.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        emailVerified: true,
-        role: true,
-      },
-    });
-
-    if (!updatedUser) {
-      throw new Error('User not found after update');
-    }
-
-    logger.info(
-      { ...logContext, dbUserId: updatedUser.id },
-      'Successfully updated user name in database using raw query.'
-    );
-
-    return updatedUser as User;
-  }
-
-  // Helper method to update the user name using Prisma
-  private async _updateNameWithPrisma(
-    userId: string,
-    processedName: string,
-    logContext: Record<string, unknown>
-  ): Promise<User> {
-    const updatedUser = await this.db.user.update({
-      where: { id: userId },
-      data: { name: processedName },
-    });
-
-    logger.info(
-      { ...logContext, dbUserId: updatedUser.id },
-      'Successfully updated user name in database using Prisma update.'
-    );
-
-    return updatedUser;
-  }
-
   // Helper method to create a mock user for E2E tests
   private _createMockUserForE2E(userId: string, processedName: string): User {
     return {
@@ -149,27 +92,24 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
     } as User;
   }
 
-  // Helper method to handle database operations
+  // Helper method to handle database operations - simplified to use only Prisma
   private async _performDatabaseUpdate(
     userId: string,
     processedName: string,
     logContext: Record<string, unknown>
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      // First try with raw SQL
-      try {
-        const user = await this._updateNameWithRawSql(userId, processedName, logContext);
-        return { success: true, user };
-      } catch (rawError) {
-        // If raw query fails, try the normal Prisma update as a fallback
-        logger.warn(
-          { ...logContext, error: rawError },
-          'Raw query update failed, falling back to Prisma update.'
-        );
+      const user = await this.db.user.update({
+        where: { id: userId },
+        data: { name: processedName },
+      });
 
-        const user = await this._updateNameWithPrisma(userId, processedName, logContext);
-        return { success: true, user };
-      }
+      logger.info(
+        { ...logContext, dbUserId: user.id },
+        'Successfully updated user name in database.'
+      );
+
+      return { success: true, user };
     } catch (error: unknown) {
       const parsedError = this._parseDbError(error);
       logger.error(

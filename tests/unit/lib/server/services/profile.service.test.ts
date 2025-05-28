@@ -20,8 +20,7 @@ const mockPrisma = {
     update: jest.fn<(...args: any[]) => Promise<PrismaUser>>(),
     findUnique: jest.fn<(...args: any[]) => Promise<PrismaUser | null>>(),
   },
-  $executeRaw: jest.fn<(...args: any[]) => Promise<number>>(),
-  // Add other methods if your service uses them, e.g., $transaction
+  // No longer needed: $executeRaw: jest.fn<(...args: any[]) => Promise<number>>(),
 };
 
 describe('ProfileServiceImpl', () => {
@@ -54,33 +53,8 @@ describe('ProfileServiceImpl', () => {
   });
 
   describe('updateUserName', () => {
-    it('should successfully update user name with raw SQL and return the user', async () => {
+    it('should successfully update user name and return the user', async () => {
       const updatedUser = { ...mockUser, name: validName };
-      // Raw SQL update succeeds
-      mockPrisma.$executeRaw.mockResolvedValueOnce(1); // 1 row affected
-      mockPrisma.user.findUnique.mockResolvedValueOnce(updatedUser);
-
-      const result = await profileService.updateUserName(testUserId, validName);
-
-      expect(result.success).toBe(true);
-      expect(result.user).toEqual(updatedUser);
-      expect(result.error).toBeUndefined();
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: testUserId },
-        select: { id: true, name: true, email: true, image: true, emailVerified: true, role: true },
-      });
-      expect(mockPrisma.user.update).not.toHaveBeenCalled(); // Fallback should not be called
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ dbUserId: updatedUser.id }),
-        'Successfully updated user name in database using raw query.'
-      );
-    });
-
-    it('should fall back to Prisma update if raw SQL fails and successfully update', async () => {
-      const updatedUser = { ...mockUser, name: validName };
-      // Raw SQL update fails
-      mockPrisma.$executeRaw.mockRejectedValueOnce(new Error('Raw SQL failed'));
       // Prisma update succeeds
       mockPrisma.user.update.mockResolvedValueOnce(updatedUser);
 
@@ -89,18 +63,13 @@ describe('ProfileServiceImpl', () => {
       expect(result.success).toBe(true);
       expect(result.user).toEqual(updatedUser);
       expect(result.error).toBeUndefined();
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: testUserId },
         data: { name: validName },
       });
-      expect(logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(Error) }),
-        'Raw query update failed, falling back to Prisma update.'
-      );
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ dbUserId: updatedUser.id }),
-        'Successfully updated user name in database using Prisma update.'
+        'Successfully updated user name in database.'
       );
     });
 
@@ -110,7 +79,6 @@ describe('ProfileServiceImpl', () => {
       expect(result.user).toBeUndefined();
       expect(result.error).toBe('Name must be between 3 and 50 characters.');
       expect(logger.warn).toHaveBeenCalled();
-      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
       expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
 
@@ -120,13 +88,11 @@ describe('ProfileServiceImpl', () => {
       expect(result.user).toBeUndefined();
       expect(result.error).toBe('Name must be between 3 and 50 characters.');
       expect(logger.warn).toHaveBeenCalled();
-      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
       expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
 
-    it('should return error if both raw SQL and Prisma update fail', async () => {
+    it('should return error if Prisma update fails', async () => {
       const dbError = new Error('DB update failed');
-      mockPrisma.$executeRaw.mockRejectedValueOnce(new Error('Raw SQL failed'));
       mockPrisma.user.update.mockRejectedValueOnce(dbError);
 
       // Set the environment variable to false to ensure we get the error response
@@ -148,7 +114,6 @@ describe('ProfileServiceImpl', () => {
       const prismaNotFoundError = new Error('Record to update not found.') as any;
       prismaNotFoundError.code = 'P2025';
 
-      mockPrisma.$executeRaw.mockRejectedValueOnce(new Error('Raw SQL failed'));
       mockPrisma.user.update.mockRejectedValueOnce(prismaNotFoundError);
 
       const result = await profileService.updateUserName(testUserId, validName);
@@ -179,7 +144,6 @@ describe('ProfileServiceImpl', () => {
       });
 
       it('should return mock success response if DB update fails in E2E test environment', async () => {
-        mockPrisma.$executeRaw.mockRejectedValueOnce(new Error('Raw SQL failed'));
         mockPrisma.user.update.mockRejectedValueOnce(new Error('Prisma update failed'));
 
         const result = await profileService.updateUserName(testUserId, validName);
