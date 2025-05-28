@@ -53,9 +53,9 @@ async function globalSetup(_config: FullConfig): Promise<void> {
     // Go to login page and perform login
     await page.goto('http://localhost:3777/login'); // Use the actual test server port 3777
 
-    // Take a screenshot to debug
-    await page.screenshot({ path: 'login-page-debug.png' });
-    console.log('Screenshot saved to login-page-debug.png');
+    // Take a screenshot to debug - save to gitignored screenshots directory
+    await page.screenshot({ path: 'tests/e2e/screenshots/login-page-debug.png' });
+    console.log('Screenshot saved to tests/e2e/screenshots/login-page-debug.png');
 
     // Try to identify form elements
     const emailInputs = await page.$$('input[type="email"], input#email');
