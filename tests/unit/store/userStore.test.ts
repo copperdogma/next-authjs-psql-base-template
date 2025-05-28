@@ -192,6 +192,68 @@ describe('useUserStore', () => {
       expect(finalState.role).toBe(UserRole.USER);
     });
 
+    it('should individually test retaining state for each field when update is undefined', () => {
+      const initialDetails = {
+        id: 'id-0',
+        name: 'Name-0',
+        email: 'email-0@example.com',
+        image: 'image-0.png',
+        role: UserRole.USER,
+      };
+      act(() => {
+        useUserStore.getState().setUserDetails(initialDetails);
+      });
+
+      // Test undefined id - only id should remain initialDetails.id
+      act(() => {
+        useUserStore.getState().setUserDetails({ name: 'New Name After Undefined ID' }); // Change another field to ensure reset for next step
+        useUserStore.getState().setUserDetails({ id: undefined });
+      });
+      let state = useUserStore.getState();
+      expect(state.id).toBe(initialDetails.id);
+      expect(state.name).toBe('New Name After Undefined ID'); // Verify other field changed as expected
+
+      // Reset state and test undefined name
+      act(() => {
+        useUserStore.getState().setUserDetails(initialDetails); // Reset to known state
+        useUserStore.getState().setUserDetails({ email: 'new-email@example.com' }); // Change another field
+        useUserStore.getState().setUserDetails({ name: undefined });
+      });
+      state = useUserStore.getState();
+      expect(state.name).toBe(initialDetails.name);
+      expect(state.email).toBe('new-email@example.com');
+
+      // Reset state and test undefined email
+      act(() => {
+        useUserStore.getState().setUserDetails(initialDetails);
+        useUserStore.getState().setUserDetails({ image: 'new-image.png' });
+        useUserStore.getState().setUserDetails({ email: undefined });
+      });
+      state = useUserStore.getState();
+      expect(state.email).toBe(initialDetails.email);
+      expect(state.image).toBe('new-image.png');
+
+      // Reset state and test undefined image
+      act(() => {
+        useUserStore.getState().setUserDetails(initialDetails);
+        useUserStore.getState().setUserDetails({ role: UserRole.ADMIN });
+        useUserStore.getState().setUserDetails({ image: undefined });
+      });
+      state = useUserStore.getState();
+      expect(state.image).toBe(initialDetails.image);
+      expect(state.role).toBe(UserRole.ADMIN);
+
+      // Reset state and test undefined role
+      act(() => {
+        useUserStore.getState().setUserDetails(initialDetails);
+        useUserStore.getState().setUserDetails({ id: 'new-id-check' });
+        useUserStore.getState().setUserDetails({ role: undefined });
+      });
+      state = useUserStore.getState();
+      expect(state.role).toBe(initialDetails.role);
+      expect(state.id).toBe('new-id-check');
+    });
+
     // Add test cases for each conditional branch in setUserDetails
     it('should handle all conditional branches in setUserDetails', () => {
       // Test with empty update object
