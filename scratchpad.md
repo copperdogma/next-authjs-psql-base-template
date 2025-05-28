@@ -259,22 +259,17 @@ This structured testing approach will help ensure the template provides a smooth
 - **Goal:** Ensure all documentation accurately reflects the refined codebase.
 
 - **Tasks:**
-  - `[ ]` **Update `project-reference.mdc`:**
-    - **Detail:** This is the AI's primary context file. It needs to be accurate.
-    - **Action:** After all code changes are made, review and update `project-reference.mdc` to reflect:
-      - The final project structure.
-      - The core authentication mechanism (NextAuth.js + Prisma) and the _optional_ nature of any Firebase services.
-      - Correct component lists and their purposes.
-      - Updated command references if any scripts changed.
-      - Accurate environment variable list and explanations.
-  - `[ ]` **Update Code-Level Comments:**
-    - **Detail:** Review key files (especially those modified, like `auth.actions.ts`, `setup.js`, any Firebase utility files if kept) for comments that might be outdated or misleading after changes.
-    - **Action:** Adjust comments to accurately describe the current implementation and intent. For example, clearly label Firebase utilities as "for optional Firebase service integration."
-  - `[ ]` **Consolidate and Streamline General Documentation (`README.md`, `SETUP.md`):**
-    - **Detail:** Documentation may be inconsistent or outdated.
-    - **Action:** After all implementation changes, ensure that:
-      1.  `README.md` clearly states the core stack (NextAuth.js + PostgreSQL)
-      2.  The optional nature of Firebase is clearly communicated
-      3.  Setup instructions are accurate and complete
-      4.  Examples and snippets reflect the final code structure
-    - **Benefit:** Makes template onboarding clear and accurate.
+  - `[x]` **Update `README.md`:**
+    - **Detail:** Reviewed and updated `README.md` to be more concise, AI-friendly, and accurate. Focused on core tech, quick start, project structure, key commands, and essential configurations.
+    - **Benefit:** Provides a clear and up-to-date entry point for understanding and using the template.
+  - `[x]` **Update `SETUP.md`:**
+    - **Detail:** Reviewed and updated `SETUP.md` to emphasize the `npm run setup` script, streamline manual setup instructions, and ensure consistency with `README.md`.
+    - **Benefit:** Offers a clearer guide for initializing the project, especially highlighting the automated setup process.
+  - `[x]` **Review and Update Code-Level Comments:**
+    - **Detail:** Checked comments in key files like `app/api/test/firebase-config/route.ts`, `lib/auth-shared.ts`, `lib/auth-node.ts`, `lib/auth-edge.ts`, and `middleware.ts`.
+    - **Action:** Verified that comments accurately describe the code's purpose, especially regarding authentication logic, optional Firebase integration, and middleware behavior. Confirmed that comments clearly distinguish between Node.js and Edge runtime configurations for NextAuth.js. No significant changes were needed as comments were largely up-to-date and informative.
+    - **Benefit:** Ensures that developers (and AI agents) can understand the nuances of the codebase directly from the source.
+  - `[x]` **Verify `project-reference.mdc` Alignment:**
+    - **Detail:** Cross-referenced the information in `project-reference.mdc` (provided in the initial prompt) with the updated documentation and code structure.
+    - **Action:** Confirmed that `project-reference.mdc` accurately reflects the project's structure, authentication mechanisms, command references, and core technologies. Noted a minor potential enhancement for `lib/` directory descriptions within `project-reference.mdc` for future consideration.
+    - **Benefit:** Validates that the primary AI context file is consistent with the actual state of the project.

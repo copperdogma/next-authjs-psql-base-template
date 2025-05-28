@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 
 /**
- * API route to expose relevant Firebase configuration for debugging/testing purposes.
- * IMPORTANT:
- * 1. Never expose sensitive credentials like the private key here.
- * 2. This endpoint should NOT be accessible in production environments.
- * 3. To enable this endpoint, set ALLOW_FIREBASE_CONFIG_ENDPOINT=true in your environment.
+ * API route to expose relevant Firebase configuration for OPTIONAL Firebase services integration.
+ *
+ * NOTE: This endpoint is NOT related to the core authentication system of this template,
+ * which uses NextAuth.js with PostgreSQL. This endpoint only provides configuration for
+ * optional Firebase services like Firestore, Storage, or Functions that you might want
+ * to add to your application.
+ *
+ * IMPORTANT SECURITY NOTES:
+ * 1. This endpoint is DISABLED BY DEFAULT and requires ALLOW_FIREBASE_CONFIG_ENDPOINT=true
+ *    to be set in your environment variables.
+ * 2. Never expose sensitive credentials like the private key here.
+ * 3. This endpoint should NOT be accessible in production environments.
  */
 export async function GET() {
   // Enhanced security check - requires explicit environment variable

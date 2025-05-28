@@ -1,61 +1,101 @@
-# Setting Up Your Project
+# Project Setup Guide
 
-This template provides a starting point for building a Next.js application with NextAuth.js Authentication (using PostgreSQL for user data) and PostgreSQL for general database needs. Follow these steps to get started with your new project.
+This guide helps you initialize your new project based on this template. The template uses Next.js, NextAuth.js (with PostgreSQL via Prisma Adapter), and PostgreSQL for the database.
 
-## Quick Start
+## Recommended: Automated Setup Script
 
-1. Create a new repository using this template
-2. Clone your new repository
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run the setup script:
-   ```bash
-   npm run setup
-   ```
-   This will prompt you for:
-   - Project name
-   - Project display title
-   - Project description
-   - Repository URL
-   - Copyright holder name
+The easiest way to get started is to use the automated setup script:
 
-## Manual Setup
+1.  **Clone Your Repository**:
+    If you haven't already, clone the repository you created from this template.
 
-If you prefer to set up manually, you'll need to replace the following placeholders throughout the codebase:
+    ```bash
+    # Replace with your repository URL
+    git clone https://github.com/yourusername/your-new-project.git
+    cd your-new-project
+    ```
 
-### Required Placeholders
+2.  **Install Dependencies**:
 
-- `{{YOUR_PROJECT_NAME}}` - Your project's name (used in package.json, etc.)
-- `{{YOUR_PROJECT_DESCRIPTION}}` - A brief description of your project
-- `{{YOUR_REPOSITORY_URL}}` - Your Git repository URL
-- `{{YOUR_DATABASE_NAME}}` - Your database name
-- `{{YOUR_APP_TITLE}}` - The display title for your application
-- `{{YOUR_COPYRIGHT_HOLDER}}` - Copyright holder's name
+    ```bash
+    npm install
+    ```
 
-### Files to Update
+3.  **Run the Setup Script**:
 
-The following files need to be updated with your project's information:
+    ```bash
+    npm run setup
+    ```
 
-1. `package.json`
+    This interactive script will guide you through:
 
-   - name
-   - description
-   - repository url
+    - Replacing project placeholders (name, description, title, repository URL, copyright holder).
+    - Configuring essential environment variables by creating a `.env.local` file. This includes:
+      - `DATABASE_URL` for PostgreSQL.
+      - Auto-generating a secure `NEXTAUTH_SECRET`.
+      - Prompting for `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (if using Google Sign-In).
+      - Optionally configuring `REDIS_URL`.
 
-2. `.env.example` and `.env`
+4.  **Database Migration**:
+    After the setup script completes and your `.env.local` is configured, run database migrations:
 
-   - Database URLs
+    ```bash
+    npx prisma migrate dev
+    ```
 
-3. `app/layout.tsx`
+    This will create the necessary tables in your PostgreSQL database based on `prisma/schema.prisma`.
 
-   - Page title
-   - Meta description
+5.  **Start Development Server**:
+    ```bash
+    npm run dev
+    ```
+    Your application should now be running, typically at `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL`).
 
-4. Documentation files in `/docs`
-   - Update project-specific content
+## Manual Configuration (Alternative)
 
-## Environment Setup
+If you choose not to use `npm run setup` or need to make manual adjustments:
 
-1. Copy `.env.example`
+1.  **Install Dependencies**: `npm install`
+
+2.  **Environment Variables (`.env.local`)**:
+
+    - Copy `.env.example` to `.env.local`: `cp .env.example .env.local`
+    - Manually edit `.env.local` and provide values for:
+      - `DATABASE_URL`: Your PostgreSQL connection string.
+      - `NEXTAUTH_SECRET`: Generate one with `openssl rand -base64 32`.
+      - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: If using Google Sign-In.
+      - `NEXTAUTH_URL`: The base URL of your application (e.g., `http://localhost:3000`).
+      - `REDIS_URL`: (Optional) If using Redis.
+
+3.  **Placeholder Replacement**:
+    Manually search and replace the following placeholders in files like `package.json`, `README.md`, `LICENSE`, and within code comments/documentation:
+
+    - `{{YOUR_PROJECT_NAME}}`
+    - `{{YOUR_PROJECT_DESCRIPTION}}`
+    - `{{YOUR_REPOSITORY_URL}}`
+    - `{{YOUR_APP_TITLE}}`
+    - `{{YOUR_COPYRIGHT_HOLDER}}`
+    - Database name placeholders (e.g., `{{YOUR_DATABASE_NAME_DEV}}`, `{{YOUR_DATABASE_NAME_TEST}}`) if not handled by `.env.local`.
+
+4.  **Database Migration**: `npx prisma migrate dev`
+
+## Authentication (NextAuth.js with PostgreSQL)
+
+- Core authentication relies on NextAuth.js using the Prisma Adapter with your PostgreSQL database.
+- Supported providers (Google, Credentials) are configured in `lib/auth-shared.ts`.
+- Ensure `DATABASE_URL` and `NEXTAUTH_SECRET` are correctly set in `.env.local`.
+
+## Optional Firebase Services
+
+- This template does **not** use Firebase for core authentication.
+- If you plan to integrate other Firebase services (e.g., Firestore, Storage, Firebase Functions):
+  1.  Set up a Firebase project in the Firebase Console.
+  2.  Add your Firebase client configuration variables to `.env.local`.
+  3.  The route `app/api/test/firebase-config/route.ts` can provide client-side Firebase config. For security, it requires `ALLOW_FIREBASE_CONFIG_ENDPOINT=true` in `.env.local` to be active (intended for development/testing).
+
+## Next Steps
+
+- Explore the `components/` and `app/` directories to understand the structure.
+- Customize UI components in `components/ui/`.
+- Add new routes and features as needed.
+- Refer to `README.md` for available commands and further project details.
