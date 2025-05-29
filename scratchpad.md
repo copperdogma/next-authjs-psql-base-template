@@ -118,73 +118,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 This structured testing approach will help ensure the template provides a smooth, error-free experience for all users, whether they're human developers or AI agents working on behalf of users.
 
-## Codebase Improvement Checklist
 
-### I. Documentation & Code Consistency (Crucial for AI)
 
-- **[x] Update `KeyFeatures.tsx` to Reflect Correct Authentication**
 
-  - **File(s) to Modify**: `app/about/components/KeyFeatures.tsx`
-  - **Current Issue**: The component states: _"Authentication: Firebase Authentication integration with Google sign-in"_.
-  - **Recommendation**: Change the text to accurately describe the authentication mechanism. For example: _"Authentication: NextAuth.js v5 with PostgreSQL integration (Google & Email/Password providers)"_.
-  - **Rationale**: Ensures the AI (and human users) have an accurate understanding of the template's core authentication system from the example UI itself. Prevents confusion and incorrect assumptions when the AI starts modifying or extending auth features.
 
-- **[x] Review All Code Comments and Internal Documentation for Firebase Auth Misreferences**
-  - **File(s) to Modify**: Potentially any file with comments.
-  - **Current Issue**: While the main README and `project-reference.mdc` are accurate, there might be lingering comments in the codebase that incorrectly suggest Firebase is the _primary_ authentication system.
-  - **Recommendation**: Perform a project-wide search for terms like "Firebase Auth", "Firebase Authentication", "Firebase sign-in" (excluding contexts clearly related to optional Firebase services like `firebase.json` or the `/api/test/firebase-config` route). If any comments imply Firebase is the core auth, update them to reflect NextAuth.js with Prisma/PostgreSQL.
-  - **Rationale**: Guarantees consistent information across the codebase, preventing AI confusion when interpreting code logic or adding new features related to authentication.
-
-### II. Code Simplification & Elegance
-
-- **[x] Simplify `ProfileService.updateUserName` Method**
-
-  - **File(s) to Modify**: `lib/server/services/profile.service.ts`
-  - **Current Issue**: The `updateUserName` method in `ProfileServiceImpl` currently attempts a raw SQL update (`_updateNameWithRawSql`) and then falls back to a Prisma ORM update (`_updateNameWithPrisma`), with a comment about "avoiding schema incompatibilities." This adds complexity.
-  - **Recommendation**:
-    1.  Refactor `updateUserName` to primarily (or solely) use the Prisma ORM update: `await this.db.user.update({ where: { id: userId }, data: { name: processedName } });`.
-    2.  Remove the `_updateNameWithRawSql` helper method unless there is a deeply compelling and documented reason _specific to the base template's schema_ that necessitates it. For a generic template, ORM-idiomatic updates are preferred.
-    3.  If the raw SQL method is removed, also remove its corresponding E2E test environment handling (`this._createMockUserForE2E`) if it was solely to bypass the raw SQL for tests. Prisma ORM updates are generally easier to mock or test.
-  - **Rationale**: Simplifies the codebase, makes it more idiomatic for a Prisma-based project, easier for an AI to understand and extend, and reduces the surface area for potential bugs. Raw SQL for basic field updates is often unnecessary with a powerful ORM like Prisma.
-  - **Implementation**: Completed. Simplified the code to use Prisma ORM exclusively, removed the raw SQL method, and updated the tests. All unit tests and E2E tests pass with the new implementation.
-
-- **[x] Add Explanatory Comments to Registration Rate Limiting "Fail Open" Behavior**
-  - **File(s) Modified**: `lib/actions/auth.actions.ts`
-  - **Current Issue**: The registration rate limiting currently "fails open" if Redis is unavailable or misconfigured (i.e., it allows the registration to proceed without rate limiting). While this is a good default for a template to prevent setup friction, it's important to be explicit about it.
-  - **Implementation**:
-    1. Added comprehensive JSDoc comments to the `_handleRegistrationRateLimit` function explaining the fail-open behavior and recommendations for production environments.
-    2. Added specific comments in the code where the function "fails open" (returns null) when Redis is unavailable or encounters errors.
-    3. Attempted to update `.env.example` to add documentation about the fail-open behavior, but file access was restricted.
-  - **Rationale**: These comments improve code clarity and ensure developers understand the security implications of the fail-open behavior. The comments help manage expectations for users and AI regarding the rate limiting feature and ensure they understand the implications of not having Redis configured for this specific functionality.
-
-### III. Testing Refinements
-
-- **[x] Evaluate and Refine Unit Tests for Server Actions**
-  - **File(s) Modified**: `tests/unit/lib/actions/auth.actions.test.ts`
-  - **Current Issue**: Test file was a placeholder with complex mocking requirements.
-  - **Implementation**: Simplified the testing approach for server actions by creating a documentation-focused test file that explains the testing strategy. Server actions are now primarily tested through E2E tests which provide more comprehensive coverage with less complexity, while unit tests are focused on form validations in components. This approach aligns with best practices for Next.js server actions where complex mocking can lead to brittle tests.
-  - **Rationale**: Complex mocking of NextAuth.js, Prisma, Redis, and other dependencies was causing tests to hang or fail unpredictably. The new approach provides better long-term maintainability while still ensuring proper test coverage through E2E tests.
-
-### IV. Environment Setup & Developer Experience (DX)
-
-- **\[x] Ensure Setup Script Handles All Placeholders**
-  - **File(s) Modified**: `scripts/setup.js`, added new test script `scripts/test-placeholder-replacement.js`
-  - **Current Issue**: The setup script was missing several placeholders (like `{{YOUR_APP_TITLE}}`, `{{YOUR_APP_NAME}}`, etc.) and some files (scratchpad.md, SETUP.md) weren't processed.
-  - **Implementation**:
-    1. Added all missing placeholders to the `PLACEHOLDERS` object in `setup.js`
-    2. Fixed the naming of database placeholders to include `YOUR_` prefix
-    3. Added additional files to the `FILES_TO_PROCESS` array
-    4. Created a test script (`scripts/test-placeholder-replacement.js`) to verify all placeholders are handled
-    5. Improved handling of files with special extensions
-  - **Rationale**: Ensures a smooth setup experience with proper replacement of all placeholder values across the codebase.
-
-### V. Code & Dependency Hygiene (Optional but good practice)
-
-- **\[ ] Final Review for Unused Code/Dependencies**
-  - **File(s) to Modify**: Entire codebase.
-  - **Current Issue**: Common for templates to accumulate minor unused elements over development.
-  - **Recommendation**:
-    1.  Run `npx depcheck` or a similar tool to identify unused dependencies in `package.json`. Review and remove any that are truly unnecessary for the base template.
-    2.  Use IDE features or linters (if configured) to find unused variables, functions, imports, or files.
-    3.  Manually scan for any commented-out code blocks that represent old logic and are no longer needed.
-  - **Rationale**: Keeps the template lean, reduces build times, and simplifies the codebase for AI comprehension.
