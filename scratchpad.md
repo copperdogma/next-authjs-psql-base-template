@@ -159,28 +159,11 @@ This structured testing approach will help ensure the template provides a smooth
 
 ### III. Testing Refinements
 
-- **\[ ] Evaluate and Refine Unit Tests for Server Actions**
-  - **File(s) to Modify**: `tests/unit/lib/actions/auth.actions.test.ts`
-  - **Current Issue**: This test file is currently a placeholder.
-  - **Recommendation**:
-    - **Option A (Simplicity First - Recommended for Template)**:
-      1.  Remove the placeholder file `tests/unit/lib/actions/auth.actions.test.ts`.
-      2.  Add a section to your main testing documentation (e.g., in `docs/testing/main.md` or as a comment in `project-reference.mdc`) stating: "Server Actions (e.g., `registerUserAction`) are primarily validated through End-to-End (E2E) tests. This approach ensures that the full flow, including data validation, database interaction, and NextAuth.js integration, is tested from the user's perspective. Unit testing server actions can be complex due to the need to mock database clients (Prisma), NextAuth.js session management, and other server-side dependencies. For this template, E2E tests provide comprehensive coverage for these actions."
-    - **Option B (If Basic Unit Tests are Desired)**:
-      1.  If choosing to keep unit tests, add 1-2 very simple tests to `auth.actions.test.ts` that focus _only_ on input validation (e.g., calling `registerUserAction` with invalid FormData and checking if it returns a `VALIDATION_ERROR` without actually mocking database calls). This keeps the unit tests lightweight.
-      2.  Example for Option B:
-          ```typescript
-          // In tests/unit/lib/actions/auth.actions.test.ts
-          it('should return a validation error if email is missing', async () => {
-            const formData = new FormData();
-            // formData.append('password', 'password123'); // Email is missing
-            const result = await registerUserAction(null, formData);
-            expect(result.status).toBe('error');
-            expect(result.error?.code).toBe('VALIDATION_ERROR');
-            // Potentially check result.errors for specific field error
-          });
-          ```
-  - **Rationale**: For a base template, E2E tests provide excellent coverage for server actions. Overly complex unit tests for actions with many external dependencies (DB, Auth) can be brittle and hard for an AI to maintain or extend. Option A prioritizes simplicity and robust E2E validation. Option B offers a minimal unit testing footprint.
+- **[x] Evaluate and Refine Unit Tests for Server Actions**
+  - **File(s) Modified**: `tests/unit/lib/actions/auth.actions.test.ts`
+  - **Current Issue**: Test file was a placeholder with complex mocking requirements.
+  - **Implementation**: Simplified the testing approach for server actions by creating a documentation-focused test file that explains the testing strategy. Server actions are now primarily tested through E2E tests which provide more comprehensive coverage with less complexity, while unit tests are focused on form validations in components. This approach aligns with best practices for Next.js server actions where complex mocking can lead to brittle tests.
+  - **Rationale**: Complex mocking of NextAuth.js, Prisma, Redis, and other dependencies was causing tests to hang or fail unpredictably. The new approach provides better long-term maintainability while still ensuring proper test coverage through E2E tests.
 
 ### IV. Environment Setup & Developer Experience (DX)
 
