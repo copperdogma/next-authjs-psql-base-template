@@ -44,22 +44,22 @@ const allPlaceholders = new Set();
 
 function scanDirectory(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    
+
     // Skip excluded directories
     if (entry.isDirectory() && excludeDirs.includes(entry.name)) {
       continue;
     }
-    
+
     if (entry.isDirectory()) {
       scanDirectory(fullPath);
     } else {
       try {
         const content = fs.readFileSync(fullPath, 'utf8');
         const placeholderMatches = content.match(/{{YOUR_[A-Z_]+}}/g);
-        
+
         if (placeholderMatches) {
           for (const match of placeholderMatches) {
             allPlaceholders.add(match);
@@ -95,4 +95,4 @@ if (missingPlaceholders.length > 0) {
 
 // Make the test script executable
 console.log('\nMaking this script executable: chmod +x scripts/test-placeholder-replacement.js');
-fs.chmodSync(__filename, '755'); 
+fs.chmodSync(__filename, '755');

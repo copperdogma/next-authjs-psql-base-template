@@ -64,15 +64,18 @@ const PLACEHOLDERS = {
   },
   YOUR_APP_TITLE: {
     prompt: 'Application title (displayed in browser)',
-    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    default: answers =>
+      answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
   },
   YOUR_APP_SHORT_NAME: {
     prompt: 'Application short name (for PWA)',
-    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    default: answers =>
+      answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
   },
   YOUR_APP_NAME: {
     prompt: 'Application name (used in code references)',
-    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    default: answers =>
+      answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
   },
   YOUR_APP_DESCRIPTION: {
     prompt: 'Application description (used in env vars)',
@@ -291,11 +294,11 @@ function processFile(filePath, answers) {
       '.css',
       '.txt',
     ];
-    
+
     // For any file in docs/testing or with .md extension, we should always process
-    const shouldAlwaysProcess = 
-      filePath.includes('docs/testing') || 
-      filePath.includes('tests/README-main.md') || 
+    const shouldAlwaysProcess =
+      filePath.includes('docs/testing') ||
+      filePath.includes('tests/README-main.md') ||
       extension === '.md';
 
     if (!shouldAlwaysProcess && !supportedExtensions.includes(extension)) {
