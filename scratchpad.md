@@ -12,7 +12,7 @@ Keep in mind this project is meant to be an easy-to-use template for getting pro
 
 ## Codebase AnalysisAI Prompt
 
-I'm creating a github template with nextjs, firebase, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
+I'm creating a github template with nextjs, authjs, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
 
 I'm going to paste the entire codebase below.
 
@@ -46,11 +46,8 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 - [ ] try to upgrade everything again
 - [ ] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `{{YOUR_APP_NAME}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
-- [ ] Final round: search for unused vars/code/files/packages/etc.
+- [x] Final round: search for unused vars/code/files/packages/etc.
 - [ ] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
-- [ ] AI control of dev environment
-  - [ ] AI needs a solid way to interact/query the UI. Modern UIs are often too complex for the AI to understand how it will end up being rendered.
-  - [ ] AI needs a way to add items to the log, spin up the server, run their manual tests (or a scripted e2e test perhaps), and check the logs afterward.
 
 ### Testing and Validation Plan for Setup Process - We'll do this at the END of the project.
 
@@ -63,8 +60,9 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   1. **Preparation:**
 
      - Start a new, empty Cursor instance
-     - Instruct the AI agent to clone the GitHub repository
+     - Instruct the AI agent to clone the GitHub repository exaclty like this (with the dot): git clone https://github.com/copperdogma/next-authjs-psql-base-template .
      - The AI should follow the setup instructions documented in README.md and SETUP.md
+     - NOTE: You can use the username/password of postgres/postgres for the database.
 
   2. **Testing Scenarios:**
 
@@ -107,7 +105,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
   1. A comprehensive test report documenting the setup experience
   2. A list of identified issues and their fixes
-  3. Improved documentation based on testing feedback
+  3. Improved documentation (mostly SETUP.md) based on testing feedback
   4. Any additional setup script enhancements needed
 
 - **Benefits:**
@@ -117,8 +115,3 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - Tests the template's usability by AI agents specifically
 
 This structured testing approach will help ensure the template provides a smooth, error-free experience for all users, whether they're human developers or AI agents working on behalf of users.
-
-
-
-
-
