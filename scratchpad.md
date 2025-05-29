@@ -49,7 +49,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 - [x] Final round: search for unused vars/code/files/packages/etc.
 - [ ] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
 
-### Testing and Validation Plan for Setup Process - We'll do this at the END of the project.
+### Testing and Validation Plan for Setup Process
 
 - **Goal:** Thoroughly test the template setup process to ensure it works flawlessly for both human developers and AI agents.
 
