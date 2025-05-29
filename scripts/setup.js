@@ -16,12 +16,18 @@ const inquirer = require('inquirer');
 // Directories to search for placeholder replacement
 const FILES_TO_PROCESS = [
   'package.json',
+  'package-lock.json',
   'README.md',
+  'SETUP.md',
   'LICENSE',
   'app/manifest.ts',
   'tests/utils/test-constants.ts',
   'tests/README-main.md',
+  'tests/simple-layout-test.js',
   'docs/testing',
+  'docs/temp_project_reference_update.md',
+  'scratchpad.md',
+  'scratchpad-docs.md',
 ];
 
 // Placeholders to replace with user input
@@ -56,13 +62,33 @@ const PLACEHOLDERS = {
     prompt: 'Author email',
     default: 'your.email@example.com',
   },
-  DATABASE_NAME_DEV: {
+  YOUR_APP_TITLE: {
+    prompt: 'Application title (displayed in browser)',
+    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+  },
+  YOUR_APP_SHORT_NAME: {
+    prompt: 'Application short name (for PWA)',
+    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+  },
+  YOUR_APP_NAME: {
+    prompt: 'Application name (used in code references)',
+    default: answers => answers.YOUR_PROJECT_NAME.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+  },
+  YOUR_APP_DESCRIPTION: {
+    prompt: 'Application description (used in env vars)',
+    default: answers => answers.YOUR_PROJECT_DESCRIPTION,
+  },
+  YOUR_DATABASE_NAME_DEV: {
     prompt: 'Development database name',
     default: answers => `${answers.YOUR_PROJECT_NAME.replace(/-/g, '_')}_dev`,
   },
-  DATABASE_NAME_TEST: {
+  YOUR_DATABASE_NAME_TEST: {
     prompt: 'Test database name',
     default: answers => `${answers.YOUR_PROJECT_NAME.replace(/-/g, '_')}_test`,
+  },
+  YOUR_DATABASE_NAME: {
+    prompt: 'Database name (generic)',
+    default: answers => `${answers.YOUR_PROJECT_NAME.replace(/-/g, '_')}`,
   },
 };
 
@@ -189,7 +215,7 @@ async function replacePlaceholders() {
 
     // Update default database names if they weren't modified
     Object.entries(PLACEHOLDERS)
-      .filter(([key]) => key.startsWith('DATABASE_NAME_'))
+      .filter(([key]) => key.includes('DATABASE_NAME_'))
       .forEach(([key]) => {
         if (typeof PLACEHOLDERS[key].default === 'function') {
           const generatedDefault = PLACEHOLDERS[key].default(answers);
@@ -265,8 +291,14 @@ function processFile(filePath, answers) {
       '.css',
       '.txt',
     ];
+    
+    // For any file in docs/testing or with .md extension, we should always process
+    const shouldAlwaysProcess = 
+      filePath.includes('docs/testing') || 
+      filePath.includes('tests/README-main.md') || 
+      extension === '.md';
 
-    if (!supportedExtensions.includes(extension)) {
+    if (!shouldAlwaysProcess && !supportedExtensions.includes(extension)) {
       return; // Skip unsupported file types
     }
 
