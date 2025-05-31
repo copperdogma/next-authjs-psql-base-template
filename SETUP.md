@@ -41,10 +41,16 @@ The easiest way to get started is to use the automated setup script:
 4.  **Database Migration**:
     After the setup script completes and your `.env.local` is configured, run database migrations:
 
-    > **Prerequisites:** Ensure your PostgreSQL server is running and the database user specified in `DATABASE_URL` has `CREATEDB` permission. You might need to grant this permission using a command like `ALTER USER "yourusername" CREATEDB;` executed by a PostgreSQL superuser. Replace `yourusername` with the actual username from your `DATABASE_URL`.
-    > If your username or database name in `DATABASE_URL` are SQL reserved keywords, they might need to be quoted if you are manually creating the user or database.
+    > **Prerequisites:**
+    >
+    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file (e.g., `localhost:5432`).
+    > 2.  The `DATABASE_URL` must contain valid credentials (user and password) for your PostgreSQL server.
+    > 3.  **Database Creation:** `prisma migrate dev` **will attempt to create the database** (e.g., `your_dev_db_name` from your configuration) if it does not already exist on the server.
+    > 4.  For this automatic database creation to succeed, the PostgreSQL user specified in `DATABASE_URL` (e.g., `postgres`) must have the necessary privileges on the PostgreSQL _server_ to create new databases. This often means the user is a superuser or has the `CREATEDB` server-level role attribute. (e.g., `ALTER USER yourusername CREATEDB;` run by a superuser on the PostgreSQL server).
+    >
+    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` (e.g., `postgresql://postgres:postgres@localhost:5432/your_new_db_name?schema=public`) is often a good starting point, as this user typically has database creation rights.
 
-    > **Note:** Ensure your `DATABASE_URL` from `.env.local` is available to Prisma. You can prefix the command with `npx dotenv-cli -e .env.local` if needed (install `dotenv-cli` via `npm install -g dotenv-cli` or as a dev dependency).
+    > **Note on `dotenv-cli`:** The command below uses `dotenv-cli` to ensure environment variables from `.env.local` are loaded. It's recommended to have `dotenv-cli` as a development dependency in your `package.json` (`npm install --save-dev dotenv-cli`). If it's listed there, `npx` will use the local version.
 
     ```bash
     npx dotenv-cli -e .env.local npx prisma migrate dev
@@ -86,14 +92,14 @@ Create a JSON file (e.g., `setup-answers.json`) that provides the answers to the
   "YOUR_DATABASE_NAME_DEV": "your_dev_db_name",
   "YOUR_DATABASE_NAME_TEST": "your_test_db_name",
   "YOUR_DATABASE_NAME": "your_main_db_name",
-  "DATABASE_URL": "postgresql://user:password@host:port/your_dev_db_name_noninteractive?schema=public",
+  "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/your_dev_db_name?schema=public",
   "GOOGLE_CLIENT_ID": "", // Optional: leave empty if not using Google Sign-In
   "GOOGLE_CLIENT_SECRET": "", // Optional: leave empty if not using Google Sign-In
   "REDIS_URL": "" // Optional: leave empty if not using Redis
 }
 ```
 
-> **Note:** It's recommended to include a `setup-answers.example.json` in the repository root for users and AI agents to use as a template. All keys shown above should be present in your `setup-answers.json` file, even if some values (like Google or Redis credentials) are left empty if not used. The `DATABASE_URL` provided here will be used to create the `.env.local` file; ensure it's for the development environment that `prisma migrate dev` will target.
+> **Note:** It's recommended to include a `setup-answers.example.json` in the repository root for users and AI agents to use as a template. All keys shown above should be present in your `setup-answers.json` file, even if some values (like Google or Redis credentials) are left empty if not used. The `DATABASE_URL` provided here will be used to create the `.env.local` file; ensure it points to an accessible PostgreSQL server and uses credentials with rights to create the specified database if it doesn't exist.
 
 **2. Run the Setup Script with Configuration:**
 
@@ -136,10 +142,16 @@ If you choose not to use `npm run setup` or need to make manual adjustments:
 
 4.  **Database Migration**:
 
-    > **Prerequisites:** Ensure your PostgreSQL server is running and the database user specified in `DATABASE_URL` has `CREATEDB` permission. You might need to grant this permission using a command like `ALTER USER "yourusername" CREATEDB;` executed by a PostgreSQL superuser. Replace `yourusername` with the actual username from your `DATABASE_URL`.
-    > If your username or database name in `DATABASE_URL` are SQL reserved keywords, they might need to be quoted if you are manually creating the user or database.
+    > **Prerequisites:**
+    >
+    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file.
+    > 2.  The `DATABASE_URL` must contain valid credentials for your PostgreSQL server.
+    > 3.  **Database Creation:** `prisma migrate dev` **will attempt to create the database** if it does not already exist.
+    > 4.  For this automatic database creation to succeed, the PostgreSQL user specified in `DATABASE_URL` must have the necessary privileges on the PostgreSQL _server_ to create new databases (superuser or `CREATEDB` server-level attribute).
+    >
+    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` is often a good starting point.
 
-    > **Note:** Ensure your `DATABASE_URL` from `.env.local` is available to Prisma. You can prefix the command with `npx dotenv-cli -e .env.local` if needed (install `dotenv-cli` via `npm install -g dotenv-cli` or as a dev dependency).
+    > **Note on `dotenv-cli`:** The command below uses `dotenv-cli`. It's recommended to have `dotenv-cli` as a development dependency (`npm install --save-dev dotenv-cli`).
 
     ```bash
     npx dotenv-cli -e .env.local npx prisma migrate dev
