@@ -43,12 +43,12 @@ The easiest way to get started is to use the automated setup script:
 
     > **Prerequisites:**
     >
-    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file (e.g., `localhost:5432`).
+    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file (e.g., `localhost:5432` or `127.0.0.1:5432`).
     > 2.  The `DATABASE_URL` must contain valid credentials (user and password) for your PostgreSQL server.
     > 3.  **Database Creation:** `prisma migrate dev` **will attempt to create the database** (e.g., `your_dev_db_name` from your configuration) if it does not already exist on the server.
     > 4.  For this automatic database creation to succeed, the PostgreSQL user specified in `DATABASE_URL` (e.g., `postgres`) must have the necessary privileges on the PostgreSQL _server_ to create new databases. This often means the user is a superuser or has the `CREATEDB` server-level role attribute. (e.g., `ALTER USER yourusername CREATEDB;` run by a superuser on the PostgreSQL server).
     >
-    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` (e.g., `postgresql://postgres:postgres@localhost:5432/your_new_db_name?schema=public`) is often a good starting point, as this user typically has database creation rights.
+    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` (e.g., `postgresql://postgres:postgres@127.0.0.1:5432/your_new_db_name?schema=public`) is often a good starting point, as this user typically has database creation rights. If you encounter database connection errors (like Prisma error P1001) with `localhost`, try using `127.0.0.1` as the host in your `DATABASE_URL`.
 
     > **Note on `dotenv-cli`:** The command below uses `dotenv-cli` to ensure environment variables from `.env.local` are loaded. It's recommended to have `dotenv-cli` as a development dependency in your `package.json` (`npm install --save-dev dotenv-cli`). If it's listed there, `npx` will use the local version.
 
@@ -60,13 +60,22 @@ The easiest way to get started is to use the automated setup script:
 
 5.  **Start Development Server**:
 
-    ```bash
-    npm run dev
-    ```
+    - **For manual development:**
 
-    Your application should now be running, typically at `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL`).
+      ```bash
+      npm run dev
+      ```
 
-    > **Note:** After running `npm run dev`, please manually open your browser and navigate to `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL` in your `.env.local` file) to verify the application is running. In some automated environments, direct verification of this step can be challenging.
+      Your application should now be running, typically at `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL`).
+
+    - **For AI Agents and Automated Environments:**
+      Do **not** use `npm run dev` as it is interactive. Instead, use a background process manager like PM2, which is pre-configured in this project.
+      ```bash
+      npm run ai:start
+      ```
+      This command will start the server in the background. You can check its status with `npm run ai:status` and view logs with `npm run ai:logs`. Refer to the "AI Agent Server Management (PM2)" section in your project's command reference (often found in `README.md` or a similar documentation file) for more details.
+
+    > **Note:** After starting the server (manually or via AI agent commands), please manually open your browser and navigate to `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL` in your `.env.local` file) to verify the application is running. In some automated environments, direct verification of this step can be challenging.
 
 ## Non-Interactive Setup (for AI Agents and Automated Environments)
 
@@ -95,11 +104,13 @@ Create a JSON file (e.g., `setup-answers.json`) that provides the answers to the
   "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/your_dev_db_name?schema=public",
   "GOOGLE_CLIENT_ID": "", // Optional: leave empty if not using Google Sign-In
   "GOOGLE_CLIENT_SECRET": "", // Optional: leave empty if not using Google Sign-In
-  "REDIS_URL": "" // Optional: leave empty if not using Redis
+  "REDIS_URL": "", // Optional: leave empty if not using Redis
+  "overwriteEnv": false // AI Agents: Set to true if you need to force regeneration of .env.local
 }
 ```
 
 > **Note:** It's recommended to include a `setup-answers.example.json` in the repository root for users and AI agents to use as a template. All keys shown above should be present in your `setup-answers.json` file, even if some values (like Google or Redis credentials) are left empty if not used. The `DATABASE_URL` provided here will be used to create the `.env.local` file; ensure it points to an accessible PostgreSQL server and uses credentials with rights to create the specified database if it doesn't exist.
+> **AI Agents:** If `localhost` in `DATABASE_URL` causes connection issues (e.g., Prisma error P1001), try using `127.0.0.1` instead. The `scripts/setup.js` script will use the `DATABASE_URL` from this config file to populate `.env.local`. If you need to regenerate `.env.local` based on this file, ensure `overwriteEnv` is set to `true` in your `setup-answers.json`.
 
 **2. Run the Setup Script with Configuration:**
 
@@ -112,6 +123,22 @@ node scripts/setup.js --config path/to/your-setup-answers.json
 > **Important:** This assumes that `scripts/setup.js` has been designed or modified to accept a `--config` (or similar) command-line argument to parse the JSON file and use its values instead of prompting interactively. If the script does not currently support this, it will need to be updated accordingly.
 
 After the script completes, continue with the database migration and other steps as outlined below.
+
+**3. Database Migration (AI Agents):**
+Follow the same database migration steps as in the "Automated Setup Script" section (Step 4), ensuring your `DATABASE_URL` (likely in `.env.local` via `setup-answers.json`) is correct and the PostgreSQL server is accessible.
+
+```bash
+npx dotenv-cli -e .env.local npx prisma migrate dev
+```
+
+**4. Start Development Server (AI Agents):**
+Do **not** use `npm run dev`. Instead, start the server using the PM2-managed scripts:
+
+```bash
+npm run ai:start
+```
+
+Verify server status with `npm run ai:status` and check logs with `npm run ai:logs`. Refer to the "AI Agent Server Management (PM2)" section in your project's command reference.
 
 ## Manual Configuration (Alternative)
 
@@ -132,24 +159,24 @@ If you choose not to use `npm run setup` or need to make manual adjustments:
 3.  **Placeholder Replacement**:
     Manually search and replace the following placeholders in files like `package.json`, `README.md`, `LICENSE`, and within code comments/documentation:
 
-    - `{{YOUR_PROJECT_NAME}}`
-    - `{{YOUR_PROJECT_DESCRIPTION}}`
-    - `{{YOUR_REPOSITORY_URL}}`
-    - `{{YOUR_APP_TITLE}}`
-    - `{{YOUR_COPYRIGHT_HOLDER}}`
-    - Database name placeholders (e.g., `{{YOUR_DATABASE_NAME_DEV}}`, `{{YOUR_DATABASE_NAME_TEST}}`) if not handled by `.env.local`.
+    - `next-authjs-psql-base-template-TEST9`
+    - `A Next.js project with NextAuth.js and PostgreSQL.`
+    - `https://github.com/user/project-repo`
+    - `My Next App`
+    - `AI Agent`
+    - Database name placeholders (e.g., `next_auth_dev`, `next_auth_test`) if not handled by `.env.local`.
     - If constructing `DATABASE_URL` manually with such placeholders, note that if your username or database name are SQL reserved keywords, they might need to be quoted.
 
 4.  **Database Migration**:
 
     > **Prerequisites:**
     >
-    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file.
+    > 1.  Ensure your PostgreSQL **server** is running and accessible at the host and port specified in the `DATABASE_URL` within your `.env.local` file. If `localhost` causes issues, try `127.0.0.1`.
     > 2.  The `DATABASE_URL` must contain valid credentials for your PostgreSQL server.
     > 3.  **Database Creation:** `prisma migrate dev` **will attempt to create the database** if it does not already exist.
     > 4.  For this automatic database creation to succeed, the PostgreSQL user specified in `DATABASE_URL` must have the necessary privileges on the PostgreSQL _server_ to create new databases (superuser or `CREATEDB` server-level attribute).
     >
-    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` is often a good starting point.
+    > **AI Agents & Local Development:** For fresh local PostgreSQL installations, using default superuser credentials like `postgres:postgres` in your `DATABASE_URL` (e.g. `postgresql://postgres:postgres@127.0.0.1:5432/your_db_name?schema=public`) is often a good starting point.
 
     > **Note on `dotenv-cli`:** The command below uses `dotenv-cli`. It's recommended to have `dotenv-cli` as a development dependency (`npm install --save-dev dotenv-cli`).
 
@@ -159,10 +186,19 @@ If you choose not to use `npm run setup` or need to make manual adjustments:
 
 5.  **Start Development Server**:
     After manual setup and migration:
-    ```bash
-    npm run dev
-    ```
-    > **Note:** After running `npm run dev`, please manually open your browser and navigate to `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL` in your `.env.local` file) to verify the application is running. In some automated environments, direct verification of this step can be challenging.
+
+    - **For manual development:**
+      ```bash
+      npm run dev
+      ```
+    - **For AI Agents and Automated Environments:**
+      Do **not** use `npm run dev`. Instead, use:
+      ```bash
+      npm run ai:start
+      ```
+      Check status and logs with `npm run ai:status` and `npm run ai:logs`.
+
+    > **Note:** After running `npm run dev` (or `npm run ai:start`), please manually open your browser and navigate to `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL` in your `.env.local` file) to verify the application is running. In some automated environments, direct verification of this step can be challenging.
 
 ## Authentication (NextAuth.js with PostgreSQL)
 
