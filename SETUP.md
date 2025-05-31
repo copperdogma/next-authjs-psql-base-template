@@ -111,6 +111,13 @@ Create a JSON file (e.g., `setup-answers.json`) that provides the answers to the
 
 > **Note:** It's recommended to include a `setup-answers.example.json` in the repository root for users and AI agents to use as a template. All keys shown above should be present in your `setup-answers.json` file, even if some values (like Google or Redis credentials) are left empty if not used. The `DATABASE_URL` provided here will be used to create the `.env.local` file; ensure it points to an accessible PostgreSQL server and uses credentials with rights to create the specified database if it doesn't exist.
 > **AI Agents:** If `localhost` in `DATABASE_URL` causes connection issues (e.g., Prisma error P1001), try using `127.0.0.1` instead. The `scripts/setup.js` script will use the `DATABASE_URL` from this config file to populate `.env.local`. If you need to regenerate `.env.local` based on this file, ensure `overwriteEnv` is set to `true` in your `setup-answers.json`.
+> **Important for Google Sign-In:** If you plan to use Google Sign-In, the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `setup-answers.json` (and subsequently in `.env.local`) must be populated with valid credentials from the [Google Cloud Console](https://console.cloud.google.com/).
+> If you are an AI agent performing the setup and these were left blank in `setup-answers.json`, please instruct the user to:
+>
+> 1. Obtain their Google OAuth 2.0 Client ID and Secret from the Google Cloud Console.
+> 2. Ensure their OAuth consent screen is configured and the application is authorized for `http://localhost:3000` (or the relevant `NEXTAUTH_URL`) as both an authorized JavaScript origin and an authorized redirect URI (typically `[YOUR_APP_URL]/api/auth/callback/google`).
+> 3. Manually add these credentials to the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` variables in the `.env.local` file.
+> 4. Restart the development server (e.g., using `npm run ai:restart` if managed by PM2) for the changes to take effect.
 
 **2. Run the Setup Script with Configuration:**
 
