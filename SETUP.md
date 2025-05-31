@@ -10,9 +10,9 @@ The easiest way to get started is to use the automated setup script:
     If you haven't already, clone the repository you created from this template.
 
     ```bash
-    # Replace with your repository URL
-    git clone https://github.com/yourusername/your-new-project.git
-    cd your-new-project
+    mkdir https://github.com/copperdogma/next-authjs-psql-base-template
+    cd https://github.com/copperdogma/next-authjs-psql-base-template
+    git clone https://github.com/copperdogma/next-authjs-psql-base-template .
     ```
 
 2.  **Install Dependencies**:
