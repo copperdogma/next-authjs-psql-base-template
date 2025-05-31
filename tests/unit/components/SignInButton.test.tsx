@@ -2,15 +2,21 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SignInButton from '@/components/auth/SignInButton';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { signInWithLogging, signOutWithLogging } from '@/lib/auth-logging';
 import { clientLogger } from '@/lib/client-logger';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 // Mock the next-auth/react module
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
-  signIn: jest.fn(),
-  signOut: jest.fn(),
+}));
+
+// Mock auth-logging.ts
+jest.mock('@/lib/auth-logging', () => ({
+  signInWithLogging: jest.fn(),
+  signOutWithLogging: jest.fn(),
+  useSession: jest.fn(),
 }));
 
 // Mock clientLogger
@@ -45,8 +51,12 @@ describe('SignInButton Component', () => {
       status: 'unauthenticated',
     });
     // Default signIn mock implementation (can be overridden per test)
-    (signIn as jest.Mock).mockResolvedValue({ ok: true, error: null, url: '/dashboard' });
-    (signOut as jest.Mock).mockResolvedValue({ ok: true, error: null, url: '/' });
+    (signInWithLogging as jest.Mock).mockResolvedValue({
+      ok: true,
+      error: null,
+      url: '/dashboard',
+    });
+    (signOutWithLogging as jest.Mock).mockResolvedValue({ ok: true, error: null, url: '/' });
   });
 
   it('displays sign in button when user is not authenticated', () => {
@@ -83,9 +93,9 @@ describe('SignInButton Component', () => {
     // Find and click the button
     const button = screen.getByRole('button', { name: /sign in with google/i });
     await user.click(button);
-    // Verify signIn was called
-    expect(signIn).toHaveBeenCalledTimes(1);
-    expect(signIn).toHaveBeenCalledWith(
+    // Verify signInWithLogging was called
+    expect(signInWithLogging).toHaveBeenCalledTimes(1);
+    expect(signInWithLogging).toHaveBeenCalledWith(
       'google',
       expect.objectContaining({ callbackUrl: expect.stringContaining('/dashboard') })
     );
@@ -101,9 +111,9 @@ describe('SignInButton Component', () => {
     // Find and click the button
     const button = screen.getByRole('button', { name: /sign out/i });
     await user.click(button);
-    // Verify signOut was called
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(signOut).toHaveBeenCalledWith({ callbackUrl: '/' });
+    // Verify signOutWithLogging was called
+    expect(signOutWithLogging).toHaveBeenCalledTimes(1);
+    expect(signOutWithLogging).toHaveBeenCalledWith({ callbackUrl: '/' });
   });
 
   // Skipping this test due to persistent issues with isLoading state not resetting correctly
@@ -114,7 +124,7 @@ describe('SignInButton Component', () => {
   it.skip('handles error when signIn fails', async () => {
     (useSession as jest.Mock).mockReturnValue({ data: null, status: 'unauthenticated' });
     const signInError = new Error('SignIn failed');
-    (signIn as jest.Mock).mockImplementationOnce(
+    (signInWithLogging as jest.Mock).mockImplementationOnce(
       () => new Promise((_, reject) => setTimeout(() => reject(signInError), 50))
     );
     const user = userEvent.setup();
@@ -125,8 +135,8 @@ describe('SignInButton Component', () => {
 
     await user.click(initialButton);
 
-    expect(signIn).toHaveBeenCalledTimes(1);
-    expect(signIn).toHaveBeenCalledWith(
+    expect(signInWithLogging).toHaveBeenCalledTimes(1);
+    expect(signInWithLogging).toHaveBeenCalledWith(
       'google',
       expect.objectContaining({ callbackUrl: expect.stringContaining('/dashboard') })
     );
@@ -172,7 +182,7 @@ describe('SignInButton Component', () => {
       status: 'authenticated',
     });
     // Make signOut reject after a short delay for this test
-    (signOut as jest.Mock).mockImplementationOnce(
+    (signOutWithLogging as jest.Mock).mockImplementationOnce(
       () => new Promise((_, reject) => setTimeout(() => reject(new Error('SignOut failed')), 50))
     );
     const user = userEvent.setup();
@@ -183,7 +193,7 @@ describe('SignInButton Component', () => {
 
     await user.click(initialButton); // This will now take at least 50ms
 
-    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOutWithLogging).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(initialButton).toHaveAttribute('data-loading', 'true');
@@ -207,7 +217,7 @@ describe('SignInButton Component', () => {
     renderWithTheme(<SignInButton />);
     const button = screen.getByTestId('auth-button');
     await user.click(button);
-    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(signInWithLogging).toHaveBeenCalledTimes(1);
 
     // Check that SignInButton's specific dev log was not called
     const signInButtonDevLog = consoleSpy.mock.calls.find(

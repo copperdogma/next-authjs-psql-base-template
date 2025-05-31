@@ -2,7 +2,7 @@
 
 import { Box, Button } from '@mui/material';
 import { LogoutOutlined } from '@mui/icons-material';
-import { signOut } from 'next-auth/react';
+import { signOutWithLogging } from '@/lib/auth-logging';
 import { clientLogger } from '@/lib/client-logger';
 
 /**
@@ -11,7 +11,7 @@ import { clientLogger } from '@/lib/client-logger';
 export default function SignOutButton() {
   const handleSignOut = async () => {
     try {
-      await signOut({ callbackUrl: '/' });
+      await signOutWithLogging({ callbackUrl: '/' });
     } catch (error) {
       clientLogger.error('Error signing out', { error });
     }

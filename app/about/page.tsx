@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Stack, Button, Card, CardHeader, CardContent, Grid } from '@mui/material';
-import { signOut } from 'next-auth/react'; // Import signOut
+import { signOutWithLogging } from '@/lib/auth-logging'; // Import signOutWithLogging
 import PageLayout from '@/components/layouts/PageLayout';
 
 // Import the modular components (assuming these exist or will be created)
@@ -15,7 +15,7 @@ import GettingStarted from './components/GettingStarted';
  */
 export default function AboutPage() {
   const handleLogout = () => {
-    signOut({ callbackUrl: '/login' }); // Redirect to login after sign out
+    signOutWithLogging({ callbackUrl: '/login' }); // Redirect to login after sign out
   };
 
   return (

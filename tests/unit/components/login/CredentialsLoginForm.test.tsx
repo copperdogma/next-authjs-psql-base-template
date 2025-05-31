@@ -5,14 +5,11 @@ import '@testing-library/jest-dom';
 import { CredentialsLoginForm } from '@/components/auth/CredentialsLoginForm';
 import { renderWithAuth } from '@/tests/utils/test-utils';
 
-// Mock next-auth/react
-jest.mock('next-auth/react', () => {
-  const actualNextAuth = jest.requireActual('next-auth/react');
-  // Define the mock function *inside* the factory
+// Mock auth-logging
+jest.mock('@/lib/auth-logging', () => {
   const mockSignInInside = jest.fn();
   return {
-    ...actualNextAuth,
-    signIn: mockSignInInside, // Export the mock function under the standard name
+    signInWithLogging: mockSignInInside, // Export the mock function under the standard name
     _mockSignIn: mockSignInInside, // Export it under a different name for test access
   };
 });
@@ -52,7 +49,7 @@ describe('CredentialsLoginForm', () => {
   let mockSearchParamsGet: jest.Mock;
 
   beforeEach(() => {
-    mockSignIn = jest.requireMock('next-auth/react')._mockSignIn;
+    mockSignIn = jest.requireMock('@/lib/auth-logging')._mockSignIn;
     mockSignIn.mockClear();
     mockSetIsLoading.mockClear();
     mockSetError.mockClear();

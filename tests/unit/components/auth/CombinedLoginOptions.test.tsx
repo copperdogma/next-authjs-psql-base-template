@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CombinedLoginOptions } from '@/components/auth/CombinedLoginOptions';
-import { signIn } from 'next-auth/react';
+import { signInWithLogging } from '@/lib/auth-logging';
 
 // --- Mocks ---
 
@@ -33,9 +33,13 @@ jest.mock(
     ({ children, ...props }: { children?: React.ReactNode }) => <div {...props}>{children}</div>
 );
 
+// Mock auth-logging
+jest.mock('@/lib/auth-logging', () => ({
+  signInWithLogging: jest.fn(),
+}));
+
 // Mock next-auth/react
 jest.mock('next-auth/react', () => ({
-  signIn: jest.fn(),
   useSession: jest.fn(() => ({
     status: 'unauthenticated',
     data: null,
@@ -83,7 +87,7 @@ const mockCredentialsLoginFormImplementation = jest.fn(
         data-testid="email-signin-button"
         onClick={() => {
           setIsLoading(true);
-          signIn('credentials', {
+          signInWithLogging('credentials', {
             redirect: false,
             email: 'test@example.com',
             password: 'password123',
@@ -115,7 +119,7 @@ jest.mock('@/components/auth/CredentialsLoginForm', () => ({
 // --- Test Suite ---
 describe('CombinedLoginOptions Component', () => {
   // Get mock references typed correctly
-  const mockedSignIn = signIn as jest.Mock;
+  const mockedSignIn = signInWithLogging as jest.Mock;
 
   beforeEach(() => {
     // Reset mocks before each test

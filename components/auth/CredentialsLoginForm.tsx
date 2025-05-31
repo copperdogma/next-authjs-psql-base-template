@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signInWithLogging } from '@/lib/auth-logging';
 import { logger } from '@/lib/logger';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -138,7 +138,7 @@ export function CredentialsLoginForm({
     try {
       logger.info('Attempting credentials sign-in...');
       const callbackUrl = searchParams.get('callbackUrl');
-      const result = await signIn('credentials', {
+      const result = await signInWithLogging('credentials', {
         redirect: false,
         email,
         password,

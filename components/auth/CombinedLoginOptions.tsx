@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
+import { signInWithLogging } from '@/lib/auth-logging';
 import { logger } from '@/lib/logger';
 import { FcGoogle } from 'react-icons/fc';
 
@@ -51,7 +51,7 @@ export function CombinedLoginOptions() {
     setError(null); // Clear previous errors
 
     // Make the signIn call safely - handle both Promise and non-Promise returns
-    const signInResult = signIn('google', { callbackUrl: '/dashboard' });
+    const signInResult = signInWithLogging('google', { callbackUrl: '/dashboard' });
 
     // Handle Promise return (newer versions of next-auth)
     if (signInResult && typeof signInResult.catch === 'function') {

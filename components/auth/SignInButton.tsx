@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { signInWithLogging, signOutWithLogging } from '@/lib/auth-logging';
 import { useTheme } from 'next-themes';
 import LoadingAuthButton from './LoadingAuthButton';
 import AuthButton from './AuthButton';
@@ -28,7 +29,7 @@ export default function SignInButton() {
 
       if (session) {
         // If session exists, we're signing out
-        await signOut({ callbackUrl: '/' });
+        await signOutWithLogging({ callbackUrl: '/' });
       } else {
         // If no session, we're signing in
         const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -38,7 +39,7 @@ export default function SignInButton() {
           console.log('Auth debug: Signing in with origin:', currentOrigin);
         }
 
-        await signIn('google', {
+        await signInWithLogging('google', {
           callbackUrl: `${currentOrigin}/dashboard`,
           prompt: 'select_account',
         });
