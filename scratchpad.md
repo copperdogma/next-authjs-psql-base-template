@@ -555,3 +555,8 @@ PRETTY_LOGS="true"
 # No .env files found in the project.
 
 --- End of combined .env files ---
+
+NEW SETUP INSTRUCTIONS:
+
+1. Clone the repo: git clone https://github.com/copperdogma/next-authjs-psql-base-template .
+2. Follow the instructions in SETUP.md

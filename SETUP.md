@@ -29,7 +29,7 @@ The easiest way to get started is to use the automated setup script:
 
     This interactive script will guide you through:
 
-    > **Note:** This script uses interactive prompts. If you are running this in a non-interactive environment, you may need to modify the script to use hardcoded values or environment variables for configuration, or alternatively, follow the manual configuration steps.
+    > **Note:** This script uses interactive prompts. If you are running this in a non-interactive environment (e.g., when an AI agent is performing the setup), please refer to the "Non-Interactive Setup" section below.
 
     - Replacing project placeholders (name, description, title, repository URL, copyright holder).
     - Configuring essential environment variables by creating a `.env.local` file. This includes:
@@ -61,6 +61,51 @@ The easiest way to get started is to use the automated setup script:
     Your application should now be running, typically at `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL`).
 
     > **Note:** After running `npm run dev`, please manually open your browser and navigate to `http://localhost:3000` (or the URL specified in `NEXTAUTH_URL` in your `.env.local` file) to verify the application is running. In some automated environments, direct verification of this step can be challenging.
+
+## Non-Interactive Setup (for AI Agents and Automated Environments)
+
+For environments where interactive prompts are not suitable, such as when an AI agent is setting up the project or in automated CI/CD pipelines, the `scripts/setup.js` script can be used with a JSON configuration file.
+
+**1. Prepare a Configuration File:**
+
+Create a JSON file (e.g., `setup-answers.json`) that provides the answers to the setup prompts. The structure of this file should be as follows:
+
+```json
+{
+  "YOUR_PROJECT_NAME": "your-project-name",
+  "YOUR_PROJECT_DESCRIPTION": "Your project description.",
+  "YOUR_COPYRIGHT_HOLDER": "Your Name or Company",
+  "YOUR_PROJECT_URL": "https://your-project.example.com",
+  "YOUR_REPOSITORY_URL": "https://github.com/your-username/your-project-name",
+  "YOUR_AUTHOR_NAME": "Your Name",
+  "YOUR_AUTHOR_EMAIL": "you@example.com",
+  "YOUR_APP_TITLE": "Your App Title",
+  "YOUR_APP_SHORT_NAME": "YourApp",
+  "YOUR_APP_NAME": "Your Application Name",
+  "YOUR_APP_DESCRIPTION": "A description for your application.",
+  "YOUR_DATABASE_NAME_DEV": "your_dev_db_name",
+  "YOUR_DATABASE_NAME_TEST": "your_test_db_name",
+  "YOUR_DATABASE_NAME": "your_main_db_name",
+  "DATABASE_URL": "postgresql://user:password@host:port/your_dev_db_name_noninteractive?schema=public",
+  "GOOGLE_CLIENT_ID": "", // Optional: leave empty if not using Google Sign-In
+  "GOOGLE_CLIENT_SECRET": "", // Optional: leave empty if not using Google Sign-In
+  "REDIS_URL": "" // Optional: leave empty if not using Redis
+}
+```
+
+> **Note:** It's recommended to include a `setup-answers.example.json` in the repository root for users and AI agents to use as a template. All keys shown above should be present in your `setup-answers.json` file, even if some values (like Google or Redis credentials) are left empty if not used. The `DATABASE_URL` provided here will be used to create the `.env.local` file; ensure it's for the development environment that `prisma migrate dev` will target.
+
+**2. Run the Setup Script with Configuration:**
+
+Execute the setup script by providing the path to your JSON configuration file using a command-line argument (e.g., `--config`).
+
+```bash
+node scripts/setup.js --config path/to/your-setup-answers.json
+```
+
+> **Important:** This assumes that `scripts/setup.js` has been designed or modified to accept a `--config` (or similar) command-line argument to parse the JSON file and use its values instead of prompting interactively. If the script does not currently support this, it will need to be updated accordingly.
+
+After the script completes, continue with the database migration and other steps as outlined below.
 
 ## Manual Configuration (Alternative)
 
