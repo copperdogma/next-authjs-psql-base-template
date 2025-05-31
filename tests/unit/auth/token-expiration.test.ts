@@ -1,34 +1,40 @@
 import { authConfigEdge } from '../../../lib/auth-edge';
 import { authConfigNode } from '../../../lib/auth-node';
+import { SESSION_MAX_AGE } from '../../../lib/auth-shared';
 
 describe('NextAuth.js Session and Cookie Expiration', () => {
   describe('Edge Configuration (authConfigEdge)', () => {
-    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-
     it('should set sessionToken cookie maxAge to 30 days', () => {
-      expect(authConfigEdge.cookies?.sessionToken?.options?.maxAge).toBe(thirtyDaysInSeconds);
+      expect(authConfigEdge.cookies?.sessionToken?.options?.maxAge).toBe(SESSION_MAX_AGE);
     });
 
     it('should set JWT session maxAge to 30 days', () => {
-      expect(authConfigEdge.session?.maxAge).toBe(thirtyDaysInSeconds);
+      expect(authConfigEdge.session?.maxAge).toBe(SESSION_MAX_AGE);
     });
   });
 
   describe('Node Configuration (authConfigNode)', () => {
-    it('should not explicitly set sessionToken cookie maxAge (relying on NextAuth.js defaults)', () => {
-      // authConfigNode inherits from sharedAuthConfig where sessionToken.options.maxAge is not set.
-      // NextAuth.js typically defaults this to be the same as the session.maxAge or has its own default.
-      expect(authConfigNode.cookies?.sessionToken?.options?.maxAge).toBeUndefined();
+    it('should explicitly set sessionToken cookie maxAge to 30 days for consistency', () => {
+      // We now explicitly set the maxAge in sharedAuthConfig for consistency across runtimes
+      expect(authConfigNode.cookies?.sessionToken?.options?.maxAge).toBe(SESSION_MAX_AGE);
     });
 
-    it('should not explicitly set JWT session maxAge (relying on NextAuth.js default of 30 days)', () => {
-      // authConfigNode.session does not override maxAge from sharedSessionConfig, where it's also not set.
-      // NextAuth.js defaults to 30 days for JWT expiration if session.maxAge is not provided.
-      expect(authConfigNode.session?.maxAge).toBeUndefined();
+    it('should explicitly set JWT session maxAge to 30 days for consistency', () => {
+      // We now explicitly set the maxAge in sharedAuthConfig for consistency across runtimes
+      expect(authConfigNode.session?.maxAge).toBe(SESSION_MAX_AGE);
     });
 
-    // Note: Testing the *effective* default maxAge applied by NextAuth.js when these are undefined
-    // would require a more integrated test setup. These tests verify our explicit configuration.
+    // Note: By explicitly setting these values, we ensure consistent behavior
+    // across different environments and make the configuration more self-documenting.
+  });
+
+  // Test the SESSION_MAX_AGE constant itself
+  describe('SESSION_MAX_AGE constant', () => {
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+
+    it('should be set to 30 days in seconds', () => {
+      expect(SESSION_MAX_AGE).toBe(thirtyDaysInSeconds);
+    });
   });
 
   // The constants DEFAULT_SESSION_EXPIRATION_SECONDS and MAX_SESSION_EXPIRATION_SECONDS

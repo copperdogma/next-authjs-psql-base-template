@@ -6,7 +6,7 @@ import type { JWT } from 'next-auth/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
 // import { UserRole } from '@/types'; // Unused import removed
-import { sharedAuthConfig, handleSharedSessionCallback } from './auth-shared'; // Import shared config and callback
+import { sharedAuthConfig, handleSharedSessionCallback, SESSION_MAX_AGE } from './auth-shared'; // Import shared config, callback, and SESSION_MAX_AGE
 import { logRequestResponse } from '@/middleware/request-logger'; // Corrected import path
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -193,7 +193,7 @@ export const authConfigEdge: NextAuthConfig = {
       ...(sharedAuthConfig.cookies?.sessionToken || {}),
       options: {
         ...(sharedAuthConfig.cookies?.sessionToken?.options || {}),
-        maxAge: 30 * 24 * 60 * 60, // 30 days session timeout for Edge (align with Node?)
+        maxAge: SESSION_MAX_AGE, // Use the shared constant for consistency
       },
     },
     // CSRF token might have different requirements or defaults in Edge vs Node?
@@ -203,7 +203,7 @@ export const authConfigEdge: NextAuthConfig = {
   session: {
     ...sharedAuthConfig.session, // Inherits JWT strategy and other shared session settings
     strategy: 'jwt' as const, // Ensure JWT strategy is explicit for Edge
-    maxAge: 30 * 24 * 60 * 60, // 30 days session timeout (align with Node?)
+    maxAge: SESSION_MAX_AGE, // Use the shared constant for consistency
     // updateAge behavior might differ or be irrelevant in Edge middleware context?
   },
 

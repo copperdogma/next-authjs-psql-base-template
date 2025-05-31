@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { sharedAuthConfig } from './auth-shared';
+import { sharedAuthConfig, SESSION_MAX_AGE } from './auth-shared';
 import {
   authorizeLogic,
   CredentialsSchema,
@@ -205,6 +205,7 @@ export const authConfigNode: NextAuthConfig = {
   // Other configurations like pages, adapter etc.
   session: {
     strategy: 'jwt', // Explicitly JWT for Node.js, though shared should also be JWT
+    maxAge: SESSION_MAX_AGE, // Explicitly set using the shared constant
   },
 };
 

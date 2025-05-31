@@ -28,6 +28,9 @@ declare module 'next-auth' {
 // Shared Configuration Values
 // ====================================
 
+// Define a constant for the session lifetime in seconds
+export const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+
 // Shared Cookie Settings (Base)
 const sharedCookieConfig = {
   sessionToken: {
@@ -40,7 +43,7 @@ const sharedCookieConfig = {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const, // Use const assertion for literal type
       path: '/',
-      // maxAge will be defined in specific configs (node/edge)
+      maxAge: SESSION_MAX_AGE, // Explicitly set to 30 days
     },
   },
   // Note: CSRF token cookie might differ slightly (e.g., __Host prefix)
@@ -50,7 +53,7 @@ const sharedCookieConfig = {
 // Shared Session Settings
 const sharedSessionConfig = {
   strategy: 'jwt' as const, // Use const assertion
-  // maxAge will be defined in specific configs
+  maxAge: SESSION_MAX_AGE, // Explicitly set to 30 days
 };
 
 // Define the shared session callback function separately
@@ -116,7 +119,7 @@ export const sharedAuthConfig: Partial<NextAuthConfig> = {
   // Shared session strategy
   session: {
     ...sharedSessionConfig,
-    // Define maxAge in specific configs
+    // maxAge is now explicitly defined in sharedSessionConfig
   },
   // Shared callbacks
   callbacks: {
