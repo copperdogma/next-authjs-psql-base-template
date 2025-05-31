@@ -206,74 +206,6 @@ function _prepareAuthContext(
   return { correlationId, extendedLogContext };
 }
 
-function _extractPostRegName(creds: Record<string, unknown>): string | null {
-  if ('postRegistrationUserName' in creds) {
-    const rawName = creds.postRegistrationUserName;
-    if (typeof rawName === 'string') {
-      return rawName === 'null' ? null : rawName;
-    }
-    if (rawName === null) {
-      return null;
-    }
-  }
-  return null; // Default if not present or not string/null
-}
-
-// Helper for post-registration sign-in check
-function _handlePostRegistrationSignIn(
-  credentials: unknown,
-  extendedLogContext: Record<string, unknown>
-): NextAuthUser | null {
-  const {
-    isPostRegistration,
-    postRegistrationUserId,
-    postRegistrationUserEmail,
-    // postRegistrationUserName, // Retain comment for context if it was there
-  } = credentials as Record<string, unknown>;
-
-  const { correlationId = '', provider = 'credentials' } = extendedLogContext;
-
-  if (!isPostRegistration || !postRegistrationUserId || !postRegistrationUserEmail) {
-    logger.debug(
-      { correlationId, provider, ...extendedLogContext },
-      '[_handlePostRegistrationSignIn] Not a post-registration sign-in or missing required fields.'
-    );
-    return null;
-  }
-
-  logger.info(
-    {
-      correlationId,
-      provider,
-      userId: postRegistrationUserId,
-      email: postRegistrationUserEmail,
-      name: _extractPostRegName(credentials as Record<string, unknown>), // Call directly in log
-      ...extendedLogContext,
-    },
-    '[_handlePostRegistrationSignIn] Handling special post-registration sign-in.'
-  );
-
-  const user: NextAuthUser = {
-    id: postRegistrationUserId as string,
-    email: postRegistrationUserEmail as string,
-    name: _extractPostRegName(credentials as Record<string, unknown>), // Inlined here as well
-    image: null,
-    role: UserRole.USER,
-  };
-
-  // logger.debug(
-  //   {
-  //     correlationId,
-  //     provider,
-  //     constructedUser: user,
-  //     ...extendedLogContext,
-  //   },
-  //   '[_handlePostRegistrationSignIn] Constructed user for post-registration flow.'
-  // ); // Removed this debug log
-
-  return user;
-}
-
 // Exported for use in the CredentialsProvider configuration
 export async function authorizeLogic(
   credentials: unknown,
@@ -282,14 +214,6 @@ export async function authorizeLogic(
 ): Promise<NextAuthUser | null> {
   const { validator } = dependencies;
   const { correlationId, extendedLogContext } = _prepareAuthContext(dependencies, logContext);
-
-  // logger.debug(extendedLogContext, '[Credentials Authorize Logic] Starting authorization attempt'); // Removed
-
-  // Handle special post-registration sign-in (bypasses normal validation)
-  const postRegUser = _handlePostRegistrationSignIn(credentials, extendedLogContext);
-  if (postRegUser) {
-    return postRegUser;
-  }
 
   // Validate credentials format and content
   const validation = _validateCredentials(credentials, validator, correlationId);

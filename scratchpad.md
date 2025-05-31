@@ -167,7 +167,7 @@ Okay, here's a comprehensive markdown checklist of suggestions to improve the au
 
 ### 3. Server-Side Authentication Logic
 
-- [ ] **Simplify `authorizeLogic` by Removing Unused Post-Registration Bypass**
+- [x] **Simplify `authorizeLogic` by Removing Unused Post-Registration Bypass**
   - **Description:** The `authorizeLogic` function in `lib/auth/auth-credentials.ts` contains a helper `_handlePostRegistrationSignIn` and associated logic to bypass normal password validation if specific `isPostRegistration` flags are passed in the credentials. However, the `registerUserAction` in `lib/actions/auth.actions.ts` calls `signIn('credentials', { email, password, redirect: false })` _without_ these special flags after creating a user. This makes the bypass logic in `authorizeLogic` effectively dead code.
   - **File(s) to Modify:** `lib/auth/auth-credentials.ts`.
   - **Action Required:**
