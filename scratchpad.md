@@ -63,6 +63,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
      - Instruct the AI agent to clone the GitHub repository exaclty like this (with the dot): git clone https://github.com/copperdogma/next-authjs-psql-base-template .
      - The AI should follow the setup instructions documented in README.md and SETUP.md
      - NOTE: You can use the username/password of postgres/postgres for the database.
+     - NOTE: Use this file with the setup script as you can't run it normally because it's interactive: /Users/cam/Documents/Projects/next-authjs-psql-base-template-harness/setup-answers.json
 
   2. **Testing Scenarios:**
 

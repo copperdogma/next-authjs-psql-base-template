@@ -75,6 +75,7 @@ ui-debug.log*
 # env files
 .env*
 !.env.example
+!.env.test
 
 # vercel
 .vercel

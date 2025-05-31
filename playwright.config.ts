@@ -9,8 +9,17 @@ import fs from 'fs';
  * Follows best practices for Next.js and E2E testing
  */
 
-// Load test environment variables
-dotenv.config({ path: path.resolve(__dirname, '.env.test') });
+// Unconditionally load .env.test variables into process.env
+// This will ensure they are available for the webServer command and the tests themselves.
+const envTestPath = path.resolve(__dirname, '.env.test');
+console.log(`[Playwright Config] Attempting to load .env.test from: ${envTestPath}`);
+const result = dotenv.config({ path: envTestPath, override: true });
+if (result.error) {
+  console.error('[Playwright Config] Error loading .env.test:', result.error);
+  // throw new Error(`Failed to load .env.test: ${result.error.message}`);
+} else {
+  console.log('[Playwright Config] .env.test loaded successfully. PARSED:', result.parsed);
+}
 
 // Configuration constants with environment variable fallbacks
 const PORT = process.env.TEST_PORT || '3777';
