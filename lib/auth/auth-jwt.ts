@@ -1,5 +1,5 @@
 import { type JWT } from 'next-auth/jwt';
-import { type Account, type Session, type User as NextAuthUser } from 'next-auth';
+import { type Session, type User as NextAuthUser } from 'next-auth';
 import { logger } from '@/lib/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,62 +13,18 @@ import {
 
 import {
   buildAuthUserInternalFromCredentials,
-  validateOAuthRequestInputs,
-  findOrCreateOAuthDbUserStep,
-  createOAuthJwtPayload,
   updateTokenFieldsFromSession,
-  createFallbackToken,
 } from './auth-jwt-helpers';
+
+// Import our consolidated OAuth JWT flow handler
+import { handleOAuthJwtSignIn } from './oauth-jwt-flow';
 
 /**
  * Handle OAuth sign-in flow for JWT creation.
+ * Now delegates to the consolidated implementation in oauth-jwt-flow.ts
  */
 const _handleJwtOAuthSignIn = async (args: HandleJwtSignInArgs): Promise<JWT> => {
-  const { token, user, account, profile, correlationId, dependencies } = args;
-  const deps = dependencies || defaultDependencies;
-
-  // Step 1: Validate inputs with the integrated validation helper
-  const validationResult = validateOAuthRequestInputs({
-    user,
-    account,
-    correlationId,
-    _baseToken: token,
-    dependencies: {
-      validateInputs: deps.validateInputs,
-      uuidv4: deps.uuidv4,
-    },
-  });
-
-  if (!validationResult.isValid) {
-    return validationResult.fallbackToken || createFallbackToken(token, deps.uuidv4);
-  }
-
-  // Use optional chaining instead of non-null assertion
-  const validAccount = validationResult.validAccount;
-
-  // Step 2: Find or create DB user with validated account
-  const dbStepResult = await findOrCreateOAuthDbUserStep({
-    user,
-    account: validAccount as Account, // Type assertion is safe because we checked isValid
-    profile,
-    correlationId,
-    _baseToken: token,
-    dependencies: deps,
-  });
-
-  // Return fallback token if DB user step failed
-  if (!dbStepResult.success || !dbStepResult.dbUser) {
-    return dbStepResult.fallbackToken || createFallbackToken(token, deps.uuidv4);
-  }
-
-  // Step 3: Create JWT payload with successful DB user
-  return createOAuthJwtPayload({
-    _baseToken: token,
-    dbUser: dbStepResult.dbUser,
-    provider: validAccount?.provider || 'unknown', // Use optional chaining with fallback
-    correlationId,
-    dependencies: { uuidv4: deps.uuidv4 },
-  });
+  return handleOAuthJwtSignIn(args);
 };
 
 /**

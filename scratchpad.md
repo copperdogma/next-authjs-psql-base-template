@@ -212,7 +212,7 @@ Okay, here's a comprehensive markdown checklist of suggestions to improve the au
 
 ### 3. Code Structure & Readability (Optional Refinement)
 
-- [ ] **Clarity/Elegance: Review OAuth JWT Helper Fragmentation**
+- [x] **Clarity/Elegance: Review OAuth JWT Helper Fragmentation**
   - **Description:** The logic for handling the OAuth sign-in flow that results in JWT creation involves functions spread across several files: `lib/auth/oauth-helpers.ts`, `lib/auth/auth-jwt-helpers.ts` (specifically OAuth-related parts like `findOrCreateOAuthDbUserStep`), and `lib/auth/oauth-validation-helpers.ts`. While modularity is good, this specific critical path (from OAuth provider callback to JWT issuance) can be a little hard to follow due to the file separation.
   - **File(s) to Review:** `lib/auth/oauth-helpers.ts`, `lib/auth/auth-jwt-helpers.ts`, `lib/auth/oauth-validation-helpers.ts`, and their usage in `lib/auth/auth-jwt.ts` (specifically `_handleJwtOAuthSignIn`).
   - **Action Required:**

@@ -1,32 +1,32 @@
 import { type JWT } from 'next-auth/jwt';
 import { type AdapterUser } from 'next-auth/adapters';
-import { type Account, type Profile, type Session, type User as NextAuthUser } from 'next-auth';
+import { type Session, type User as NextAuthUser } from 'next-auth';
 import { logger } from '@/lib/logger';
 import { UserRole } from '@/types';
 import { type AuthUserInternal } from './auth-helpers';
-import { defaultDependencies, type DbUserStepResult } from './auth-jwt-types';
+import { defaultDependencies } from './auth-jwt-types';
 import { prisma } from '@/lib/prisma';
+
+// Import from our consolidated oauth-jwt-flow file
 import {
   performDbFindOrCreateUser,
   findOrCreateOAuthDbUser,
-  createOAuthJwtPayload,
-} from './oauth-helpers';
-import {
   validateOAuthInputs,
-  validateOAuthSignInInputs,
   validateOAuthRequestInputs,
   createFallbackToken,
-} from './oauth-validation-helpers';
+  createOAuthJwtPayload,
+  findOrCreateOAuthDbUserStep,
+} from './oauth-jwt-flow';
 
 // Re-export for backward compatibility
 export {
   validateOAuthInputs,
   performDbFindOrCreateUser,
   findOrCreateOAuthDbUser,
-  validateOAuthSignInInputs,
   validateOAuthRequestInputs,
   createFallbackToken,
   createOAuthJwtPayload,
+  findOrCreateOAuthDbUserStep,
 };
 
 /**
@@ -114,44 +114,6 @@ export function updateTokenFieldsFromSession(
   // Example: updatedToken.customField = sessionUser.customField;
 
   return updatedToken;
-}
-
-/**
- * Finds or creates a user in the database from OAuth data and prepares the result.
- */
-export async function findOrCreateOAuthDbUserStep(params: {
-  user: NextAuthUser | AdapterUser;
-  account: Account;
-  profile?: Profile;
-  correlationId: string;
-  _baseToken: JWT; // Changed from baseToken to _baseToken
-  dependencies: typeof defaultDependencies;
-}): Promise<DbUserStepResult> {
-  const { user, account, profile, correlationId, _baseToken, dependencies } = params;
-
-  // Perform the database operation to find or create user
-  const dbUser = await findOrCreateOAuthDbUser({
-    user,
-    account,
-    profile,
-    correlationId,
-    dependencies,
-  });
-
-  // Check if the operation failed
-  if (!dbUser) {
-    // Return fallback token for error case
-    return {
-      success: false,
-      fallbackToken: createFallbackToken(_baseToken, dependencies.uuidv4),
-    };
-  }
-
-  // Return successful result with the found/created user
-  return {
-    success: true,
-    dbUser,
-  };
 }
 
 /**
