@@ -52,7 +52,14 @@ function getRateLimitResponse(
   };
 
   return NextResponse.json(
-    { error: 'Too many requests, please try again later.' },
+    {
+      error: 'RateLimitExceeded',
+      message: 'Too many requests, please try again later.',
+      details: {
+        retryAfterSeconds: Math.ceil(rateLimiterResponse.msBeforeNext / 1000),
+        limitResetTime: new Date(Date.now() + rateLimiterResponse.msBeforeNext).toISOString(),
+      },
+    },
     { status: 429, headers }
   );
 }

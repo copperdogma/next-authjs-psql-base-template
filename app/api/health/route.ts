@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withApiLogger, createErrorResponse } from '@/lib/services/api-logger-service';
 import pino from 'pino';
+import { prisma } from '@/lib/prisma';
 
 // Schema for validating POST request data
 const HealthCheckRequestSchema = z.object({
@@ -47,13 +48,14 @@ async function parseAndValidateRequest(
   if (!result.success) {
     logger.warn({ validationErrors: result.error.format() }, 'Invalid health check request format');
 
+    // Using consistent error structure with ValidationError code
     return {
       isValid: false,
       error: NextResponse.json(
         {
           error: 'ValidationError',
+          message: 'Invalid health check request format',
           details: result.error.format(),
-          message: 'Invalid request format',
         },
         { status: 400 }
       ),
@@ -76,9 +78,16 @@ async function performDatabaseCheck(
 ): Promise<void> {
   if (checkDatabase) {
     logger.debug('Database check requested');
-    // In a real app, you might check database connectivity here
-    // For demo purposes, we're just adding a mock delay
-    await new Promise(resolve => setTimeout(resolve, timeout));
+    try {
+      // Perform a lightweight database query to verify connectivity
+      // Timeout parameter is not directly used as SELECT 1 should be very fast
+      // If needed, more complex checks could implement a timeout mechanism
+      await prisma.$queryRaw`SELECT 1`;
+      logger.debug('Database check completed successfully');
+    } catch (error) {
+      logger.warn({ error }, 'Database check failed');
+      throw error; // Propagate the error to be handled by the caller
+    }
   }
 }
 
