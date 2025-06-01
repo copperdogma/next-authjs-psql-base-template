@@ -59,6 +59,11 @@ const CardHeader = forwardRef<HTMLDivElement, React.ComponentProps<typeof MuiCar
 );
 CardHeader.displayName = 'CardHeader';
 
+/**
+ * Card title component.
+ * For accessibility, consider using unique IDs that can be referenced by CardDescription
+ * using aria-labelledby to establish proper relationships between title and description.
+ */
 const CardTitle = forwardRef<
   HTMLHeadingElement,
   React.ComponentProps<typeof Typography> & { component?: 'h3' }
@@ -78,6 +83,12 @@ const CardTitle = forwardRef<
 ));
 CardTitle.displayName = 'CardTitle';
 
+/**
+ * Card description component.
+ * For accessibility, consider manually establishing a relationship with CardTitle
+ * using aria-labelledby on this component (referencing the CardTitle's ID)
+ * when these components are used together.
+ */
 const CardDescription = forwardRef<
   HTMLParagraphElement,
   React.ComponentProps<typeof Typography> & { component?: 'p' }
@@ -87,7 +98,6 @@ const CardDescription = forwardRef<
     variant={variant}
     color="text.secondary"
     component={component}
-    aria-describedby={props.id ? `${props.id}-title` : undefined}
     sx={{ ...(sx || {}) }}
     {...props}
   />

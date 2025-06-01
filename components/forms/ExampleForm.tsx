@@ -33,8 +33,20 @@ interface ExampleFormProps {
 
 /**
  * Example form component demonstrating react-hook-form and Zod validation
+ * using the custom form field components (EmailField, PasswordField, etc.).
+ *
+ * While the fields in this example (email, password, rememberMe) are typical
+ * for a login scenario, this form serves as a general template for building
+ * various types of forms within the application.
+ *
+ * Key features demonstrated:
+ * - React Hook Form integration
+ * - Zod schema validation
+ * - Error handling and display
+ * - Form state management
+ * - Initial values
+ * - Submission handling
  */
-
 const ExampleForm = ({
   onSubmit,
   submitButtonText = 'Submit',

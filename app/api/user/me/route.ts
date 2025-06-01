@@ -11,7 +11,7 @@ import pino from 'pino';
  * Requires authentication - will return 401 if not authenticated.
  */
 export const GET = withApiLogger(
-  async (request: NextRequest, logger: pino.Logger): Promise<NextResponse> => {
+  async (_request: NextRequest, logger: pino.Logger): Promise<NextResponse> => {
     try {
       // Get current session
       const session = await auth();

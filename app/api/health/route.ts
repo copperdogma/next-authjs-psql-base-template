@@ -77,12 +77,16 @@ async function performDatabaseCheck(
   logger: pino.Logger
 ): Promise<void> {
   if (checkDatabase) {
-    logger.debug('Database check requested');
+    logger.debug({ timeout }, 'Database check requested with timeout');
     try {
       // Perform a lightweight database query to verify connectivity
-      // Timeout parameter is not directly used as SELECT 1 should be very fast
-      // If needed, more complex checks could implement a timeout mechanism
-      await prisma.$queryRaw`SELECT 1`;
+      // Add a simple timeout mechanism using Promise.race
+      const dbQuery = prisma.$queryRaw`SELECT 1`;
+      const timeoutPromise = new Promise((_resolve, reject) => {
+        setTimeout(() => reject(new Error(`Database query timed out after ${timeout}ms`)), timeout);
+      });
+
+      await Promise.race([dbQuery, timeoutPromise]);
       logger.debug('Database check completed successfully');
     } catch (error) {
       logger.warn({ error }, 'Database check failed');

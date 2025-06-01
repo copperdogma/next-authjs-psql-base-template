@@ -45,7 +45,7 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [ ] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
+- [x] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
 
 Note that this may not be all of the files, so be sure to look at the entire codebase.
 
@@ -71,8 +71,13 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 - [ ] add global rules for consistency. Research best practices and encode them. Cursor – Large Codebases: https://docs.cursor.com/guides/
 - [ ] Refine: get gemini 2.5 to analyze each subsystem alone
   - [x] **Authentication System** (Files: `app/api/auth/`, `lib/auth-node.ts`, `lib/auth-edge.ts`, `lib/auth-shared.ts`, `middleware.ts`, `components/auth/`)
-  - [ ] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
-  - [ ] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
+  - [x] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
+  - [x] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
+    - [x] **`CardDescription.tsx` (within `Card.tsx`) - ARIA Enhancement**: Removed hardcoded `aria-describedby` from CardDescription component to allow more flexible accessibility relationships. Added JSDoc comments to guide proper usage.
+    - [x] **`Input.tsx` - Documentation Update**: Created an updated documentation file (`docs/project-reference-updated.mdc`) that correctly describes Input.tsx as a styled MUI input component without variants.
+    - [x] **`Snackbar.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop with sensible default to allow users to customize toast positioning.
+    - [x] **`Toaster.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop to the Toaster component for global toast positioning control.
+    - [x] **Implement `DateTimePicker.tsx` - Missing Core Component**: Created a comprehensive DateTimePicker component using MUI X Date Pickers with proper React Hook Form integration and full test coverage.
   - [ ] **Application Pages and Layouts** (Files: `app/` (excluding `api/`), `app/layout.tsx`, `app/page.tsx`, `app/dashboard/`, `app/login/`, `app/register/`, `app/profile/`, `app/about/`, `components/layouts/`)
   - [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
   - [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
@@ -90,101 +95,166 @@ Okay, here's a comprehensive markdown checklist of suggestions to improve the au
 
 ---
 
-## API Endpoints (Non-Auth) Improvement Checklist
+## Core UI Components Enhancement Checklist
 
-### **1. Enhance `app/api/health/route.ts` (POST Handler)**
+### I. General UI Components (`components/ui/`)
 
-- [x] **Make Database Check Functional in POST Handler**
+1.  **`CardDescription.tsx` (within `Card.tsx`) - ARIA Enhancement**
 
-  - **Current State:** The `checkDatabase` functionality in the `POST /api/health` endpoint uses a mock delay (`new Promise(resolve => setTimeout(resolve, timeout))`).
-  - **Suggestion:** Replace the mock delay with an actual lightweight database query to verify connectivity. This provides a more realistic health check.
-  - **Implementation Details:**
-    - In the `performDatabaseCheck` function within `app/api/health/route.ts`:
-    - Import the `prisma` client from `@/lib/prisma`.
-    - Replace `await new Promise(resolve => setTimeout(resolve, timeout));` with a Prisma query like `await prisma.$queryRaw`SELECT 1`;`.
-    - The existing `timeout` parameter is less relevant for a simple `SELECT 1` query, but if a more complex check were implemented, it could potentially be used to configure Prisma's query timeout if supported directly for that operation, or handled by a `Promise.race` if needed (though `SELECT 1` should be very fast). For `SELECT 1`, simply executing the query is sufficient.
-    - Ensure any errors from `prisma.$queryRaw` are caught and logged (as the current `performDatabaseCheck` function already does with its `.catch(error => logger.warn(...))`).
-  - **Reasoning:** A true database connectivity check provides a more accurate health status of the application's dependencies.
+    - **Current State:** `CardDescription` uses `aria-describedby={props.id ? `${props.id}-title` : undefined}`, which assumes a specific ID convention (`<CardDescription_id>-title`) must exist on a corresponding `CardTitle` component.
+    - **Best Practice Violation/Improvement:** While establishing ARIA relationships is crucial, forcing a specific ID-linking convention from a sub-component can be overly prescriptive for a template. A more flexible approach often involves the parent `Card` component managing these relationships or allowing the developer to define them more explicitly.
+    - **Suggestion for AI:**
+      - **Option A (Decouple):**
+        1.  Remove the `aria-describedby={props.id ? `${props.id}-title` : undefined}` line from `components/ui/Card.tsx` (specifically within the `CardDescription` component).
+        2.  Add a JSDoc comment to the main `Card` component and/or `CardDescription` and `CardTitle` components guiding the user on how to manually establish `aria-labelledby` and `aria-describedby` relationships between `CardTitle` and `CardDescription` if needed, using unique IDs they provide. Example comment:
+            ```jsx
+            /**
+             * CardDescription component.
+             * For accessibility, ensure this description is appropriately linked to a CardTitle
+             * using `aria-labelledby` on this component or `aria-describedby` on the CardTitle,
+             * referencing their respective unique IDs.
+             */
+            ```
+      - **Option B (Simplify Convention - less ideal):** If a convention is desired, make it clearer. For example, if `Card` takes `titleId` and `descriptionId` props and passes them down. However, Option A is more flexible for a template.
+    - **Reasoning:** Increases flexibility and reduces implicit ID contract assumptions for template users.
 
-- [x] **Ensure Consistent Error Response Structure for Validation in POST Handler**
-  - **Current State:** In `app/api/health/route.ts`, the `parseAndValidateRequest` function constructs a JSON error response directly for Zod validation failures, while the main `handleError` function uses `createErrorResponse` from `@/lib/services/api-logger-service`.
-  - **Suggestion:** Refactor the error response generation within `parseAndValidateRequest` to align with the structure produced by `createErrorResponse` or use `createErrorResponse` directly if appropriate.
-  - **Implementation Details:**
-    - Examine the structure returned by `createErrorResponse` (e.g., `{ error: "ErrorCode", message: "User-friendly message", requestId: "...", details?: {...} }`).
-    - Modify the `NextResponse.json(...)` call in the `!result.success` block of `parseAndValidateRequest` to return a JSON object with a similar structure. For example:
-      ```typescript
-      return {
-        isValid: false,
-        error: NextResponse.json(
-          {
-            error: 'ValidationError', // Consistent error code
-            message: 'Invalid health check request format.', // User-friendly message
-            details: result.error.format(), // Detailed validation errors
-            // requestId: requestId // If requestId is available/needed here
-          },
-          { status: 400 }
-        ),
-      };
-      ```
-    - Alternatively, if `createErrorResponse` can be easily used here (e.g., by passing necessary parameters like `requestId`), prefer using it.
-  - **Reasoning:** Consistent error response structures simplify client-side error handling and improve API predictability.
+2.  **`Input.tsx` - Documentation Update (No Code Change to Component)**
 
-### **2. Verify/Standardize Rate Limit Error Response in `app/api/log/client/route.ts`**
+    - **Current State:** `Input.tsx` is a styled `MuiInput`. The `project-reference.mdc` file mentions "default/outline/ghost variants" for `Input.tsx`.
+    - **Best Practice Violation/Improvement:** Documentation mismatch. `Input.tsx` as implemented provides a single, consistent custom style, not variants. `TextField.tsx` is the component that offers MUI's standard variants.
+    - **Suggestion for AI:**
+      1.  Locate the `project-reference.mdc` file.
+      2.  Find the section describing `components/ui/Input.tsx`.
+      3.  Update the description to accurately reflect that `Input.tsx` is a styled version of Material UI's base `Input` component, suitable for creating more complex custom inputs, and that it does _not_ have "default/outline/ghost" variants as props.
+      4.  Clarify that for standard form fields with labels, helper text, and variants (like outlined, filled, standard), `components/ui/TextField.tsx` should be used.
+    - **Reasoning:** Ensures documentation accuracy, guiding users (and AI) correctly.
 
-- [x] **Current State:** The `app/api/log/client/route.ts` endpoint uses `consumeRateLimit` which, if the limit is exceeded, calls `getRateLimitResponse` (presumably from `@/lib/utils/rate-limiters-middleware.ts`, which was not fully provided).
-- **Suggestion:** Ensure that the error response generated by `getRateLimitResponse` (when a rate limit is exceeded) is consistent with the error structure produced by `createErrorResponse` used elsewhere (e.g., in `app/api/health/route.ts`).
-- **Implementation Details:**
-  - The AI will need to inspect or define `lib/utils/rate-limiters-middleware.ts` (specifically the `getRateLimitResponse` function).
-  - If this file is not available, the AI should create it, ensuring `getRateLimitResponse` returns a `NextResponse` with a JSON body structured similarly to: `{ error: "RateLimitExceeded", message: "Too many requests, please try again later.", details?: { retryAfterSeconds: number } }`.
-  - The response should include standard rate-limiting headers (`Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`), which it currently seems to do based on the context.
-- **Reasoning:** Consistency in API error responses, including those for rate limiting, is crucial for a good developer experience.
+3.  **`Snackbar.tsx` - Enhance Configurability**
 
-### **3. Add a Protected User Information Endpoint (e.g., `GET /api/user/me`)**
+    - **Current State:** `anchorOrigin` is hardcoded to `{ vertical: 'bottom', horizontal: 'center' }`.
+    - **Best Practice Violation/Improvement:** While a sensible default, a base template component benefits from configurability for common presentational aspects.
+    - **Suggestion for AI:**
+      1.  Open `components/ui/Snackbar.tsx`.
+      2.  Modify the `SnackbarProps` interface:
+          - Add an optional `anchorOrigin` prop: `anchorOrigin?: MuiSnackbarProps['anchorOrigin'];`
+      3.  Update the `Snackbar` component's destructuring:
+          - Add `anchorOrigin = { vertical: 'bottom', horizontal: 'center' }` to the destructured props, providing a default value.
+      4.  In the `<MuiSnackbar ... />` component, change the `anchorOrigin` prop to use the new prop: `anchorOrigin={anchorOrigin}`.
+    - **Reasoning:** Provides users of the template more flexibility in positioning Snackbars without needing to modify the component directly.
 
-- [x] **Current State:** There is no specific API endpoint to fetch authenticated user data (e.g., `/api/user/` or `/api/user/me`).
-- **Suggestion:** Create a new API route, for example, `app/api/user/me/route.ts`, that provides a `GET` handler to return non-sensitive information about the currently authenticated user.
-- **Implementation Details:**
-  - Create file `app/api/user/me/route.ts`.
-  - The `GET` handler should:
-    1.  Import `auth` from `@/lib/auth-node` (or `@/lib/auth-edge` if intended for edge functions, though Node is more typical for DB access).
-    2.  Call `const session = await auth();` to get the current session.
-    3.  If `!session?.user?.id`, return an unauthorized error:
-        ```typescript
-        import { NextResponse } from 'next/server';
-        // ...
-        return NextResponse.json(
-          { error: 'Unauthorized', message: 'You must be logged in to access this resource.' },
-          { status: 401 }
-        );
-        ```
-    4.  If authenticated, fetch user details from the database using Prisma. Import `prisma` from `@/lib/prisma`.
-        ```typescript
-        const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            // IMPORTANT: Explicitly DO NOT select hashedPassword or other sensitive fields.
-          },
-        });
-        ```
-    5.  If the user is not found in the database (despite a valid session, which could indicate an inconsistency), return a 404 or 500 error.
-        ```typescript
-        if (!user) {
-          return NextResponse.json(
-            { error: 'UserNotFound', message: 'User not found in database.' },
-            { status: 404 }
-          );
-        }
-        ```
-    6.  Return the selected user data:
-        ```typescript
-        return NextResponse.json(user);
-        ```
-  - Wrap the handler with `withApiLogger` for consistent logging.
-- **Reasoning:** This provides a practical example of a protected API route that interacts with the authentication system and database, a common requirement for many applications built from this template. It also demonstrates best practices for selecting specific fields and omitting sensitive data.
+4.  **`Toaster.tsx` - Enhance Configurability**
 
-This checklist should provide clear, actionable items for the AI to enhance your template's non-auth API endpoints.
+    - **Current State:** The `anchorOrigin` for all toasts managed by `Toaster.tsx` is hardcoded to `{ vertical: 'bottom', horizontal: 'right' }`.
+    - **Best Practice Violation/Improvement:** Similar to `Snackbar.tsx`, global configurability is beneficial.
+    - **Suggestion for AI:**
+
+      1.  Open `components/ui/Toaster.tsx`.
+      2.  Define an interface for `ToasterProps` (if it doesn't exist implicitly) or add to existing props:
+
+          ```typescript
+          import { SnackbarProps as MuiSnackbarProps } from '@mui/material'; // Add if not present
+
+          interface ToasterProps {
+            // Or add to existing props interface
+            anchorOrigin?: MuiSnackbarProps['anchorOrigin'];
+          }
+          ```
+
+      3.  Modify the `Toaster` component to accept this prop: `export function Toaster({ anchorOrigin: globalAnchorOrigin = { vertical: 'bottom', horizontal: 'right' } }: ToasterProps) { ... }`.
+      4.  Inside the `toasts.map(...)` function, when rendering the `Snackbar` component, pass the `globalAnchorOrigin`:
+          ```jsx
+          <Snackbar
+            key={toast.id}
+            // ... other props
+            anchorOrigin={globalAnchorOrigin} // Use the prop from Toaster
+            // ...
+          />
+          ```
+      5.  Update any usage of `<Toaster />` in `app/layout.tsx` (or equivalent root layout) if you want to set a different default globally, e.g., `<Toaster anchorOrigin={{ vertical: 'top', horizontal: 'center' }} />`. Otherwise, it will use the new default defined in `Toaster.tsx`.
+
+    - **Reasoning:** Allows global default positioning for all toasts generated by the `Toaster` system.
+
+5.  **Implement `DateTimePicker.tsx` - Missing Core Component**
+
+    - **Current State:** Mentioned in `project-reference.mdc` but not implemented.
+    - **Best Practice Violation/Improvement:** Missing a commonly needed form component.
+    - **Suggestion for AI:**
+
+      1.  Create a new file: `components/ui/DateTimePicker.tsx`.
+      2.  **Dependencies:** Ensure `@mui/x-date-pickers` and a date library adapter (e.g., `@mui/x-date-pickers/AdapterDateFns` or `@mui/x-date-pickers/AdapterDayjs`) are installed. If not, instruct the user that these are typical peer dependencies for MUI X Date Pickers. (For the template, you might pre-install `AdapterDayjs` as it's lightweight).
+      3.  **Implementation:**
+
+          - Create a new component `DateTimePicker` that wraps a picker from `@mui/x-date-pickers` (e.g., `StaticDateTimePicker` for inline, or `MobileDateTimePicker` for a modal-based picker, or provide variants). For a general template, `MobileDateTimePicker` is often a good versatile choice.
+          - The component should accept common props: `label`, `value`, `onChange`, `error` (boolean), `helperText`, `disabled`, `required`, and any other relevant props from the underlying MUI X picker.
+          - Ensure it's styled consistently with other form inputs. You can use the `slotProps` of the MUI X picker to style its `textField`.
+          - Integrate with `react-hook-form` by designing it to be easily used with RHF's `<Controller>` component or by directly accepting RHF-compatible props if a simpler integration is preferred (though Controller is more robust for complex inputs).
+          - Example structure (using `MobileDateTimePicker` and simplified RHF compatibility):
+
+            ```typescript
+            // components/ui/DateTimePicker.tsx
+            'use client';
+            import React from 'react';
+            import { MobileDateTimePicker, MobileDateTimePickerProps } from '@mui/x-date-pickers/MobileDateTimePicker';
+            import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+            import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'; // Or your preferred adapter
+            import { TextFieldProps } from '@mui/material/TextField';
+
+            export interface CustomDateTimePickerProps<TDate>
+              extends Omit<MobileDateTimePickerProps<TDate, TDate>, 'value' | 'onChange' | 'renderInput'> {
+              value: TDate | null;
+              onChange: (date: TDate | null) => void;
+              label: string;
+              error?: boolean;
+              helperText?: React.ReactNode;
+              textFieldProps?: Partial<TextFieldProps>; // Allow passing props to the internal TextField
+            }
+
+            export function DateTimePicker<TDate = Date>({
+              value,
+              onChange,
+              label,
+              error,
+              helperText,
+              textFieldProps,
+              ...muiPickerProps
+            }: CustomDateTimePickerProps<TDate>) {
+              return (
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <MobileDateTimePicker
+                    label={label}
+                    value={value}
+                    onChange={onChange}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined', // Match your other form fields
+                        error: error,
+                        helperText: helperText,
+                        ...textFieldProps,
+                      },
+                    }}
+                    {...muiPickerProps}
+                  />
+                </LocalizationProvider>
+              );
+            }
+            export default DateTimePicker;
+            ```
+
+      4.  **Testing:** Add basic unit tests for rendering and interaction.
+
+    - **Reasoning:** Provides a crucial and common form input out-of-the-box.
+
+### II. Form Components (`components/forms/`)
+
+- [x] **`PasswordField.tsx` - Enhance with Show/Hide Toggle**
+
+  - Enhanced PasswordField component with a show/hide toggle feature for better user experience
+  - Added configuration option via `showToggle` prop (default: true)
+  - Added visual toggle button with appropriate ARIA attributes
+
+- [x] **`ExampleForm.tsx` - Clarify Naming or Purpose**
+  - Added comprehensive JSDoc documentation clarifying that while it resembles a login form, it serves as a general template
+  - Documented key features demonstrated (React Hook Form integration, Zod validation, error handling, etc.)
+
+This checklist should be actionable for an AI to implement the suggested improvements.

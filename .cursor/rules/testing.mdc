@@ -97,16 +97,12 @@ test('button handles click', async () => {
 
 ### Testing Authentication
 
-Authentication is mocked directly in test files:
-
 ```typescript
-// Mock modules before imports
+// Mock NextAuth modules
 jest.mock('next-auth', () => ({
-    auth: jest.fn(() => Promise.resolve({
+  auth: jest.fn(() => Promise.resolve({
     user: null
-  })),
-  signIn: jest.fn(),
-  signOut: jest.fn()
+  }))
 }));
 
 // Test with mocked auth
@@ -115,7 +111,14 @@ test('handles sign in', async () => {
     ok: true,
     error: null
   });
-  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });  await fireEvent.click(screen.getByTestId('sign-in-button'));
+  
+  // Mock the signIn function
+  (useAuth as jest.Mock).mockReturnValue({
+    signIn,
+    status: 'unauthenticated'
+  });
+  
+  await fireEvent.click(screen.getByTestId('sign-in-button'));
   expect(signIn).toHaveBeenCalled();
 });
 ```
@@ -143,7 +146,15 @@ test('Health endpoint returns ok status', async () => {
 ```typescript
 test('authentication should work', async ({ page }) => {
   // Set up authentication state
-  await page.goto(x27/loginx27);n  await page.fill(x27[name="email"]x27, x27test@example.comx27);n  await page.fill(x27[name="password"]x27, x27password123x27);n  await page.click(x27button[type="submit"]x27);n  n  // Verify authentication workedn  await page.waitForURL(x27/dashboardx27);n  expect(page.url()).toContain(x27/dashboardx27);  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });});
+  await page.goto('/login');
+  await page.fill('[name="email"]', 'test@example.com');
+  await page.fill('[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  
+  // Verify authentication worked
+  await page.waitForURL('/dashboard');
+  expect(page.url()).toContain('/dashboard');
+});
 ```
 
 ### Accessibility Testing
@@ -174,7 +185,7 @@ const memoryInfo = await client.send('Memory.getBrowserMemoryUsage')
     console.log('Memory API not available, skipping test');
     return null;
   });
-  // Mock the signIn functionn  (useAuth as jest.Mock).mockReturnValue({n    signIn,n    status: "unauthenticated"n  });
+
 if (memoryInfo) {
   // Perform tests that require this API
 }

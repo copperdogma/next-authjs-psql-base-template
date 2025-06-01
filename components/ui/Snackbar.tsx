@@ -20,6 +20,7 @@ export interface SnackbarProps extends Omit<MuiSnackbarProps, 'children'> {
   autoHideDuration?: number;
   variant?: 'filled' | 'outlined' | 'standard';
   elevation?: number;
+  anchorOrigin?: MuiSnackbarProps['anchorOrigin'];
 }
 
 // Extract the Alert content to a separate component
@@ -54,6 +55,7 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
       autoHideDuration = 6000,
       variant = 'filled',
       elevation = 6,
+      anchorOrigin = { vertical: 'bottom', horizontal: 'center' },
       ...props
     },
     ref
@@ -68,7 +70,7 @@ const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(
         ref={ref}
         onClose={handleClose}
         autoHideDuration={autoHideDuration}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={anchorOrigin}
       >
         <MuiAlert
           onClose={showCloseButton ? handleClose : undefined}

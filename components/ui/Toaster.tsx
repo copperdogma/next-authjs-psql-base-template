@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Snackbar, Alert, AlertColor, AlertTitle } from '@mui/material';
+import {
+  Snackbar,
+  Alert,
+  AlertColor,
+  AlertTitle,
+  SnackbarProps as MuiSnackbarProps,
+} from '@mui/material';
 
 type ToastProps = {
   message: string;
@@ -9,6 +15,10 @@ type ToastProps = {
   title?: string;
   duration?: number;
 };
+
+interface ToasterProps {
+  anchorOrigin?: MuiSnackbarProps['anchorOrigin'];
+}
 
 // Global state for the toast
 let addToast: (toast: ToastProps) => void = () => {};
@@ -29,7 +39,9 @@ export const toast = {
   },
 };
 
-export function Toaster() {
+export function Toaster({
+  anchorOrigin = { vertical: 'bottom', horizontal: 'right' },
+}: ToasterProps = {}) {
   const [toasts, setToasts] = useState<(ToastProps & { id: number })[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +72,7 @@ export function Toaster() {
           open
           autoHideDuration={toast.duration || 5000}
           onClose={() => handleClose(toast.id)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          anchorOrigin={anchorOrigin}
           sx={{ mb: toasts.indexOf(toast) * 8 }}
         >
           <Alert
