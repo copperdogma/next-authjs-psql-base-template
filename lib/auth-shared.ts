@@ -101,7 +101,12 @@ export const sharedAuthConfig: Partial<NextAuthConfig> = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
+      // Defaulting to false for enhanced security.
+      // Set to true only if you understand the implications and have a specific need
+      // for users to automatically link OAuth accounts to existing email accounts
+      // with the same email address without explicit prior sign-in.
+      // See NextAuth.js docs on account linking for more details.
+      allowDangerousEmailAccountLinking: false,
       authorization: {
         params: {
           prompt: 'select_account',
