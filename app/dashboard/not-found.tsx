@@ -1,23 +1,57 @@
 import Link from 'next/link';
+import { Typography, Button, Paper, Container, Box } from '@mui/material';
+import { ReportProblemOutlined } from '@mui/icons-material';
 
 export default function DashboardNotFound() {
   return (
-    <div className="container mx-auto p-6 text-center">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard Page Not Found</h2>
-      <p className="text-gray-600 mb-6">
-        The dashboard page you requested doesn't exist or has been moved.
-      </p>
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <Link
-          href="/dashboard"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Paper
+        elevation={1}
+        sx={{
+          p: { xs: 4, sm: 6 },
+          borderRadius: 2,
+          textAlign: 'center',
+          my: 4,
+          mx: 'auto',
+          bgcolor: 'var(--mui-palette-background-paper, (theme) => theme.palette.background.paper)',
+          color: 'var(--mui-palette-text-primary, (theme) => theme.palette.text.primary)',
+        }}
+        className="theme-aware-paper"
+      >
+        <ReportProblemOutlined
+          sx={{
+            fontSize: 80,
+            color: 'text.secondary',
+            mb: 3,
+          }}
+        />
+
+        <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'medium' }}>
+          Dashboard Page Not Found
+        </Typography>
+
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          paragraph
+          sx={{
+            maxWidth: 450,
+            mx: 'auto',
+            mb: 4,
+          }}
         >
-          Back to Dashboard
-        </Link>
-        <Link href="/" className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">
-          Return to Home
-        </Link>
-      </div>
-    </div>
+          The dashboard page you requested doesn't exist or has been moved.
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Button component={Link} href="/dashboard" variant="contained" size="large">
+            Back to Dashboard
+          </Button>
+          <Button component={Link} href="/" variant="outlined" size="large">
+            Return to Home
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

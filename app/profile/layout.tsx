@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
+import { Box } from '@mui/material';
 
 export const metadata: Metadata = {
   title: 'Profile | Next.js Template',
@@ -8,12 +9,14 @@ export const metadata: Metadata = {
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <main>
-        <Suspense fallback={<div className="p-6 text-center">Loading profile content...</div>}>
+        <Suspense
+          fallback={<Box sx={{ p: 3, textAlign: 'center' }}>Loading profile content...</Box>}
+        >
           {children}
         </Suspense>
       </main>
-    </div>
+    </Box>
   );
 }

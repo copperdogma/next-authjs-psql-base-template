@@ -1,38 +1,64 @@
+import { Box, Container, Paper, Skeleton } from '@mui/material';
+
 export default function ProfileLoading() {
   return (
-    <div className="container mx-auto p-6 animate-pulse">
-      <div className="h-8 w-48 bg-accent rounded mb-8"></div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Page title skeleton */}
+      <Skeleton variant="text" width="200px" height={40} sx={{ mb: 4 }} />
 
-      <div className="rounded-lg border border-accent bg-background p-8 shadow-sm">
-        <div className="flex flex-col items-center space-y-6 md:flex-row md:items-start md:space-x-8 md:space-y-0">
+      <Paper
+        elevation={1}
+        sx={{
+          p: 4,
+          borderRadius: 2,
+          border: 'none',
+          boxShadow: 'none',
+          backgroundImage: 'none',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: { xs: 4, md: 6 },
+            alignItems: { xs: 'center', md: 'flex-start' },
+          }}
+        >
           {/* Profile Image Skeleton */}
-          <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-accent">
-            <div className="h-full w-full bg-accent"></div>
-          </div>
+          <Skeleton
+            variant="circular"
+            width={160}
+            height={160}
+            sx={{
+              flexShrink: 0,
+              border: '4px solid',
+              borderColor: 'divider',
+            }}
+          />
 
           {/* Profile Information Skeleton */}
-          <div className="flex-1 space-y-6">
-            <div>
-              <div className="h-4 w-24 bg-accent rounded mb-2"></div>
-              <div className="h-6 w-48 bg-accent rounded"></div>
-            </div>
+          <Box sx={{ flexGrow: 1, width: '100%' }}>
+            <Box sx={{ mb: 3 }}>
+              <Skeleton variant="text" width="80px" height={20} sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="180px" height={28} />
+            </Box>
 
-            <div>
-              <div className="h-4 w-24 bg-accent rounded mb-2"></div>
-              <div className="h-6 w-64 bg-accent rounded"></div>
-            </div>
+            <Box sx={{ mb: 3 }}>
+              <Skeleton variant="text" width="80px" height={20} sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="220px" height={28} />
+            </Box>
 
-            <div>
-              <div className="h-4 w-24 bg-accent rounded mb-2"></div>
-              <div className="h-6 w-16 bg-accent rounded"></div>
-            </div>
+            <Box sx={{ mb: 3 }}>
+              <Skeleton variant="text" width="80px" height={20} sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="100px" height={28} />
+            </Box>
 
-            <div className="pt-4">
-              <div className="h-10 w-24 bg-accent rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <Box sx={{ pt: 2 }}>
+              <Skeleton variant="rectangular" width="100px" height={36} sx={{ borderRadius: 1 }} />
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

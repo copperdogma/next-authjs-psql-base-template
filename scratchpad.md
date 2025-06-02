@@ -45,145 +45,212 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [x] **Application Pages and Layouts** (Files: `app/` (excluding `api/`), `app/layout.tsx`, `app/page.tsx`, `app/dashboard/`, `app/login/`, `app/register/`, `app/profile/`, `app/about/`, `components/layouts/`)
-  - [x] **Enhance Accessibility by Integrating SkipToContent:** Integrated the `<SkipToContent />` component in the root layout to improve keyboard navigation.
-  - [x] **Remove Unused Homepage Components:** Removed the unused `app/components/home/` directory to simplify the template.
-  - [x] **Remove Unused Dashboard Components:** Removed the unused `app/dashboard/components/` directory to streamline the dashboard feature.
-  - [x] **Correct Auth Import for Server Actions:** Updated the import in `app/profile/actions.ts` to use the correct auth module for server actions.
-  - [x] **Integrate Mobile-Specific Navigation in Header:** Enhanced `Header.tsx` to include the `MobileNavigation` component for a responsive mobile experience.
-  - [x] **Consolidate Navigation Components:** Integrated `DesktopNavigation.tsx` into the Header for a consistent navigation pattern across device sizes.
-  - [x] **Remove Unused `MainContent.tsx` Component:** Removed the redundant `MainContent.tsx` component as its functionality is covered by `PageLayout.tsx`.
-- [ ] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
-- [ ] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
-  - [x] **`CardDescription.tsx` (within `Card.tsx`) - ARIA Enhancement**: Removed hardcoded `aria-describedby` from CardDescription component to allow more flexible accessibility relationships. Added JSDoc comments to guide proper usage.
-  - [x] **`Input.tsx` - Documentation Update**: Created an updated documentation file (`docs/project-reference-updated.mdc`) that correctly describes Input.tsx as a styled MUI input component without variants.
-  - [x] **`Snackbar.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop with sensible default to allow users to customize toast positioning.
-  - [x] **`Toaster.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop to the Toaster component for global toast positioning control.
-  - [x] **Implement `DateTimePicker.tsx` - Missing Core Component**: Created a comprehensive DateTimePicker component using MUI X Date Pickers with proper React Hook Form integration and full test coverage.
-  - [x] **`DateTimePicker.tsx` - API Alignment**: Renamed the `inputFormat` prop to `format` in the DateTimePickerProps interface to align with the current MUI X Date Pickers library conventions. Updated component implementation to use the new prop name.
-  - [x] **`Toaster.tsx` - Remove Ineffective Styling for Stacking**: Removed the `sx={{ mb: toasts.indexOf(toast) * 8 }}` prop from the `Snackbar` component within `Toaster.tsx` as it doesn't effectively create spacing between toasts due to how MUI Snackbars are absolutely positioned.
-- [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
-- [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
-- [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
-- [ ] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
-- [ ] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
-- [x] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
-  - [x] **Review CSS Variables for Theming - No Action Required:** After reviewing `app/globals.css` and the codebase, found that the CSS variables `--background` and `--foreground` referenced in the task don't actually exist in the current `globals.css`. The only file referencing these variables (`app/global-error.tsx`) includes appropriate fallbacks. The project already properly uses MUI theming with the ThemeRegistry component and well-defined light/dark palettes, making this task complete with no changes needed.
-- [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
+- [ ] **Application Pages and Layouts** (Files: `app/` (excluding `api/`), `app/layout.tsx`, `app/page.tsx`, `app/dashboard/`, `app/login/`, `app/register/`, `app/profile/`, `app/about/`, `components/layouts/`)
+
+Note that this may not be all of the files, so be sure to look at the entire codebase.
+
+Here is the code:
+
+---
+
+Double check your suggestions. Verify they're best practice and not already implmented.
+
+Then make a comprehensive list of all of your suggestions to improve the codebase as a markdown checklist. Be sure to include as much detail as possible as I'll be giving it to another AI to implement.
+
+---
+
+Keep in mind this project is meant to be an easy-to-use template for getting projects started, so best practices that are costly and mostly relevant to larger features/installations, or future features that may not be required, should not be included. The user of the template can add those later if required. The project is meant to be a clean, simple, elegant, easy to use starting point.
+
+Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's okay, then run all tests (npm run test and npm run test:e2e). You have permission to run these commands. - If they pass, ask me to manually check the website. - THEN check it off as successful.
+
+- NOTE: The "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:" error in Chrome is caused by a personal plugin injecting stuff into the UI and isn't a real error.
+- NOTE: We're skipping 2 e2e tests on purpose. They're skipped by default keeps them from cluttering test output during normal runs but maintains them as a valuable resource. This approach aligns with the template's goal of providing a solid foundation that anticipates future needs.
+
+### Code To Do
+
+- [ ] add global rules for consistency. Research best practices and encode them. Cursor – Large Codebases: https://docs.cursor.com/guides/
+- [ ] Refine: get gemini 2.5 to analyze each subsystem alone
+  - [x] **Authentication System** (Files: `app/api/auth/`, `lib/auth-node.ts`, `lib/auth-edge.ts`, `lib/auth-shared.ts`, `middleware.ts`, `components/auth/`)
+  - [x] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
+  - [x] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
+    - [x] **`CardDescription.tsx` (within `Card.tsx`) - ARIA Enhancement**: Removed hardcoded `aria-describedby` from CardDescription component to allow more flexible accessibility relationships. Added JSDoc comments to guide proper usage.
+    - [x] **`Input.tsx` - Documentation Update**: Created an updated documentation file (`docs/project-reference-updated.mdc`) that correctly describes Input.tsx as a styled MUI input component without variants.
+    - [x] **`Snackbar.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop with sensible default to allow users to customize toast positioning.
+    - [x] **`Toaster.tsx` - Enhance Configurability**: Added configurable `anchorOrigin` prop to the Toaster component for global toast positioning control.
+    - [x] **Implement `DateTimePicker.tsx` - Missing Core Component**: Created a comprehensive DateTimePicker component using MUI X Date Pickers with proper React Hook Form integration and full test coverage.
+    - [x] **`DateTimePicker.tsx` - API Alignment**: Renamed the `inputFormat` prop to `format` in the DateTimePickerProps interface to align with the current MUI X Date Pickers library conventions. Updated component implementation to use the new prop name.
+    - [x] **`Toaster.tsx` - Remove Ineffective Styling for Stacking**: Removed the `sx={{ mb: toasts.indexOf(toast) * 8 }}` prop from the `Snackbar` component within `Toaster.tsx` as it doesn't effectively create spacing between toasts due to how MUI Snackbars are absolutely positioned.
+  - [ ] **Application Pages and Layouts** (Files: `app/` (excluding `api/`), `app/layout.tsx`, `app/page.tsx`, `app/dashboard/`, `app/login/`, `app/register/`, `app/profile/`, `app/about/`, `components/layouts/`)
+  - [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
+  - [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
+  - [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
+  - [ ] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
+  - [ ] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
+  - [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
+  - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 - [ ] try to upgrade everything again- [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `{{YOUR_APP_NAME}}`, `{{YOUR_COPYRIGHT_HOLDER}}`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
 - [x] Final round: search for unused vars/code/files/packages/etc.
 - [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
 
-Okay, here's a comprehensive markdown checklist of suggestions to improve the authentication subsystem of your Next.js template. These are based on the analysis provided previously, focusing on making the template simple, elegant, and ready-to-use out-of-the-box while adhering to best practices.
+## Markdown Checklist for Application Pages and Layouts Improvements
 
----
+### I. Styling & Component Consistency
 
-## Checklist for Improving Application Pages and Layouts
+- **[x] `app/profile/loading.tsx`: Standardize Skeleton Component**
 
-### I. Root Layout (`app/layout.tsx`)
+  - **Current:** Uses Tailwind CSS classes for skeleton UI (`animate-pulse`, `bg-accent`).
+  - **Suggestion:** Refactor `app/profile/loading.tsx` to use Material UI `Skeleton` components.
+  - **Reasoning:** To maintain visual consistency with `app/dashboard/loading.tsx` and the overall MUI theming. This ensures all loading placeholders share the same design language and respond to theme changes uniformly.
+  - **Details:**
+    - Replace `div` elements with Tailwind classes with appropriate MUI `Skeleton` variants (e.g., `Skeleton variant="text"`, `Skeleton variant="circular"`, `Skeleton variant="rectangular"`).
+    - Structure the MUI Skeletons to visually represent the `ProfileContent` layout (e.g., avatar, name, email, user ID sections).
+    - Ensure it's wrapped in a layout that provides appropriate page padding if `PageLayout` isn't used directly in the loading component. (Currently, `ProfileLoading` does not use `PageLayout`, but `app/profile/page.tsx` wraps `ProfileContent` in `PageLayout` with Suspense. The loading component should ideally fit well within that `PageLayout` context).
 
-- [x] **Enhance Accessibility by Integrating SkipToContent:**
+- **[x] `app/dashboard/not-found.tsx`: Standardize Styling**
 
-  - **File:** `app/layout.tsx`
-  - **Current State:** The `components/layouts/SkipToContent.tsx` component exists but is not utilized in the root layout.
-  - **Suggestion:** Import and add the `<SkipToContent />` component as one ofthe first focusable elements within the `<body>` tag. This improves keyboard navigation for users who want to bypass header navigation and jump directly to the main content.
-  - **Implementation Detail:**
+  - **Current:** Uses Tailwind CSS classes for styling.
+  - **Suggestion:** Refactor `app/dashboard/not-found.tsx` to use Material UI components (e.g., `Container`, `Paper`, `Typography`, `Button`, `ReportProblemOutlined` icon) for its structure and styling.
+  - **Reasoning:** To align with `app/not-found.tsx` (global 404) and ensure consistent theming and appearance for "not found" states.
+  - **Details:**
+    - Use MUI `Container` for centering and `Paper` for the main content box.
+    - Employ `Typography` for text and `Button` components for links (e.g., back to Dashboard, back to Home).
+    - Utilize an appropriate MUI icon like `ReportProblemOutlined` or `ErrorOutline`.
+
+- **[x] `app/profile/layout.tsx`: Standardize Background Styling**
+  - **Current:** Uses Tailwind class `bg-background` for the main div.
+  - **Suggestion:** Replace the Tailwind class with an MUI `Box` component using the `sx` prop to set the background color from the theme. For example: `sx={{ bgcolor: 'background.default', minHeight: '100vh' }}`.
+  - **Reasoning:** Ensures the background color is strictly governed by the MUI theme, enhancing consistency with other MUI-styled page backgrounds. While `bg-background` likely maps to a theme variable, direct MUI usage is more explicit.
+
+### II. Authenticated Home Page (`app/page.tsx`) Strategy
+
+- **[ ] Option A (Recommended for Simplicity): Redirect authenticated users from `/` to `/dashboard`**
+
+  - **Current:** Authenticated users see a unique dashboard-like interface on the root path (`/`).
+  - **Suggestion:** Modify `app/page.tsx` (or `middleware.ts` for a more robust, server-side approach) to automatically redirect authenticated users from the root path (`/`) to `/dashboard`.
+  - **Reasoning:** For a base template, this simplifies the user flow by having a single, clear destination (the dashboard) after login. It reduces the number of distinct "overview" pages an AI or developer needs to manage and customize initially.
+  - **Details for `app/page.tsx` implementation (if chosen over middleware):**
+
+    - Inside `HomePage` component:
+
+      ```tsx
+      import { useSession } from 'next-auth/react';
+      import { useRouter } from 'next/navigation';
+      import { useEffect } from 'react';
+
+      // ...
+      const { data: session, status } = useSession();
+      const router = useRouter();
+
+      useEffect(() => {
+        if (status === 'authenticated') {
+          router.push('/dashboard');
+        }
+      }, [status, router]);
+
+      if (status === 'authenticated' || status === 'loading') {
+        // Return a loading indicator or null while redirecting or loading
+        return <GlobalLoading />; // Or your preferred loading component
+      }
+      // ... rest of the component for unauthenticated users (CombinedLoginOptions)
+      ```
+
+  - **Details for `middleware.ts` implementation (more robust):**
+    - Update the `authorized` callback in `lib/auth-edge.ts` (used by `middleware.ts`) to include logic:
+      ```typescript
+      // Inside authorized callback
+      if (isLoggedIn && pathname === '/') {
+        logger.debug(
+          '[Auth Edge] Authenticated user on root, redirecting to dashboard',
+          logContext
+        );
+        return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl.origin));
+      }
+      ```
+    - Ensure `DEFAULT_LOGIN_REDIRECT` is `/dashboard`.
+    - The `PUBLIC_ROUTES` array in `lib/auth-edge.ts` currently includes `/`. If `/` becomes a redirect target for authenticated users, it might still be "public" for unauthenticated ones, but the middleware logic handles the conditional redirect.
+
+### III. Metadata Completeness
+
+- **[ ] `app/about/page.tsx`: Add Page-Specific Metadata**
+
+  - **Current:** Does not explicitly define its own metadata.
+  - **Suggestion:** Add a `generateMetadata` function to `app/about/page.tsx` (or convert it to a Server Component if it needs to fetch data for metadata, though likely not for "About").
+  - **Reasoning:** Ensures the "About" page has a unique and relevant title and description for SEO and browser tab clarity, rather than relying solely on inherited metadata from the root layout.
+  - **Details:**
 
     ```tsx
-    // app/layout.tsx
-    import { SkipToContent } from '@/components/layouts/SkipToContent';
-    // ... other imports
+    // app/about/page.tsx
+    import { Metadata } from 'next';
 
-    export default async function RootLayout({ children }: { children: React.ReactNode }) {
-      // ...
-      return (
-        <html lang="en" suppressHydrationWarning>
-          <head></head>
-          <body className={roboto.className}>
-            <SkipToContent />
-            <SessionProviderWrapper session={session}>
-              {/* ... rest of the providers */}
-            </SessionProviderWrapper>
-          </body>
-        </html>
-      );
-    }
+    export const metadata: Metadata = {
+      title: 'About Us | {{YOUR_APP_TITLE}}',
+      description: 'Learn more about {{YOUR_PROJECT_NAME}} and its mission.',
+      // Add other relevant metadata like openGraph if desired
+    };
+
+    // ... rest of the AboutPage component
     ```
 
-### II. Homepage (`app/page.tsx`)
+    _(Note: Since `AboutPage` is currently `'use client'`, if you want to keep it that way and still have page-specific metadata, the metadata should be defined in an `app/about/layout.tsx` file if one were to be created, or the page itself would need to be a Server Component to export `metadata`.)_
 
-- [x] **Remove Unused Homepage Components:**
-  - **Directory:** `app/components/home/`
-  - **Current State:** The `app/page.tsx` file defines its primary content sections (`WelcomeSection`, `FeaturesSection`) inline and uses `CombinedLoginOptions` from `components/auth/`. The components within `app/components/home/` (e.g., `AuthButtons.tsx`, its own `FeatureCard.tsx`, `FeaturesSection.tsx`, `WelcomeSection.tsx`, and `AuthFallback.tsx`) do not appear to be imported or used by the current `app/page.tsx`.
-  - **Suggestion:** Delete the entire `app/components/home/` directory and its contents to simplify the template, reduce codebase size, and prevent confusion for developers (AI or human) using the template.
-  - **Action:** Remove the directory `app/components/home/`.
+- **[ ] `app/login/page.tsx`: Add Page-Specific Metadata**
 
-### III. Dashboard Pages (`app/dashboard/`)
+  - **Current:** Does not explicitly define its own metadata.
+  - **Suggestion:** Add a `metadata` export.
+  - **Reasoning:** Provide a clear title and description for the login page.
+  - **Details:**
 
-- [x] **Remove Unused Dashboard Components:**
-  - **Directory:** `app/dashboard/components/`
-  - **Current State:** The `app/dashboard/page.tsx` file defines its content sections (`OverviewSection`, `RecentActivitySection`, `QuickActionsSection`) inline. The components within `app/dashboard/components/` (e.g., `DashboardContent.tsx`, `DashboardSections.tsx`, `ActivitySectionSkeleton.tsx`, `DashboardCardSkeleton.tsx`, `ErrorState.tsx`, `LoadingState.tsx`, `NoSessionState.tsx`, etc.) are not currently imported or used by `app/dashboard/page.tsx`. The `app/dashboard/loading.tsx` already provides a good example of a loading state for the dashboard.
-  - **Suggestion:** Delete the `app/dashboard/components/` directory and its contents. This will streamline the dashboard feature, making it clearer that the primary content is defined in `app/dashboard/page.tsx` and loading/error states are handled by their respective special Next.js files.
-  - **Action:** Removed the directory `app/dashboard/components/`.
+    ```tsx
+    // app/login/page.tsx
+    import { Metadata } from 'next';
 
-### IV. Profile Page Logic (`app/profile/actions.ts`)
-
-- [x] **Correct Auth Import for Server Actions:**
-  - **File:** `app/profile/actions.ts`
-  - **Current State:** The `updateUserName` server action imports `auth` from `'@/lib/auth-edge'`.
-  - **Best Practice:** Server Actions run in the Node.js runtime. The `auth-edge.ts` configuration is intended for Edge runtime contexts (like middleware). The main `lib/auth.ts` exports the Node.js-configured `auth` instance from `lib/auth-node.ts`.
-  - **Suggestion:** Change the import in `app/profile/actions.ts` to use the main `auth` export.
-  - **Implementation Detail:**
-    ```diff
-    // app/profile/actions.ts
-    - import { auth } from '@/lib/auth-edge'; // Use edge-compatible auth
-    + import { auth } from '@/lib/auth'; // Use main auth (Node.js runtime for actions)
+    export const metadata: Metadata = {
+      title: 'Login | {{YOUR_APP_TITLE}}',
+      description: 'Sign in to access your account.',
+    };
+    // ... rest of LoginPage component
     ```
-  - ✅ **Completed:** Updated the import to use the correct auth module for server actions. All unit and E2E tests pass.
 
-### V. Layout Components (`components/layouts/`)
+- **[ ] `app/register/page.tsx`: Add Page-Specific Metadata**
 
-- [x] **Integrate Mobile-Specific Navigation in Header:**
+  - **Current:** Does not explicitly define its own metadata.
+  - **Suggestion:** Add a `metadata` export.
+  - **Reasoning:** Provide a clear title and description for the registration page.
+  - **Details:**
 
-  - **Files:** `components/layouts/Header.tsx`, `components/layouts/MobileNavigation.tsx`, `components/layouts/MobileDrawerContent.tsx`, `components/layouts/NavItems.tsx`
-  - **Current State:** `Header.tsx` renders navigation items directly as buttons but does not use the dedicated mobile navigation components (`MobileNavigation.tsx`, `MobileDrawerContent.tsx`).
-  - **Suggestion:** Enhance `Header.tsx` to include the `MobileNavigation` component. This component, along with `MobileDrawerContent` and `NavItems` (specifically `MobileNavItem` and the `useNavigation` hook), will provide a standard hamburger menu and drawer for mobile views. The `navItems` array currently defined in `Header.tsx` should be passed as a prop to `MobileNavigation`.
-  - **Action:**
-    1.  Modify `Header.tsx` to import and render `MobileNavigation`, passing the `navItems` array to it.
-    2.  The `MobileNavigation` component will handle its own state for opening/closing the drawer and will use `MobileDrawerContent` (which in turn uses `MobileNavItem`) to render the links.
-    3.  Ensure the hamburger icon for `MobileNavigation` is displayed appropriately on smaller screens, and the direct button links in `Header.tsx` are hidden (or replaced by `DesktopNavigation` if chosen). `Header.tsx`'s current direct rendering of nav buttons can serve as the desktop navigation, or it can be refactored to use `DesktopNavigation.tsx`.
+    ```tsx
+    // app/register/page.tsx
+    import { Metadata } from 'next';
 
-- [x] **Consolidate or Remove `DesktopNavigation.tsx`:**
+    export const metadata: Metadata = {
+      title: 'Register | {{YOUR_APP_TITLE}}',
+      description: 'Create a new account to get started.',
+    };
+    // ... rest of RegisterPage component
+    ```
 
-  - **Files:** `components/layouts/Header.tsx`, `components/layouts/DesktopNavigation.tsx`
-  - **Current State:** `DesktopNavigation.tsx` exists but is not used by `Header.tsx`. `Header.tsx` currently renders desktop navigation links directly.
-  - **Suggestion:**
-    - **Option A (Preferred for consistency if MobileNavigation is added):** Integrate `DesktopNavigation.tsx` into `Header.tsx` for desktop views. It should use the same `navItems` prop and `useNavigation` hook as `MobileNavigation` for consistency.
-    - **Option B (Simpler if current Header.tsx buttons are deemed sufficient):** If the direct rendering of `Button` components in `Header.tsx` is considered adequate for desktop navigation and a separate `DesktopNavigation.tsx` component adds unnecessary complexity for this template's goals, then `DesktopNavigation.tsx` (and potentially the `DesktopNavItem` export from `NavItems.tsx` if only used there) could be removed.
-  - **Action:** Choose Option A or B. If A, refactor `Header.tsx`. If B, delete `DesktopNavigation.tsx`.
+- **[ ] `app/profile/layout.tsx`: Enhance Metadata**
+  - **Current:** Defines `title: 'Profile | Next.js Template'`.
+  - **Suggestion:** Update the description to be more specific and ensure the title uses the app title placeholder.
+  - **Reasoning:** Improve SEO and clarity.
+  - **Details:**
+    ```tsx
+    // app/profile/layout.tsx
+    export const metadata: Metadata = {
+      title: 'Your Profile | {{YOUR_APP_TITLE}}', // Use placeholder
+      description: 'View and manage your user profile details and settings.',
+    };
+    ```
 
-- [x] **Remove Unused `MainContent.tsx` Component:**
-  - **File:** `components/layouts/MainContent.tsx`
-  - **Current State:** `MainContent.tsx` defines a `Box` with `component="main"`. However, `PageLayout.tsx` (used by most pages) also defines its own `Box component="main"`. The root layout uses `BaseLayout.tsx`, which uses an MUI `Container`. It appears `components/layouts/MainContent.tsx` is redundant.
-  - **Suggestion:** Remove the `components/layouts/MainContent.tsx` file as its functionality is covered by `PageLayout.tsx`.
-  - **Action:** Delete `components/layouts/MainContent.tsx`.
+### IV. Accessibility Enhancements
 
-### VI. Global Styles (`app/globals.css`)
+- **[ ] Visually Hidden H1 in `app/layout.tsx`**
+  - **Current:** A visually hidden H1 for the app name is present in `app/layout.tsx` but is outside the `<body>` in the provided snippet.
+  - **Suggestion:** Ensure the visually hidden H1 (if kept for screen reader context) is placed _within_ the `<body>` tag, ideally at the beginning of the `main` content or as a general site title if `Header` doesn't provide an `h1`. However, `PageLayout` already includes an `h1` via `PageHeader`. A global, visually hidden `h1` in `RootLayout` might be redundant or conflict if every page already has a visible `h1` via `PageHeader`.
+  - **Action:** Review the necessity of the visually hidden H1 in `RootLayout`. If `PageHeader` consistently provides the primary `h1` for each page, the global one might be removable to avoid confusion or ensure it's truly for overall site context and not page-specific.
+  - **Correction from previous thoughts:** The `Header` component has `<Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2 }}>{YOUR_APP_NAME}</Typography>`. This is an `h6` acting as a site title/logo text. `PageLayout` correctly uses `PageHeader` which renders an `h1`. The visually hidden `h1` in `RootLayout` might be intended as the _overall site_ `h1` for screen readers if the visible site title in the header is not an `h1`. If this is the case, it should be inside `<body>`.
+  - **Final Check:** The `<h1>` is inside `<body>` in the full `RootLayout` code. The question is its semantic utility given `PageHeader` usually provides the main page `H1`. For a template, it's often clearer if the main visible heading of a page is its primary `h1`. If the visually hidden H1 is intended as an overarching site title for accessibility before page-specific H1s, that's a valid pattern, but ensure it's semantically appropriate.
+    - **Proposed Action:** No change needed to code directly for this, but document its purpose or ensure that if AI modifies the header structure, it considers the main page `H1` implications. For the template, it's okay as is, assuming `PageHeader` is consistently used.
 
-- [x] **Review and Potentially Remove Redundant `:root` CSS Variables for Theming:**
-  - **File:** `app/globals.css`
-  - **Current State:** Contains CSS variables like `--background` and `--foreground` for light/dark modes. The project also uses `next-themes` and MUI's `ThemeRegistry` with `CssBaseline`, which should comprehensively handle background and text colors based on the MUI theme.
-  - **Suggestion:** Verify if these custom `:root` CSS variables are actively used by any components that are _not_ styled by MUI or if they are essential for any global styling that MUI's `CssBaseline` and theme provider do not cover. If all theming (especially background and foreground colors) is effectively managed by the MUI theme and `next-themes` (which classes the `html` element), these custom CSS variables might be redundant and could be removed to simplify the theming strategy, relying solely on the MUI theme as the single source of truth for colors.
-  - **Action:** Investigate usage. If unused or fully covered by MUI's theme, remove the `:root` variable definitions for `--background` and `--foreground` (and their dark mode counterparts) from `globals.css`. The `html.light, body.light` and `html.dark, body.dark` rules might still be useful for `color-scheme` and initial defaults before MUI hydration, but the CSS variables themselves might not be needed.
-
-### VII. Offline Page (`app/offline.tsx`)
-
-- [x] **Restyle Offline Page with Material UI for Consistency:**
-
-  - **File:** `app/offline.tsx`
-  - **Current State:** The page uses Tailwind-like utility classes (e.g., `flex`, `text-4xl`, `bg-blue-600`) for styling. The project primarily uses Material UI, and Tailwind CSS is not listed as a dependency or set up globally.
-  - **Suggestion:** Rewrite the styling of `app/offline.tsx` to use Material UI components (e.g., `Box` for layout, `Typography` for text, `Button` for the action) and MUI's `sx` prop or `styled()` API. This will ensure visual consistency with the rest of the application.
-  - **Action:** Refactored `app/offline.tsx` to use MUI components for its layout and styling, replacing Tailwind utility classes with Material UI's component-based approach and `sx` prop for styling.
-
----
+By addressing these points, the Application Pages and Layouts subsystem will be more consistent, potentially simpler, and even more aligned with best practices for a starter template.
