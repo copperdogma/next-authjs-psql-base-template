@@ -1,6 +1,6 @@
 # Testing Guide
 
-This document provides an overview of testing in the {{YOUR_PROJECT_NAME}} application. For more detailed information, please refer to the MDC (Markdown for Cursor) files that provide context-sensitive documentation.
+This document provides an overview of testing in the next-auth-psql-app application. For more detailed information, please refer to the MDC (Markdown for Cursor) files that provide context-sensitive documentation.
 
 ## Test Directory Structure
 

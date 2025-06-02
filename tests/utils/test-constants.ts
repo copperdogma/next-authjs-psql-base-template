@@ -37,7 +37,7 @@ export const DATABASE = {
   VALID_CONNECTION_TEST_QUERY: 'SELECT 1',
   EXPECTED_RESULT: { result: 1 },
   INVALID_CONNECTION_STRING: 'postgresql://invalid:invalid@localhost:5432/invalid?schema=public',
-  TEST_DB_PREFIX: '{{YOUR_PROJECT_NAME}}-test-',
+  TEST_DB_PREFIX: 'next-auth-psql-app-test-',
 };
 
 // Component states

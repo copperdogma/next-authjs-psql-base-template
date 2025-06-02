@@ -1,5 +1,5 @@
 {
-  "name": "{{YOUR_PROJECT_NAME}}",
+  "name": "next-auth-psql-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -145,10 +145,10 @@
     "typescript-eslint": "^8.29.1",
     "wait-on": "^8.0.3"
   },
-  "description": "{{YOUR_PROJECT_DESCRIPTION}}",
+  "description": "A Next.js application with NextAuth.js and PostgreSQL",
   "repository": {
     "type": "git",
-    "url": "{{YOUR_REPOSITORY_URL}}"
+    "url": "https://github.com/yourusername/next-auth-psql-app"
   },
   "overrides": {
     "whatwg-url": "^14.0.0",

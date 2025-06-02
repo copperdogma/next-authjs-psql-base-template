@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Box } from '@mui/material';
 
 export const metadata: Metadata = {
-  title: 'Profile | Next.js Template',
-  description: 'Manage your user profile',
+  title: 'Your Profile | {{YOUR_APP_TITLE}}',
+  description: 'View and manage your user profile details and settings.',
 };
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {

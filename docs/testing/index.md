@@ -1,6 +1,6 @@
 # Testing Documentation
 
-This directory contains all the testing documentation for the {{YOUR_PROJECT_NAME}} project.
+This directory contains all the testing documentation for the next-auth-psql-app project.
 
 ## Available Documentation
 

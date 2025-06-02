@@ -230,7 +230,14 @@ export const authConfigEdge: NextAuthConfig = {
       let allowAccess = false;
       let response: Response | undefined = undefined;
 
-      if (isPublicRoute(pathname) || isApiRoute(pathname) || isIcon) {
+      // Check if authenticated user is on root path and redirect to dashboard
+      if (isLoggedIn && pathname === '/') {
+        logger.debug(
+          '[Auth Edge] Authenticated user on root, redirecting to dashboard',
+          logContext
+        );
+        response = Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl.origin));
+      } else if (isPublicRoute(pathname) || isApiRoute(pathname) || isIcon) {
         logger.debug('[Auth Edge] Allowing public, API, or icon route', {
           ...logContext,
           pathname,

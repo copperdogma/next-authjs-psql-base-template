@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines our end-to-end (E2E) testing strategy for the {{YOUR_PROJECT_NAME}} application. E2E tests verify that the entire application works as expected from a user's perspective by interacting with the application through the browser.
+This document outlines our end-to-end (E2E) testing strategy for the next-auth-psql-app application. E2E tests verify that the entire application works as expected from a user's perspective by interacting with the application through the browser.
 
 ## Technology Stack
 

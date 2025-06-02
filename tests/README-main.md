@@ -1,6 +1,6 @@
-# Tests for {{YOUR_PROJECT_NAME}}
+# Tests for next-auth-psql-app
 
-This directory contains all tests for the {{YOUR_PROJECT_NAME}} application.
+This directory contains all tests for the next-auth-psql-app application.
 
 ## Directory Structure
 

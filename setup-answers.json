@@ -1,0 +1,21 @@
+{
+  "YOUR_PROJECT_NAME": "next-auth-psql-app",
+  "YOUR_PROJECT_DESCRIPTION": "A Next.js application with NextAuth.js and PostgreSQL",
+  "YOUR_COPYRIGHT_HOLDER": "Your Name",
+  "YOUR_PROJECT_URL": "https://example.com",
+  "YOUR_REPOSITORY_URL": "https://github.com/yourusername/next-auth-psql-app",
+  "YOUR_AUTHOR_NAME": "Your Name",
+  "YOUR_AUTHOR_EMAIL": "your.email@example.com",
+  "YOUR_APP_TITLE": "Next Auth App",
+  "YOUR_APP_SHORT_NAME": "NextAuth",
+  "YOUR_APP_NAME": "Next Auth Application",
+  "YOUR_APP_DESCRIPTION": "A Next.js application with NextAuth.js and PostgreSQL",
+  "YOUR_DATABASE_NAME_DEV": "next_auth_psql_app_dev",
+  "YOUR_DATABASE_NAME_TEST": "next_auth_psql_app_test",
+  "YOUR_DATABASE_NAME": "next_auth_psql_app",
+  "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/next_auth_psql_app_dev?schema=public",
+  "GOOGLE_CLIENT_ID": "",
+  "GOOGLE_CLIENT_SECRET": "",
+  "REDIS_URL": "",
+  "overwriteEnv": true
+}

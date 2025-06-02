@@ -130,7 +130,7 @@ test.describe('Accessibility Tests', () => {
     await expect(mainContent, 'Main content should be visible on mobile viewport').toBeVisible();
 
     // Explicitly wait for the main header landmark before running Axe
-    await expect(page.getByRole('banner')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('header.MuiAppBar-root')).toBeVisible({ timeout: 10000 });
 
     // Take a screenshot
     await page.screenshot({

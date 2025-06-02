@@ -1,4 +1,4 @@
-# {{YOUR_PROJECT_NAME}}
+# next-auth-psql-app
 
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 
@@ -22,7 +22,7 @@ Modern web application template: Next.js, NextAuth.js v5 (Prisma Adapter), Postg
 
 ## Quick Start
 
-1.  **Clone**: `git clone https://github.com/yourusername/{{YOUR_PROJECT_NAME}}.git && cd {{YOUR_PROJECT_NAME}}`
+1.  **Clone**: `git clone https://github.com/yourusername/next-auth-psql-app.git && cd next-auth-psql-app`
 2.  **Install Dependencies**: `npm install`
 3.  **Setup Environment**:
     - Run `npm run setup` for guided environment configuration (creates `.env.local`).
@@ -37,7 +37,7 @@ Modern web application template: Next.js, NextAuth.js v5 (Prisma Adapter), Postg
 ## Project Structure
 
 ```
-{{YOUR_PROJECT_NAME}}/
+next-auth-psql-app/
 ├── app/                    # Next.js App Router (pages, layouts, API routes)
 │   ├── api/                # API routes (e.g., /api/health)
 │   │   └── auth/           # NextAuth.js managed endpoints (e.g., /api/auth/signin)

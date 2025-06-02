@@ -139,7 +139,7 @@ DOCS Todo - we'll do this at the end when all changes are done
 - [x] **Code Comments**: (Clarity and necessity - Requires deeper code review)
 - [ ] **`.env.example`**:
   - [ ] Add comments explaining _why_ certain less obvious variables are needed (e.g., `NEXTAUTH_URL` for OAuth redirects, `NEXTAUTH_SECRET` for JWT encryption).
-  - [ ] Make `DATABASE_URL` for test and production more explicitly different in the example (e.g., `{{YOUR_DATABASE_NAME}}_test`, `{{YOUR_DATABASE_NAME}}_prod`) to emphasize separation, even though comments cover this.
+  - [ ] Make `DATABASE_URL` for test and production more explicitly different in the example (e.g., `next_auth_psql_app_test`, `next_auth_psql_app_prod`) to emphasize separation, even though comments cover this.
 - [ ] **AI Guidance / Project Documentation (`project-reference.mdc` or similar):**
   - [ ] Clarify that when using the `dev:test` script, `NODE_ENV=test` might influence application behavior (logging, mocks).
   - [ ] Strongly emphasize that the `NEXTAUTH_SECRET` fallback in `lib/auth-edge.ts` for dev/test _must_ be replaced with a strong, unique secret in production.

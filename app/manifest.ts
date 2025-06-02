@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: '{{YOUR_APP_TITLE}}',
-    short_name: '{{YOUR_APP_SHORT_NAME}}',
-    description: '{{YOUR_PROJECT_DESCRIPTION}}',
+    name: 'Next Auth App',
+    short_name: 'NextAuth',
+    description: 'A Next.js application with NextAuth.js and PostgreSQL',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

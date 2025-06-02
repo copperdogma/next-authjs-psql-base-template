@@ -1,7 +1,7 @@
 ## Project Structure
 
 ```
-{{YOUR_PROJECT_NAME}}/
+next-auth-psql-app/
 ├── app/                    # Next.js 13+ App Router
 │   ├── api/               # API routes
 │   │   ├── auth/         # Authentication endpoints (NextAuth.js)
@@ -173,8 +173,8 @@ TEST_USER_EMAIL=test@example.com
 TEST_USER_PASSWORD=Test123!
 
 # Application Settings
-NEXT_PUBLIC_APP_NAME="{{YOUR_APP_NAME}}"
-NEXT_PUBLIC_APP_DESCRIPTION="{{YOUR_APP_DESCRIPTION}}"
+NEXT_PUBLIC_APP_NAME="Next Auth Application"
+NEXT_PUBLIC_APP_DESCRIPTION="A Next.js application with NextAuth.js and PostgreSQL"
 # ... other app-specific public env vars
 ```
 

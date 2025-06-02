@@ -82,7 +82,7 @@ const { chromium } = require('@playwright/test');
     console.log('\nChecking for recognizable content:');
 
     // App name from environment or default
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || '{{YOUR_APP_NAME}}';
+    const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Next Auth Application';
     const hasAppName = await page.evaluate(name => {
       return document.body.textContent.includes(name);
     }, appName);
