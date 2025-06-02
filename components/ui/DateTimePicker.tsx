@@ -20,7 +20,7 @@ export interface DateTimePickerProps {
   required?: boolean;
   disablePast?: boolean;
   disableFuture?: boolean;
-  inputFormat?: string;
+  format?: string;
   views?: Array<'year' | 'month' | 'day' | 'hours' | 'minutes'>;
 }
 
@@ -67,7 +67,7 @@ export function DateTimePicker({
   required,
   disablePast,
   disableFuture,
-  inputFormat,
+  format,
   views,
 }: DateTimePickerProps) {
   return (
@@ -81,7 +81,7 @@ export function DateTimePicker({
         disabled={disabled}
         disablePast={disablePast}
         disableFuture={disableFuture}
-        format={inputFormat}
+        format={format}
         views={views}
         slotProps={{
           textField: {

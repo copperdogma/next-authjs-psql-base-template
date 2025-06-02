@@ -73,7 +73,6 @@ export function Toaster({
           autoHideDuration={toast.duration || 5000}
           onClose={() => handleClose(toast.id)}
           anchorOrigin={anchorOrigin}
-          sx={{ mb: toasts.indexOf(toast) * 8 }}
         >
           <Alert
             onClose={() => handleClose(toast.id)}
