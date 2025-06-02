@@ -1,80 +1,39 @@
 'use client';
 
 import React from 'react';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Link from 'next/link'; // Use Next.js Link for navigation
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation'; // To highlight active link
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import InfoIcon from '@mui/icons-material/Info';
-import UserProfile from '@/components/auth/UserProfile'; // Restore import
-import ThemeToggle from '@/components/ui/ThemeToggle'; // Import ThemeToggle
-import LoginIcon from '@mui/icons-material/Login'; // Import LoginIcon
-import { SxProps, Theme } from '@mui/material/styles'; // Import SxProps and Theme
+import UserProfile from '@/components/auth/UserProfile';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import LoginIcon from '@mui/icons-material/Login';
+import MobileNavigation from './MobileNavigation';
+import DesktopNavigation from './DesktopNavigation';
 
 // Define navigation links including public/private status
-const navItems = [
-  { name: 'Home', path: '/', icon: <HomeIcon />, public: true },
-  { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, public: false },
-  { name: 'Profile', path: '/profile', icon: <AccountCircleIcon />, public: false },
-  { name: 'About', path: '/about', icon: <InfoIcon />, public: true },
+export const navItems = [
+  { name: 'Home', path: '/', href: '/', icon: <HomeIcon />, public: true },
+  {
+    name: 'Dashboard',
+    path: '/dashboard',
+    href: '/dashboard',
+    icon: <DashboardIcon />,
+    public: false,
+  },
+  {
+    name: 'Profile',
+    path: '/profile',
+    href: '/profile',
+    icon: <AccountCircleIcon />,
+    public: false,
+  },
+  { name: 'About', path: '/about', href: '/about', icon: <InfoIcon />, public: true },
 ];
-
-// --- Extracted Components ---
-
-interface NavigationLinksProps {
-  navItems: Array<{ name: string; path: string; icon: React.ReactNode; public: boolean }>;
-  isAuthenticated: boolean;
-  pathname: string | null; // pathname can be null
-}
-
-const NavigationLinks: React.FC<NavigationLinksProps> = ({
-  navItems,
-  isAuthenticated,
-  pathname,
-}) => {
-  const displayedNavItems = navItems.filter(item => item.public || isAuthenticated);
-
-  const activeLinkStyle: SxProps<Theme> = {
-    border: '1px solid',
-    borderColor: theme => theme.palette.primary.main,
-  };
-
-  const hoverStyle: SxProps<Theme> = {
-    '&:hover': {
-      backgroundColor: theme =>
-        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
-    },
-  };
-
-  return (
-    <Box sx={{ flexGrow: 1, display: 'flex', gap: 1 }}>
-      {displayedNavItems.map(item => (
-        <Button
-          key={item.name}
-          component={Link}
-          href={item.path}
-          startIcon={item.icon}
-          sx={{
-            color: 'inherit',
-            textTransform: 'none',
-            ...(pathname === item.path ? activeLinkStyle : {}),
-            ...hoverStyle,
-          }}
-        >
-          {item.name}
-        </Button>
-      ))}
-    </Box>
-  );
-};
 
 interface AuthSectionProps {
   status: 'loading' | 'authenticated' | 'unauthenticated';
@@ -84,60 +43,65 @@ const AuthSection: React.FC<AuthSectionProps> = ({ status }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
     <ThemeToggle />
     {status === 'loading' && (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {/* Optional loading indicator */}
-      </Box>
+      <Box sx={{ width: 100, textAlign: 'center' }}>{/* Optional loading indicator */}</Box>
     )}
-    {status === 'authenticated' && <UserProfile />} {/* Restore UserProfile */}
+    {status === 'authenticated' && <UserProfile />}
     {status === 'unauthenticated' && (
       <Button
         component={Link}
         href="/login"
+        variant="outlined"
         color="inherit"
         startIcon={<LoginIcon />}
-        sx={{ textTransform: 'none' }}
+        sx={{ ml: 1 }}
       >
-        Sign In
+        Login
       </Button>
     )}
   </Box>
 );
 
-// --- Main Header Component ---
-
+/**
+ * Header component providing navigation and authentication UI.
+ */
 const Header: React.FC = () => {
   const { status } = useSession();
-  const pathname = usePathname();
+  const _pathname = usePathname();
   const isAuthenticated = status === 'authenticated';
 
-  // const displayedNavItems = navItems.filter(item => item.public || isAuthenticated); // Logic moved to NavigationLinks
+  // Filter navigation items based on authentication status
+  const filteredNavItems = navItems.map(item => ({
+    ...item,
+    isVisible: () => item.public || isAuthenticated,
+  }));
 
   return (
     <AppBar
-      position="static"
-      elevation={0}
-      sx={theme => ({
-        backgroundColor: theme.palette.background.paper,
-        color: theme.palette.text.primary,
-        borderBottom: `1px solid ${theme.palette.divider}`,
-      })}
+      position="sticky"
+      color="default"
+      elevation={1}
+      sx={{
+        bgcolor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
     >
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-          {/* App Name */}
-          <Typography variant="h6" noWrap component="div" sx={{ mr: 2 }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2 }}>
             {'{YOUR_APP_NAME}'}
           </Typography>
 
-          {/* Use extracted NavigationLinks component */}
-          <NavigationLinks
-            navItems={navItems}
-            isAuthenticated={isAuthenticated}
-            pathname={pathname}
-          />
+          {/* Desktop Navigation - Hidden on mobile */}
+          <DesktopNavigation navItems={filteredNavItems} />
 
-          {/* Use extracted AuthSection component */}
-          <AuthSection status={status} />
+          {/* Auth section with theme toggle and profile/login */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <AuthSection status={status} />
+
+            {/* Mobile Navigation - Hidden on desktop */}
+            <MobileNavigation navItems={filteredNavItems} />
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>

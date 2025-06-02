@@ -1,14 +1,39 @@
+'use client';
+
+import { Box, Button, Typography, Container } from '@mui/material';
+
 export default function Offline() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-      <h1 className="text-4xl font-bold mb-4">You are offline</h1>
-      <p className="text-xl mb-6">Please check your internet connection and try again.</p>
-      <button
-        onClick={() => window.location.reload()}
-        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+    <Container
+      component="main"
+      maxWidth="sm"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          py: 4,
+        }}
       >
-        Try Again
-      </button>
-    </div>
+        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+          You are offline
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          Please check your internet connection and try again.
+        </Typography>
+        <Button variant="contained" onClick={() => window.location.reload()} sx={{ px: 3, py: 1 }}>
+          Try Again
+        </Button>
+      </Box>
+    </Container>
   );
 }

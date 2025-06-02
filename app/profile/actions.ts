@@ -16,7 +16,7 @@
 
 import 'server-only';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth-edge'; // Use edge-compatible auth
+import { auth } from '@/lib/auth'; // Use main auth (Node.js runtime for actions)
 import { logger } from '@/lib/logger';
 // Import implementation directly and instantiate
 import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
