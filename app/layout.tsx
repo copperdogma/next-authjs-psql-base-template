@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth-edge';
 import { CssBaseline, Box } from '@mui/material';
 import Header from '@/components/layouts/Header';
 import Footer from '@/components/layouts/Footer';
+import { SkipToContent } from '@/components/layouts/SkipToContent';
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body className={roboto.className}>
+        <SkipToContent />
         {/* Visually hidden H1 moved inside main container */}
         <SessionProviderWrapper session={session}>
           <ThemeProvider
@@ -46,7 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <CssBaseline />
               <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
                 <Header />
-                <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
+                <Box component="main" sx={{ flexGrow: 1, py: 3 }} id="main-content">
                   <BaseLayout>{children}</BaseLayout>
                   <Toaster />
                 </Box>
