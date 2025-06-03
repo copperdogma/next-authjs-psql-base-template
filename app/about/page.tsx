@@ -18,6 +18,9 @@ export default function AboutPage() {
     signOutWithLogging({ callbackUrl: '/login' }); // Redirect to login after sign out
   };
 
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <PageLayout
       title="About This Template"
@@ -38,16 +41,18 @@ export default function AboutPage() {
           <CardHeader title="Quick Actions" />
           <CardContent>
             <Grid container spacing={2}>
-              <Grid
-                size={{
-                  xs: 12,
-                  sm: 4,
-                }}
-              >
-                <Button variant="outlined" color="warning" fullWidth onClick={handleLogout}>
-                  Debug Log Out
-                </Button>
-              </Grid>
+              {isDevelopment && (
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 4,
+                  }}
+                >
+                  <Button variant="outlined" color="warning" fullWidth onClick={handleLogout}>
+                    Debug Log Out
+                  </Button>
+                </Grid>
+              )}
               {/* Add other quick actions here if needed */}
             </Grid>
           </CardContent>

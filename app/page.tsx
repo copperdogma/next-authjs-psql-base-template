@@ -4,6 +4,7 @@ import React from 'react';
 import { Stack, Typography, Grid, CircularProgress } from '@mui/material';
 import PageLayout from '@/components/layouts/PageLayout';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { CombinedLoginOptions } from '@/components/auth/CombinedLoginOptions';
 
 // Home page will now redirect authenticated users to the dashboard
@@ -12,17 +13,12 @@ import { CombinedLoginOptions } from '@/components/auth/CombinedLoginOptions';
 // --- Home Page Component --- // Renamed component
 export default function HomePage() {
   const { data: _session, status } = useSession();
-  const router = React.useCallback(async () => {
-    const { useRouter } = await import('next/navigation');
-    return useRouter();
-  }, []);
+  const router = useRouter();
 
   // Effect to redirect authenticated users to dashboard
   React.useEffect(() => {
     if (status === 'authenticated') {
-      router().then(routerInstance => {
-        routerInstance.push('/dashboard');
-      });
+      router.push('/dashboard');
     }
   }, [status, router]);
 

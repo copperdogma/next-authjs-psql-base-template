@@ -88,9 +88,20 @@ const Header: React.FC = () => {
     >
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2 }}>
-            {'{YOUR_APP_NAME}'}
-          </Typography>
+          <Link
+            href="/"
+            passHref
+            legacyBehavior={false}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{ fontWeight: 'bold', mr: 2, '&:hover': { opacity: 0.8 } }}
+            >
+              {'{YOUR_APP_NAME}'}
+            </Typography>
+          </Link>
 
           {/* Desktop Navigation - Hidden on mobile */}
           <DesktopNavigation navItems={filteredNavItems} />

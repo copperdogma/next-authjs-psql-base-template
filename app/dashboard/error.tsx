@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { clientLogger } from '@/lib/client-logger';
 import { getDisplayErrorMessage } from '@/lib/utils/error-display';
+import { Typography, Button, Paper, Box, Container } from '@mui/material';
+import { ErrorOutline } from '@mui/icons-material';
 
 export default function DashboardError({
   error,
@@ -23,20 +24,45 @@ export default function DashboardError({
   );
 
   return (
-    <div className="container mx-auto p-6 text-center">
-      <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong!</h2>
-      <p className="text-gray-600 mb-6">{displayMessage}</p>
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <button
-          onClick={() => reset()}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+    <Container component="main" maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: { xs: 3, sm: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          borderRadius: 2,
+        }}
+      >
+        <ErrorOutline
+          sx={{
+            fontSize: 60,
+            color: 'error.main',
+            mb: 2,
+          }}
+        />
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'medium' }}>
+          Something went wrong!
+        </Typography>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          paragraph
+          sx={{ maxWidth: 450, mx: 'auto', mb: 3 }}
         >
-          Try again
-        </button>
-        <Link href="/" className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">
-          Return to home
-        </Link>
-      </div>
-    </div>
+          {displayMessage}
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
+          <Button variant="contained" onClick={() => reset()} size="large">
+            Try again
+          </Button>
+          <Button variant="outlined" href="/" size="large">
+            Return to home
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

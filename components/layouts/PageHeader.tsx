@@ -14,7 +14,6 @@ const TitleSection: React.FC<TitleSectionProps> = ({ title, subtitle }) => (
       variant="h4"
       component="h1"
       id="page-title"
-      tabIndex={0}
       sx={{
         fontWeight: 600,
         mb: subtitle ? 1 : 0,

@@ -39,7 +39,6 @@ I want you to analyze just a single subsystem for best practices. This should be
 ## Caveats For AI analysis:
 
 - Placeholders: These are intentional. Because this is a base project I plan to install a plugin that leads the user through customizing it for their uses and replacing those placeholders. Igore them for now.
-- Outdated Project Documentation: It's currently outdated as it's going to get updated all at once at the end of the project. Just ignore the docs for now. The CODE-level documention should be 100% accurate, though.
 - Redundant Cursor Rules: Just ignore them. They're mind to deal with.
 - We have strict eslinting rules for code complexity/length/etc. So don't suggest anything that would violate those rules.
 
@@ -81,6 +80,11 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **`DateTimePicker.tsx` - API Alignment**: Renamed the `inputFormat` prop to `format` in the DateTimePickerProps interface to align with the current MUI X Date Pickers library conventions. Updated component implementation to use the new prop name.
     - [x] **`Toaster.tsx` - Remove Ineffective Styling for Stacking**: Removed the `sx={{ mb: toasts.indexOf(toast) * 8 }}` prop from the `Snackbar` component within `Toaster.tsx` as it doesn't effectively create spacing between toasts due to how MUI Snackbars are absolutely positioned.
   - [ ] **Application Pages and Layouts** (Files: `app/` (excluding `api/`), `app/layout.tsx`, `app/page.tsx`, `app/dashboard/`, `app/login/`, `app/register/`, `app/profile/`, `app/about/`, `components/layouts/`)
+    - [x] **Standardize Styling in Error Pages to MUI**: Refactored `app/dashboard/error.tsx` and `app/profile/error.tsx` to use MUI components for layout and styling instead of Tailwind CSS classes, ensuring consistency with the rest of the application.
+    - [x] **Simplify `useRouter` Hook Usage in `app/page.tsx`**: Replaced the complex `useCallback` approach with direct import and usage of the `useRouter` hook from 'next/navigation', making the code more straightforward and maintainable.
+    - [x] **Adjust `tabIndex` on Page Title in `PageHeader.tsx`**
+    - [x] **Make Site Title in Header a Link to Homepage**
+    - [x] **Conditionally Render "Debug Log Out" Button**
   - [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
   - [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
   - [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
@@ -93,118 +97,97 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 - [x] Final round: search for unused vars/code/files/packages/etc.
 - [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
 
-## Markdown Checklist for Application Pages and Layouts Improvements
+## Application Pages and Layouts Enhancement Checklist
 
-### I. Styling & Component Consistency
+### [x] 1. Standardize Styling in Error Pages to MUI
 
-- **[x] `app/profile/loading.tsx`: Standardize Skeleton Component**
+- **Affected Files**:
+  - `app/dashboard/error.tsx`
+  - `app/profile/error.tsx`
+- **Current State**: These files use Tailwind CSS classes for styling (e.g., `className="container mx-auto..."`, `className="bg-blue-500..."`).
+- **Problem**: Inconsistency with the rest of the application, which primarily uses Material-UI (MUI) for styling (e.g., `app/error.tsx`, `app/not-found.tsx`, layouts, and UI components).
+- **Best Practice**: Maintain a consistent styling library and approach across the application for better maintainability, a cohesive look and feel, and easier theming.
+- **Task**:
+  - Refactor `app/dashboard/error.tsx` and `app/profile/error.tsx` to use MUI components for layout and styling.
+  - Replace Tailwind classes with equivalent MUI components and `sx` prop styling.
+  - **Example (for `app/dashboard/error.tsx`)**:
+    - Instead of `<div className="container mx-auto p-6 text-center">`, use `<Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>`.
+    - Instead of `<h2 className="text-2xl font-bold text-red-600 mb-4">`, use `<Typography variant="h4" component="h2" color="error.main" gutterBottom sx={{ fontWeight: 'bold' }}>`.
+    - Instead of `<button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">`, use `<Button variant="contained" color="primary">`.
+    - Ensure error messages and action buttons are styled consistently with other MUI-based error pages like `app/error.tsx`.
+  - Remove any unused Tailwind class imports or setup if these files are the only ones using them in this context.
 
-  - **Current:** Uses Tailwind CSS classes for skeleton UI (`animate-pulse`, `bg-accent`).
-  - **Suggestion:** Refactor `app/profile/loading.tsx` to use Material UI `Skeleton` components.
-  - **Reasoning:** To maintain visual consistency with `app/dashboard/loading.tsx` and the overall MUI theming. This ensures all loading placeholders share the same design language and respond to theme changes uniformly.
-  - **Details:**
-    - Replace `div` elements with Tailwind classes with appropriate MUI `Skeleton` variants (e.g., `Skeleton variant="text"`, `Skeleton variant="circular"`, `Skeleton variant="rectangular"`).
-    - Structure the MUI Skeletons to visually represent the `ProfileContent` layout (e.g., avatar, name, email, user ID sections).
-    - Ensure it's wrapped in a layout that provides appropriate page padding if `PageLayout` isn't used directly in the loading component. (Currently, `ProfileLoading` does not use `PageLayout`, but `app/profile/page.tsx` wraps `ProfileContent` in `PageLayout` with Suspense. The loading component should ideally fit well within that `PageLayout` context).
+### [x] 2. Simplify `useRouter` Hook Usage in `app/page.tsx`
 
-- **[x] `app/dashboard/not-found.tsx`: Standardize Styling**
+- **Affected File**: `app/page.tsx`
+- **Current State**: The `useRouter` hook is initialized using `React.useCallback(async () => { const { useRouter } = await import('next/navigation'); return useRouter(); }, [])` and then called as `router().then(...)`.
+- **Problem**: This is an overly complex way to get the router instance for a standard client component hook.
+- **Best Practice**: Use the standard import and hook invocation for `useRouter` from `next/navigation` in client components.
+- **Task**:
+  - Modify `app/page.tsx`:
+    1.  Add `import { useRouter } from 'next/navigation';` at the top of the file.
+    2.  Inside the `HomePage` component, change the router initialization to: `const router = useRouter();`.
+    3.  Update the `useEffect` hook to use the router instance directly:
+        ```typescript
+        React.useEffect(() => {
+          if (status === 'authenticated') {
+            router.push('/dashboard'); // No need for .then() if router is obtained directly
+          }
+        }, [status, router]);
+        ```
+    4.  Remove the `React.useCallback` for `router`.
 
-  - **Current:** Uses Tailwind CSS classes for styling.
-  - **Suggestion:** Refactor `app/dashboard/not-found.tsx` to use Material UI components (e.g., `Container`, `Paper`, `Typography`, `Button`, `ReportProblemOutlined` icon) for its structure and styling.
-  - **Reasoning:** To align with `app/not-found.tsx` (global 404) and ensure consistent theming and appearance for "not found" states.
-  - **Details:**
-    - Use MUI `Container` for centering and `Paper` for the main content box.
-    - Employ `Typography` for text and `Button` components for links (e.g., back to Dashboard, back to Home).
-    - Utilize an appropriate MUI icon like `ReportProblemOutlined` or `ErrorOutline`.
+### [x] 3. Adjust `tabIndex` on Page Title in `PageHeader.tsx`
 
-- **[x] `app/profile/layout.tsx`: Standardize Background Styling**
-  - **Current:** Uses Tailwind class `bg-background` for the main div.
-  - **Suggestion:** Replace the Tailwind class with an MUI `Box` component using the `sx` prop to set the background color from the theme. For example: `sx={{ bgcolor: 'background.default', minHeight: '100vh' }}`.
-  - **Reasoning:** Ensures the background color is strictly governed by the MUI theme, enhancing consistency with other MUI-styled page backgrounds. While `bg-background` likely maps to a theme variable, direct MUI usage is more explicit.
+- **Affected File**: `components/layouts/PageHeader.tsx`
+- **Current State**: The `<h1>` tag (with `id="page-title"`) has `tabIndex={0}`.
+- **Problem**: `tabIndex={0}` makes a non-interactive element (the page title heading) a part of the keyboard navigation sequence, which is generally not standard or expected behavior.
+- **Best Practice**:
+  - Static headings should typically not be in the tab order.
+  - If programmatic focus is desired (e.g., for a "skip to content" link to focus the main heading of the new page section for screen reader announcements), `tabIndex={-1}` should be used. This makes the element focusable via script but not via keyboard tabbing.
+  - If no programmatic focus is intended, the `tabIndex` attribute should be removed entirely.
+- **Task**:
+  - Evaluate if programmatic focus on the `<h1>` is a required feature (e.g., for skip links).
+  - If programmatic focus _is_ needed: Change `tabIndex={0}` to `tabIndex={-1}`.
+  - If programmatic focus is _not_ needed: Remove the `tabIndex={0}` attribute from the `Typography` component that renders the `<h1>`.
 
-### II. Authenticated Home Page (`app/page.tsx`) Strategy
+### [x] 4. Make Site Title in Header a Link to Homepage
 
-- **[x] Option A (Recommended for Simplicity): Redirect authenticated users from `/` to `/dashboard`**
-
-  - **Current:** Authenticated users see a unique dashboard-like interface on the root path (`/`).
-  - **Implemented:** Modified both `app/page.tsx` and `lib/auth-edge.ts` to redirect authenticated users from the root path (`/`) to `/dashboard`.
-  - **Implementation Details:**
-    - Used a combined approach for robustness:
-      1. Server-side middleware redirect in `lib/auth-edge.ts` that handles the redirect at the edge
-      2. Client-side fallback in `app/page.tsx` that redirects via React hooks if middleware doesn't catch it
-    - Removed the dashboard-like components from the homepage since they're no longer needed
-    - All tests pass after the implementation
-
-### III. Metadata Completeness
-
-- **[x] `app/about/page.tsx`: Add Page-Specific Metadata**
-
-  - **Current:** Does not explicitly define its own metadata.
-  - **Implemented:** Created a layout file `app/about/layout.tsx` with metadata for the About page.
-  - **Details:**
-
-    ```tsx
-    // app/about/layout.tsx
-    import { Metadata } from 'next';
-
-    export const metadata: Metadata = {
-      title: 'About Us | Next Auth App',
-      description: 'Learn more about next-auth-psql-app and its mission.',
-    };
+- **Affected File**: `components/layouts/Header.tsx`
+- **Current State**: The site title `"{'{YOUR_APP_NAME}'}"` is a `Typography` component but not a link.
+- **Problem**: Users expect the site title/logo in the header to navigate to the homepage.
+- **Best Practice**: The main site identifier in the header should link to the root of the application (`/`).
+- **Task**:
+  - Import `Link` from `next/link`.
+  - Wrap the `Typography` component for the site title with `<Link href="/" passHref legacyBehavior={false}>`.
+  - Ensure the link inherits or has appropriate styling to look like a brand link (e.g., `textDecoration: 'none', color: 'inherit'`). Example:
+    ```typescript
+    import Link from 'next/link';
+    // ...
+    <Link href="/" passHref legacyBehavior={false} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2, '&:hover': { opacity: 0.8 } /* Optional hover effect */ }}>
+        {'{YOUR_APP_NAME}'}
+      </Typography>
+    </Link>
     ```
 
-- **[x] `app/login/page.tsx`: Add Page-Specific Metadata**
+### [x] 5. Conditionally Render "Debug Log Out" Button
 
-  - **Current:** Does not explicitly define its own metadata.
-  - **Implemented:** Created a layout file `app/login/layout.tsx` with metadata for the Login page.
-  - **Details:**
-
-    ```tsx
-    // app/login/layout.tsx
-    import { Metadata } from 'next';
-
-    export const metadata: Metadata = {
-      title: 'Login | Next Auth App',
-      description: 'Sign in to access your account.',
-    };
+- **Affected File**: `app/about/page.tsx`
+- **Current State**: The "Debug Log Out" button is always rendered.
+- **Problem**: Exposes debugging functionality in a production environment.
+- **Best Practice**: Debug features should only be available during development.
+- **Task**:
+  - Wrap the "Debug Log Out" button (`Grid` item or the `Button` itself) in a conditional rendering block based on the environment.
+  - Use `process.env.NODE_ENV === 'development'` to control its visibility.
+  - **Example**:
+    ```typescript
+    {process.env.NODE_ENV === 'development' && (
+      <Grid item xs={12} sm={4}> {/* Or adjust Grid item based on removal */}
+        <Button variant="outlined" color="warning" fullWidth onClick={handleLogout}>
+          Debug Log Out
+        </Button>
+      </Grid>
+    )}
     ```
-
-- **[x] `app/register/page.tsx`: Add Page-Specific Metadata**
-
-  - **Current:** Does not explicitly define its own metadata.
-  - **Implemented:** Created a layout file `app/register/layout.tsx` with metadata for the Registration page.
-  - **Details:**
-
-    ```tsx
-    // app/register/layout.tsx
-    import { Metadata } from 'next';
-
-    export const metadata: Metadata = {
-      title: 'Register | Next Auth App',
-      description: 'Create a new account to get started.',
-    };
-    ```
-
-- **[x] `app/profile/layout.tsx`: Enhance Metadata**
-  - **Current:** Defines `title: 'Profile | Next.js Template'`.
-  - **Implemented:** Updated the metadata to be more specific and use the app title placeholder.
-  - **Details:**
-    ```tsx
-    // app/profile/layout.tsx
-    export const metadata: Metadata = {
-      title: 'Your Profile | Next Auth App',
-      description: 'View and manage your user profile details and settings.',
-    };
-    ```
-
-### IV. Accessibility Enhancements
-
-- **[x] Visually Hidden H1 in `app/layout.tsx`**
-  - **Current:** A visually hidden H1 for the app name is present in `app/layout.tsx` but is outside the `<body>` in the provided snippet.
-  - **Suggestion:** Ensure the visually hidden H1 (if kept for screen reader context) is placed _within_ the `<body>` tag, ideally at the beginning of the `main` content or as a general site title if `Header` doesn't provide an `h1`. However, `PageLayout` already includes an `h1` via `PageHeader`. A global, visually hidden `h1` in `RootLayout` might be redundant or conflict if every page already has a visible `h1` via `PageHeader`.
-  - **Action:** Review the necessity of the visually hidden H1 in `RootLayout`. If `PageHeader` consistently provides the primary `h1` for each page, the global one might be removable to avoid confusion or ensure it's truly for overall site context and not page-specific.
-  - **Correction from previous thoughts:** The `Header` component has `<Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2 }}>{YOUR_APP_NAME}</Typography>`. This is an `h6` acting as a site title/logo text. `PageLayout` correctly uses `PageHeader` which renders an `h1`. The visually hidden `h1` in `RootLayout` might be intended as the _overall site_ `h1` for screen readers if the visible site title in the header is not an `h1`. If this is the case, it should be inside `<body>`.
-  - **Final Check:** The `<h1>` is inside `<body>` in the full `RootLayout` code. The question is its semantic utility given `PageHeader` usually provides the main page `H1`. For a template, it's often clearer if the main visible heading of a page is its primary `h1`. If the visually hidden H1 is intended as an overarching site title for accessibility before page-specific H1s, that's a valid pattern, but ensure it's semantically appropriate.
-    - **Proposed Action:** No change needed to code directly for this, but document its purpose or ensure that if AI modifies the header structure, it considers the main page `H1` implications. For the template, it's okay as is, assuming `PageHeader` is consistently used.
-
-By addressing these points, the Application Pages and Layouts subsystem will be more consistent, potentially simpler, and even more aligned with best practices for a starter template.
+  - Consider if the `CardHeader` for "Quick Actions" should also be conditionally rendered if this is the only action and it becomes hidden in production. For a template, it might be fine to leave the CardHeader and an empty CardContent if no actions are available.
