@@ -36,10 +36,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={roboto.className}>
         <SkipToContent />
         {/* Visually hidden H1 for site title - ensures every page has a top-level heading for screen readers */}
-        <Box
-          component="div"
-          role="region"
-          aria-label="Site title"
+        <Typography
+          variant="h1"
+          component="h1"
           sx={{
             position: 'absolute',
             width: '1px',
@@ -52,10 +51,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             borderWidth: 0,
           }}
         >
-          <Typography variant="h1" component="h1">
-            {'{YOUR_APP_NAME}'}
-          </Typography>
-        </Box>
+          {'{YOUR_APP_NAME}'}
+        </Typography>
         <SessionProviderWrapper session={session}>
           <ThemeProvider
             attribute="class"
