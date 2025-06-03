@@ -132,6 +132,14 @@ async function _createNewUserWithAccount(
 
 /**
  * Handles an existing user: checks if the provider account exists and creates it if not.
+ *
+ * Note on Profile Data: When an existing user signs in via OAuth, this function
+ * does NOT automatically update the user's profile information (name, image) with data
+ * from the OAuth provider. The profile data from the provider is only used during initial
+ * user account creation. This design intentionally allows users to manage their profile
+ * details independently within this application after the initial setup, without having it
+ * overwritten by changes made to their OAuth provider profile.
+ *
  * @param providerAccountId - The user's ID for the provider.
  * @param correlationId - Correlation ID for logging.
  * @returns The user data in AuthUserInternal format.
@@ -188,8 +196,9 @@ async function _handleExistingUser(
     }
   }
 
-  // Update user profile info if changed (optional, consider if this is desired behavior)
-  // For now, assume we don't update on every sign-in, only on account creation/linking if needed
+  // Note: We intentionally do NOT update user profile info from the OAuth provider
+  // on subsequent sign-ins. This is by design to allow users to control their profile
+  // in this application independently from their OAuth provider profile.
 
   const resultUser: AuthUserInternal = {
     id: dbUserWithAccounts.id,
@@ -206,6 +215,15 @@ async function _handleExistingUser(
 /**
  * Internal helper to find or create a user and link/create an account.
  * This function encapsulates the core logic for provider-based sign-in.
+ *
+ * Note on Profile Data: This function uses profile information (name, image) from the OAuth provider
+ * primarily for initial user record population when a new user account or
+ * a new provider link is created. It does NOT automatically synchronize or
+ * overwrite existing user profile data in this application with data from
+ * the OAuth provider on subsequent logins. This allows users to manage
+ * their profile details independently within this application after initial setup.
+ * If continuous synchronization with the OAuth provider is desired, this
+ * logic would need to be modified.
  */
 export async function findOrCreateUserAndAccountInternal(
   params: FindOrCreateUserParams

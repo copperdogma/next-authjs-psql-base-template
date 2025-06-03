@@ -6,6 +6,16 @@ import { prisma } from '../prisma';
 /**
  * Implementation of RawQueryService with dependency injection
  * Provides optimized raw SQL queries for complex operations
+ *
+ * This service is designed for scenarios where raw SQL offers significant advantages:
+ * - Complex aggregations and analytics queries
+ * - Bulk updates with database-specific syntax
+ * - Performance-critical operations where ORM overhead is significant
+ * - Operations using database features not fully supported by Prisma
+ *
+ * As a best practice, prefer Prisma's type-safe query builder for standard CRUD
+ * operations, and reserve raw queries for cases where they provide clear benefits
+ * in terms of functionality, performance, or code simplicity.
  */
 export class RawQueryServiceImpl {
   constructor(
@@ -63,6 +73,12 @@ export class RawQueryServiceImpl {
    * Performs a complex aggregation using raw SQL
    * Example: Get user session counts grouped by day for analytics
    *
+   * Raw SQL is used here for direct control over PostgreSQL's `DATE_TRUNC`
+   * and `COUNT(*)` aggregation, which is more performant and precise than
+   * trying to replicate this date-based grouping through the ORM.
+   * PostgreSQL's date functions allow for optimized database-level calculations
+   * that would otherwise require fetching all records and processing in code.
+   *
    * @param options Query options
    * @returns Array of daily session counts
    */
@@ -110,6 +126,12 @@ export class RawQueryServiceImpl {
   /**
    * Performs a batch update with complex conditions
    * Example: Update all expired sessions for specific users
+   *
+   * Raw SQL is used here to leverage PostgreSQL-specific interval arithmetic
+   * (`interval '${extensionHours} hours'`) which enables a single efficient
+   * bulk update operation. This avoids having to fetch all matching sessions,
+   * calculate new expiry times in application code, and update them individually,
+   * which would be significantly slower for batch operations.
    *
    * @param options Session extension options
    * @returns Number of updated records
@@ -176,6 +198,13 @@ export class RawQueryServiceImpl {
   /**
    * Performs complex joins and aggregations that would be inefficient with Prisma
    * Example: Get active users with their session counts and latest activity
+   *
+   * Raw SQL is used here because this query combines multiple operations (joins,
+   * aggregations, filtering with HAVING, and ordering) that would require multiple
+   * round trips or inefficient in-memory processing with the ORM. Using a single
+   * optimized SQL query pushes the complex data processing to the database where
+   * indexes and query optimization can dramatically improve performance for
+   * analytics-style queries with large datasets.
    *
    * @param options Query options
    * @returns Array of user activity summaries
@@ -282,6 +311,15 @@ export class RawQueryServiceImpl {
   /**
    * Executes a safe parametrized raw query
    * This is a utility method for custom raw queries with proper parameter handling
+   *
+   * This method should be used when:
+   * 1. The operation is too complex for Prisma's query builder (e.g., requires window functions,
+   *    complex CTEs, or specific PostgreSQL functions)
+   * 2. Performance is critical and the ORM approach would be inefficient
+   * 3. You need database-specific features not exposed by the ORM
+   *
+   * Always use parameterized queries with this method to prevent SQL injection.
+   * Consider documenting complex queries with explanatory comments.
    *
    * @param sql SQL query with $1, $2, etc. placeholders
    * @param params Parameters to bind to the query

@@ -96,6 +96,33 @@ See `.env.example` for a comprehensive list. Key variables to configure in `.env
 - Configuration primarily in `lib/auth-shared.ts`, `lib/auth-node.ts`, and `lib/auth-edge.ts`.
 - API routes under `app/api/auth/[...nextauth]/route.ts`.
 - Protected routes managed by `middleware.ts`.
+- For detailed behavior and implementation details, see [Authentication Documentation](docs/AUTHENTICATION.md).
+
+## Security Considerations
+
+### OAuth Profile Data Handling
+
+This template implements an "initial population only" approach to handling OAuth profile data:
+
+- **Initial Setup**: When a user first signs up or links a new OAuth provider, their name and profile image from the provider are used to populate their initial user record.
+- **Subsequent Logins**: Later sign-ins via the OAuth provider will **not** automatically update the user's profile details from the provider.
+- This allows users to customize their profile within your application without having it overwritten by their OAuth provider profile changes.
+- See [Authentication Documentation](docs/AUTHENTICATION.md) for implementation details and how to modify this behavior if needed.
+
+### Rate Limiting Fail-Open Strategy
+
+The registration rate limiting has a "fail-open" strategy:
+
+- If Redis is unavailable or misconfigured when `ENABLE_REDIS_RATE_LIMITING` is set to `true`, rate limiting will be skipped and new user registrations will **not** be rate-limited.
+- This design prioritizes service availability over strict rate limit enforcement.
+- If Redis encounters an error during the rate limit check, the system will proceed as if the user is not rate limited.
+- In production environments where security is critical, ensure that:
+  1. Redis is properly configured and highly available
+  2. `ENABLE_REDIS_RATE_LIMITING` is set to `true`
+  3. `REDIS_URL` points to a valid Redis instance
+  4. `RATE_LIMIT_REGISTER_MAX_ATTEMPTS` and `RATE_LIMIT_REGISTER_WINDOW_SECONDS` are configured appropriately
+- You may need to implement additional safeguards if your application requires absolute guarantees on rate limiting.
+- The implementation is in [`lib/actions/auth.actions.ts`](lib/actions/auth.actions.ts) (specifically the `_handleRegistrationRateLimit` function) and [`lib/redis.ts`](lib/redis.ts) provides the Redis connection management.
 
 ## Database (PostgreSQL with Prisma)
 

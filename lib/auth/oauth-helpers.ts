@@ -353,6 +353,24 @@ type CreateOrUpdateOAuthUserOptions = {
 // Ensure actionLogger is imported or defined
 const actionLogger = logger;
 
+/**
+ * Creates or updates a user based on OAuth profile data.
+ *
+ * IMPORTANT: This function has different behavior from functions in auth-helpers.ts.
+ * While auth-helpers.ts functions only use profile data for initial user creation,
+ * this function WILL update an existing user's profile information (name, image)
+ * if different from what's provided by the OAuth provider.
+ *
+ * When using this function, be aware that it will keep the user's profile in sync
+ * with their OAuth provider profile on each sign-in. If you want to allow users to
+ * maintain independent profile information in your application, you should use the
+ * auth-helpers.ts functions instead or modify this function to disable the update logic.
+ *
+ * @param profile - The user profile from the OAuth provider.
+ * @param account - The OAuth account details.
+ * @param options - Optional parameters including logger and db instances.
+ * @returns The user data with isNewUser flag.
+ */
 export async function createOrUpdateOAuthUser(
   profile: OAuthUserProfile,
   account: OAuthAccount,

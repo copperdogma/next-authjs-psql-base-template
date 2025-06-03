@@ -78,6 +78,19 @@ async function _validateRegistrationInput(
   return RegistrationSchema.safeParse(rawFormData);
 }
 
+/**
+ * Creates a user in the database with the provided data.
+ *
+ * This function supports being called either as a standalone operation or as part of a
+ * database transaction. When called with a transaction client via the `tx` parameter,
+ * the operation becomes part of that transaction, enabling atomic operations when
+ * creating multiple related records.
+ *
+ * @param data User data including email, password to hash, and optional name
+ * @param services Required services for creating a user
+ * @param options Additional options including logging context and optional transaction client
+ * @returns Created user object if successful, or error result
+ */
 async function _createPrismaUser(
   data: { email: string; passwordToHash: string; name?: string | null },
   services: {
@@ -541,6 +554,37 @@ function _logAuthActionError(options: {
   }
 }
 
+/**
+ * Execute the core registration logic, creating a user in the database.
+ *
+ * Note: The current implementation involves a single primary database write operation.
+ * If this registration logic is extended to create multiple related database records
+ * (e.g., an associated default profile entity, an initial workspace, user preferences record, etc.),
+ * all such dependent writes should be wrapped within a Prisma transaction to ensure atomicity
+ * and data consistency.
+ *
+ * Example with transaction:
+ * ```typescript
+ * const result = await prisma.$transaction(async (tx) => {
+ *   // Create user
+ *   const user = await tx.user.create({ data: {...} });
+ *
+ *   // Create related records using the same transaction
+ *   await tx.profile.create({ data: { userId: user.id, ... } });
+ *   await tx.workspace.create({ data: { ownerId: user.id, ... } });
+ *
+ *   return user;
+ * });
+ * ```
+ *
+ * For more information, refer to Prisma documentation on transactions:
+ * https://www.prisma.io/docs/concepts/components/prisma-client/transactions
+ *
+ * @param validatedData Validated user registration data
+ * @param services Services required for registration
+ * @param logContextWithEmail Logging context with user email
+ * @returns User object if successful, or error result
+ */
 async function _executeRegistrationCore(
   validatedData: RegistrationInput,
   services: RegistrationCoreServices,

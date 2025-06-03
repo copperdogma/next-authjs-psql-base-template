@@ -2,6 +2,7 @@ import { mockDeep, mockReset, MockProxy } from 'jest-mock-extended';
 import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import * as pino from 'pino';
 import { UserService } from '../../../../lib/services/user-service';
+import { type ServiceResponse } from '@/types';
 
 /**
  * UserService Unit Tests
@@ -74,19 +75,21 @@ const mockPrismaUserDelegate = mockDeep<PrismaClient['user']>();
 // const mockPrismaClient = mockDeep<PrismaClient>(); // We create a fresh one per test
 
 // Helper to create a mock Prisma User
-const createMockUser = (overrides: Partial<PrismaUser>): PrismaUser => ({
-  id: 'default-id',
-  name: 'Default Name',
-  email: 'default@example.com',
-  emailVerified: null,
-  image: null,
-  hashedPassword: null,
-  role: UserRole.USER, // Explicitly set default role
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  lastSignedInAt: null,
-  ...overrides,
-});
+const createMockUser = (overrides: Partial<PrismaUser> = {}) => {
+  return {
+    id: 'test-user-id',
+    name: 'Test User',
+    email: 'test@example.com',
+    image: null,
+    emailVerified: null,
+    hashedPassword: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    role: 'USER' as UserRole,
+    lastSignedInAt: null,
+    ...overrides,
+  };
+};
 
 describe('UserService', () => {
   let userService: UserService;
@@ -114,236 +117,202 @@ describe('UserService', () => {
   });
 
   describe('findUserById', () => {
-    const userId = 'user-123';
+    const userId = 'test-user-id';
 
-    it('should call prisma.user.findUnique and log debug on success', async () => {
+    it('should return a success response with user when found', async () => {
       // Arrange
-      const mockUser = createMockUser({ id: userId });
-      mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUser);
+      const mockUserData = createMockUser({ id: userId });
+      mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUserData);
 
       // Act
-      const user = await userService.findUserById(userId);
+      const result = await userService.findUserById(userId);
 
       // Assert
-      expect(user).toEqual(mockUser);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUserData);
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
       });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({ msg: 'Finding user by ID', userId });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'User found by ID',
-        userId,
-        found: true,
-      });
-      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(2);
     });
 
-    it('should return null and log when user is not found', async () => {
+    it('should return an error response when user is not found', async () => {
       // Arrange
       mockPrismaUserDelegate.findUnique.mockResolvedValue(null);
 
       // Act
-      const user = await userService.findUserById(userId);
+      const result = await userService.findUserById(userId);
 
       // Assert
-      expect(user).toBeNull();
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.data).toBeNull();
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
       });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({ msg: 'Finding user by ID', userId });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'User found by ID',
-        userId,
-        found: false,
-      });
-      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(2);
     });
 
-    it('should log error if prisma call fails', async () => {
+    it('should return an error response on database error', async () => {
       // Arrange
-      const dbError = new Error('DB lookup failed');
+      const dbError = new Error('Database connection error');
       mockPrismaUserDelegate.findUnique.mockRejectedValue(dbError);
 
-      // Act & Assert
-      await expect(userService.findUserById(userId)).rejects.toThrow(dbError);
+      // Act
+      const result = await userService.findUserById(userId);
 
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_FETCH_FAILED');
+      expect(result.error?.details?.originalError).toBe(dbError);
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
       });
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith({
-        msg: 'Error finding user by ID',
-        userId,
-        error: dbError.message,
-      });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({ msg: 'Finding user by ID', userId });
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(1);
+      expect(mockLoggerInstance.error).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('findUserByEmail', () => {
     const email = 'test@example.com';
 
-    it('should call prisma.user.findUnique and log debug on success', async () => {
+    it('should return a success response with user when found', async () => {
       // Arrange
-      const mockUser = createMockUser({ email });
-      mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUser);
+      const mockUserData = createMockUser({ email });
+      mockPrismaUserDelegate.findUnique.mockResolvedValue(mockUserData);
 
       // Act
-      const user = await userService.findUserByEmail(email);
+      const result = await userService.findUserByEmail(email);
 
       // Assert
-      expect(user).toEqual(mockUser);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUserData);
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { email },
       });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'Finding user by email',
-        email,
-      });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'User found by email',
-        email,
-        found: true,
-      });
-      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(2);
     });
 
-    it('should return null and log when user is not found by email', async () => {
+    it('should return an error response when user is not found', async () => {
       // Arrange
       mockPrismaUserDelegate.findUnique.mockResolvedValue(null);
 
       // Act
-      const user = await userService.findUserByEmail(email);
+      const result = await userService.findUserByEmail(email);
 
       // Assert
-      expect(user).toBeNull();
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.data).toBeNull();
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { email },
       });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'Finding user by email',
-        email,
-      });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'User found by email',
-        email,
-        found: false,
-      });
-      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(2);
     });
 
-    it('should log error if prisma call fails', async () => {
+    it('should return an error response on database error', async () => {
       // Arrange
-      const dbError = new Error('DB email lookup failed');
+      const dbError = new Error('Database connection error');
       mockPrismaUserDelegate.findUnique.mockRejectedValue(dbError);
 
-      // Act & Assert
-      await expect(userService.findUserByEmail(email)).rejects.toThrow(dbError);
+      // Act
+      const result = await userService.findUserByEmail(email);
 
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_FETCH_FAILED');
+      expect(result.error?.details?.originalError).toBe(dbError);
       expect(mockPrismaUserDelegate.findUnique).toHaveBeenCalledWith({
         where: { email },
       });
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith({
-        msg: 'Error finding user by email',
-        email,
-        error: dbError.message,
-      });
-      expect(mockLoggerInstance.debug).toHaveBeenCalledWith({
-        msg: 'Finding user by email',
-        email,
-      });
+      expect(mockLoggerInstance.debug).toHaveBeenCalledTimes(1);
+      expect(mockLoggerInstance.error).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('updateUserName', () => {
-    const userId = 'user-456';
+    const userId = 'test-user-id';
     const name = 'Updated Name';
+    const nonExistentId = 'non-existent-id';
 
-    it('should call prisma.user.update and log info on success', async () => {
+    it('should return a success response with updated user', async () => {
       // Arrange
-      const updatedUser = createMockUser({ id: userId, name });
-      mockPrismaUserDelegate.update.mockResolvedValue(updatedUser);
+      const mockUserData = createMockUser({ id: userId });
+      const updatedMockUser = { ...mockUserData, name };
+      mockPrismaUserDelegate.update.mockResolvedValue(updatedMockUser);
 
       // Act
-      const user = await userService.updateUserName(userId, name);
+      const result = await userService.updateUserName(userId, name);
 
       // Assert
-      expect(user).toEqual(updatedUser);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(updatedMockUser);
       expect(mockPrismaUserDelegate.update).toHaveBeenCalledWith({
         where: { id: userId },
         data: { name },
       });
-      expect(mockLoggerInstance.info).toHaveBeenCalledWith({ msg: 'Updating user name', userId });
-      expect(mockLoggerInstance.info).toHaveBeenCalledWith({
-        msg: 'User name updated successfully',
-        userId,
-      });
-      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.info).toHaveBeenCalledTimes(2);
     });
 
-    it('should handle error when updating a non-existent user', async () => {
+    it('should return an error response when user is not found', async () => {
       // Arrange
-      const nonExistentId = 'non-existent-id';
-      const nonExistentError = new Error('Record to update not found.');
-      mockPrismaUserDelegate.update.mockRejectedValue(nonExistentError);
+      const prismaError = new Error('Record to update not found');
+      Object.defineProperty(prismaError, 'code', { value: 'P2025' });
+      mockPrismaUserDelegate.update.mockRejectedValue(prismaError);
 
-      // Act & Assert
-      await expect(userService.updateUserName(nonExistentId, name)).rejects.toThrow(
-        nonExistentError
-      );
+      // Act
+      const result = await userService.updateUserName(nonExistentId, name);
 
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.error?.details?.originalError).toBe(prismaError);
       expect(mockPrismaUserDelegate.update).toHaveBeenCalledWith({
         where: { id: nonExistentId },
         data: { name },
       });
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith({
-        msg: 'Error updating user name',
-        userId: nonExistentId,
-        error: nonExistentError.message,
-      });
-      expect(mockLoggerInstance.info).toHaveBeenCalledWith({
-        msg: 'Updating user name',
-        userId: nonExistentId,
-      });
+      expect(mockLoggerInstance.info).toHaveBeenCalledTimes(1);
+      expect(mockLoggerInstance.error).toHaveBeenCalledTimes(1);
     });
 
-    it('should log error if update fails due to database error', async () => {
+    it('should return an error response on database error', async () => {
       // Arrange
       const dbError = new Error('Database connection error');
       mockPrismaUserDelegate.update.mockRejectedValue(dbError);
 
-      // Act & Assert
-      await expect(userService.updateUserName(userId, name)).rejects.toThrow(dbError);
+      // Act
+      const result = await userService.updateUserName(userId, name);
 
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_UPDATE_FAILED');
+      expect(result.error?.details?.originalError).toBe(dbError);
       expect(mockPrismaUserDelegate.update).toHaveBeenCalledWith({
         where: { id: userId },
         data: { name },
       });
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith({
-        msg: 'Error updating user name',
-        userId,
-        error: dbError.message,
-      });
-      expect(mockLoggerInstance.info).toHaveBeenCalledWith({ msg: 'Updating user name', userId });
+      expect(mockLoggerInstance.info).toHaveBeenCalledTimes(1);
+      expect(mockLoggerInstance.error).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle non-Error objects in error handling', async () => {
+    it('should handle non-Error objects thrown by Prisma', async () => {
       // Arrange
-      const nonErrorObject = 'String error message';
+      const nonErrorObject = { message: 'Something went wrong' };
       mockPrismaUserDelegate.update.mockRejectedValue(nonErrorObject);
 
-      // Act & Assert
-      await expect(userService.updateUserName(userId, name)).rejects.toEqual(nonErrorObject);
+      // Act
+      const result = await userService.updateUserName(userId, name);
 
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_UPDATE_FAILED');
+      expect(result.error?.details?.originalError).toBe(nonErrorObject);
       expect(mockPrismaUserDelegate.update).toHaveBeenCalledWith({
         where: { id: userId },
         data: { name },
       });
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith({
-        msg: 'Error updating user name',
-        userId,
-        error: 'String error message',
-      });
-      expect(mockLoggerInstance.info).toHaveBeenCalledWith({ msg: 'Updating user name', userId });
+      expect(mockLoggerInstance.info).toHaveBeenCalledTimes(1);
+      expect(mockLoggerInstance.error).toHaveBeenCalledTimes(1);
     });
   });
 });

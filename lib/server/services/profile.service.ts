@@ -76,7 +76,17 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
     return { errorCode, message, stack, originalError: error };
   }
 
-  // Helper method to create a mock user for E2E tests
+  /**
+   * Creates a mock User object for E2E testing scenarios.
+   *
+   * This method is used exclusively by the E2E test environment logic in
+   * `_performDatabaseUpdate` to generate a simulated successful response
+   * when database operations fail but tests need to continue.
+   *
+   * @param userId - The ID to use for the mock user
+   * @param processedName - The name to use for the mock user
+   * @returns A synthetic User object with the specified ID and name
+   */
   private _createMockUserForE2E(userId: string, processedName: string): User {
     return {
       id: userId,
@@ -92,7 +102,31 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
     } as User;
   }
 
-  // Helper method to handle database operations - simplified to use only Prisma
+  /**
+   * Helper method to handle database operations with Prisma.
+   *
+   * @remarks
+   * This method contains specific logic for E2E testing environments. When
+   * `process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true'`, this method will return a mock
+   * success response with a simulated user object if the database update fails.
+   *
+   * This approach allows E2E tests (particularly those focusing on UI flows for profile updates)
+   * to simulate a successful name update even if:
+   * - The underlying test database cannot be written to
+   * - Direct database interaction is intentionally bypassed in the E2E test setup for simplicity
+   * - The test is running in an environment without database access
+   *
+   * Trade-off: This introduces test-environment-specific behavior into production code.
+   * For applications requiring stricter separation, consider:
+   * - Mocking this service at the E2E test boundary
+   * - Ensuring the E2E test environment has a fully writable and verifiable database
+   * - Using dependency injection to provide a test-specific implementation
+   *
+   * @param userId - The ID of the user to update
+   * @param processedName - The validated new name to set
+   * @param logContext - Logging context for tracing
+   * @returns Promise resolving to an object with success status and optional user/error
+   */
   private async _performDatabaseUpdate(
     userId: string,
     processedName: string,
@@ -128,12 +162,14 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
         return { success: false, error: 'User not found.' };
       }
 
-      // For E2E tests where we can't update the DB but want tests to pass,
-      // we can return a "success" with a mock user
+      // Special handling for E2E testing environments
+      // If this is an E2E test environment and a database error occurred,
+      // we simulate a successful update by returning a mock user object.
+      // This allows UI tests to proceed without requiring a writable database.
       if (process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true') {
         logger.warn(
           { ...logContext },
-          'E2E test environment detected, returning mock success response'
+          'E2E test environment detected, returning mock success response despite database error'
         );
         return {
           success: true,
