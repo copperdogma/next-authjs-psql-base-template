@@ -7,9 +7,9 @@ export const UI_ELEMENTS = {
     GOOGLE_SIGNIN: '[data-testid="google-signin-button"]',
     EMAIL_INPUT: '#email', // Standard ID for email
     PASSWORD_INPUT: '#password', // Standard ID for password
-    CREDENTIALS_SUBMIT: 'button:has-text("Sign In with Email")', // Text-based selector
+    CREDENTIALS_SUBMIT: '[data-testid="credentials-submit-button"]', // Updated selector
     SIGNUP_LINK: 'a:has-text("Sign Up")',
-    LOGOUT_BUTTON: 'button:has-text("Sign Out")', // Assuming a standard sign out button text
+    LOGOUT_BUTTON: '[data-testid="logout-button"]', // General logout button
   },
   USER_PROFILE: {
     // Primary data-testid selector (most reliable)

@@ -24,17 +24,17 @@ module.exports = {
     {
       name: 'next-dev',
       script: 'npm',
-      args: 'run dev',
+      args: 'run dev:test',
       watch: ['.'],
       ignore_watch: ['node_modules', '.next', 'logs', '.git', '*.log'],
       autorestart: true,
       env_development: {
-        NODE_ENV: 'development',
+        NODE_ENV: 'test',
         DATABASE_URL:
           'postgresql://postgres:postgres@localhost:5432/ai-calendar-helper-test?schema=public',
         NEXTAUTH_SECRET: 'test_nextauth_secret',
-        PORT: dynamicPort,
-        NEXTAUTH_URL: `http://localhost:${dynamicPort}`,
+        PORT: 3777,
+        NEXTAUTH_URL: 'http://localhost:3777',
         TEST_USER_EMAIL: 'test@example.com',
         TEST_USER_PASSWORD: 'Test123!',
       },

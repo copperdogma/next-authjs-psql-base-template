@@ -37,7 +37,10 @@ function CredentialsFormUI({
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit}
+      onSubmit={e => {
+        logger.info('DEBUG: CredentialsFormUI onSubmit TRIGGERED');
+        handleSubmit(e);
+      }}
       noValidate
       sx={{ mt: 1 }}
       data-testid="credentials-form"
@@ -83,6 +86,7 @@ function CredentialsFormUI({
             variant="body2"
             sx={{ mt: 1, textAlign: 'center' }}
             role="alert"
+            data-testid="login-error-message"
           >
             {error}
           </Typography>
@@ -95,6 +99,8 @@ function CredentialsFormUI({
           sx={{ mt: 1, mb: 1 }}
           startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
           aria-disabled={isLoading || !email || !password}
+          data-testid="credentials-submit-button"
+          onClick={() => logger.info('DEBUG: Submit Button onClick TRIGGERED IN CredentialsFormUI')}
         >
           {isLoading ? 'Signing In...' : 'Sign In with Email'}
         </Button>
@@ -131,28 +137,46 @@ export function CredentialsLoginForm({
   const searchParams = useSearchParams();
 
   const handleCredentialsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    logger.info('DEBUG: handleCredentialsSubmit CALLED');
     event.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
       logger.info('Attempting credentials sign-in...');
-      const callbackUrl = searchParams.get('callbackUrl');
       const result = await signInWithLogging('credentials', {
         redirect: false,
         email,
         password,
       });
 
-      if (result?.ok) {
+      logger.info('Sign-in attempt completed. Full Result:', {
+        result: JSON.stringify(result, null, 2),
+      });
+
+      if (result?.error) {
+        const errorMessage = _getSignInErrorMessage(result.error);
+        logger.warn(
+          `Credentials sign-in explicitly failed due to error string. Raw error: "${result.error}". Mapped message: "${errorMessage}"`,
+          { resultUrl: result.url, okStatus: result.ok }
+        );
+        setError(errorMessage);
+        setIsLoading(false);
+        logger.info('State updated for error: error set, isLoading set to false');
+      } else if (result?.ok) {
+        const callbackUrl = searchParams.get('callbackUrl');
         const redirectUrl = callbackUrl && callbackUrl.startsWith('/') ? callbackUrl : '/dashboard';
         logger.info(`Credentials sign-in successful, redirecting to ${redirectUrl}`);
         router.push(redirectUrl);
       } else {
         const errorMessage = _getSignInErrorMessage(result?.error);
-        logger.warn('Credentials sign-in failed:', { error: result?.error });
+        logger.warn(
+          `Credentials sign-in failed (ok:false or undefined, no error string). Raw error: "${result?.error}". Mapped message: "${errorMessage}"`,
+          { resultUrl: result?.url }
+        );
         setError(errorMessage);
         setIsLoading(false);
+        logger.info('State updated for generic failure: error set, isLoading set to false');
       }
     } catch (err) {
       logger.error('Unknown exception during credentials sign-in:', { error: err });

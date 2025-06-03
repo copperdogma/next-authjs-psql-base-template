@@ -134,7 +134,6 @@ async function _signInRedirectFalse(
   const result: SignInResponse = await signIn(provider, {
     ...options,
     redirect: false, // Explicitly false
-    prompt: 'select_account',
   });
   if (result?.error) {
     logSignInFailure({ ...loggingParams, error: result.error });

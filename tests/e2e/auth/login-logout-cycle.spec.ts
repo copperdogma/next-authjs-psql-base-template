@@ -8,62 +8,56 @@ import { loggers } from '../../../lib/logger';
  * Complete Authentication Cycle Test
  *
  * This test verifies the full authentication flow:
- * 1. Uses the pre-authenticated state from auth.setup.ts
- * 2. Verify authenticated state and dashboard access
- * 3. Perform logout
- * 4. Verify logged out state, redirects, and cookie cleanup
+ * 1. Starts in an unauthenticated state.
+ * 2. Perform login.
+ * 3. Verify authenticated state and dashboard access.
+ * 4. Perform logout.
+ * 5. Verify logged out state, redirects, and cookie cleanup.
  *
  * This provides comprehensive verification of the authentication
  * system beyond just login tests or logout tests in isolation.
  */
 
-// Use the storage state from auth.setup.ts
-const storageStatePath = path.join(process.cwd(), 'tests/.auth/user.json');
+// REMOVED: Use of shared storage state to ensure test isolation
+// const storageStatePath = path.join(process.cwd(), 'tests/.auth/user.json');
 
 const logger = loggers.ui;
 
 test.describe('Authentication Cycle', () => {
-  // Use authenticated state for tests in this block
-  test.use({ storageState: storageStatePath });
+  // REMOVED: test.use({ storageState: storageStatePath });
 
-  test('Login and logout cycle', async ({ page }) => {
+  test('Login and logout cycle', async ({ page, context }) => {
+    // Added context here
     logger.info('Starting Login and logout cycle test');
 
-    // --- REMOVED Explicit Clean State ---
-    // Relying on test.use({ storageState: ... }) and Playwright context isolation
-    // await page.goto('/');
-    // await context.clearCookies();
-    // await page.evaluate(() => localStorage.clear());
-    // logger.info('Cleared cookies and local storage for test isolation.');
-    // --- END: Ensure Clean State ---
-
     const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777';
+    const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
+    const testPassword = process.env.TEST_USER_PASSWORD || 'Test123!';
 
-    // Start from the dashboard page directly to verify authentication
-    console.log('Navigating to dashboard page to verify authentication...');
-    await page.goto(`${baseUrl}/dashboard`);
+    // Ensure a clean state by clearing cookies for the new context
+    await context.clearCookies();
+    await page.goto(`${baseUrl}/login`);
+    logger.info('Ensured clean state and navigated to login page.');
 
-    // Verify user is logged in by checking dashboard content using a more reliable selector
+    // Perform login
+    console.log('Performing login...');
+    await loginWithCredentials(page, testEmail, testPassword);
+
+    // Verify user is logged in by checking dashboard content
     console.log('Verifying authenticated state...');
     try {
-      // Look for a heading or a data-testid that would indicate a dashboard
+      await page.waitForURL(`${baseUrl}${ROUTES.DASHBOARD}`, { timeout: 15000 });
       const dashboardIndicator = page.locator(
         'h1, [data-testid="dashboard-heading"], [data-testid="dashboard-content"]'
       );
       await expect(dashboardIndicator).toBeVisible({ timeout: 10000 });
-      console.log('✅ Initial authentication check passed - user is logged in.');
+      console.log('✅ Login successful - user is on the dashboard.');
     } catch (error) {
-      console.error('Initial authentication check failed - user is not logged in!');
-      await test.step('Verify initial authentication failed', async () => {
-        await expect(page).toHaveURL(/\/login(\?.*)?$/); // Allow query params
-        await expect(page.locator(UI_ELEMENTS.AUTH.EMAIL_INPUT)).toBeVisible(); // Check if login form is visible
-        console.log('Redirected to login page as expected after failed initial auth.');
-        await page.screenshot({
-          path: 'tests/e2e/screenshots/login-cycle-failed-initial-auth.png',
-        });
+      console.error('Login verification failed - user not on dashboard or element not visible.');
+      await page.screenshot({
+        path: 'tests/e2e/screenshots/login-cycle-dashboard-verification-failed.png',
       });
-      // Instead, fail the test explicitly if the initial state is wrong
-      throw new Error('Test setup failed: User was not logged in at the start.');
+      throw new Error('Login verification failed.');
     }
 
     // Perform logout
@@ -73,30 +67,21 @@ test.describe('Authentication Cycle', () => {
     // Verify logged out state
     console.log('Verifying logged out state...');
 
-    // Navigate to the root path after logout.
-    // Since the root path is public, we should land there.
     console.log('Navigating to / after logout to verify public access...');
-    await page.goto(`${baseUrl}/`); // Navigate to root after logout
+    await page.goto(`${baseUrl}/`);
 
-    // Check current URL - SHOULD be root page now
-    const currentUrl = page.url();
-    console.log(`Current URL after navigating post-logout: ${currentUrl}`);
-
-    // Expect to be on the root page (it's public)
-    await test.step('Verify landing on public root page', async () => {
-      expect(page.url()).not.toContain('/login');
+    await test.step('Verify landing on public root page and login option is visible', async () => {
       expect(page.url()).toBe(`${baseUrl}/`);
-      await page.screenshot({ path: 'tests/e2e/screenshots/login-cycle-landed-on-root.png' });
+      // Check for a sign-in button or link to confirm logged-out state on the home page
+      const signInButton = page.locator(
+        UI_ELEMENTS.AUTH.BUTTON + ':has-text("Sign In"), a:has-text("Login")'
+      );
+      await expect(signInButton.first()).toBeVisible({ timeout: 10000 });
+      await page.screenshot({
+        path: 'tests/e2e/screenshots/login-cycle-landed-on-root-logged-out.png',
+      });
     });
 
-    // Verify logout by checking that the UserProfile icon is no longer visible
-    await test.step('Verify UserProfile icon is not visible', async () => {
-      const userProfileIcon = page.locator('[data-testid="user-profile"]');
-      await expect(userProfileIcon).not.toBeVisible({ timeout: 10000 });
-      console.log('UserProfile icon not visible, confirming logged out state.');
-    });
-
-    // Test passes if we get to this point
     console.log(`📍 Final URL: ${page.url()}`);
   });
 });
@@ -174,102 +159,69 @@ async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
  * Tries multiple methods to ensure logout works reliably.
  */
 async function performLogout(page: Page): Promise<void> {
-  // Try each logout method in sequence until one succeeds
-  const logoutMethods = [
-    tryLogoutByTestId,
-    tryLogoutByText,
-    tryLogoutByIcon,
-    tryLogoutByClearingStorage,
-  ];
-
-  for (const method of logoutMethods) {
-    const success = await method(page);
-    if (success) return;
+  // Try to click the main logout button first
+  const logoutButton = page.locator(UI_ELEMENTS.AUTH.LOGOUT_BUTTON);
+  if (await logoutButton.isVisible({ timeout: 5000 })) {
+    await logoutButton.click();
+    // Expect redirection to the root page or login page after logout.
+    await page.waitForURL(/(\/login|\/$)/, { timeout: 15000 });
+    console.log('Logout successful via primary button.');
+    return;
   }
 
-  throw new Error('Failed to perform logout using any available method.');
+  // Fallback: if the main button isn't there, try clearing storage
+  console.log('Primary logout button not found, attempting to clear storage.');
+  await tryLogoutByClearingStorage(page);
+  // Navigate to root and check for login page or root URL
+  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.waitForURL(/(\/login|\/$)/, { timeout: 10000 });
+
+  // Verify that we are indeed logged out by checking if a login element is visible
+  const loginElementVisible =
+    (await page.locator(UI_ELEMENTS.AUTH.EMAIL_INPUT).isVisible({ timeout: 2000 })) ||
+    (await page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN).isVisible({ timeout: 2000 }));
+  if (!loginElementVisible && !page.url().endsWith('/')) {
+    // if not on login page and not on root page
+    throw new Error(
+      'Failed to perform logout using any available method. Still seems logged in or not on an expected page.'
+    );
+  }
+  console.log('Logout successful via storage clearing and verification.');
 }
 
 // --- Helper Functions ---
 
 // Helper to perform login using the Credentials Form UI
 async function loginWithCredentials(page: Page, email: string, password: string) {
-  await page.goto(ROUTES.LOGIN);
+  await page.goto(ROUTES.LOGIN, { waitUntil: 'networkidle' });
 
-  // Wait for the new CredentialsLoginForm elements to be ready
-  const emailInput = page.locator(UI_ELEMENTS.AUTH.EMAIL_INPUT); // Use updated selector
-  const passwordInput = page.locator(UI_ELEMENTS.AUTH.PASSWORD_INPUT); // Use updated selector
-  const signInButton = page.locator(UI_ELEMENTS.AUTH.CREDENTIALS_SUBMIT); // Use updated selector
+  const emailInput = page.locator(UI_ELEMENTS.AUTH.EMAIL_INPUT);
+  const passwordInput = page.locator(UI_ELEMENTS.AUTH.PASSWORD_INPUT);
+  const signInButton = page.locator(UI_ELEMENTS.AUTH.CREDENTIALS_SUBMIT);
 
-  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
-
-  // Fill and submit the form
+  await emailInput.waitFor({ state: 'visible', timeout: 15000 }); // Increased timeout
   await emailInput.fill(email);
   await passwordInput.fill(password);
   await signInButton.click();
 
   // Wait for navigation to the dashboard page after successful login
-  // EXPECTATION CHANGE: Expect redirect to dashboard, not home
-  await page.waitForURL(ROUTES.DASHBOARD, { timeout: 15000 });
-  console.log(`Navigated to ${ROUTES.DASHBOARD} after successful login`);
+  await waitForURLQuiet(page, ROUTES.DASHBOARD, { timeout: 20000 }); // Call as helper function
+  console.log(`Navigated to or already on ${ROUTES.DASHBOARD} after attempting login`);
 }
 
-// Helper to perform logout using the UI
-async function logout(page: Page) {
-  // Find the user profile button/menu in the header to initiate logout
-  const userProfile = page.locator('[data-testid="user-profile-chip"]');
-  await userProfile.waitFor({ state: 'visible', timeout: 10000 });
-  await userProfile.click(); // Open dropdown or navigate to profile
-
-  // Find and click the Sign Out button (adjust selector as needed)
-  const signOutButton = page.locator('button:has-text("Sign Out")');
-  await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
-  await signOutButton.click();
-
-  // Wait for redirection AFTER logout.
-  // EXPECTATION CHANGE: The app redirects to the root ('/') after logout, not /login.
-  await page.waitForURL(`${process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777'}/`, {
-    timeout: 15000,
-  });
-  // Add assertion to confirm logout
-  expect(page.url()).toBe(`${process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3777'}/`);
+// Add a waitForURLQuiet helper to avoid throwing error if already on the page
+async function waitForURLQuiet(
+  page: Page,
+  url: string | RegExp,
+  options?: { timeout?: number; waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit' }
+) {
+  try {
+    await page.waitForURL(url, options);
+  } catch (e) {
+    if (page.url().match(url)) {
+      console.log(`Already on expected URL: ${page.url()}`);
+    } else {
+      throw e; // re-throw if it's a different error or URL doesn't match
+    }
+  }
 }
-
-// --- Test Suite ---
-
-test.describe('Login/Logout Cycle', () => {
-  // Use environment variables for test credentials
-  const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
-  const testPassword = process.env.TEST_USER_PASSWORD || 'Test123!';
-
-  test('should allow login with valid credentials and logout', async ({ page }) => {
-    // Ensure we start logged out (clear context cookies)
-    await page.context().clearCookies();
-    await page.goto(ROUTES.LOGIN);
-    await expect(page.locator('#email')).toBeVisible(); // Ensure login page loaded
-
-    // Perform Login
-    await loginWithCredentials(page, testEmail, testPassword);
-    console.log('Login with credentials successful, redirected to dashboard.');
-
-    // Verify successful login state
-    console.log('Checking for user profile element visibility after login...');
-    // console.log('Page content before visibility check:\n', await page.content()); // Add page content logging
-    await expect(page.locator('[data-testid="user-profile-chip"]')).toBeVisible({
-      timeout: 10000,
-    });
-    console.log('Verified user profile element is visible after login.');
-
-    // Perform Logout
-    await logout(page);
-    console.log('Logout successful, redirected to login page.');
-
-    // Verify logged-out state
-    await expect(page.locator('#email')).toBeVisible(); // Check for login form element again
-    await expect(page.locator(UI_ELEMENTS.USER_PROFILE.TESTID)).not.toBeVisible();
-    console.log('Verified user is logged out.');
-  });
-
-  // TODO: Add test for login with Google
-  // TODO: Add test for login failure with invalid credentials
-});

@@ -104,6 +104,7 @@ const config: PlaywrightTestConfig = defineConfig({
         /basic\.spec\.ts/,
         /ultra-basic\.spec\.ts/,
         /auth\/registration\.spec\.ts/, // Keep this specific inclusion
+        /auth\/invalid-credentials\.spec\.ts/,
       ],
       // Explicitly ignore tests known to require auth state or are handled by other projects
       testIgnore: [

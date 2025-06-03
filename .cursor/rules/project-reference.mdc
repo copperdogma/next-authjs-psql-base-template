@@ -11,6 +11,7 @@ NEVER run these interactive commands that will freeze the AI assistant:
 - `npm start` ❌
 - `yarn dev` ❌
 - `yarn start` ❌
+- any other interactive command ❌
 
 ### Correct Testing Approaches
 ALWAYS use these non-interactive alternatives instead:
@@ -145,6 +146,22 @@ This file summarizes key commands for development, testing, and code quality wit
 - `npm run test:watch`: Run unit tests in watch mode.
 - `npm run test:coverage`: Run unit tests with coverage report.
 - `npm test <test-file> -- --coverage --collectCoverageFrom=<source-file>`: Run a specific test file with coverage report limited to its corresponding source file.
+
+## Notes for AI Agent: PM2, Browser Tools, and E2E Debugging
+
+When using `npm run ai:start` for the PM2-managed server and interacting with it via browser tools (especially for E2E-like scenarios on port 3777):
+
+1.  **Port Confirmation**: `npm run ai:start` involves scripts (`ai:port`, `ai:verify-port`) that might log about a default port (e.g., 3001) due to a `.next-port` file. However, if `ecosystem.config.js` is set to run a script like `dev:test` (which uses `next dev -p 3777`), trust the port specified in that script (e.g., 3777) for browser navigation. The server logs from the `next dev` process itself will confirm the correct port.
+2.  **Server Stability**:
+    *   After `npm run ai:start`, wait at least 15-25 seconds before attempting health checks or navigation to allow the Next.js server to initialize fully.
+    *   If `npm run ai:status` shows very low memory usage (e.g., <10MB) for the `next-dev` process, or if browser navigation fails, the server might be in a crash-restart loop. Check `npm run ai:logs` immediately for errors (e.g., "Module Not Found," compilation issues). Even if `pm2 status` shows "online," frequent restarts (high `↺` count) indicate underlying problems.
+3.  **`cross-env` & Script Execution**: Commands using `cross-env` (like the `dev:test` script) are best run via `npm run <script_name>`. If `ecosystem.config.js` uses `script: 'npm', args: 'run dev:test'`, PM2 handles this correctly. Avoid running `cross-env` commands directly in the terminal tool unless `cross-env` is globally available or the path is configured.
+4.  **Client-Side Logging**: For debugging React component logic (e.g., in `*.tsx` files):
+    *   Server-side PM2 logs (`npm run ai:logs`) may not show `console.log` or custom logger output from client-side code.
+    *   Use browser console logs (e.g., `mcp_playwright_browser_console_messages`) to view these client-side logs. This is crucial for tracking state changes and event handlers within components.
+5.  **NextAuth.js `signIn` quirks**: When using `signIn('credentials', { redirect: false, ... })` from NextAuth.js client-side:
+    *   The returned promise can resolve with a `result` object where `result.ok` is `true` *and* `result.error` contains an error string (e.g., "CredentialsSignin").
+    *   Always check for `result.error` *first* to determine if a sign-in attempt actually failed, before checking `result.ok`. Relying only on `result.ok` can lead to incorrect error handling.
 
 #### E2E Testing
 - `npm run test:e2e`: **Primary E2E command** - Starts the test server, runs all Playwright tests.
