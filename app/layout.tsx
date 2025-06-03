@@ -37,8 +37,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SkipToContent />
         {/* Visually hidden H1 for site title - ensures every page has a top-level heading for screen readers */}
         <Box
-          component="aside"
-          role="complementary"
+          component="div"
+          role="region"
           aria-label="Site title"
           sx={{
             position: 'absolute',

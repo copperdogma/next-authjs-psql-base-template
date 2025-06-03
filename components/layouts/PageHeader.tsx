@@ -14,12 +14,11 @@ const TitleSection: React.FC<TitleSectionProps> = ({ title, subtitle }) => (
       variant="h4"
       component="h1"
       id="page-title"
+      tabIndex={-1}
       sx={{
         fontWeight: 600,
         mb: subtitle ? 1 : 0,
         fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-        visibility: 'visible',
-        display: 'block',
       }}
     >
       {title}

@@ -18,7 +18,7 @@ test.describe('Public Route Accessibility', () => {
         const loginOptionsContainer = page.locator(
           'div[role="region"][aria-labelledby="login-header"]'
         );
-        const mainContent = page.locator('[data-testid="main-content"]');
+        const mainContent = page.locator('[data-testid="main-content-wrapper"]');
 
         // Use a conditional check - either login form or main content should be visible
         const isLoginVisible = await loginOptionsContainer.isVisible().catch(() => false);
@@ -32,7 +32,7 @@ test.describe('Public Route Accessibility', () => {
         ).toBeTruthy();
       } else {
         // For other public pages, check for main content
-        await expect(page.locator('[data-testid="main-content"]')).toBeVisible();
+        await expect(page.locator('[data-testid="main-content-wrapper"]')).toBeVisible();
       }
     });
   }

@@ -85,6 +85,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **Adjust `tabIndex` on Page Title in `PageHeader.tsx`**
     - [x] **Make Site Title in Header a Link to Homepage**
     - [x] **Conditionally Render "Debug Log Out" Button**
+    - [x] **Correct HTML Structure for Main Content Area in `PageLayout.tsx`**: Updated the component to avoid nested `<main>` elements, removed redundant `role="main"` attribute, and eliminated duplicate `id="main-content"` to improve accessibility and semantic HTML structure.
   - [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
   - [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
   - [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
@@ -99,95 +100,133 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ## Application Pages and Layouts Enhancement Checklist
 
-### [x] 1. Standardize Styling in Error Pages to MUI
+### [x] 1. Root Layout (`app/layout.tsx`)
 
-- **Affected Files**:
-  - `app/dashboard/error.tsx`
-  - `app/profile/error.tsx`
-- **Current State**: These files use Tailwind CSS classes for styling (e.g., `className="container mx-auto..."`, `className="bg-blue-500..."`).
-- **Problem**: Inconsistency with the rest of the application, which primarily uses Material-UI (MUI) for styling (e.g., `app/error.tsx`, `app/not-found.tsx`, layouts, and UI components).
-- **Best Practice**: Maintain a consistent styling library and approach across the application for better maintainability, a cohesive look and feel, and easier theming.
-- **Task**:
-  - Refactor `app/dashboard/error.tsx` and `app/profile/error.tsx` to use MUI components for layout and styling.
-  - Replace Tailwind classes with equivalent MUI components and `sx` prop styling.
-  - **Example (for `app/dashboard/error.tsx`)**:
-    - Instead of `<div className="container mx-auto p-6 text-center">`, use `<Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>`.
-    - Instead of `<h2 className="text-2xl font-bold text-red-600 mb-4">`, use `<Typography variant="h4" component="h2" color="error.main" gutterBottom sx={{ fontWeight: 'bold' }}>`.
-    - Instead of `<button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">`, use `<Button variant="contained" color="primary">`.
-    - Ensure error messages and action buttons are styled consistently with other MUI-based error pages like `app/error.tsx`.
-  - Remove any unused Tailwind class imports or setup if these files are the only ones using them in this context.
-
-### [x] 2. Simplify `useRouter` Hook Usage in `app/page.tsx`
-
-- **Affected File**: `app/page.tsx`
-- **Current State**: The `useRouter` hook is initialized using `React.useCallback(async () => { const { useRouter } = await import('next/navigation'); return useRouter(); }, [])` and then called as `router().then(...)`.
-- **Problem**: This is an overly complex way to get the router instance for a standard client component hook.
-- **Best Practice**: Use the standard import and hook invocation for `useRouter` from `next/navigation` in client components.
-- **Task**:
-  - Modify `app/page.tsx`:
-    1.  Add `import { useRouter } from 'next/navigation';` at the top of the file.
-    2.  Inside the `HomePage` component, change the router initialization to: `const router = useRouter();`.
-    3.  Update the `useEffect` hook to use the router instance directly:
-        ```typescript
-        React.useEffect(() => {
-          if (status === 'authenticated') {
-            router.push('/dashboard'); // No need for .then() if router is obtained directly
-          }
-        }, [status, router]);
-        ```
-    4.  Remove the `React.useCallback` for `router`.
-
-### [x] 3. Adjust `tabIndex` on Page Title in `PageHeader.tsx`
-
-- **Affected File**: `components/layouts/PageHeader.tsx`
-- **Current State**: The `<h1>` tag (with `id="page-title"`) has `tabIndex={0}`.
-- **Problem**: `tabIndex={0}` makes a non-interactive element (the page title heading) a part of the keyboard navigation sequence, which is generally not standard or expected behavior.
-- **Best Practice**:
-  - Static headings should typically not be in the tab order.
-  - If programmatic focus is desired (e.g., for a "skip to content" link to focus the main heading of the new page section for screen reader announcements), `tabIndex={-1}` should be used. This makes the element focusable via script but not via keyboard tabbing.
-  - If no programmatic focus is intended, the `tabIndex` attribute should be removed entirely.
-- **Task**:
-  - Evaluate if programmatic focus on the `<h1>` is a required feature (e.g., for skip links).
-  - If programmatic focus _is_ needed: Change `tabIndex={0}` to `tabIndex={-1}`.
-  - If programmatic focus is _not_ needed: Remove the `tabIndex={0}` attribute from the `Typography` component that renders the `<h1>`.
-
-### [x] 4. Make Site Title in Header a Link to Homepage
-
-- **Affected File**: `components/layouts/Header.tsx`
-- **Current State**: The site title `"{'{YOUR_APP_NAME}'}"` is a `Typography` component but not a link.
-- **Problem**: Users expect the site title/logo in the header to navigate to the homepage.
-- **Best Practice**: The main site identifier in the header should link to the root of the application (`/`).
-- **Task**:
-  - Import `Link` from `next/link`.
-  - Wrap the `Typography` component for the site title with `<Link href="/" passHref legacyBehavior={false}>`.
-  - Ensure the link inherits or has appropriate styling to look like a brand link (e.g., `textDecoration: 'none', color: 'inherit'`). Example:
-    ```typescript
-    import Link from 'next/link';
-    // ...
-    <Link href="/" passHref legacyBehavior={false} style={{ textDecoration: 'none', color: 'inherit' }}>
-      <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', mr: 2, '&:hover': { opacity: 0.8 } /* Optional hover effect */ }}>
+- **Task:** Refine Semantics of Visually Hidden Site Title H1.
+  - **File:** `app/layout.tsx`
+  - **Current Code Snippet (for context):**
+    ```tsx
+    <Box
+      component="aside"
+      role="complementary"
+      aria-label="Site title"
+      sx={{
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        padding: 0,
+        margin: '-1px',
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        borderWidth: 0,
+      }}
+    >
+      <Typography variant="h1" component="h1">
         {'{YOUR_APP_NAME}'}
       </Typography>
-    </Link>
+    </Box>
     ```
+  - **Issue:** The `Box component="aside" role="complementary"` is not the most semantically accurate wrapper for a primary, albeit visually hidden, site title `<h1>`. An `<aside>` is for tangentially related content.
+  - **Suggestion:** Replace the `Box component="aside"` with a `Box component="div"` or remove the `Box` wrapper if the `Typography` component alone with the `sx` props for visual hiding is sufficient. The goal is to have the `<h1>` directly part of the document's main outline without an unnecessary "complementary" role.
+  - **Example (if removing Box wrapper and `Typography` handles styles):**
+    ````tsx
+    <Typography
+      variant="h1"
+      component="h1"
+      sx={{
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        padding: 0,
+        margin: '-1px',
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        borderWidth: 0,
+      }}
+    >
+      {'{YOUR_APP_NAME}'}
+    </Typography>
+    ```    *   **Example (if keeping Box but changing component type):**
+    ```tsx
+    <Box
+      component="div" // Changed from "aside"
+      // aria-label="Site title" // Not strictly needed if Typography provides the text
+      sx={{
+        position: 'absolute',
+        // ... other visually hidden styles
+      }}
+    >
+      <Typography variant="h1" component="h1">
+        {'{YOUR_APP_NAME}'}
+      </Typography>
+    </Box>
+    ````
+  - **Best Practice:** Ensures cleaner semantics for the primary accessible heading.
 
-### [x] 5. Conditionally Render "Debug Log Out" Button
+### [x] 2. Page Layout Component (`components/layouts/PageLayout.tsx`)
 
-- **Affected File**: `app/about/page.tsx`
-- **Current State**: The "Debug Log Out" button is always rendered.
-- **Problem**: Exposes debugging functionality in a production environment.
-- **Best Practice**: Debug features should only be available during development.
-- **Task**:
-  - Wrap the "Debug Log Out" button (`Grid` item or the `Button` itself) in a conditional rendering block based on the environment.
-  - Use `process.env.NODE_ENV === 'development'` to control its visibility.
-  - **Example**:
-    ```typescript
-    {process.env.NODE_ENV === 'development' && (
-      <Grid item xs={12} sm={4}> {/* Or adjust Grid item based on removal */}
-        <Button variant="outlined" color="warning" fullWidth onClick={handleLogout}>
-          Debug Log Out
-        </Button>
-      </Grid>
-    )}
+- **Task:** Correct HTML Structure for Main Content Area.
+  - **File:** `components/layouts/PageLayout.tsx`
+  - **Current Code Snippet (relevant part):**
+    ```tsx
+    <Box
+      component="main" // This creates a nested <main> element
+      role="main" // Redundant role for <main>
+      id="main-content" // Duplicate ID with app/layout.tsx
+      // ...
+    >
+      {children}
+    </Box>
     ```
-  - Consider if the `CardHeader` for "Quick Actions" should also be conditionally rendered if this is the only action and it becomes hidden in production. For a template, it might be fine to leave the CardHeader and an empty CardContent if no actions are available.
+  - **Issue:**
+    1.  **Duplicate `id="main-content"`:** The root layout (`app/layout.tsx`) already defines a `<main>` element with `id="main-content"`. HTML IDs must be unique.
+    2.  **Nested `<main>` Elements:** While technically allowed, having a single primary `<main>` landmark per page is simpler and generally preferred for accessibility.
+    3.  **Redundant `role="main"`:** When using `<Box component="main">`, the `role="main"` attribute is redundant.
+  - **Suggestion:**
+    1.  Change the `Box component="main"` in `PageLayout.tsx` to `Box component="div"`.
+    2.  Remove the `id="main-content"` attribute from this `Box` in `PageLayout.tsx`.
+    3.  Remove the `role="main"` attribute from this `Box` in `PageLayout.tsx`.
+        The `aria-labelledby="page-title"` and `tabIndex={-1}` are appropriate for this inner content container.
+  - **Example (Modified `PageLayout.tsx` content Box):**
+    ```tsx
+    <Box
+      component="div" // Changed from "main"
+      data-testid="main-content-wrapper" // Consider a different test-id if needed, or remove if not essential
+      aria-labelledby="page-title"
+      tabIndex={-1}
+      sx={{
+        mt: { xs: 2, sm: 3 },
+        ...contentSx,
+      }}
+    >
+      {children}
+    </Box>
+    ```
+  - **Best Practice:** Ensures valid HTML (unique IDs), improves landmark clarity for assistive technologies, and simplifies the document structure.
+
+### [x] 3. Page Header Component (`components/layouts/PageHeader.tsx`)
+
+- **Task:** Review and Remove Potentially Redundant Styles on H1 Title.
+  - **File:** `components/layouts/PageHeader.tsx` (within `TitleSection` sub-component)
+  - **Current Code Snippet (relevant part):**
+    ```tsx
+    <Typography
+      variant="h4"
+      component="h1"
+      id="page-title"
+      sx={{
+        // ... other styles
+        visibility: 'visible', // Potentially redundant
+        display: 'block', // Potentially redundant
+      }}
+    >
+      {title}
+    </Typography>
+    ```
+  - **Issue:** The styles `visibility: 'visible'` and `display: 'block'` are generally the default rendering behavior for an `<h1>` element (which `Typography component="h1"` produces). These are likely unnecessary.
+  - **Suggestion:** Remove `visibility: 'visible'` and `display: 'block'` from the `sx` prop of the `Typography` component used for the page title. Verify that no visual regression occurs (it's unlikely).
+  - **Best Practice:** Keeps styling concise and avoids overriding default browser/MUI behavior unless necessary.
+
+---

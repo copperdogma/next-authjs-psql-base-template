@@ -50,10 +50,8 @@ export default function PageLayout({
         <PageHeader title={title} subtitle={subtitle} action={action} containerSx={headerSx} />
 
         <Box
-          component="main"
-          role="main"
-          id="main-content"
-          data-testid="main-content"
+          component="div"
+          data-testid="main-content-wrapper"
           aria-labelledby="page-title"
           tabIndex={-1}
           sx={{
