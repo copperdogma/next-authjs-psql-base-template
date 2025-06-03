@@ -1,3 +1,10 @@
+// =============================================================================
+// DEPRECATED: This file is deprecated and will be removed in a future version.
+// It is a facade for RawQueryServiceImpl from lib/services/raw-query-service.ts.
+// Please use RawQueryServiceImpl directly or through the getRawQueryService()
+// function from lib/server/services.ts.
+// =============================================================================
+
 import { defaultRawQueryService } from '../services/raw-query-service';
 
 /**
@@ -16,6 +23,7 @@ export class RawQueryService {
    *
    * @param options Query options
    * @returns Array of daily session counts
+   * @deprecated Use RawQueryServiceImpl.getUserSessionCountsByDay from lib/services/raw-query-service.ts instead
    */
   static async getUserSessionCountsByDay(options: {
     startDate?: Date;
@@ -31,6 +39,7 @@ export class RawQueryService {
    *
    * @param options Options for session extension
    * @returns Number of updated records
+   * @deprecated Use RawQueryServiceImpl.extendSessionExpirations from lib/services/raw-query-service.ts instead
    */
   static async extendSessionExpirations(options: {
     userIds: string[];
@@ -47,6 +56,7 @@ export class RawQueryService {
    *
    * @param options Query options
    * @returns Array of user activity summaries
+   * @deprecated Use RawQueryServiceImpl.getUserActivitySummary from lib/services/raw-query-service.ts instead
    */
   static async getUserActivitySummary(options: {
     minSessionCount?: number;
@@ -71,6 +81,7 @@ export class RawQueryService {
    * @param sql SQL query with $1, $2, etc. placeholders
    * @param params Parameters to bind to the query
    * @returns Query results
+   * @deprecated Use RawQueryServiceImpl.executeRawQuery from lib/services/raw-query-service.ts instead
    */
   static async executeRawQuery<T = any>(sql: string, params: any[] = []): Promise<T> {
     return defaultRawQueryService.executeRawQuery<T>(sql, params);

@@ -5,6 +5,9 @@ if (typeof global.TextEncoder === 'undefined') {
   global.TextDecoder = TextDecoder;
 }
 
+// Mock Next.js server-only package
+jest.mock('server-only', () => ({}));
+
 // Mock environment variables for testing
 
 // Set app URL from environment or default to a consistent test port

@@ -18,18 +18,28 @@ const getPrismaConfig = (): Prisma.PrismaClientOptions => {
     config.log = process.env.DEBUG_PRISMA ? ['query', 'error', 'warn'] : ['error', 'warn'];
   }
 
-  // Datasource URL is handled by env("DATABASE_URL") in schema.prisma
-  // No need to explicitly set it here again, especially for production.
-  // if (process.env.NODE_ENV === 'production') {
-  //   // Adjust connection pool for production environment
-  //   // For long-running applications, increase the pool size
-  //   // For serverless, keep it small (typically 1-3)
-  //   config.datasources = {
-  //     db: {
-  //       url: process.env.DATABASE_URL,
-  //     },
-  //   };
-  // }
+  // IMPORTANT: Production Connection Pooling
+  // The default Prisma connection pool size might not be optimal for your production environment.
+  // For long-running applications (e.g., Node.js servers), you might need to increase the connection_limit.
+  // For serverless environments, a smaller pool (or Prisma Accelerate/Data Proxy) is typically recommended.
+  // Consult Prisma's documentation on connection management for your specific deployment:
+  // https://www.prisma.io/docs/guides/performance-and-optimization/connection-management
+  if (process.env.NODE_ENV === 'production') {
+    // Example for a long-running server (uncomment and adjust connection_limit as needed):
+    // config.datasources = {
+    //   db: {
+    //     url: process.env.DATABASE_URL + "&connection_limit=10&pool_timeout=5",
+    //   },
+    // };
+    // Example for serverless environments (uncomment for minimal connections):
+    // config.datasources = {
+    //   db: {
+    //     url: process.env.DATABASE_URL + "&connection_limit=1&pool_timeout=10",
+    //   },
+    // };
+    // If using Prisma Accelerate or Data Proxy, no connection_limit is needed
+    // as the proxy manages connections for you.
+  }
 
   return config;
 };

@@ -69,55 +69,54 @@ function _validateName(
   return { isValid: true };
 }
 
+/**
+ * Performs the actual update of the user's name using the ProfileService
+ */
 async function _performNameUpdate(
   userId: string,
-  name: string,
-  currentLogger: pino.Logger
-): Promise<NameUpdateState> {
-  if (!profileService) {
-    currentLogger.error('Profile service is unavailable.');
-    return {
-      success: false,
-      message: 'Profile service is unavailable.',
-      updatedName: null,
-    };
-  }
+  newName: string,
+  logCtx: Record<string, unknown>
+): Promise<{ success: boolean; message: string; updatedName: string | null }> {
+  logger.info(logCtx, 'Attempting to update user name via profile service');
 
   try {
-    currentLogger.info({ userId, name }, 'Attempting to update user name via profile service');
-    const updateResult = await profileService.updateUserName(userId, name);
-
-    if (!updateResult.success) {
-      currentLogger.error(
-        { userId, name, error: updateResult.error },
-        'Profile service failed to update user name'
-      );
+    if (!profileService) {
+      logger.error({ ...logCtx }, 'Profile service is unavailable');
       return {
-        message: updateResult.error || 'An error occurred while updating your name',
+        message: 'Profile service is unavailable',
         success: false,
         updatedName: null,
       };
     }
 
+    const result = await profileService.updateUserName(userId, newName);
+
+    // Handle the new ServiceResponse format with status field
+    if (result.status === 'error') {
+      logger.error(
+        { ...logCtx, error: result.error },
+        'Profile service failed to update user name'
+      );
+      return {
+        message: result.message || 'An error occurred while updating your name',
+        success: false,
+        updatedName: null,
+      };
+    }
+
+    // If the result is successful, revalidate paths and return the updated name
     revalidatePath('/profile');
     revalidatePath('/');
-    currentLogger.info({ userId, name }, 'User name updated successfully');
+
     return {
       message: 'Name updated successfully',
       success: true,
-      updatedName: name,
+      updatedName: newName,
     };
   } catch (error) {
-    currentLogger.error({ err: error, userId, name }, 'Unexpected error during user name update');
-    const errorMessage =
-      typeof error === 'object' &&
-      error !== null &&
-      'message' in error &&
-      typeof error.message === 'string'
-        ? error.message
-        : 'An unexpected error occurred.';
+    logger.error({ ...logCtx, error }, 'Error while updating user name');
     return {
-      message: errorMessage,
+      message: 'An unexpected error occurred while updating your name',
       success: false,
       updatedName: null,
     };
@@ -145,5 +144,5 @@ export async function updateUserName(
   }
 
   currentLogger.info({ userId, name }, 'Proceeding to _performNameUpdate'); // Diagnostic log
-  return _performNameUpdate(userId, name, currentLogger);
+  return _performNameUpdate(userId, name, { userId, name });
 }

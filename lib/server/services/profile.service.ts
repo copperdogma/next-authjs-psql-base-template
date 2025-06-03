@@ -1,12 +1,19 @@
 import { prisma, type PrismaClient } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import type { User } from '@prisma/client';
+import { ServiceResponse } from '@/types';
+
+// Define error details type
+type ProfileServiceErrorDetails = {
+  originalError?: unknown;
+  stack?: string;
+};
 
 export interface ProfileServiceInterface {
   updateUserName(
     userId: string,
     newName: string
-  ): Promise<{ success: boolean; user?: User; error?: string }>;
+  ): Promise<ServiceResponse<User, ProfileServiceErrorDetails>>;
 }
 
 export class ProfileServiceImpl implements ProfileServiceInterface {
@@ -106,32 +113,42 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
    * Helper method to handle database operations with Prisma.
    *
    * @remarks
-   * This method contains specific logic for E2E testing environments. When
-   * `process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true'`, this method will return a mock
-   * success response with a simulated user object if the database update fails.
+   * IMPORTANT E2E TESTING NOTE:
+   * This method includes specific behavior for E2E testing environments.
+   * When `process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV === 'true'`, this method
+   * will return a MOCK SUCCESS RESPONSE with a simulated user object if the
+   * database update operation fails.
    *
-   * This approach allows E2E tests (particularly those focusing on UI flows for profile updates)
-   * to simulate a successful name update even if:
-   * - The underlying test database cannot be written to
-   * - Direct database interaction is intentionally bypassed in the E2E test setup for simplicity
-   * - The test is running in an environment without database access
+   * Why this exists:
+   * This allows UI-focused E2E tests (e.g., testing the profile name change form flow)
+   * to complete successfully even if the E2E test environment does not have a fully
+   * writable database or if direct database interactions are intentionally bypassed
+   * in the test setup to improve speed or simplify the test environment.
    *
-   * Trade-off: This introduces test-environment-specific behavior into production code.
-   * For applications requiring stricter separation, consider:
-   * - Mocking this service at the E2E test boundary
-   * - Ensuring the E2E test environment has a fully writable and verifiable database
-   * - Using dependency injection to provide a test-specific implementation
+   * Trade-offs:
+   * This approach introduces test-environment-specific behavior into production code.
+   * For projects requiring stricter separation of concerns or more robust E2E database
+   * validation, consider these alternatives:
+   *   1. Mocking this `ProfileService` at the E2E test boundary (e.g., using Playwright's
+   *      route interception to mock the server action's response).
+   *   2. Ensuring the E2E test environment uses a fully writable and verifiable database.
+   *
+   * Impact:
+   * Be aware that in an E2E test environment, a "successful" name update indicated by the UI
+   * (due to this mock) does NOT guarantee the data was actually persisted to the database
+   * if a real database error occurred. Backend database persistence should be verified
+   * through integration tests or specific E2E tests that explicitly check database state.
    *
    * @param userId - The ID of the user to update
    * @param processedName - The validated new name to set
    * @param logContext - Logging context for tracing
-   * @returns Promise resolving to an object with success status and optional user/error
+   * @returns Promise resolving to a ServiceResponse with success/error details
    */
   private async _performDatabaseUpdate(
     userId: string,
     processedName: string,
     logContext: Record<string, unknown>
-  ): Promise<{ success: boolean; user?: User; error?: string }> {
+  ): Promise<ServiceResponse<User, ProfileServiceErrorDetails>> {
     try {
       const user = await this.db.user.update({
         where: { id: userId },
@@ -143,7 +160,11 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
         'Successfully updated user name in database.'
       );
 
-      return { success: true, user };
+      return {
+        status: 'success',
+        data: user,
+        message: 'User name updated successfully.',
+      };
     } catch (error: unknown) {
       const parsedError = this._parseDbError(error);
       logger.error(
@@ -159,7 +180,18 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
 
       if (parsedError.errorCode === 'P2025') {
         // Prisma code for Record to update not found
-        return { success: false, error: 'User not found.' };
+        return {
+          status: 'error',
+          message: 'User not found.',
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found.',
+            details: {
+              originalError: parsedError.originalError,
+              stack: parsedError.stack,
+            },
+          },
+        };
       }
 
       // Special handling for E2E testing environments
@@ -171,27 +203,47 @@ export class ProfileServiceImpl implements ProfileServiceInterface {
           { ...logContext },
           'E2E test environment detected, returning mock success response despite database error'
         );
+        const mockUser = this._createMockUserForE2E(userId, processedName);
         return {
-          success: true,
-          user: this._createMockUserForE2E(userId, processedName),
+          status: 'success',
+          data: mockUser,
+          message: 'User name updated successfully (E2E test mock).',
         };
       }
 
-      return { success: false, error: parsedError.message || 'Could not update user name.' };
+      return {
+        status: 'error',
+        message: 'Failed to update user name.',
+        error: {
+          code: 'DB_UPDATE_FAILED',
+          message: parsedError.message || 'Could not update user name.',
+          details: {
+            originalError: parsedError.originalError,
+            stack: parsedError.stack,
+          },
+        },
+      };
     }
   }
 
   async updateUserName(
     userId: string,
     newName: string
-  ): Promise<{ success: boolean; user?: User; error?: string }> {
+  ): Promise<ServiceResponse<User, ProfileServiceErrorDetails>> {
     const logContext = { userId, newName, service: 'ProfileService', method: 'updateUserName' };
     logger.info(logContext, 'Attempting to update user name.');
 
     // Step 1: Validate input
     const nameValidation = this._validateName(newName, logContext);
     if (!nameValidation.isValid || typeof nameValidation.processedName !== 'string') {
-      return { success: false, error: nameValidation.errorMessage || 'Invalid name processed.' };
+      return {
+        status: 'error',
+        message: 'Invalid name format.',
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: nameValidation.errorMessage || 'Invalid name processed.',
+        },
+      };
     }
 
     // Step 2: Perform database update

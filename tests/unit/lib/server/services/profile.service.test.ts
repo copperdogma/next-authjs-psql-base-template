@@ -2,6 +2,8 @@ import { jest } from '@jest/globals';
 import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
 import { logger } from '@/lib/logger';
+import { prismaMock } from '../../../../mocks/db/prismaMocks';
+import { User } from '@prisma/client';
 
 // Mock the logger to prevent actual logging during tests and allow assertions
 jest.mock('@/lib/logger', () => ({
@@ -23,141 +25,104 @@ const mockPrisma = {
   // No longer needed: $executeRaw: jest.fn<(...args: any[]) => Promise<number>>(),
 };
 
-describe('ProfileServiceImpl', () => {
+describe('ProfileService', () => {
   let profileService: ProfileServiceImpl;
-  let mockDbClient: PrismaClient;
-
-  const testUserId = 'test-user-id';
-  const validName = 'Valid Name';
-  const invalidNameTooShort = 'V';
-  const invalidNameTooLong = 'V'.repeat(51);
-
-  const mockUser: PrismaUser = {
-    id: testUserId,
-    name: 'Old Name',
-    email: 'test@example.com',
-    emailVerified: new Date(),
-    image: null,
-    hashedPassword: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedInAt: new Date(),
-    role: UserRole.USER,
-  };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    // Create a new mock instance for PrismaClient for each test
-    mockDbClient = mockPrisma as unknown as PrismaClient;
-    profileService = new ProfileServiceImpl(mockDbClient);
+    profileService = new ProfileServiceImpl(prismaMock);
   });
 
   describe('updateUserName', () => {
-    it('should successfully update user name and return the user', async () => {
-      const updatedUser = { ...mockUser, name: validName };
-      // Prisma update succeeds
-      mockPrisma.user.update.mockResolvedValueOnce(updatedUser);
+    it('should update a user name and return a success response', async () => {
+      const mockUser: any = {
+        id: 'user-1',
+        name: 'Updated Name',
+        email: 'test@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      const result = await profileService.updateUserName(testUserId, validName);
+      prismaMock.user.update.mockResolvedValue(mockUser);
 
-      expect(result.success).toBe(true);
-      expect(result.user).toEqual(updatedUser);
-      expect(result.error).toBeUndefined();
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: testUserId },
-        data: { name: validName },
+      const result = await profileService.updateUserName('user-1', 'Updated Name');
+
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUser);
+      expect(result.message).toBe('User name updated successfully.');
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { name: 'Updated Name' },
       });
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ dbUserId: updatedUser.id }),
-        'Successfully updated user name in database.'
-      );
     });
 
-    it('should return error if name is too short', async () => {
-      const result = await profileService.updateUserName(testUserId, invalidNameTooShort);
-      expect(result.success).toBe(false);
-      expect(result.user).toBeUndefined();
-      expect(result.error).toBe('Name must be between 3 and 50 characters.');
-      expect(logger.warn).toHaveBeenCalled();
-      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    it('should return validation error for names shorter than 3 characters', async () => {
+      const result = await profileService.updateUserName('user-1', 'Ab');
+
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('VALIDATION_FAILED');
+      expect(result.error?.message).toContain('Name must be between 3 and 50 characters');
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
 
-    it('should return error if name is too long', async () => {
-      const result = await profileService.updateUserName(testUserId, invalidNameTooLong);
-      expect(result.success).toBe(false);
-      expect(result.user).toBeUndefined();
-      expect(result.error).toBe('Name must be between 3 and 50 characters.');
-      expect(logger.warn).toHaveBeenCalled();
-      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    it('should return validation error for names longer than 50 characters', async () => {
+      const longName = 'A'.repeat(51);
+      const result = await profileService.updateUserName('user-1', longName);
+
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('VALIDATION_FAILED');
+      expect(result.error?.message).toContain('Name must be between 3 and 50 characters');
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
 
-    it('should return error if Prisma update fails', async () => {
-      const dbError = new Error('DB update failed');
-      mockPrisma.user.update.mockRejectedValueOnce(dbError);
+    it('should return user not found error when user does not exist', async () => {
+      const error = new Error('Record not found');
+      (error as any).code = 'P2025';
+      prismaMock.user.update.mockRejectedValue(error);
 
-      // Set the environment variable to false to ensure we get the error response
-      const originalEnv = process.env;
-      process.env = { ...originalEnv, NEXT_PUBLIC_IS_E2E_TEST_ENV: 'false' };
+      const result = await profileService.updateUserName('non-existent-user', 'New Name');
 
-      const result = await profileService.updateUserName(testUserId, validName);
-
-      // Restore the environment
-      process.env = originalEnv;
-
-      expect(result.success).toBe(false);
-      expect(result.user).toBeUndefined();
-      expect(result.error).toBe('DB update failed'); // Actual error message from the mock
-      expect(logger.error).toHaveBeenCalled();
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.error?.message).toBe('User not found.');
+      expect(result.error?.details?.originalError).toBe(error);
     });
 
-    it('should return "User not found." if Prisma update fails with P2025 (record not found)', async () => {
-      const prismaNotFoundError = new Error('Record to update not found.') as any;
-      prismaNotFoundError.code = 'P2025';
+    it('should return general error for other database errors', async () => {
+      const error = new Error('Database connection error');
+      prismaMock.user.update.mockRejectedValue(error);
 
-      mockPrisma.user.update.mockRejectedValueOnce(prismaNotFoundError);
+      // Set E2E test flag to false to test error path
+      const originalEnv = process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV;
+      process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV = 'false';
 
-      const result = await profileService.updateUserName(testUserId, validName);
+      const result = await profileService.updateUserName('user-1', 'New Name');
 
-      expect(result.success).toBe(false);
-      expect(result.user).toBeUndefined();
-      expect(result.error).toBe('User not found.');
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.objectContaining({
-          errorMessage: prismaNotFoundError.message,
-          errorCode: 'P2025',
-        }),
-        'Error updating user name in database.'
-      );
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_UPDATE_FAILED');
+      expect(result.error?.message).toBe('Database connection error');
+      expect(result.error?.details?.originalError).toBe(error);
+
+      // Restore environment
+      process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV = originalEnv;
     });
 
-    describe('E2E Test Environment Handling', () => {
-      const originalEnv = process.env;
+    it('should return mock success response in E2E test environment', async () => {
+      const error = new Error('Database connection error');
+      prismaMock.user.update.mockRejectedValue(error);
 
-      beforeEach(() => {
-        jest.resetModules(); // to re-evaluate process.env
-        process.env = { ...originalEnv, NEXT_PUBLIC_IS_E2E_TEST_ENV: 'true' };
-        // Re-initialize service with new env context if needed, but ProfileServiceImpl reads env directly
-      });
+      // Set E2E test flag to true to test mock path
+      const originalEnv = process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV;
+      process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV = 'true';
 
-      afterEach(() => {
-        process.env = originalEnv;
-      });
+      const result = await profileService.updateUserName('user-1', 'New Name');
 
-      it('should return mock success response if DB update fails in E2E test environment', async () => {
-        mockPrisma.user.update.mockRejectedValueOnce(new Error('Prisma update failed'));
+      expect(result.status).toBe('success');
+      expect(result.data).toBeDefined();
+      expect((result.data as User).name).toBe('New Name');
+      expect(result.message).toContain('E2E test mock');
 
-        const result = await profileService.updateUserName(testUserId, validName);
-
-        expect(result.success).toBe(true);
-        expect(result.user).toBeDefined();
-        expect(result.user?.id).toBe(testUserId);
-        expect(result.user?.name).toBe(validName);
-        expect(result.error).toBeUndefined();
-        expect(logger.warn).toHaveBeenCalledWith(
-          expect.anything(), // The context object can be complex
-          'E2E test environment detected, returning mock success response despite database error'
-        );
-      });
+      // Restore environment
+      process.env.NEXT_PUBLIC_IS_E2E_TEST_ENV = originalEnv;
     });
   });
 });

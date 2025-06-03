@@ -7,8 +7,8 @@ import {
   resetPrismaMock,
 } from '../../mocks/db/prismaMocks';
 
-// Import the instance directly
-import { userServiceInstance } from '../../../lib/db/user-service';
+// Import the consolidated service instance
+import { defaultUserService } from '../../../lib/services/user-service';
 
 /**
  * DB User Service Unit Tests
@@ -55,7 +55,7 @@ import { userServiceInstance } from '../../../lib/db/user-service';
 //   },
 // }));
 
-describe('UserService (static methods)', () => {
+describe('UserService (consolidated implementation)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset the singleton mock
@@ -79,13 +79,14 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any); // Use `as any` if types are complex/incomplete
 
-      const result = await userServiceInstance.getUsersWithSessions();
+      const result = await defaultUserService.getUsersWithSessions();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
         include: { sessions: true },
       });
-      expect(result).toEqual(mockUsers);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
     });
 
     it('applies provided options', async () => {
@@ -109,14 +110,26 @@ describe('UserService (static methods)', () => {
         where: { email: { contains: 'example.com' } },
       };
 
-      const result = await userServiceInstance.getUsersWithSessions(options);
+      const result = await defaultUserService.getUsersWithSessions(options);
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
         ...options,
         include: { sessions: true },
       });
-      expect(result).toEqual(mockUsers);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
+    });
+
+    it('handles errors appropriately', async () => {
+      const testError = new Error('Database connection error');
+      prismaMock.user.findMany.mockRejectedValue(testError);
+
+      const result = await defaultUserService.getUsersWithSessions();
+
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('DB_FETCH_FAILED');
+      expect(result.error?.details?.originalError).toBe(testError);
     });
   });
 
@@ -135,14 +148,25 @@ describe('UserService (static methods)', () => {
       prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
       const userId = 'user-1';
-      const result = await userServiceInstance.getUserWithSessions(userId);
+      const result = await defaultUserService.getUserWithSessions(userId);
 
       // Use prismaMock
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
         include: { sessions: true },
       });
-      expect(result).toEqual(mockUser);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUser);
+    });
+
+    it('returns an error when user is not found', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      const result = await defaultUserService.getUserWithSessions('non-existent-id');
+
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.data).toBeNull();
     });
   });
 
@@ -165,7 +189,7 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await userServiceInstance.getUsersWithActiveSessions();
+      const result = await defaultUserService.getUsersWithActiveSessions();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith(
@@ -190,7 +214,8 @@ describe('UserService (static methods)', () => {
           }),
         })
       );
-      expect(result).toEqual(mockUsers);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
     });
 
     it('applies pagination options', async () => {
@@ -198,22 +223,23 @@ describe('UserService (static methods)', () => {
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const expiresAfter = new Date('2023-01-01');
-      const result = await userServiceInstance.getUsersWithActiveSessions({
+      const options = {
         skip: 5,
         take: 10,
-        expiresAfter,
-      });
+        expiresAfter: new Date('2023-01-01'),
+      };
+
+      const result = await defaultUserService.getUsersWithActiveSessions(options);
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          skip: 5,
-          take: 10,
-          // Note: The complex where/include clauses are also checked by the expect.objectContaining
+          skip: options.skip,
+          take: options.take,
         })
       );
-      expect(result).toEqual(mockUsers);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
     });
   });
 
@@ -226,20 +252,19 @@ describe('UserService (static methods)', () => {
           name: 'User One',
           createdAt: new Date(),
           updatedAt: new Date(),
-          // Ensure mock data matches Prisma types
-          _count: { sessions: 5 },
+          _count: {
+            sessions: 5,
+          },
         },
       ];
 
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await userServiceInstance.getUsersWithSessionCounts();
+      const result = await defaultUserService.getUsersWithSessionCounts();
 
       // Use prismaMock
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
-        skip: undefined,
-        take: undefined,
         select: {
           id: true,
           email: true,
@@ -253,34 +278,83 @@ describe('UserService (static methods)', () => {
           },
         },
       });
-      expect(result).toEqual(mockUsers);
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
     });
 
     it('applies pagination options', async () => {
       const mockUsers = [
         {
           id: 'user-1',
-          _count: { sessions: 3 },
+          email: 'user1@example.com',
+          name: 'User One',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          _count: {
+            sessions: 3,
+          },
         },
       ];
 
       // Use prismaMock
       prismaMock.user.findMany.mockResolvedValue(mockUsers as any);
 
-      const result = await userServiceInstance.getUsersWithSessionCounts({
-        skip: 0,
+      const options = {
+        skip: 10,
         take: 5,
-      });
+      };
+
+      const result = await defaultUserService.getUsersWithSessionCounts(options);
 
       // Use prismaMock
-      expect(prismaMock.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 0,
-          take: 5,
-          // Select clause is also checked
-        })
-      );
-      expect(result).toEqual(mockUsers);
+      expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+        skip: options.skip,
+        take: options.take,
+        select: expect.any(Object),
+      });
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUsers);
+    });
+  });
+
+  describe('getUserByAccount', () => {
+    it('finds a user by provider and providerAccountId', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'user1@example.com',
+        name: 'User One',
+      };
+
+      const mockAccount = {
+        id: 'account-1',
+        provider: 'google',
+        providerAccountId: '12345',
+        userId: 'user-1',
+        user: mockUser,
+      };
+
+      prismaMock.account.findUnique.mockResolvedValue(mockAccount as any);
+
+      const result = await defaultUserService.getUserByAccount('google', '12345');
+
+      expect(prismaMock.account.findUnique).toHaveBeenCalledWith({
+        where: {
+          provider_providerAccountId: { provider: 'google', providerAccountId: '12345' },
+        },
+        include: { user: true },
+      });
+      expect(result.status).toBe('success');
+      expect(result.data).toEqual(mockUser);
+    });
+
+    it('returns an error when account is not found', async () => {
+      prismaMock.account.findUnique.mockResolvedValue(null);
+
+      const result = await defaultUserService.getUserByAccount('google', 'non-existent');
+
+      expect(result.status).toBe('error');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.data).toBeNull();
     });
   });
 });

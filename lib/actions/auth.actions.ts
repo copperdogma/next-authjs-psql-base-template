@@ -705,6 +705,17 @@ async function registerUserLogic(
   const validatedData = preCheckResult.validatedData;
   const logContextWithEmail = { ...initialLogContext, email: validatedData.email };
 
+  // NOTE: The user creation in _executeRegistrationCore and the subsequent
+  // auto-sign-in attempt in _handleSuccessfulRegistration are not currently
+  // part of a single atomic database transaction. This means a user could be
+  // successfully created in the database, but the auto-sign-in might fail,
+  // requiring the user to log in manually.
+  // For more complex registration flows involving multiple dependent database
+  // writes (e.g., creating a user, an initial profile, and sending a welcome email,
+  // all of which must succeed or fail together), consider wrapping the core
+  // logic within a `prisma.$transaction([async (tx) => { ... }])` block to
+  // ensure atomicity.
+
   // Core registration logic
   const registrationAttemptResult = await _executeRegistrationCore(
     validatedData,

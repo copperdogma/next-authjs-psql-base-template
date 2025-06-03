@@ -1,3 +1,13 @@
+// Prisma Schema for Next.js Auth.js PostgreSQL Template
+// -----------------------------------------------------------------------------
+// INDEXING STRATEGY:
+// - Add indexes for fields frequently used in WHERE clauses
+// - Add indexes for fields used in ORDER BY clauses
+// - Consider composite indexes for queries using multiple fields together
+// - Monitor query performance as your application scales and adjust accordingly
+// - Run `npx prisma studio` to visually explore your database
+// -----------------------------------------------------------------------------
+
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
@@ -27,6 +37,13 @@ model User {
   // deletedAt DateTime? @updatedAt
   accounts      Account[]
   sessions      Session[]
+
+  // REMINDER: Add additional indexes here based on your application's specific query patterns
+  // as your project evolves. For example, if you frequently query or sort users
+  // by 'lastSignedInAt' and 'role':
+  // @@index([lastSignedInAt, role])
+  // Or if searching by name becomes common:
+  // @@index([name]) // Consider a full-text index for more advanced name searching
 
   @@index([role])
   @@index([createdAt])
