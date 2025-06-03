@@ -155,7 +155,7 @@ describe('ProfileServiceImpl', () => {
         expect(result.error).toBeUndefined();
         expect(logger.warn).toHaveBeenCalledWith(
           expect.anything(), // The context object can be complex
-          'E2E test environment detected, returning mock success response'
+          'E2E test environment detected, returning mock success response despite database error'
         );
       });
     });
