@@ -715,6 +715,28 @@ async function registerUserLogic(
   // all of which must succeed or fail together), consider wrapping the core
   // logic within a `prisma.$transaction([async (tx) => { ... }])` block to
   // ensure atomicity.
+  //
+  // Example of a transactional approach (not implemented in this template):
+  // ```
+  // const result = await prisma.$transaction(async (tx) => {
+  //   // 1. Create user with tx as the client
+  //   const user = await tx.user.create({ ... });
+  //
+  //   // 2. Create initial profile or other dependent records
+  //   await tx.profile.create({ userId: user.id, ... });
+  //
+  //   // 3. Queue welcome email or perform other non-DB operations after transaction
+  //   const emailQueueEntry = await tx.emailQueue.create({
+  //     userId: user.id,
+  //     type: 'WELCOME'
+  //   });
+  //
+  //   return { user, emailQueueEntry };
+  // });
+  // ```
+  //
+  // The current approach is simpler and adequate for most basic registration flows,
+  // but be aware of this limitation if extending the registration process.
 
   // Core registration logic
   const registrationAttemptResult = await _executeRegistrationCore(

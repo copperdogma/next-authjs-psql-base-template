@@ -1,21 +1,18 @@
 /**
- * Database utilities and services
+ * Database utilities and optimizers
  *
- * This module exports database-related utilities and service classes
- * that help prevent common issues like N+1 queries and provide
- * better error handling.
- *
- * Note: For user and raw query services, please use the consolidated
- * implementations from lib/services/ directory.
+ * This module exports database-related utilities and query optimization tools.
+ * For data services, please use the consolidated implementations from lib/services/ directory
+ * or the dependency-injection getters from lib/server/services.ts.
  */
 
 // Utilities for database operations
 export * from './utils';
 
-// Domain-specific services
-// DEPRECATED: Use lib/services/user-service.ts instead
-// export * from './user-service';
-// DEPRECATED: Use lib/services/raw-query-service.ts instead
-// export * from './raw-query-service';
-// Export functions, not the class
+// Export query optimization tools
 export * from './query-optimizer';
+
+// NOTE: The following deprecated services have been consolidated:
+// - UserService -> lib/services/user-service.ts
+// - RawQueryService -> lib/services/raw-query-service.ts
+// Please update imports to use the consolidated services

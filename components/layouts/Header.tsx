@@ -4,7 +4,7 @@ import React from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, Box, SxProps, Theme } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -61,6 +61,19 @@ const AuthSection: React.FC<AuthSectionProps> = ({ status }) => (
   </Box>
 );
 
+// Visually hidden element styles
+const visuallyHiddenStyles: SxProps<Theme> = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  borderWidth: 0,
+};
+
 /**
  * Header component providing navigation and authentication UI.
  */
@@ -86,6 +99,11 @@ const Header: React.FC = () => {
         borderColor: 'divider',
       }}
     >
+      {/* Visually hidden H1 for site title - ensures every page has a top-level heading for screen readers */}
+      <Typography variant="h1" component="h1" sx={visuallyHiddenStyles}>
+        {'{YOUR_APP_NAME}'}
+      </Typography>
+
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
           <Link
