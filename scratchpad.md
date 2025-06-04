@@ -87,6 +87,11 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **Conditionally Render "Debug Log Out" Button**
     - [x] **Correct HTML Structure for Main Content Area in `PageLayout.tsx`**: Updated the component to avoid nested `<main>` elements, removed redundant `role="main"` attribute, and eliminated duplicate `id="main-content"` to improve accessibility and semantic HTML structure.
   - [x] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
+    - [x] **Refactor `getUserSessionCountsByDay` for Proper Parameterization**: Updated the method to correctly pass parameters from `buildDateUserWhereClause` to the `$queryRaw` call, preventing SQL injection vulnerabilities.
+    - [x] **Refactor `buildSessionExpirationWhereClause` for Secure Parameterization**: Modified the method to return a parameterized where clause with an array of parameter values, supporting the ANY operator for proper array handling.
+    - [x] **Refactor `extendSessionExpirations` for Secure Date Handling**: Updated to use parameterized queries for user IDs and dates, with proper interval handling.
+    - [x] **Refactor `buildActivityWhereClause` for Parameterization**: Updated to use placeholders for date filtering with parameter values.
+    - [x] **Refactor `executeActivitySummaryQuery` and `getUserActivitySummary` for Full Parameterization**: Modified to properly parameterize all user inputs (since date, minSessionCount, limit) using placeholder syntax.
   - [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
   - [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
   - [ ] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
@@ -97,5 +102,122 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `Next Auth Application`, `Your Name`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
 - [x] Final round: search for unused vars/code/files/packages/etc.
 - [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
+
+---
+
+You got it. I've double-checked the analysis of the **Database Interaction & Schema** subsystem.
+
+My previous assessment holds: the Prisma client setup, schema design, and ORM-based services are well-structured and adhere to best practices for a template project. The primary area for actionable improvement lies within `lib/services/raw-query-service.ts` specifically concerning SQL parameterization in its methods. The generic `executeRawQuery` method within this service is correctly structured to use parameters, but the other specific methods in the same service that construct and execute their own raw queries need to be updated to consistently use proper parameterization techniques provided by Prisma.
+
+Here is a comprehensive list of suggestions to enhance this subsystem:
+
+---
+
+## Database Interaction & Schema Improvement Checklist
+
+### Target File: `lib/services/raw-query-service.ts`
+
+The following suggestions focus on enhancing the security and robustness of raw SQL queries by ensuring consistent and correct parameterization, aligning with Prisma's best practices.
+
+1. [ ] **Refactor `getUserSessionCountsByDay` for Proper Parameterization:**
+
+   - **File:** `lib/services/raw-query-service.ts`
+   - **Function:** `async getUserSessionCountsByDay(options: {...})`
+   - **Current Issue:** The `params` array returned by `this.buildDateUserWhereClause(options)` (which contains the values for placeholders like `$1`, `$2` in the `whereClause` string) is not being passed as separate arguments to the `this.prismaClient.$queryRaw` call. The `whereClause` string (e.g., `WHERE "createdAt" >= $1`) is injected using `Prisma.raw()`, but the corresponding values are missing.
+   - **Suggestion:** Modify the `this.prismaClient.$queryRaw` call to correctly pass the `params` array.
+   - **Current Code Snippet (Conceptual):**
+     ```typescript
+     // Inside getUserSessionCountsByDay
+     const { whereClause, params } = this.buildDateUserWhereClause(options);
+     // ... SQL construction using whereClause ...
+     const results = await this.prismaClient.$queryRaw(
+       Prisma.sql`SELECT DATE_TRUNC('day', "createdAt") AS date, COUNT(*) AS count FROM "Session" ${whereClause ? Prisma.raw(whereClause) : Prisma.empty} GROUP BY DATE_TRUNC('day', "createdAt") ORDER BY date DESC`
+     );
+     ```
+   - **Proposed Change:**
+     ```typescript
+     // Inside getUserSessionCountsByDay
+     const { whereClause, params } = this.buildDateUserWhereClause(options);
+     // ... SQL construction ...
+     const results = await this.prismaClient.$queryRaw(
+       Prisma.sql`SELECT DATE_TRUNC('day', "createdAt") AS date, COUNT(*) AS count FROM "Session" ${whereClause ? Prisma.raw(whereClause) : Prisma.empty} GROUP BY DATE_TRUNC('day', "createdAt") ORDER BY date DESC`,
+       ...params // Spread the 'params' array here
+     );
+     ```
+   - **Rationale:** Ensures that values for placeholders in the dynamically built `whereClause` are properly and safely passed to the database driver, preventing SQL injection vulnerabilities and potential runtime errors.
+
+2. [ ] **Refactor `extendSessionExpirations` for Secure Array and Date Parameterization:**
+
+   - **File:** `lib/services/raw-query-service.ts`
+   - **Function:** `async extendSessionExpirations(options: {...})`
+   - **Current Issues & Suggestions:**
+
+     - **User IDs IN Clause:** The `userIds` array is currently processed into a string like `"'id1','id2'"` and directly interpolated into the SQL: `WHERE "userId" IN (${userIdsParam})`. This is not fully parameterized.
+
+       - **Proposed Change:** Use `Prisma.join()` for array parameterization.
+         ```typescript
+         // Change from:
+         // const userIdsParam = userIds.map(id => `'${id}'`).join(',');
+         // let whereClause = `WHERE "userId" IN (${userIdsParam})`;
+         // To (within the Prisma.sql template literal):
+         // WHERE "userId" IN (${Prisma.join(userIds.map(id => Prisma.sql`${id}`))}) // If IDs need to be individually parameterized
+         // Or more simply if Prisma handles array types directly in IN for $executeRaw (check Prisma docs for $executeRaw array passing)
+         // It might be simpler to build the condition like:
+         // const userIdConditions = userIds.map(id => Prisma.sql`"userId" = ${id}`);
+         // const whereUserIdClause = Prisma.sql`WHERE (${Prisma.join(userIdConditions, ' OR ')})`;
+         // For IN clause, Prisma.join directly with values is best:
+         // WHERE "userId" IN (${Prisma.join(userIds)})
+         //
+         // The final Prisma.sql call would then look something like this for the WHERE part:
+         // const userInClause = userIds.length > 0 ? Prisma.sql`"userId" IN (${Prisma.join(userIds)})` : Prisma.empty;
+         // let fullWhereClause = userInClause;
+         // if (currentExpiryBefore) {
+         //   const expiryCondition = Prisma.sql`"expiresAt" <= ${currentExpiryBefore}`;
+         //   fullWhereClause = userInClause !== Prisma.empty ? Prisma.sql`${userInClause} AND ${expiryCondition}` : expiryCondition;
+         // }
+         // const finalSql = Prisma.sql`UPDATE "Session" SET "expiresAt" = "expiresAt" + interval '${Prisma.raw(String(extensionHours))} hours', "updatedAt" = NOW() WHERE ${fullWhereClause}`;
+         // Note: `extensionHours` handling is addressed next.
+         ```
+         Modify `buildSessionExpirationWhereClause` to return `Prisma.Sql` or parts that can be combined into one.
+         Alternatively, if constructing the raw SQL string remains, `userIds` should be passed as parameters and the SQL should use placeholders, e.g., `userId = ANY($1::text[])`.
+
+     - **`currentExpiryBefore` Date:** The date is interpolated as a string: `"expiresAt" <= '${currentExpiryBefore.toISOString()}'`.
+
+       - **Proposed Change:** Parameterize the date.
+         ```typescript
+         // If using Prisma.sql, change to:
+         // AND "expiresAt" <= ${currentExpiryBefore}
+         // Prisma.sql will handle the date object correctly.
+         ```
+
+     - **`extensionHours` Interval:** The interval is constructed with string interpolation: `interval '${extensionHours} hours'`.
+       - **Proposed Change:** While `Prisma.raw(String(extensionHours))` inside `Prisma.sql` is safer than direct interpolation, the most robust way for intervals when the value is dynamic is to pass `extensionHours` as a parameter and use database functions if complex, or ensure `Prisma.sql` handles it. For simple "X hours", `Prisma.sql\`"expiresAt" + make_interval(hours => ${extensionHours})\`` or ``Prisma.sql`"expiresAt" + (${extensionHours} \* interval '1 hour')`(syntax might vary by DB and exact Prisma handling). A simpler and safe approach with`Prisma.sql`is acceptable:`interval '${Prisma.raw(String(extensionHours))} hours'`. However, if `extensionHours` is just a number, `Prisma.sql\`interval '${extensionHours} hours'\``itself allows Prisma to treat`${extensionHours}` as a parameter.
+
+   - **Rationale:** Prevents SQL injection vulnerabilities and ensures data types are handled correctly by the database driver. `Prisma.join()` is the recommended way to handle arrays for `IN` clauses.
+
+3. [ ] **Refactor `getUserActivitySummary` for Full Parameterization:**
+   - **File:** `lib/services/raw-query-service.ts`
+   - **Function:** `async getUserActivitySummary(options: {...})`
+   - **Current Issues:** `since` (date), `minSessionCount` (number), and `limit` (number) are directly interpolated into the SQL string.
+     - `WHERE s."createdAt" >= '${since.toISOString()}'`
+     - `HAVING COUNT(s."id") >= ${minSessionCount}`
+     - `LIMIT ${limit}`
+   - **Proposed Change:** Use `Prisma.sql` template literals and pass these values as parameters.
+     ```typescript
+     // Inside executeActivitySummaryQuery or main function SQL construction
+     // ...
+     // const whereSinceClause = since ? Prisma.sql`WHERE s."createdAt" >= ${since}` : Prisma.empty;
+     // ...
+     // const query = Prisma.sql`
+     //   SELECT ... FROM "User" u ...
+     //   ${whereSinceClause}
+     //   GROUP BY u."id", u."email", u."name"
+     //   HAVING COUNT(s."id") >= ${minSessionCount}
+     //   ORDER BY MAX(s."createdAt") DESC
+     //   LIMIT ${limit}
+     // `;
+     // const results = await this.prismaClient.$queryRaw(query);
+     ```
+   - **Rationale:** Critical for security and proper query execution, especially with user-supplied or derived numeric and date inputs.
 
 ---

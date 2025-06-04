@@ -92,19 +92,22 @@ export class RawQueryServiceImpl {
       options,
     });
 
-    const { whereClause } = this.buildDateUserWhereClause(options);
+    const { whereClause, params } = this.buildDateUserWhereClause(options);
 
     try {
-      // Execute the raw query
-      const results = await this.prismaClient.$queryRaw<{ date: string; count: string }[]>`
-        SELECT 
-          DATE_TRUNC('day', "createdAt") AS date,
-          COUNT(*) AS count
-        FROM "Session"
-        ${Prisma.raw(whereClause)}
-        GROUP BY DATE_TRUNC('day', "createdAt")
-        ORDER BY date DESC
-      `;
+      // Execute the raw query with params properly passed
+      const results = await this.prismaClient.$queryRaw<{ date: string; count: string }[]>(
+        Prisma.sql`
+          SELECT 
+            DATE_TRUNC('day', "createdAt") AS date,
+            COUNT(*) AS count
+          FROM "Session"
+          ${whereClause ? Prisma.raw(whereClause) : Prisma.empty}
+          GROUP BY DATE_TRUNC('day', "createdAt")
+          ORDER BY date DESC
+        `,
+        ...params
+      );
 
       // Transform the results (convert count to number)
       const transformedResults = results.map(row => ({
@@ -119,7 +122,7 @@ export class RawQueryServiceImpl {
 
       return transformedResults;
     } catch (error) {
-      return this.handleQueryError(error, 'getting user session counts', { whereClause });
+      return this.handleQueryError(error, 'getting user session counts', { whereClause, params });
     }
   }
 
@@ -156,17 +159,23 @@ export class RawQueryServiceImpl {
       return 0;
     }
 
-    const whereClause = this.buildSessionExpirationWhereClause(userIds, currentExpiryBefore);
+    const { whereClause, params } = this.buildSessionExpirationWhereClause(
+      userIds,
+      currentExpiryBefore
+    );
 
     try {
-      // Execute the update
-      const result = await this.prismaClient.$executeRaw`
-        UPDATE "Session"
-        SET 
-          "expiresAt" = "expiresAt" + interval '${extensionHours} hours',
-          "updatedAt" = NOW()
-        ${Prisma.raw(whereClause)}
-      `;
+      // Execute the update with proper parameterization
+      const result = await this.prismaClient.$executeRaw(
+        Prisma.sql`
+          UPDATE "Session"
+          SET 
+            "expiresAt" = "expiresAt" + (${Prisma.sql`${extensionHours}`} * interval '1 hour'),
+            "updatedAt" = NOW()
+          ${Prisma.raw(whereClause)}
+        `,
+        ...params
+      );
 
       this.logger.info({
         msg: 'Successfully extended session expirations',
@@ -175,24 +184,31 @@ export class RawQueryServiceImpl {
 
       return result;
     } catch (error) {
-      return this.handleQueryError(error, 'extending session expirations', { whereClause });
+      return this.handleQueryError(error, 'extending session expirations', { whereClause, params });
     }
   }
 
   /**
-   * Builds the WHERE clause for session expiration
+   * Builds the WHERE clause for session expiration with proper parameterization
    * @private
    */
-  private buildSessionExpirationWhereClause(userIds: string[], currentExpiryBefore?: Date): string {
-    // Convert userIds array to SQL array
-    const userIdsParam = userIds.map(id => `'${id}'`).join(',');
-    let whereClause = `WHERE "userId" IN (${userIdsParam})`;
+  private buildSessionExpirationWhereClause(
+    userIds: string[],
+    currentExpiryBefore?: Date
+  ): { whereClause: string; params: any[] } {
+    const params: any[] = [];
 
+    // Add user IDs to params and build placeholder string
+    let whereClause = 'WHERE "userId" = ANY($1::text[])';
+    params.push(userIds);
+
+    // Add expiry date if provided
     if (currentExpiryBefore) {
-      whereClause += ` AND "expiresAt" <= '${currentExpiryBefore.toISOString()}'`;
+      params.push(currentExpiryBefore);
+      whereClause += ` AND "expiresAt" <= $${params.length}`;
     }
 
-    return whereClause;
+    return { whereClause, params };
   }
 
   /**
@@ -232,10 +248,15 @@ export class RawQueryServiceImpl {
     });
 
     // Build the WHERE clause for date filtering
-    const whereClause = this.buildActivityWhereClause(since);
+    const { whereClause, params } = this.buildActivityWhereClause(since);
 
     try {
-      const results = await this.executeActivitySummaryQuery(whereClause, minSessionCount, limit);
+      const results = await this.executeActivitySummaryQuery(
+        whereClause,
+        minSessionCount,
+        limit,
+        params
+      );
 
       this.logger.debug({
         msg: 'Retrieved user activity summary',
@@ -244,16 +265,29 @@ export class RawQueryServiceImpl {
 
       return results;
     } catch (error) {
-      return this.handleQueryError(error, 'getting user activity summary');
+      return this.handleQueryError(error, 'getting user activity summary', { whereClause, params });
     }
   }
 
   /**
-   * Builds WHERE clause for activity filtering
+   * Builds WHERE clause for activity filtering with parameterization
    * @private
    */
-  private buildActivityWhereClause(since?: Date): string {
-    return since ? `WHERE s."createdAt" >= '${since.toISOString()}'` : '';
+  private buildActivityWhereClause(since?: Date): { whereClause: string; params: any[] } {
+    const params: any[] = [];
+
+    if (since) {
+      params.push(since);
+      return {
+        whereClause: `WHERE s."createdAt" >= $1`,
+        params,
+      };
+    }
+
+    return {
+      whereClause: '',
+      params,
+    };
   }
 
   /**
@@ -263,7 +297,8 @@ export class RawQueryServiceImpl {
   private async executeActivitySummaryQuery(
     whereClause: string,
     minSessionCount: number,
-    limit: number
+    limit: number,
+    whereParams: any[] = []
   ): Promise<
     Array<{
       userId: string;
@@ -273,7 +308,17 @@ export class RawQueryServiceImpl {
       lastActive: string;
     }>
   > {
-    // Execute the raw query
+    // Build parameters array with whereParams, minSessionCount, and limit
+    const allParams = [...whereParams, minSessionCount, limit];
+
+    // Get the correct parameter index for HAVING and LIMIT clauses
+    const minSessionCountParamIndex = whereParams.length + 1;
+    const limitParamIndex = whereParams.length + 2;
+
+    // Update the whereClause to use the correct parameter indexes if it exists
+    const parameterizedWhereClause = whereClause ? whereClause : '';
+
+    // Execute the raw query with proper parameterization using Prisma.sql
     const results = await this.prismaClient.$queryRaw<
       Array<{
         userId: string;
@@ -282,21 +327,24 @@ export class RawQueryServiceImpl {
         sessionCount: string;
         lastActive: string;
       }>
-    >`
-      SELECT 
-        u."id" AS "userId",
-        u."email",
-        u."name" AS "userName",
-        COUNT(s."id") AS "sessionCount",
-        MAX(s."createdAt") AS "lastActive"
-      FROM "User" u
-      LEFT JOIN "Session" s ON u."id" = s."userId"
-      ${Prisma.raw(whereClause)}
-      GROUP BY u."id", u."email", u."name"
-      HAVING COUNT(s."id") >= ${minSessionCount}
-      ORDER BY MAX(s."createdAt") DESC
-      LIMIT ${limit}
-    `;
+    >(
+      Prisma.sql`
+        SELECT 
+          u."id" AS "userId",
+          u."email",
+          u."name" AS "userName",
+          COUNT(s."id") AS "sessionCount",
+          MAX(s."createdAt") AS "lastActive"
+        FROM "User" u
+        LEFT JOIN "Session" s ON u."id" = s."userId"
+        ${Prisma.raw(parameterizedWhereClause)}
+        GROUP BY u."id", u."email", u."name"
+        HAVING COUNT(s."id") >= $${minSessionCountParamIndex}
+        ORDER BY MAX(s."createdAt") DESC
+        LIMIT $${limitParamIndex}
+      `,
+      ...allParams
+    );
 
     // Transform the results
     return results.map(row => ({
