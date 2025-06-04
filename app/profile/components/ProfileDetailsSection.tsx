@@ -12,6 +12,26 @@ import ProfileField from './ProfileField'; // Correct default import
 import { updateUserName, NameUpdateState } from '@/app/profile/actions'; // Use correct type
 
 // Custom Hook for Profile Details Logic
+/**
+ * Custom hook to manage the logic for editing and displaying profile details,
+ * specifically for updating the user's name.
+ *
+ * It handles:
+ * - Local state for edit mode (`isEditingName`).
+ * - Interaction with the `updateUserName` server action using `useActionState`.
+ * - Displaying success/error messages via toast notifications.
+ * - Syncing updated user details back to the global Zustand `userStore`.
+ *
+ * @param {string | null} currentName - The current name of the user, typically from the Zustand store.
+ * @param {(details: Partial<User>) => void} setUserDetails - The Zustand store action to update user details.
+ * @returns {object} An object containing:
+ *  - `isEditingName`: Boolean state indicating if the name field is in edit mode.
+ *  - `setIsEditingName`: Function to toggle the `isEditingName` state.
+ *  - `state`: The state returned by `useActionState` from the `updateUserName` server action (contains `message`, `success`, `updatedName`).
+ *  - `handleFormSubmit`: A memoized function to wrap the `formAction` from `useActionState`, ensuring `storeUpdateAttemptedRef` is reset.
+ *  - `effectiveUserName`: The current name to be displayed, derived from the `currentName` prop.
+ *  - `formAction`: The action function returned by `useActionState` to be passed to the form.
+ */
 const useProfileDetails = (
   /* userId: string | null, */ currentName: string | null,
   setUserDetails: (details: Partial<User>) => void

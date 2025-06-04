@@ -130,6 +130,29 @@ function handleRegistrationSubmitError(
   }
 }
 
+/**
+ * A custom hook that manages the state and logic for the user registration form.
+ *
+ * This hook encapsulates:
+ * - Form state management using `react-hook-form` with Zod validation
+ * - Form submission handling with the `registerUserAction` server action
+ * - Error and success state management
+ * - Submission pending state tracking
+ * - Automatic redirection after successful registration
+ * - Session update on successful registration
+ *
+ * The hook implements a complete registration flow, from form validation to
+ * post-registration navigation, with appropriate error handling at each step.
+ * After successful registration, it updates the session and redirects to the
+ * dashboard or login page based on the session status.
+ *
+ * @returns {Object} An object containing:
+ *   - `form` - The react-hook-form instance with register, handleSubmit, and formState
+ *   - `onSubmit` - Form submission handler function to be used with form.handleSubmit
+ *   - `isPending` - Boolean indicating if submission is in progress
+ *   - `error` - Error message string or null if no error
+ *   - `success` - Success message string or null if not successful
+ */
 export function useRegistrationForm() {
   const router = useRouter();
   const { update: updateSession } = useSession();

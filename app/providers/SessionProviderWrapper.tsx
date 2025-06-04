@@ -2,7 +2,7 @@
 
 import { SessionProvider, useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { useUserStore } from '@/lib/store/userStore'; // Import the Zustand store
 import SessionErrorHandler from './SessionErrorHandler';
@@ -18,7 +18,8 @@ const UserStoreSync = () => {
   const { data: session, status } = useSession();
   const setUserDetails = useUserStore(state => state.setUserDetails);
   const clearUserDetails = useUserStore(state => state.clearUserDetails);
-  const log = logger.child({ component: 'UserStoreSync' });
+  // Memoize the logger instance to ensure reference stability across renders
+  const log = useMemo(() => logger.child({ component: 'UserStoreSync' }), []);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {

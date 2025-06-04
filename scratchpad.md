@@ -44,7 +44,7 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [ ] **Database Interaction & Schema** (Files: `lib/prisma.ts`, `prisma/` schema, Prisma-interacting services)
+- [ ] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
 
 Note that this may not be all of the files, so be sure to look at the entire codebase.
 
@@ -113,111 +113,142 @@ Here is a comprehensive list of suggestions to enhance this subsystem:
 
 ---
 
-## Database Interaction & Schema Improvement Checklist
+Okay, I've double-checked the suggestions. The core state management and client-side logic using providers, Zustand for global user state, and custom hooks for encapsulated logic is generally sound and follows good practices for a template.
 
-### Target File: `lib/services/raw-query-service.ts`
+The initial suggestion regarding the redirect delay in `useRegistrationForm.ts` is context-dependent. Given that `app/register/components/RegistrationForm.tsx` _does_ have an `<Alert>` to display success messages, the 300ms delay in `useSuccessRedirectEffect` is reasonable to allow this message to be briefly visible. Thus, I'm removing this as a required change.
 
-The following suggestions focus on enhancing the security and robustness of raw SQL queries by ensuring consistent and correct parameterization, aligning with Prisma's best practices.
+The other suggestions remain valid.
 
-1. [ ] **Refactor `getUserSessionCountsByDay` for Proper Parameterization:**
+Here is a comprehensive list of suggestions to improve the "State Management & Client-Side Logic" subsystem, formatted as a markdown checklist:
 
-   - **File:** `lib/services/raw-query-service.ts`
-   - **Function:** `async getUserSessionCountsByDay(options: {...})`
-   - **Current Issue:** The `params` array returned by `this.buildDateUserWhereClause(options)` (which contains the values for placeholders like `$1`, `$2` in the `whereClause` string) is not being passed as separate arguments to the `this.prismaClient.$queryRaw` call. The `whereClause` string (e.g., `WHERE "createdAt" >= $1`) is injected using `Prisma.raw()`, but the corresponding values are missing.
-   - **Suggestion:** Modify the `this.prismaClient.$queryRaw` call to correctly pass the `params` array.
-   - **Current Code Snippet (Conceptual):**
-     ```typescript
-     // Inside getUserSessionCountsByDay
-     const { whereClause, params } = this.buildDateUserWhereClause(options);
-     // ... SQL construction using whereClause ...
-     const results = await this.prismaClient.$queryRaw(
-       Prisma.sql`SELECT DATE_TRUNC('day', "createdAt") AS date, COUNT(*) AS count FROM "Session" ${whereClause ? Prisma.raw(whereClause) : Prisma.empty} GROUP BY DATE_TRUNC('day', "createdAt") ORDER BY date DESC`
-     );
-     ```
-   - **Proposed Change:**
-     ```typescript
-     // Inside getUserSessionCountsByDay
-     const { whereClause, params } = this.buildDateUserWhereClause(options);
-     // ... SQL construction ...
-     const results = await this.prismaClient.$queryRaw(
-       Prisma.sql`SELECT DATE_TRUNC('day', "createdAt") AS date, COUNT(*) AS count FROM "Session" ${whereClause ? Prisma.raw(whereClause) : Prisma.empty} GROUP BY DATE_TRUNC('day', "createdAt") ORDER BY date DESC`,
-       ...params // Spread the 'params' array here
-     );
-     ```
-   - **Rationale:** Ensures that values for placeholders in the dynamically built `whereClause` are properly and safely passed to the database driver, preventing SQL injection vulnerabilities and potential runtime errors.
+---
 
-2. [ ] **Refactor `extendSessionExpirations` for Secure Array and Date Parameterization:**
+## Checklist for State Management & Client-Side Logic Enhancements
 
-   - **File:** `lib/services/raw-query-service.ts`
-   - **Function:** `async extendSessionExpirations(options: {...})`
-   - **Current Issues & Suggestions:**
+### [x] 1. Memoize Logger Instance in `UserStoreSync`
 
-     - **User IDs IN Clause:** The `userIds` array is currently processed into a string like `"'id1','id2'"` and directly interpolated into the SQL: `WHERE "userId" IN (${userIdsParam})`. This is not fully parameterized.
+- **File**: `app/providers/SessionProviderWrapper.tsx`
+- **Component**: `UserStoreSync` (within `SessionProviderWrapper`)
+- **Current Situation**: The `log` instance is created using `logger.child({ component: 'UserStoreSync' })` directly within the component function body. This `log` instance is then used as a dependency in the `useEffect` hook.
 
-       - **Proposed Change:** Use `Prisma.join()` for array parameterization.
-         ```typescript
-         // Change from:
-         // const userIdsParam = userIds.map(id => `'${id}'`).join(',');
-         // let whereClause = `WHERE "userId" IN (${userIdsParam})`;
-         // To (within the Prisma.sql template literal):
-         // WHERE "userId" IN (${Prisma.join(userIds.map(id => Prisma.sql`${id}`))}) // If IDs need to be individually parameterized
-         // Or more simply if Prisma handles array types directly in IN for $executeRaw (check Prisma docs for $executeRaw array passing)
-         // It might be simpler to build the condition like:
-         // const userIdConditions = userIds.map(id => Prisma.sql`"userId" = ${id}`);
-         // const whereUserIdClause = Prisma.sql`WHERE (${Prisma.join(userIdConditions, ' OR ')})`;
-         // For IN clause, Prisma.join directly with values is best:
-         // WHERE "userId" IN (${Prisma.join(userIds)})
-         //
-         // The final Prisma.sql call would then look something like this for the WHERE part:
-         // const userInClause = userIds.length > 0 ? Prisma.sql`"userId" IN (${Prisma.join(userIds)})` : Prisma.empty;
-         // let fullWhereClause = userInClause;
-         // if (currentExpiryBefore) {
-         //   const expiryCondition = Prisma.sql`"expiresAt" <= ${currentExpiryBefore}`;
-         //   fullWhereClause = userInClause !== Prisma.empty ? Prisma.sql`${userInClause} AND ${expiryCondition}` : expiryCondition;
-         // }
-         // const finalSql = Prisma.sql`UPDATE "Session" SET "expiresAt" = "expiresAt" + interval '${Prisma.raw(String(extensionHours))} hours', "updatedAt" = NOW() WHERE ${fullWhereClause}`;
-         // Note: `extensionHours` handling is addressed next.
-         ```
-         Modify `buildSessionExpirationWhereClause` to return `Prisma.Sql` or parts that can be combined into one.
-         Alternatively, if constructing the raw SQL string remains, `userIds` should be passed as parameters and the SQL should use placeholders, e.g., `userId = ANY($1::text[])`.
+  ```typescript
+  // Inside UserStoreSync component
+  const log = logger.child({ component: 'UserStoreSync' });
 
-     - **`currentExpiryBefore` Date:** The date is interpolated as a string: `"expiresAt" <= '${currentExpiryBefore.toISOString()}'`.
+  useEffect(() => {
+    // ... logic using log ...
+  }, [session, status, setUserDetails, clearUserDetails, log]);
+  ```
 
-       - **Proposed Change:** Parameterize the date.
-         ```typescript
-         // If using Prisma.sql, change to:
-         // AND "expiresAt" <= ${currentExpiryBefore}
-         // Prisma.sql will handle the date object correctly.
-         ```
+- **Issue**: `logger.child()` typically returns a new object instance on each call. If `UserStoreSync` were to re-render for reasons unrelated to `session` or `status` changes, a new `log` instance would be created, potentially causing the `useEffect` hook to re-run unnecessarily due to a changed dependency reference (even if the logger's functionality is the same).
+- **Suggestion**: Memoize the `log` instance using `React.useMemo` to ensure its reference stability across re-renders of `UserStoreSync` unless its own dependencies change (which are none in this case).
+- **Implementation Detail**:
 
-     - **`extensionHours` Interval:** The interval is constructed with string interpolation: `interval '${extensionHours} hours'`.
-       - **Proposed Change:** While `Prisma.raw(String(extensionHours))` inside `Prisma.sql` is safer than direct interpolation, the most robust way for intervals when the value is dynamic is to pass `extensionHours` as a parameter and use database functions if complex, or ensure `Prisma.sql` handles it. For simple "X hours", `Prisma.sql\`"expiresAt" + make_interval(hours => ${extensionHours})\`` or ``Prisma.sql`"expiresAt" + (${extensionHours} \* interval '1 hour')`(syntax might vary by DB and exact Prisma handling). A simpler and safe approach with`Prisma.sql`is acceptable:`interval '${Prisma.raw(String(extensionHours))} hours'`. However, if `extensionHours` is just a number, `Prisma.sql\`interval '${extensionHours} hours'\``itself allows Prisma to treat`${extensionHours}` as a parameter.
+  ```typescript
+  import React, { ReactNode, useEffect, useState, useMemo } from 'react'; // Add useMemo
+  // ... other imports
 
-   - **Rationale:** Prevents SQL injection vulnerabilities and ensures data types are handled correctly by the database driver. `Prisma.join()` is the recommended way to handle arrays for `IN` clauses.
+  const UserStoreSync = () => {
+    const { data: session, status } = useSession();
+    const setUserDetails = useUserStore(state => state.setUserDetails);
+    const clearUserDetails = useUserStore(state => state.clearUserDetails);
+    // Memoize the logger instance
+    const log = useMemo(() => logger.child({ component: 'UserStoreSync' }), []); // Empty dependency array means it's created once
 
-3. [ ] **Refactor `getUserActivitySummary` for Full Parameterization:**
-   - **File:** `lib/services/raw-query-service.ts`
-   - **Function:** `async getUserActivitySummary(options: {...})`
-   - **Current Issues:** `since` (date), `minSessionCount` (number), and `limit` (number) are directly interpolated into the SQL string.
-     - `WHERE s."createdAt" >= '${since.toISOString()}'`
-     - `HAVING COUNT(s."id") >= ${minSessionCount}`
-     - `LIMIT ${limit}`
-   - **Proposed Change:** Use `Prisma.sql` template literals and pass these values as parameters.
-     ```typescript
-     // Inside executeActivitySummaryQuery or main function SQL construction
-     // ...
-     // const whereSinceClause = since ? Prisma.sql`WHERE s."createdAt" >= ${since}` : Prisma.empty;
-     // ...
-     // const query = Prisma.sql`
-     //   SELECT ... FROM "User" u ...
-     //   ${whereSinceClause}
-     //   GROUP BY u."id", u."email", u."name"
-     //   HAVING COUNT(s."id") >= ${minSessionCount}
-     //   ORDER BY MAX(s."createdAt") DESC
-     //   LIMIT ${limit}
-     // `;
-     // const results = await this.prismaClient.$queryRaw(query);
-     ```
-   - **Rationale:** Critical for security and proper query execution, especially with user-supplied or derived numeric and date inputs.
+    useEffect(() => {
+      if (status === 'authenticated' && session?.user) {
+        log.info('Syncing authenticated session to Zustand store', {
+          // Use the memoized log instance
+          userId: session.user.id,
+        });
+        setUserDetails({
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image,
+          role: session.user.role,
+        });
+      } else if (status === 'unauthenticated') {
+        log.info('Clearing Zustand store due to unauthenticated session'); // Use the memoized log instance
+        clearUserDetails();
+      }
+    }, [session, status, setUserDetails, clearUserDetails, log]); // log is now a stable dependency
+
+    return null;
+  };
+  ```
+
+- **Benefit**: Minor performance optimization and stricter adherence to React hook dependency rules.
+
+### [x] 2. Add Comprehensive JSDoc to `useRegistrationForm` Hook
+
+- **File**: `app/register/hooks/useRegistrationForm.ts`
+- **Current Situation**: The hook `useRegistrationForm` lacks a top-level JSDoc block explaining its overall purpose, how to use it, its parameters (if any were to be added, though currently it takes none), and the shape/meaning of its return value (`form`, `onSubmit`, `isPending`, `error`, `success`).
+- **Suggestion**: Add a detailed JSDoc comment at the beginning of the `useRegistrationForm` hook definition.
+- **Implementation Detail**:
+  ```typescript
+  /**
+   * @file Manages the state and logic for the user registration form.
+   *
+   * This hook encapsulates:
+   * - Form state management using `react-hook-form`.
+   * - Client-side validation using a Zod schema (`formSchema`).
+   * - Submission handling that calls the `registerUserAction` server action.
+   * - Tracking of submission pending state (`isPending`).
+   * - Storing and exposing success or error messages from the server action.
+   * - Effect for handling post-registration session updates and redirection.
+   *
+   * @returns {object} An object containing:
+   *  - `form`: The `react-hook-form` instance (includes `register`, `handleSubmit`, `formState`, etc.).
+   *  - `onSubmit`: The function to be passed to the form's `onSubmit` handler. It takes validated form data.
+   *  - `isPending`: A boolean indicating if the form submission is currently in progress.
+   *  - `error`: A string containing an error message if the registration failed, otherwise null.
+   *  - `success`: A string containing a success message if registration was successful, otherwise null.
+   */
+  export function useRegistrationForm() {
+    // ... existing hook code ...
+  }
+  ```
+- **Benefit**: Improved code clarity, maintainability, and easier understanding for developers (and AI agents) using or modifying the hook.
+
+### [x] 3. Add Comprehensive JSDoc to `useProfileDetails` Hook
+
+- **File**: `app/profile/components/ProfileDetailsSection.tsx` (where `useProfileDetails` is defined)
+- **Current Situation**: The custom hook `useProfileDetails` (defined within `ProfileDetailsSection.tsx`) lacks a JSDoc block detailing its purpose, parameters, and return values.
+- **Suggestion**: Add a detailed JSDoc comment at the beginning of the `useProfileDetails` hook definition.
+- **Implementation Detail**:
+
+  ```typescript
+  // Inside app/profile/components/ProfileDetailsSection.tsx
+
+  /**
+   * Custom hook to manage the logic for editing and displaying profile details,
+   * specifically for updating the user's name.
+   *
+   * It handles:
+   * - Local state for edit mode (`isEditingName`).
+   * - Interaction with the `updateUserName` server action using `useActionState`.
+   * - Displaying success/error messages via toast notifications.
+   * - Syncing updated user details back to the global Zustand `userStore`.
+   *
+   * @param {string | null} currentName - The current name of the user, typically from the Zustand store.
+   * @param {(details: Partial<User>) => void} setUserDetails - The Zustand store action to update user details.
+   * @returns {object} An object containing:
+   *  - `isEditingName`: Boolean state indicating if the name field is in edit mode.
+   *  - `setIsEditingName`: Function to toggle the `isEditingName` state.
+   *  - `state`: The state returned by `useActionState` from the `updateUserName` server action (contains `message`, `success`, `updatedName`).
+   *  - `handleFormSubmit`: A memoized function to wrap the `formAction` from `useActionState`, ensuring `storeUpdateAttemptedRef` is reset.
+   *  - `effectiveUserName`: The current name to be displayed, derived from the `currentName` prop.
+   *  - `formAction`: The action function returned by `useActionState` to be passed to the form.
+   */
+  const useProfileDetails = (
+    currentName: string | null,
+    setUserDetails: (details: Partial<User>) => void // User type might need import or adjustment based on actual User type
+  ) => {
+    // ... existing hook code ...
+  };
+  ```
+
+- **Benefit**: Enhanced readability and maintainability of the profile editing logic. Makes it easier for others (including AI) to understand and safely extend this part of the application.
 
 ---
