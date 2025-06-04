@@ -20,10 +20,22 @@ export const generalApiLimiter = new RateLimiterMemory({
   blockDuration: generalApiDuration, // Block for the same duration as the window
 });
 
-// Example for a stricter limiter - can be used if specific sensitive routes are identified later
 const authApiPoints = 20; // Max 20 requests
 const authApiDuration = 15 * 60; // Per 15 minutes by IP
 
+/**
+ * Stricter Auth API Rate Limiter
+ * Reserved for future use on sensitive auth-related endpoints.
+ *
+ * This limiter is not currently used by any endpoints as auth is handled by NextAuth.js,
+ * but is provided as a utility for potential custom auth API routes that may be added later.
+ *
+ * Examples of where this could be used:
+ * - Custom registration endpoints
+ * - Password reset functionality
+ * - Account verification endpoints
+ * - Any sensitive operations that require additional protection
+ */
 export const authApiLimiter = new RateLimiterMemory({
   points: authApiPoints,
   duration: authApiDuration,

@@ -118,6 +118,27 @@ describe('API Logger Service', () => {
       const path = getRequestPath(mockReq);
       expect(path).toBe('/api/test');
     });
+
+    it('should extract path from URL object', () => {
+      const url = new URL('http://localhost:3000/api/data');
+      const path = getRequestPath(undefined, url);
+      expect(path).toBe('/api/data');
+    });
+
+    it('should extract path from valid URL string', () => {
+      const path = getRequestPath(undefined, 'http://localhost:3000/api/users');
+      expect(path).toBe('/api/users');
+    });
+
+    it('should return standardized placeholder for invalid URL string', () => {
+      const path = getRequestPath(undefined, 'invalid-url-string');
+      expect(path).toBe('/malformed_url_string');
+    });
+
+    it('should return /unknown when no request or URL is provided', () => {
+      const path = getRequestPath();
+      expect(path).toBe('/unknown');
+    });
   });
 
   describe('getRequestMethod', () => {

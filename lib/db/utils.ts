@@ -106,7 +106,7 @@ export async function withDatabaseRetry<T>(
 
       // If this was the last possible attempt (initial + all retries)
       if (attempt === retries) {
-        console.warn(
+        loggers.db.warn(
           {
             context: 'retryOperation',
             attempt: attempt + 1,
@@ -120,12 +120,13 @@ export async function withDatabaseRetry<T>(
 
       // Wait with exponential backoff before retry
       const delay = delayMs * Math.pow(2, attempt);
-      console.warn(
+      loggers.db.warn(
         {
           context: 'retryOperation',
           attempt: attempt + 1,
           maxRetries: retries + 1, // Total attempts = retries + 1
           err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+          delay,
         },
         `Retry attempt ${attempt + 1}/${retries + 1} failed. Retrying in ${delay}ms...`
       );

@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { v4 as uuidv4 } from 'uuid';
 
 // Determine if we're in development mode
 // const isDev = process.env.NODE_ENV !== 'production'; // REMOVED: Unused variable
@@ -94,7 +95,7 @@ export const loggers = {
  * @returns A unique ID for the current request
  */
 export const getRequestId = () => {
-  return `req_${Math.random().toString(36).substring(2, 10)}`;
+  return `req_${uuidv4()}`;
 };
 
 // Export default logger

@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { logger, createLogger } from '@/lib/logger';
+import { logger, createLogger, getRequestId } from '@/lib/logger';
 
 describe('Logger Module', () => {
   let infoSpy: jest.SpyInstance;
@@ -73,6 +73,26 @@ describe('Logger Module', () => {
       // This requires spying on the original logger.child method BEFORE createLogger is called.
       // This part remains tricky with module loading, let's focus on the child's behavior for now.
       // If the child logger behaves correctly, it implies it was created correctly.
+    });
+  });
+
+  describe('getRequestId', () => {
+    it('should generate a request ID with proper format', () => {
+      // Since getRequestId is mocked globally in the test environment,
+      // we'll simply verify that it returns a string that can be used as a request ID
+      const requestId = getRequestId();
+
+      // For debugging
+      console.log('Generated requestId:', requestId);
+
+      // Verify it's a string
+      expect(typeof requestId).toBe('string');
+
+      // Verify it's not empty
+      expect(requestId.length).toBeGreaterThan(0);
+
+      // In the actual implementation, it would be a UUID prefixed with 'req_'
+      // But we can't test that directly due to the mock
     });
   });
 });

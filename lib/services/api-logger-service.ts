@@ -99,7 +99,8 @@ export function getRequestPath(req?: NextRequest | Request, url?: URL | string):
       try {
         return new URL(url).pathname;
       } catch {
-        return url;
+        // Return a standardized placeholder for malformed URL strings
+        return '/malformed_url_string';
       }
     }
     // Safely access pathname property, falling back to /unknown if it doesn't exist
