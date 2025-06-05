@@ -1,10 +1,20 @@
 // JSDOM-specific setup for browser-like environment tests
 import '@testing-library/jest-dom';
 import { defaultFallbackInView } from 'react-intersection-observer';
+import { TextEncoder, TextDecoder } from 'util';
 
 // Set IS_REACT_ACT_ENVIRONMENT to true for React 18+ compatibility with testing-library
 (global as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
+
+// Mock TextEncoder and TextDecoder which are not available in JSDOM by default
+// These are often used by libraries like next-auth or other crypto-related functions
+if (typeof (global as unknown as Record<string, unknown>).TextEncoder === 'undefined') {
+  (global as unknown as Record<string, unknown>).TextEncoder = TextEncoder;
+}
+if (typeof (global as unknown as Record<string, unknown>).TextDecoder === 'undefined') {
+  (global as unknown as Record<string, unknown>).TextDecoder = TextDecoder;
+}
 
 // Mock next/router - only needed in JSDOM environment
 jest.mock('next/router', () => require('next-router-mock'));
