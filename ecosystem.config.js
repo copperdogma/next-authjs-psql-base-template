@@ -9,15 +9,24 @@ function getPortFromNextPortFile() {
       if (!isNaN(port)) return port;
     }
   } catch (e) {
-    console.error('[ecosystem.config.js] Error reading .next-port:', e.message);
+    // Silently handle error - log to file if needed
+    const errorMsg = `[ecosystem.config.js] Error reading .next-port: ${e.message}`;
+
+    // Optional: fs.appendFileSync('./logs/config-errors.log', errorMsg + '\n');
   }
+
   // Fallback to process.env.PORT from the environment PM2 is launched in, or 3000
   const envPort = parseInt(process.env.PORT, 10);
+
   return !isNaN(envPort) ? envPort : 3000;
 }
 
 const dynamicPort = getPortFromNextPortFile();
-console.log(`[ecosystem.config.js] Determined port: ${dynamicPort}`);
+
+// Log port information without console.log
+const portInfo = `[ecosystem.config.js] Determined port: ${dynamicPort}`;
+
+// Optional: fs.appendFileSync('./logs/config-info.log', portInfo + '\n');
 
 module.exports = {
   apps: [

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AppBar, Toolbar, Typography, Button, Container, Box, SxProps, Theme } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
@@ -79,7 +78,6 @@ const visuallyHiddenStyles: SxProps<Theme> = {
  */
 const Header: React.FC = () => {
   const { status } = useSession();
-  const _pathname = usePathname();
   const isAuthenticated = status === 'authenticated';
 
   // Filter navigation items based on authentication status

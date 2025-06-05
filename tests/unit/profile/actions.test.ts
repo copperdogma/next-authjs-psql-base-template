@@ -12,7 +12,6 @@
  * See: tests/e2e/profile/edit-profile.spec.ts for the actual implementation tests.
  */
 
-import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
 import { User } from '@prisma/client';
 import { ServiceResponse } from '@/types';
 

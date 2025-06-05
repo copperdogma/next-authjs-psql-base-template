@@ -2,7 +2,6 @@ import { mockDeep, mockReset, MockProxy } from 'jest-mock-extended';
 import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import * as pino from 'pino';
 import { UserService } from '../../../../lib/services/user-service';
-import { type ServiceResponse } from '@/types';
 
 /**
  * UserService Unit Tests

@@ -113,6 +113,7 @@ const customJestConfig = {
         '<rootDir>/tests/integration/**/*.test.ts?(x)', // Added from tests/config
       ],
       setupFilesAfterEnv: [
+        '<rootDir>/jest.setup.ts', // Shared setup without JSDOM specifics
         '<rootDir>/jest.setup.api.js',
         '<rootDir>/tests/config/setup/jest.setup.api.mocks.ts',
         '<rootDir>/tests/config/setup/node-setup.js',
@@ -164,7 +165,8 @@ const customJestConfig = {
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
       setupFilesAfterEnv: [
-        '<rootDir>/jest.setup.ts',
+        '<rootDir>/jest.setup.ts', // Shared base setup
+        '<rootDir>/jest.setup.jsdom.ts', // JSDOM-specific setup
         'react-intersection-observer/test-utils',
         '<rootDir>/tests/config/setup/browser-setup.js',
       ],

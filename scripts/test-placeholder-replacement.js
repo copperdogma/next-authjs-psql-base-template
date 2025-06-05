@@ -42,6 +42,23 @@ console.log('\nScanning codebase for placeholder patterns...');
 const excludeDirs = ['node_modules', '.git', '.next', 'coverage', 'logs'];
 const allPlaceholders = new Set();
 
+// Scan a single file for placeholders
+function scanFile(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const placeholderMatches = content.match(/{{YOUR_[A-Z_]+}}/g);
+
+    if (placeholderMatches) {
+      for (const match of placeholderMatches) {
+        allPlaceholders.add(match);
+      }
+    }
+  } catch (error) {
+    // Skip binary files or files with read errors
+  }
+}
+
+// Scan a directory recursively
 function scanDirectory(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -56,18 +73,7 @@ function scanDirectory(dir) {
     if (entry.isDirectory()) {
       scanDirectory(fullPath);
     } else {
-      try {
-        const content = fs.readFileSync(fullPath, 'utf8');
-        const placeholderMatches = content.match(/{{YOUR_[A-Z_]+}}/g);
-
-        if (placeholderMatches) {
-          for (const match of placeholderMatches) {
-            allPlaceholders.add(match);
-          }
-        }
-      } catch (error) {
-        // Skip binary files or files with read errors
-      }
+      scanFile(fullPath);
     }
   }
 }
@@ -83,6 +89,7 @@ console.log(allPlaceholdersArray);
 const missingPlaceholders = allPlaceholdersArray.filter(placeholder => {
   // Extract the key without {{ and }}
   const key = placeholder.slice(2, -2);
+
   return !placeholderKeys.includes(key);
 });
 

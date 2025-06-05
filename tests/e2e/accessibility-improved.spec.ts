@@ -2,6 +2,7 @@ import { test, expect } from './utils/test-base';
 import AxeBuilder from '@axe-core/playwright';
 import { ROUTES } from '../utils/routes';
 import { waitForElementToBeVisible } from '../utils/selectors';
+import { takeMobileScreenshot } from './utils/mobile-screenshot-helpers';
 
 /**
  * Accessibility Tests
@@ -133,10 +134,7 @@ test.describe('Accessibility Tests', () => {
     await expect(page.locator('header.MuiAppBar-root')).toBeVisible({ timeout: 10000 });
 
     // Take a screenshot
-    await page.screenshot({
-      path: 'tests/e2e/screenshots/a11y-mobile.png',
-      fullPage: true,
-    });
+    await takeMobileScreenshot(page, 'a11y-mobile.png', { fullPage: true });
 
     // Run the accessibility scan
     const accessibilityScanResults = await new AxeBuilder({ page })

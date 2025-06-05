@@ -1,7 +1,5 @@
 import { jest } from '@jest/globals';
-import { PrismaClient, User as PrismaUser, UserRole } from '@prisma/client';
 import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
-import { logger } from '@/lib/logger';
 import { prismaMock } from '../../../../mocks/db/prismaMocks';
 import { User } from '@prisma/client';
 
@@ -15,15 +13,6 @@ jest.mock('@/lib/logger', () => ({
     child: jest.fn().mockReturnThis(),
   },
 }));
-
-// Mock PrismaClient
-const mockPrisma = {
-  user: {
-    update: jest.fn<(...args: any[]) => Promise<PrismaUser>>(),
-    findUnique: jest.fn<(...args: any[]) => Promise<PrismaUser | null>>(),
-  },
-  // No longer needed: $executeRaw: jest.fn<(...args: any[]) => Promise<number>>(),
-};
 
 describe('ProfileService', () => {
   let profileService: ProfileServiceImpl;

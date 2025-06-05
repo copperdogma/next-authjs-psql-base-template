@@ -15,14 +15,14 @@ We've centralized all tests in a unified `/tests` directory with the following s
   /e2e/                   # Playwright E2E tests
     /auth/                # Authentication tests
     /fixtures/            # Test fixtures
+    /utils/               # E2E test utilities
     accessibility.spec.ts # Accessibility tests
     navigation.spec.ts    # Navigation tests
     performance.spec.ts   # Performance tests
   /mocks/                 # Shared test mocks
   /utils/                 # Shared test utilities
+    mobile-screenshot-helpers.ts # Mobile screenshot utilities
   /config/                # Test configurations
-    /jest.config.js       # Jest configuration
-    /playwright.config.ts # Playwright configuration
     /setup/               # Test setup files
 ```
 
@@ -45,6 +45,14 @@ The following MDC files provide in-depth guidance for testing:
 
 These files are automatically loaded in AI contexts when working with the corresponding test files.
 
+## Specific Testing Guides
+
+For more detailed guidance on specific testing topics, refer to these documentation files:
+
+- **[E2E Testing](./e2e-testing.md)**: Comprehensive guide to end-to-end testing with Playwright
+- **[Mobile Testing](./mobile-testing.md)**: Guide to testing on mobile viewports and devices
+- **[Screenshot Helpers](./screenshot-helpers.md)**: Documentation for screenshot utilities and conventions
+
 ## Implementation Details
 
 For implementation-specific details, refer to the README files in each test directory:
@@ -65,6 +73,9 @@ npm run test:e2e        # Run all E2E tests
 npm run test:e2e:ui     # Run E2E tests with UI mode
 npm run test:e2e:debug  # Run E2E tests with debugging
 npm run test:e2e:report # View E2E test report
+
+# Mobile Tests
+npm run test:e2e -- --project=mobile  # Run mobile-specific E2E tests
 ```
 
 ## Authentication Testing
@@ -134,6 +145,8 @@ test('signed in state', () => {
 5. **User Actions**: Use `fireEvent` for interactions
 6. **Async**: Use `waitFor` before assertions
 7. **Relative Imports**: Use relative imports in test files to improve maintainability
+8. **Error Screenshots**: Use screenshot helpers to capture error states
+9. **Mobile Testing**: Use dedicated mobile helpers and viewport settings
 
 ## Test Types
 
@@ -158,12 +171,14 @@ test('signed in state', () => {
    - Critical path testing
    - Performance testing
    - Accessibility testing
+   - Mobile viewport testing
 
 4. **Specialized Tests**
    - Security testing
    - Performance benchmarks
    - Accessibility compliance
    - Browser compatibility
+   - Mobile-specific interactions
 
 ## Test Data Management
 

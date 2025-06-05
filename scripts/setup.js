@@ -36,6 +36,7 @@ function loadAnswersFromFile(filePath) {
   if (fs.existsSync(filePath)) {
     try {
       const rawData = fs.readFileSync(filePath);
+
       return JSON.parse(rawData);
     } catch (error) {
       console.warn(
@@ -43,9 +44,11 @@ function loadAnswersFromFile(filePath) {
           `Warning: Could not read or parse ${filePath}. Proceeding with interactive prompts. Error: ${error.message}`
         )
       );
+
       return {};
     }
   }
+
   return {};
 }
 
@@ -163,6 +166,7 @@ async function setupEnvironment(initialAnswers) {
 
     if (!overwrite && !initialAnswers.overwriteEnv) {
       console.log(chalk.yellow('Skipping environment setup.'));
+
       return;
     }
   }
@@ -170,6 +174,7 @@ async function setupEnvironment(initialAnswers) {
   try {
     if (!fs.existsSync('.env.example')) {
       console.error(chalk.red('.env.example file not found. Cannot set up environment variables.'));
+
       return;
     }
 
@@ -272,6 +277,7 @@ async function replacePlaceholders() {
       } else if (finalAnswers[key] === undefined) {
         finalAnswers[key] = config.default;
       }
+
       // If the default was a function and inquirer used it, the value is already set.
       // If a value was preloaded, it's used.
       // If no value was preloaded, and default is a function, calculate it now.
@@ -313,6 +319,7 @@ async function replacePlaceholders() {
 
     console.log(chalk.green('✅ Placeholders replaced successfully'));
     await setupEnvironment(finalAnswers); // Pass the final answers
+
     return true;
   } catch (error) {
     console.error(chalk.red(`Error replacing placeholders: ${error.message}`));
@@ -323,6 +330,7 @@ async function replacePlaceholders() {
         )
       );
     }
+
     return false;
   }
 }
@@ -428,6 +436,7 @@ async function main() {
   if (success) {
     console.log(chalk.green.bold('✅ Setup completed successfully!'));
     console.log(chalk.blue('Next steps:'));
+
     // console.log(chalk.blue('1. Run `npm install` to install dependencies')); // Already done
     console.log(chalk.blue('1. Ensure your PostgreSQL server is running and accessible.'));
     console.log(

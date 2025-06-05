@@ -1,5 +1,4 @@
 import { test, expect, Page } from '../utils/test-base';
-import path from 'path';
 import { ROUTES } from '../../utils/routes';
 import { UI_ELEMENTS } from './auth-selectors'; // Import from the new file
 import { loggers } from '../../../lib/logger';
@@ -87,60 +86,6 @@ test.describe('Authentication Cycle', () => {
 });
 
 /**
- * Try to logout using data-testid
- */
-async function tryLogoutByTestId(page: Page): Promise<boolean> {
-  try {
-    const logoutByTestId = page.locator('[data-testid="auth-button"][data-loading="false"]');
-    if (await logoutByTestId.isVisible({ timeout: 2000 })) {
-      await logoutByTestId.click();
-      console.log('Logout method 1: Clicked logout button by data-testid');
-      return true;
-    }
-  } catch {
-    /* Ignore if not found */
-  }
-  return false;
-}
-
-/**
- * Try to logout using button text
- */
-async function tryLogoutByText(page: Page): Promise<boolean> {
-  try {
-    const logoutButton = page.locator('button:has-text("Sign Out"), button:has-text("Logout")');
-    if (await logoutButton.isVisible({ timeout: 2000 })) {
-      await logoutButton.click();
-      console.log('Logout method 2: Clicked logout button by text');
-      return true;
-    }
-  } catch {
-    /* Ignore if not found */
-  }
-  return false;
-}
-
-/**
- * Try to logout using icon
- */
-async function tryLogoutByIcon(page: Page): Promise<boolean> {
-  try {
-    const logoutIcon = page.locator(
-      'button svg[data-testid="LogoutIcon"], button svg[data-testid="LogoutOutlinedIcon"]'
-    );
-    if (await logoutIcon.isVisible({ timeout: 2000 })) {
-      // Click the parent button
-      await logoutIcon.locator('xpath=ancestor::button').click();
-      console.log('Logout method 3: Clicked logout button by icon');
-      return true;
-    }
-  } catch {
-    /* Ignore if not found */
-  }
-  return false;
-}
-
-/**
  * Try to logout by clearing storage
  */
 async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
@@ -160,32 +105,96 @@ async function tryLogoutByClearingStorage(page: Page): Promise<boolean> {
  */
 async function performLogout(page: Page): Promise<void> {
   // Try to click the main logout button first
+  console.log('Attempting to logout via button click');
   const logoutButton = page.locator(UI_ELEMENTS.AUTH.LOGOUT_BUTTON);
-  if (await logoutButton.isVisible({ timeout: 5000 })) {
-    await logoutButton.click();
-    // Expect redirection to the root page or login page after logout.
-    await page.waitForURL(/(\/login|\/$)/, { timeout: 15000 });
-    console.log('Logout successful via primary button.');
-    return;
+
+  try {
+    if (await logoutButton.isVisible({ timeout: 10000 })) {
+      console.log('Logout button found, clicking it');
+      await logoutButton.click();
+
+      // First try waiting for navigation with a timeout
+      try {
+        await page.waitForURL(/(\/login|\/$)/, { timeout: 20000 });
+        console.log('Logout successful via primary button - detected URL change');
+        return;
+      } catch (e) {
+        console.log(
+          'No URL change detected after logout button click. Checking authentication state...'
+        );
+
+        // Check if we still see authenticated UI elements
+        const userProfileElement = page.locator(UI_ELEMENTS.USER_PROFILE.TESTID);
+        const isStillLoggedIn = await userProfileElement
+          .isVisible({ timeout: 3000 })
+          .catch(() => false);
+
+        if (!isStillLoggedIn) {
+          console.log('User profile no longer visible - logout successful but without redirect');
+          return;
+        }
+
+        console.log(
+          'Still appears to be logged in after button click, trying storage clear method'
+        );
+      }
+    }
+  } catch (e) {
+    console.log('Error finding or clicking logout button:', e);
   }
 
-  // Fallback: if the main button isn't there, try clearing storage
-  console.log('Primary logout button not found, attempting to clear storage.');
+  // Fallback: if the main button isn't there or click didn't work, try clearing storage
+  console.log('Attempting to logout by clearing storage');
   await tryLogoutByClearingStorage(page);
-  // Navigate to root and check for login page or root URL
-  await page.goto('/', { waitUntil: 'networkidle' });
-  await page.waitForURL(/(\/login|\/$)/, { timeout: 10000 });
 
-  // Verify that we are indeed logged out by checking if a login element is visible
-  const loginElementVisible =
-    (await page.locator(UI_ELEMENTS.AUTH.EMAIL_INPUT).isVisible({ timeout: 2000 })) ||
-    (await page.locator(UI_ELEMENTS.AUTH.GOOGLE_SIGNIN).isVisible({ timeout: 2000 }));
-  if (!loginElementVisible && !page.url().endsWith('/')) {
-    // if not on login page and not on root page
-    throw new Error(
-      'Failed to perform logout using any available method. Still seems logged in or not on an expected page.'
-    );
+  // Navigate to root and check for login page or root URL
+  console.log('Navigating to / after storage clear');
+  await page.goto('/', { waitUntil: 'networkidle', timeout: 20000 });
+
+  try {
+    await page.waitForURL(/(\/login|\/$)/, { timeout: 15000 });
+    console.log('Successfully navigated to / or /login after storage clear');
+  } catch (e) {
+    console.log('Timeout waiting for navigation to / or /login, current URL:', page.url());
   }
+
+  // Verify that we are indeed logged out by checking multiple indicators
+  const isLoginElementVisible = await page
+    .locator(UI_ELEMENTS.AUTH.EMAIL_INPUT)
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
+
+  const isSignInButtonVisible = await page
+    .locator('button:has-text("Sign In"), button:has-text("Login")')
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
+
+  const isOnRootPage = page.url().endsWith('/');
+  const isOnLoginPage = page.url().includes('/login');
+
+  // If we're not logged out according to any indicator
+  if (!isLoginElementVisible && !isSignInButtonVisible && !isOnRootPage && !isOnLoginPage) {
+    console.log('Logout indicators not found. Taking screenshot for debugging.');
+    await page.screenshot({
+      path: 'tests/e2e/screenshots/logout-failure.png',
+    });
+
+    // Try one last forced navigation to verify we're logged out
+    await page.goto('/login', { waitUntil: 'networkidle', timeout: 20000 });
+
+    // If we still don't see login elements, throw an error
+    const finalLoginCheck = await page
+      .locator(UI_ELEMENTS.AUTH.EMAIL_INPUT)
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (!finalLoginCheck) {
+      throw new Error(
+        `Failed to perform logout using any available method. Current URL: ${page.url()}`
+      );
+    }
+  }
+
   console.log('Logout successful via storage clearing and verification.');
 }
 

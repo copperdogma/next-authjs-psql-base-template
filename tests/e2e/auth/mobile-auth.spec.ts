@@ -11,7 +11,7 @@ import {
  * These tests verify authentication flows work correctly on mobile devices
  */
 test.describe('Mobile Authentication', () => {
-  test.beforeEach(async ({ page, context }) => {
+  test.beforeEach(async ({ context }) => {
     // Clear cookies to ensure we start unauthenticated
     await context.clearCookies();
   });
