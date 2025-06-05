@@ -34,8 +34,9 @@ console.log(`BASE_URL: ${BASE_URL}`);
 console.log(`TIMEOUT_TEST: ${TIMEOUT_TEST}`);
 console.log(`TIMEOUT_SERVER: ${TIMEOUT_SERVER}`);
 
-// Authentication state file path
+// Authentication state file paths
 export const STORAGE_STATE = path.join(__dirname, 'tests/.auth/user.json');
+export const MOBILE_STORAGE_STATE = path.join(__dirname, 'tests/.auth/mobile-user.json');
 
 // Ensure the auth directory exists
 const authDir = path.dirname(STORAGE_STATE);
@@ -45,6 +46,16 @@ if (!fs.existsSync(authDir)) {
 if (!fs.existsSync(STORAGE_STATE)) {
   fs.writeFileSync(
     STORAGE_STATE,
+    JSON.stringify({
+      cookies: [],
+      origins: [],
+    })
+  );
+}
+// Create mobile storage state file if it doesn't exist
+if (!fs.existsSync(MOBILE_STORAGE_STATE)) {
+  fs.writeFileSync(
+    MOBILE_STORAGE_STATE,
     JSON.stringify({
       cookies: [],
       origins: [],
@@ -147,11 +158,16 @@ const config: PlaywrightTestConfig = defineConfig({
       name: 'Mobile Chrome',
       use: {
         ...devices['Pixel 7'],
-        storageState: STORAGE_STATE, // Use the auth state for authenticated mobile testing
+        storageState: MOBILE_STORAGE_STATE, // Use mobile-specific storage state
       },
       dependencies: ['setup'],
-      // Define test patterns for mobile specifically, or use the same as desktop chromium
-      testMatch: [/auth\/login-logout-cycle\.spec\.ts/, /auth\/redirect\.test\.ts/, /profile\/.*/],
+      // Define test patterns for mobile specifically
+      testMatch: [
+        /auth\/mobile-auth\.spec\.ts/, // Use our new mobile auth test file
+        /auth\/login-logout-cycle\.spec\.ts/,
+        /auth\/redirect\.test\.ts/,
+        /profile\/.*/,
+      ],
       testIgnore: [
         /.*\.setup\.ts/,
         /navigation-improved\.spec\.ts/,

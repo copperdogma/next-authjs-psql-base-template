@@ -40,7 +40,7 @@ const sharedConfig = {
     '^@/tests/(.*)$': '<rootDir>/tests/$1',
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/$1',
-    
+
     // Add mocks from the tests/config/jest.config.js
     '^next-themes$': '<rootDir>/tests/mocks/next-themes.js',
     '^../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
@@ -97,7 +97,7 @@ const customJestConfig = {
   // Global setup/teardown - added from tests/config/jest.config.js
   globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
-  
+
   projects: [
     // Node environment
     {
@@ -164,7 +164,7 @@ const customJestConfig = {
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
       setupFilesAfterEnv: [
-        '<rootDir>/jest.setup.ts', 
+        '<rootDir>/jest.setup.ts',
         'react-intersection-observer/test-utils',
         '<rootDir>/tests/config/setup/browser-setup.js',
       ],
@@ -190,7 +190,7 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
-    
+
     // Add specific thresholds from tests/config/jest.config.js
     './components/auth/SignInButton.tsx': {
       statements: 90,
