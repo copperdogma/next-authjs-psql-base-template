@@ -44,7 +44,7 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
+- [ ] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
 
 Note that this may not be all of the files, so be sure to look at the entire codebase.
 
@@ -93,12 +93,18 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **Refactor `buildActivityWhereClause` for Parameterization**: Updated to use placeholders for date filtering with parameter values.
     - [x] **Refactor `executeActivitySummaryQuery` and `getUserActivitySummary` for Full Parameterization**: Modified to properly parameterize all user inputs (since date, minSessionCount, limit) using placeholder syntax.
   - [x] **State Management & Client-Side Logic** (Files: `app/providers/`, custom hooks, context providers)
-  - [ ] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
+  - [x] **Utility Libraries and Shared Functions** (Files: `lib/` (excluding auth, prisma, redis), `lib/utils/`)
     - [x] **1. Centralize Logging in `withDatabaseRetry`**
     - [x] **2. Enhance Request ID Generation with UUID**
-    - [ ] **3. Standardize Invalid URL Path Extraction**
+    - [x] **3. Standardize Invalid URL Path Extraction**
     - [x] **4. Clarify or Remove Unused `authApiLimiter`**
   - [ ] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
+    - [x] **Consolidate Basic E2E Smoke Tests**
+    - [x] **Evaluate and Potentially Remove `tests/e2e/auth/exact-repro.test.ts`**
+    - [x] **Relocate or Remove Debugging Helper Scripts from `tests/` Directory**
+    - [x] **Consolidate Jest Configuration**
+    - [x] **Consolidate Playwright Configuration**
+    - [ ] **Remove Potentially Orphaned/Redundant Theme Mock**
   - [ ] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
   - [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
   - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
@@ -109,128 +115,86 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ---
 
-## Checklist for Utility Libraries and Shared Functions Enhancements
+Okay, I've double-checked my previous analysis against the codebase and best practices. Here's a comprehensive Markdown checklist of suggestions to enhance the Testing Suite for your Next.js, AuthJS, and PSQL template. The goal is to make it simple, elegant, and robust for AI-driven projects.
 
-### [x] 1. Centralize Logging in `withDatabaseRetry`
+## Testing Suite Enhancement Checklist
 
-- **File**: `lib/db/utils.ts`
-- **Function**: `withDatabaseRetry`
-- **Current Situation**: The `withDatabaseRetry` function currently uses `console.warn` for logging retry attempts and failures within the retry loop. While `checkDatabaseConnection` in the same file uses `loggers.db.error`, `withDatabaseRetry` does not.
-  ```typescript
-  // Snippet from withDatabaseRetry
-  // ...
-  if (attempt === retries) {
-    console.warn(
-      // <--- Direct console usage
-      {
-        context: 'retryOperation',
-        attempt: attempt + 1,
-        // ...
-      },
-      `Final attempt ${attempt + 1}/${retries + 1} failed.`
-    );
-    break;
-  }
-  // ...
-  console.warn(
-    // <--- Direct console usage
-    {
-      context: 'retryOperation',
-      attempt: attempt + 1,
-      // ...
-    },
-    `Retry attempt ${attempt + 1}/${retries + 1} failed. Retrying in ${delay}ms...`
-  );
-  // ...
-  ```
-- **Issue**: Direct use of `console.warn` bypasses the application's structured logging system (Pino via `lib/logger.ts`). This leads to inconsistent log formats, inability to control log levels for these specific warnings centrally, and potential loss of these logs if console output isn't being captured in certain environments.
-- **Best Practice**: Utilize the application's centralized logger for all application-level logging to ensure consistency in format, level control, and output routing.
-- **Suggestion**:
-  - Ensure `loggers` (or a specific child logger like `loggers.db`) is imported from `lib/logger.ts` into `lib/db/utils.ts` if not already (it appears to be imported for `checkDatabaseConnection`).
-  - Replace the `console.warn` calls within `withDatabaseRetry` with `loggers.db.warn` (or an appropriate child logger).
-  - Adjust the log object to fit the structured logging approach, ensuring context and error details are passed correctly.
-- **Example Change**:
+### [ ] 🧹 Removals & Consolidations (Medium Priority)
 
-  ```typescript
-  // Before
-  // console.warn({ context: 'retryOperation', ... }, `Retry attempt ...`);
+- [x] **Consolidate Basic E2E Smoke Tests**
 
-  // After (assuming loggers.db is available)
-  // loggers.db.warn({ context: 'retryOperation', attempt: attempt + 1, maxRetries: retries + 1, err: error instanceof Error ? { message: error.message, stack: error.stack } : error, delay }, `Retry attempt ${attempt + 1}/${retries + 1} failed. Retrying in ${delay}ms...`);
-  ```
+  - **Affected Files**: `tests/e2e/basic.spec.ts`, `tests/e2e/ultra-basic.spec.ts`, `tests/e2e/basic-navigation.spec.ts`.
+  - **Reasoning**: Currently, multiple files perform very basic checks (page load, title). A single, focused smoke test is more efficient for a template.
+  - **Action**:
+    - Create a new file `tests/e2e/smoke.spec.ts`.
+    - Migrate the essential checks from the aforementioned files into `smoke.spec.ts`. This should include:
+      - Verifying the homepage (`/`) loads successfully (status 200).
+      - Checking for the presence of a key layout element (e.g., `header`, `footer`, or a `data-testid` on the main layout component).
+      - Optionally, one simple navigation click to a public page (e.g., `/about`) and verify the URL changes.
+    - Remove `tests/e2e/basic.spec.ts` and `tests/e2e/ultra-basic.spec.ts`.
+    - Refactor or remove `tests/e2e/basic-navigation.spec.ts` if its core purpose is covered by the new `smoke.spec.ts` or other navigation tests. The detailed logging from `basic-navigation.spec.ts` could be a model for the new smoke test.
 
-- **Benefit**: Consistent logging, adherence to configured log levels, and better observability.
-- **Checkbox**:
-  - [x] Modify `withDatabaseRetry` in `lib/db/utils.ts` to use `loggers.db.warn` instead of `console.warn` for logging retry attempts and final failure messages. Ensure the error object is included in the log context for better diagnostics.
+- [x] **Evaluate and Potentially Remove `tests/e2e/auth/exact-repro.test.ts`**
 
-### [x] 2. Enhance Request ID Generation with UUID
+  - **Affected File**: `tests/e2e/auth/exact-repro.test.ts`.
+  - **Reasoning**: This test seems to target a very specific historical scenario ("login page with callback URL from screenshot"). For a general template, tests should cover common, representative use cases.
+  - **Action**:
+    - ✅ Analyzed that the core behavior (login with a callback URL) is adequately tested in other auth flow tests - specifically in `tests/e2e/auth/login-page.test.ts` and `tests/e2e/auth/redirect.test.ts`.
+    - ✅ Removed `exact-repro.test.ts` as it was redundant and contained debugging-focused code that's not necessary for the template.
 
-- **File**: `lib/logger.ts`
-- **Function**: `getRequestId`
-- **Current Situation**: `getRequestId` generates IDs using `req_${Math.random().toString(36).substring(2, 10)}`. While simple and often sufficient for basic tracing, `Math.random()` is not cryptographically secure and has a theoretical possibility of collision in very high-throughput systems, although unlikely with the prefix.
-  ```typescript
-  export const getRequestId = () => {
-    return `req_${Math.random().toString(36).substring(2, 10)}`;
-  };
-  ```
-- **Issue**: For applications that might scale or integrate into larger distributed systems, a more robust and universally unique identifier is preferable.
-- **Best Practice**: Using UUIDs (specifically v4) for generating unique identifiers is a standard best practice due to their extremely low collision probability. The `uuid` package is already a dependency.
-- **Suggestion**:
-  - Modify `getRequestId` to use `uuidv4()` from the `uuid` package.
-  - Ensure the `uuid` package is correctly imported.
-- **Example Change**:
-  ```typescript
-  import { v4 as uuidv4 } from 'uuid'; // Add import
-  // ...
-  export const getRequestId = () => {
-    // return `req_${Math.random().toString(36).substring(2, 10)}`; // Old
-    return `req_${uuidv4()}`; // New
-  };
-  ```
-- **Benefit**: Stronger uniqueness guarantee for request IDs, aligning with industry standards for distributed tracing and logging.
-- **Checkbox**:
-  - [x] Update the `getRequestId` function in `lib/logger.ts` to use `uuidv4()` for generating the unique part of the request ID, replacing the current `Math.random()`-based approach.
+- [x] **Relocate or Remove Debugging Helper Scripts from `tests/` Directory**
 
-### [x] 3. Standardize Invalid URL Path Extraction
+  - **Affected Files**: `tests/run-navigation-tests.sh`, `tests/simple-test-runner.sh`, `tests/standalone-test.js`, `tests/simple-layout-test.js`.
+  - **Reasoning**: These scripts are for manual debugging or specific diagnostic runs, not part of the automated test suite. They clutter the main test directory.
+  - **Action**:
+    - ✅ Created a new directory `scripts/test-debug-helpers/`
+    - ✅ Moved all debugging helper scripts to the new directory
+    - ✅ Updated ESLint configuration (`eslint.config.mjs`) to reference the new paths
+    - ✅ Updated setup script (`scripts/setup.js`) to reference the new path for `simple-layout-test.js`
 
-- **File**: `lib/services/api-logger-service.ts`
-- **Function**: `getRequestPath`
-- **Current Situation**: When the `url` parameter provided to `getRequestPath` is a string that cannot be parsed into a valid URL, the function's `catch` block currently returns the original invalid string.
-  ```typescript
-  // Snippet from getRequestPath
-  if (url) {
-    if (typeof url === 'string') {
-      try {
-        return new URL(url).pathname;
-      } catch {
-        return url; // Returns the original invalid string
-      }
-    }
-    return url.pathname || '/unknown';
-  }
-  ```
-- **Issue**: Returning the raw invalid URL string might lead to inconsistent path formats in logs if this edge case occurs, making log parsing or alerting based on paths less reliable.
-- **Best Practice**: For known error conditions or unparseable inputs, returning a consistent, identifiable placeholder string can improve log consistency.
-- **Suggestion**:
-  - Modify the `catch` block within the `typeof url === 'string'` check. Instead of returning the original `url` string, return a standardized placeholder like `'/malformed_url_string'` or `'/unknown_path_format'`.
-- **Example Change**:
+- [x] **Consolidate Jest Configuration**
 
-  ```typescript
-  // Before
-  // } catch {
-  //   return url;
-  // }
+  - **Affected Files**: `jest.config.js` (root) and `tests/config/jest.config.js`.
+  - **Reasoning**: The root `jest.config.js` is comprehensive and appears to be the active configuration. The one in `tests/config/` is likely redundant or an outdated version.
+  - **Action**:
+    - ✅ Verified and incorporated all necessary configurations from `tests/config/jest.config.js` into the root `jest.config.js`.
+    - ✅ Added project-specific setup files, moduleNameMapper entries for mocks, and specific coverage thresholds from the tests/config version.
+    - ✅ Deleted the redundant `tests/config/jest.config.js` file.
+    - ✅ Verified that tests still run successfully with the consolidated configuration.
 
-  // After
-  // } catch {
-  //   // Log the issue minimally if desired, then return placeholder
-  //   // logger.debug({ invalidUrlString: url }, "Failed to parse URL string in getRequestPath");
-  //   return '/malformed_url_string';
-  // }
-  ```
+- [x] **Consolidate Playwright Configuration**
 
-- **Benefit**: More consistent and predictable path values in logs, especially in error scenarios or when processing malformed inputs.
-- **Checkbox**:
-  - [ ] In `lib/services/api-logger-service.ts`, modify the `getRequestPath` function so that if a string `url` parameter fails to be parsed by `new URL()`, it returns a consistent placeholder string (e.g., `'/malformed_url_string'`) instead of the original invalid string.
+  - **Affected Files**: `playwright.config.ts` (root) and `tests/config/playwright.config.ts`.
+  - **Reasoning**: The root `playwright.config.ts` is the standard and active configuration.
+  - **Action**:
+    - ✅ Verified that the file `tests/config/playwright.config.ts` no longer exists in the codebase.
+    - ✅ Confirmed that the root `playwright.config.ts` is comprehensive and contains all necessary configurations.
+    - ✅ No further action needed as the consolidation appears to have been completed already.
 
-### [x] 4. Clarify or Remove Unused `authApiLimiter`
+- [x] **Remove Potentially Orphaned/Redundant Theme Mock**
+  - **Affected File**: `__mocks__/app/providers/ThemeProvider.js`.
+  - **Reasoning**: This file mocks `useTheme` from `next-themes` and a `ThemeProvider` component, similar to `__mocks__/next-themes.js`. The path `app/providers/ThemeProvider.js` does not correspond to an existing file in the provided codebase (the closest is `ThemeRegistry.tsx` for MUI theming or `NextThemesProvider.tsx` which is a thin wrapper). The module-level mock `__mocks__/next-themes.js` is the standard and generally sufficient way to mock `next-themes`.
+  - **Action**:
+    - ✅ Removed the `__mocks__/app/providers/ThemeProvider.js` file. Tests relying on `next-themes` functionality are covered by the `__mocks__/next-themes.js` module mock.
+    - ✅ Verified all unit and E2E tests still pass with the expected failures (which were failing before this change).
+
+### [ ] ✨ Enhancements (High to Medium Priority)
+
+- [ ] **Fix Skipped Database Utility Tests (High Priority)**
+
+  - **Affected File**: `tests/unit/db/utils.test.ts`.
+  - **Reasoning**: This test file is currently non-functional due to "persistent TypeScript errors (TS2305) related to resolving Prisma Client types". A template with PSQL integration _must_ have working tests for its database utilities.
+  - **Action**:
+    - Investigate and resolve the TypeScript type resolution errors for Prisma types within the Jest environment. This may involve:
+      - Correcting `tsconfig.json` path mappings if Jest isn't picking them up.
+      - Adjusting `jest.config.js` `moduleNameMapper` or `transform` settings for Prisma.
+      - Ensuring Prisma Client is generated correctly and its types are accessible.
+      - Reviewing how Prisma Client is mocked or instantiated in these tests. The `globalPrisma` mock in the test file might need adjustment to correctly mimic the full Prisma Client type structure expected by the utilities.
+    - Ensure all tests within this file pass after fixing the type issues.
+
+- [ ] **Refine Jest Environment Setup for Node vs. JSDOM (High Priority)**
+  - **Affected Files**: `jest.config.js`, `jest.setup.ts`.
+  - **Reasoning**: The `node` test environment project in `jest.config.js` currently includes `jest.setup.ts` in `setupFilesAfterEnv`. However, `jest.setup.ts` contains JSDOM-specific mocks (e.g., `IntersectionObserver`, `matchMedia`, `window.location`), which are unnecessary and potentially problematic for Node.js tests (APIs, services).
+  - **Action**:
+    - Create a new setup file specifically for JSDOM tests, e.g., `jest.setup.jsdom.ts`. Move all JSDOM-specific mocks from `jest.setup.ts` into this new file.
+    - Update the `jsdom` project in `jest.config.js`

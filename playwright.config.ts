@@ -60,8 +60,8 @@ const config: PlaywrightTestConfig = defineConfig({
   fullyParallel: true, // Set to true to enable parallel test execution
   forbidOnly: !!process.env.CI,
   retries: TEST_RETRIES,
-  workers: 1, // Force serial execution
-  reporter: [['list'], ['html', { open: 'never' }]],
+  workers: process.env.CI ? 1 : undefined, // Force serial execution on CI, use default otherwise
+  reporter: process.env.CI ? [['html']] : [['list'], ['html', { open: 'never' }]],
   // Comment out globalSetup as it causes ESM issues
   // globalSetup: './tests/e2e/global-setup.ts',
   globalSetup: require.resolve('./tests/e2e/global-setup.ts'), // Use require.resolve for compatibility
@@ -77,11 +77,6 @@ const config: PlaywrightTestConfig = defineConfig({
 
   projects: [
     // Authentication setup project - runs first to set up auth state
-    // Comment out setup project
-    // {
-    //   name: 'setup',
-    //   testMatch: /.*\.setup\.ts/,
-    // },
     {
       name: 'setup',
       testMatch: /setup\/auth\.setup\.ts/, // Point to the specific setup file
@@ -91,7 +86,6 @@ const config: PlaywrightTestConfig = defineConfig({
     },
 
     // UI tests that don't require authentication
-
     {
       name: 'ui-tests',
       // Match basic navigation, simple tests, public access, specific non-auth flows
@@ -101,8 +95,7 @@ const config: PlaywrightTestConfig = defineConfig({
         /public-access\.spec\.ts/,
         /theme-toggle\.spec\.ts/,
         /accessibility-improved\.spec\.ts/, // Assuming this doesn't strictly need auth
-        /basic\.spec\.ts/,
-        /ultra-basic\.spec\.ts/,
+        /smoke\.spec\.ts/, // Our consolidated smoke test
         /auth\/registration\.spec\.ts/, // Keep this specific inclusion
         /auth\/invalid-credentials\.spec\.ts/,
       ],
@@ -122,7 +115,6 @@ const config: PlaywrightTestConfig = defineConfig({
     },
 
     // Authenticated tests in Chromium
-
     {
       name: 'chromium',
       // Define tests that *require* authentication
@@ -141,8 +133,7 @@ const config: PlaywrightTestConfig = defineConfig({
         /public-access\.spec\.ts/,
         /theme-toggle\.spec\.ts/,
         /accessibility-improved\.spec\.ts/,
-        /basic\.spec\.ts/,
-        /ultra-basic\.spec\.ts/,
+        /smoke\.spec\.ts/, // Ignore our consolidated smoke test in the auth project
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -151,13 +142,35 @@ const config: PlaywrightTestConfig = defineConfig({
       dependencies: ['setup'], // Ensure setup runs first
     },
 
+    // Mobile tests
+    {
+      name: 'Mobile Chrome',
+      use: {
+        ...devices['Pixel 7'],
+        storageState: STORAGE_STATE, // Use the auth state for authenticated mobile testing
+      },
+      dependencies: ['setup'],
+      // Define test patterns for mobile specifically, or use the same as desktop chromium
+      testMatch: [/auth\/login-logout-cycle\.spec\.ts/, /auth\/redirect\.test\.ts/, /profile\/.*/],
+      testIgnore: [
+        /.*\.setup\.ts/,
+        /navigation-improved\.spec\.ts/,
+        /simple\.spec\.ts/,
+        /public-access\.spec\.ts/,
+        /theme-toggle\.spec\.ts/,
+        /accessibility-improved\.spec\.ts/,
+        /smoke\.spec\.ts/,
+      ],
+    },
+
     // API tests - no browser needed
-    // Comment out api project
+    // Uncomment to enable dedicated API tests project
     // {
     //   name: 'api',
     //   testMatch: /api\/.*\.spec\.ts/,
     //   use: {
     //     // No browser is needed for API tests
+    //     baseURL: BASE_URL,
     //   },
     // },
 
@@ -174,13 +187,11 @@ const config: PlaywrightTestConfig = defineConfig({
   ],
 
   // Built-in webServer configuration - manages Next.js server for tests
-
   webServer: {
     /**
      * Use E2E_SERVER_COMMAND for local development and CI.
      * Fallback to a simpler command if E2E_SERVER_COMMAND is not set.
      */
-    // command: `npm run dev:testserver`, // Original command
     command: './scripts/run-e2e-server.sh',
     url: `http://127.0.0.1:${PORT}/api/health`,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for server start
@@ -188,6 +199,12 @@ const config: PlaywrightTestConfig = defineConfig({
     // Let stdout/stderr pass through for better debugging if needed
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      NODE_ENV: 'test',
+      ALLOW_TEST_ENDPOINTS: 'true',
+      NEXT_PUBLIC_IS_E2E_TEST_ENV: 'true',
+      // Add any other environment variables needed for testing
+    },
   },
 });
 

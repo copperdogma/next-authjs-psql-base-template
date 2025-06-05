@@ -303,7 +303,7 @@ export default [
 
   // Standalone test files with complex setups
   {
-    files: ['tests/simple-layout-test.js', 'tests/standalone-test.js'],
+    files: ['scripts/test-debug-helpers/simple-layout-test.js', 'scripts/test-debug-helpers/standalone-test.js'],
     rules: {
       'max-statements': ['warn', 55], // Allow significantly more statements for these specific test files
       'no-console': 'off', // Allow console in these test files

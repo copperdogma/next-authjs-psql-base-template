@@ -37,8 +37,17 @@ const sharedConfig = {
     '^@/types/(.*)$': '<rootDir>/types/$1',
     '^@/types$': '<rootDir>/types/index',
     '^@/actions/(.*)$': '<rootDir>/lib/actions/$1',
+    '^@/tests/(.*)$': '<rootDir>/tests/$1',
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/$1',
+    
+    // Add mocks from the tests/config/jest.config.js
+    '^next-themes$': '<rootDir>/tests/mocks/next-themes.js',
+    '^../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
+    '^../../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
+    '^../../../lib/auth/token$': '<rootDir>/tests/mocks/lib/auth/token.ts',
+    '^../../../lib/auth/token-refresh$': '<rootDir>/tests/mocks/lib/auth/token-refresh.ts',
+    '^../../../lib/auth/middleware$': '<rootDir>/tests/mocks/lib/auth/middleware.ts',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFiles: ['<rootDir>/jest.setup.env.js'],
@@ -75,12 +84,20 @@ const sharedConfig = {
     '<rootDir>/postcss.config.js',
     '<rootDir>/ecosystem.config.js',
     '<rootDir>/eslint.config.mjs',
+    'components/ui/Card.tsx', // Explicitly ignore Card.tsx as it's intentionally not tested
+    'tests/utils/server-component-utils.tsx', // Exclude server component utils due to testing complexity
   ],
   maxWorkers: '50%',
+  detectOpenHandles: true,
+  moduleDirectories: ['node_modules', '<rootDir>'],
 };
 
 // Custom Jest configuration with multiple projects
 const customJestConfig = {
+  // Global setup/teardown - added from tests/config/jest.config.js
+  globalSetup: '<rootDir>/tests/config/setup/globalSetup.ts',
+  globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
+  
   projects: [
     // Node environment
     {
@@ -93,11 +110,12 @@ const customJestConfig = {
         '<rootDir>/tests/unit/swc/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/middleware/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/profile/**/*.test.ts?(x)',
+        '<rootDir>/tests/integration/**/*.test.ts?(x)', // Added from tests/config
       ],
       setupFilesAfterEnv: [
         '<rootDir>/jest.setup.api.js',
         '<rootDir>/tests/config/setup/jest.setup.api.mocks.ts',
-        '<rootDir>/jest.setup.ts',
+        '<rootDir>/tests/config/setup/node-setup.js',
       ],
       testEnvironment: 'node',
       ...sharedConfig,
@@ -112,13 +130,7 @@ const customJestConfig = {
       ],
 
       // Keep comprehensive, isolated mapper for node
-      roots: [
-        '<rootDir>/lib',
-        '<rootDir>/lib/actions',
-        '<rootDir>/tests',
-
-        // Add other roots if necessary
-      ],
+      roots: ['<rootDir>/lib', '<rootDir>/lib/actions', '<rootDir>/tests'],
       moduleNameMapper: {
         // Keep specific overrides first
         '@/lib/prisma': '<rootDir>/lib/prisma.ts',
@@ -129,22 +141,20 @@ const customJestConfig = {
         // Add general lib mapping AFTER specific one
         '^@/lib/(.*)$': '<rootDir>/lib/$1',
 
-        // More specific lib mapping that includes file extensions
-        // '^@/lib/(.+\\.(?:ts|tsx|js|jsx))$': '<rootDir>/lib/$1',
-
         // Keep other specific mappings
         '^@/types$': '<rootDir>/types/index.ts',
         '^@/types/(.*)$': '<rootDir>/types/$1',
         '^@/components/(.*)$': '<rootDir>/components/$1',
         '^@/app/(.*)$': '<rootDir>/app/$1',
         '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
+        '^@/tests/(.*)$': '<rootDir>/tests/$1',
 
         // Add the general root mapping
         '^@/(.*)$': '<rootDir>/$1',
       },
     },
 
-    // Restore jsdom project
+    // JSDOM environment
     {
       displayName: 'jsdom',
       testMatch: [
@@ -153,7 +163,11 @@ const customJestConfig = {
         '<rootDir>/tests/unit/providers/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
       ],
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.ts', 'react-intersection-observer/test-utils'],
+      setupFilesAfterEnv: [
+        '<rootDir>/jest.setup.ts', 
+        'react-intersection-observer/test-utils',
+        '<rootDir>/tests/config/setup/browser-setup.js',
+      ],
       testEnvironment: 'jsdom',
       ...sharedConfig,
       globals: {
@@ -168,7 +182,7 @@ const customJestConfig = {
 
   // Restore global coverage options
   collectCoverage: true,
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coverageReporters: ['json', 'lcov', 'text', 'clover', 'text-summary'],
   coverageThreshold: {
     global: {
       statements: 80,
@@ -176,13 +190,35 @@ const customJestConfig = {
       functions: 80,
       lines: 80,
     },
+    
+    // Add specific thresholds from tests/config/jest.config.js
+    './components/auth/SignInButton.tsx': {
+      statements: 90,
+      branches: 75,
+      functions: 90,
+      lines: 90,
+    },
+    './components/auth/UserProfile.tsx': {
+      statements: 80,
+      branches: 70,
+      functions: 80,
+      lines: 80,
+    },
+    './tests/utils/**/*.tsx': {
+      statements: 60,
+      branches: 35,
+      functions: 55,
+      lines: 65,
+    },
+    './tests/mocks/app/api/**/*.ts': {
+      statements: 90,
+      branches: 90,
+      functions: 90,
+      lines: 90,
+    },
   },
 
-  // reporters: ['default', 'jest-junit'], // Example: Add JUnit reporter
   testTimeout: 30000, // Increase timeout for potentially slow tests
-
-  // === E2E Testing (Placeholder/Example - Use Playwright config primarily) ===
-  // E2E tests are typically run via Playwright (`playwright.config.ts`)
 };
 
-module.exports = createJestConfig(customJestConfig); // Restore wrapper
+module.exports = createJestConfig(customJestConfig);

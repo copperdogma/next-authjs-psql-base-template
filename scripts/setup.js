@@ -61,7 +61,7 @@ const FILES_TO_PROCESS = [
   'app/manifest.ts',
   'tests/utils/test-constants.ts',
   'tests/README-main.md',
-  'tests/simple-layout-test.js',
+  'scripts/test-debug-helpers/simple-layout-test.js',
   'docs/testing',
   'docs/temp_project_reference_update.md',
   'scratchpad.md',
