@@ -2,20 +2,6 @@
  * @jest-environment node
  */
 
-// =============================================================================
-// == TEST FILE SKIPPED ==
-// =============================================================================
-// Reason: This test file encounters persistent TypeScript errors (TS2305)
-// related to resolving Prisma Client types (`Prisma`, `PrismaClient`,
-// `PrismaClientKnownRequestError`, `PrismaClientInitializationError`) within
-// the Jest/Node environment, despite various mocking attempts and successful
-// `prisma generate` runs. `@ts-expect-error` directives are also ineffective.
-// This likely points to a deeper configuration issue between Jest, SWC, TS path
-// mapping, or module mocking specific to this test setup.
-// Skipping this file to unblock CI/validation for other tests.
-// TODO: Investigate and fix the root cause of Prisma type resolution errors here.
-// =============================================================================
-
 import { jest } from '@jest/globals';
 import { Prisma } from '@prisma/client';
 import {

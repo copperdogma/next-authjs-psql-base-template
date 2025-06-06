@@ -140,7 +140,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
       - **Example**: `"test:e2e": "... npx playwright test && node scripts/check-server-logs.js ./logs/e2e-server.log"`
   3.  Ensure the `logs` directory is created if it doesn't exist and is included in `.gitignore`.
 
-#### [ ] 3. Fix or Remove All Skipped/Broken Tests
+#### [x] 3. Fix or Remove All Skipped/Broken Tests
 
 - **Observation**: The testing suite contains several files that are explicitly skipped or noted as broken, which undermines the reliability of the template.
   - `tests/unit/db/utils.test.ts`: Comments indicate this file is skipped due to "persistent TypeScript errors (TS2305) related to resolving Prisma Client types".
@@ -150,7 +150,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - **For `tests/unit/db/utils.test.ts` (High Priority)**: Investigate and resolve the root cause of the Prisma type resolution errors in the Jest environment. This is critical for a template that features PostgreSQL integration. The fix may involve adjusting `tsconfig.json` paths, the `jest.config.js` `moduleNameMapper`, or the Prisma mock setup.
   - **For `tests/unit/lib/auth-node.callbacks.test.ts`**: Either fix the underlying issues that led to the test being skipped or remove the file if its coverage is provided by more robust E2E tests.
 
-#### [ ] 4. Simplify Complex Unit Tests in Favor of E2E/Integration Tests
+#### [x] 4. Simplify Complex Unit Tests in Favor of E2E/Integration Tests
 
 - **Observation**: The suite contains highly complex unit tests for authentication and server actions (e.g., `tests/unit/lib/auth-credentials.test.ts`, `tests/unit/components/login/CredentialsLoginForm.test.tsx`). These tests require extensive mocking of `next-auth`, `prisma`, and prop-drilled state setters, making them brittle and difficult to maintain.
 - **Best Practice**: For full-stack user flows like login and registration, E2E tests provide more value and confidence than complex, heavily mocked unit tests. Unit tests are better suited for isolated business logic and pure functions.

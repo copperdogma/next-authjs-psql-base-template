@@ -68,7 +68,13 @@ describe('getComponentOverrides', () => {
     // Test MuiDialog light mode
     const dialogStyleOverrides = overrides.MuiDialog?.styleOverrides?.paper;
     if (typeof dialogStyleOverrides === 'function') {
-      const dialogStyles = dialogStyleOverrides({ theme, ownerState: { open: true } as any });
+      const dialogStyles = dialogStyleOverrides({
+        theme,
+        ownerState: {} as any,
+        open: true,
+        fullWidth: false,
+        fullScreen: false,
+      });
       expect(dialogStyles).toEqual({}); // No specific overrides in light mode
     } else {
       fail('MuiDialog styleOverrides should be a function');
@@ -101,7 +107,13 @@ describe('getComponentOverrides', () => {
     const styleOverrides = overrides.MuiDialog?.styleOverrides?.paper;
     expect(typeof styleOverrides).toBe('function');
     if (typeof styleOverrides === 'function') {
-      const styles = styleOverrides({ theme, ownerState: { open: true } as any });
+      const styles = styleOverrides({
+        theme,
+        ownerState: {} as any,
+        open: true,
+        fullWidth: false,
+        fullScreen: false,
+      });
       expect(styles).toEqual({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,

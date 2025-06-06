@@ -125,11 +125,11 @@ const customJestConfig = {
 
       // Override transformIgnorePatterns specifically for node env
       transformIgnorePatterns: [
-        // Allow transformation of key ESM dependencies
-        '/node_modules/(?!(next-auth|@auth|jose|uuid|@panva/hkdf|oauth4webapi|openid-client|preact|preact-render-to-string)/)',
+        // Allow transformation of key ESM dependencies, including Prisma
+        '/node_modules/(?!(next-auth|@auth/core|@auth/prisma-adapter|@prisma/client|jose|uuid|@panva/hkdf|oauth4webapi|openid-client|preact|preact-render-to-string)/)',
 
         // Keep the default CSS/SASS ignore pattern if needed, assuming it came from next/jest
-        '^.+\.module\.(css|sass|scss)$',
+        '^.+\\.module\\.(css|sass|scss)$',
       ],
 
       // Keep comprehensive, isolated mapper for node

@@ -16,6 +16,22 @@ describe('Test Utils', () => {
     expect(customContainer).toContainElement(screen.getByText('Test Component'));
   });
 
+  it('renderWithProviders should render with a null session (unauthenticated)', () => {
+    renderWithProviders(<TestComponent />, null);
+    expect(screen.getByText('Test Component')).toBeInTheDocument();
+  });
+
+  it('renderWithProviders should return userEvent setup', () => {
+    const { user } = renderWithProviders(<TestComponent />);
+    expect(user).toBeDefined();
+    // A simple check to ensure it's a userEvent instance
+    if (user && 'keyboard' in user) {
+      expect(typeof user.click).toBe('function');
+    } else {
+      fail('A valid userEvent setup was not returned from renderWithProviders');
+    }
+  });
+
   it('renderWithProviders should render with a session', () => {
     const session = SessionFixtures.authenticated();
     renderWithProviders(<TestComponent />, session);
