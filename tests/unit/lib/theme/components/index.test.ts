@@ -43,7 +43,7 @@ const generateMockTheme = (mode: PaletteMode): Theme =>
   });
 
 describe('getComponentOverrides', () => {
-  it.skip('should return default overrides for light mode', () => {
+  it('should return default overrides for light mode', () => {
     const mode: PaletteMode = 'light';
     const theme = generateMockTheme(mode);
     const overrides = getComponentOverrides(mode);
@@ -54,35 +54,25 @@ describe('getComponentOverrides', () => {
     expect(overrides.MuiAppBar).toBeDefined();
     expect(overrides.MuiCard).toBeDefined();
     expect(overrides.MuiAlert).toBeDefined();
-    // expect(overrides.MuiDialog).toBeDefined(); // Part of skipped test
+    expect(overrides.MuiDialog).toBeDefined();
 
-    // Test MuiAlert light mode (should not have specific dark mode overrides)
+    // Test MuiAlert light mode
     const alertStyleOverrides = overrides.MuiAlert?.styleOverrides?.root;
     if (typeof alertStyleOverrides === 'function') {
-      const alertStyles = alertStyleOverrides({
-        theme,
-        ownerState: {} as any,
-        MuiAlert: {} as any,
-      });
-      expect(alertStyles).not.toHaveProperty('backgroundColor');
+      const alertStyles = alertStyleOverrides({ theme, ownerState: {} as any });
+      expect(alertStyles).toEqual({}); // No specific overrides in light mode
     } else {
-      // if not a function, it means the mode !== 'dark' branch was taken in getAlertOverrides
-      // which results in an empty object or undefined, so no specific background color
-      expect(alertStyleOverrides).toEqual({});
+      fail('MuiAlert styleOverrides should be a function');
     }
 
-    // Test MuiDialog light mode (should not have specific dark mode overrides)
-    // const dialogStyleOverrides = overrides.MuiDialog?.styleOverrides?.paper; // Part of skipped test
-    // if (typeof dialogStyleOverrides === 'function') { // Part of skipped test
-    //   const dialogStyles = dialogStyleOverrides({ // Part of skipped test
-    //     theme, // Part of skipped test
-    //     ownerState: { open: true } as any, // Part of skipped test
-    //     MuiDialog: {} as any, // Part of skipped test
-    //   }); // Part of skipped test
-    //   expect(dialogStyles).not.toHaveProperty('backgroundColor'); // Part of skipped test
-    // } else { // Part of skipped test
-    //   expect(dialogStyleOverrides).toEqual({}); // Part of skipped test
-    // } // Part of skipped test
+    // Test MuiDialog light mode
+    const dialogStyleOverrides = overrides.MuiDialog?.styleOverrides?.paper;
+    if (typeof dialogStyleOverrides === 'function') {
+      const dialogStyles = dialogStyleOverrides({ theme, ownerState: { open: true } as any });
+      expect(dialogStyles).toEqual({}); // No specific overrides in light mode
+    } else {
+      fail('MuiDialog styleOverrides should be a function');
+    }
   });
 
   it('should apply specific overrides for MuiAlert in dark mode', () => {
@@ -95,33 +85,28 @@ describe('getComponentOverrides', () => {
     expect(typeof styleOverrides).toBe('function');
 
     if (typeof styleOverrides === 'function') {
-      const styles = styleOverrides({ theme, ownerState: {} as any, MuiAlert: {} as any });
+      const styles = styleOverrides({ theme, ownerState: {} as any });
       expect(styles).toEqual({
-        backgroundColor: theme.palette.background.paper, // Specifically check dark mode background
+        backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
       });
     }
   });
 
-  it.skip('should apply specific overrides for MuiDialog in dark mode', () => {
-    // Temporarily skipped due to MuiDialog type issue
-    // const mode: PaletteMode = 'dark'; // Unused due to skipped test content
-    // const theme = generateMockTheme(mode); // Unused due to skipped test content
-    // const overrides = getComponentOverrides(mode); // Unused due to skipped test content
-    // expect(overrides.MuiDialog).toBeDefined(); // Part of skipped test
-    // const styleOverrides = overrides.MuiDialog?.styleOverrides?.paper; // Part of skipped test
-    // expect(typeof styleOverrides).toBe('function'); // Part of skipped test
-    // if (typeof styleOverrides === 'function') { // Part of skipped test
-    //   const styles = styleOverrides({ // Part of skipped test
-    //     theme, // Part of skipped test
-    //     ownerState: { open: true } as any, // Part of skipped test
-    //     MuiDialog: {} as any, // Part of skipped test
-    //   }); // Part of skipped test
-    //   expect(styles).toEqual({ // Part of skipped test
-    //     backgroundColor: theme.palette.background.paper, // Specifically check dark mode background // Part of skipped test
-    //     color: theme.palette.text.primary, // Part of skipped test
-    //   }); // Part of skipped test
-    // } // Part of skipped test
+  it('should apply specific overrides for MuiDialog in dark mode', () => {
+    const mode: PaletteMode = 'dark';
+    const theme = generateMockTheme(mode);
+    const overrides = getComponentOverrides(mode);
+    expect(overrides.MuiDialog).toBeDefined();
+    const styleOverrides = overrides.MuiDialog?.styleOverrides?.paper;
+    expect(typeof styleOverrides).toBe('function');
+    if (typeof styleOverrides === 'function') {
+      const styles = styleOverrides({ theme, ownerState: { open: true } as any });
+      expect(styles).toEqual({
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+      });
+    }
   });
 
   it('should include scrollbar styles from getScrollbarStyles', () => {

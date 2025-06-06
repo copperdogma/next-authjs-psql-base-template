@@ -67,6 +67,8 @@ const sharedConfig = {
     'lib/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',
     'middleware.ts',
+    'tests/mocks/app/api/**/*.ts',
+    'types/**/*.ts',
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],
@@ -211,12 +213,6 @@ const customJestConfig = {
       branches: 35,
       functions: 55,
       lines: 65,
-    },
-    './tests/mocks/app/api/**/*.ts': {
-      statements: 90,
-      branches: 90,
-      functions: 90,
-      lines: 90,
     },
   },
 

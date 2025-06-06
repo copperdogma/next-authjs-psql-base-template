@@ -22,11 +22,11 @@ const useSuccessRedirectEffect = (
     let timer: NodeJS.Timeout | undefined;
 
     if (success && !isSubmitting) {
-      console.log(
+      logger.debug(
         '[Client] useSuccessRedirectEffect: Detected success state, isSubmitting is false.'
       );
       timer = setTimeout(async () => {
-        console.log(
+        logger.debug(
           '[Client] useSuccessRedirectEffect: Timer fired. Attempting to update session before redirect...'
         );
         try {
@@ -34,20 +34,20 @@ const useSuccessRedirectEffect = (
           const session = await updateSession();
 
           if (session) {
-            console.log(
+            logger.debug(
               '[Client] useSuccessRedirectEffect: Session updated successfully. Redirecting to /dashboard via router.push.',
               { sessionData: session } // Log actual session data for debugging
             );
             router.push('/dashboard');
           } else {
-            console.warn(
+            logger.warn(
               '[Client] useSuccessRedirectEffect: Session update failed or returned no session. Redirecting to /login.'
             );
             // If auto-sign-in was expected but session is not there, redirect to login
             router.push('/login?message=registration_success_manual_login');
           }
         } catch (error) {
-          console.error(
+          logger.error(
             // Changed to console.error for actual errors
             '[Client] useSuccessRedirectEffect: Exception during session update or redirect. Redirecting to /login.',
             error
@@ -62,7 +62,7 @@ const useSuccessRedirectEffect = (
     // or if dependencies change before the timer fires.
     return () => {
       if (timer) {
-        console.log('[Client] useSuccessRedirectEffect: Cleanup called, clearing timer.');
+        logger.debug('[Client] useSuccessRedirectEffect: Cleanup called, clearing timer.');
         clearTimeout(timer);
       }
     };
@@ -164,7 +164,7 @@ export function useRegistrationForm() {
   const processActionResult = (result: ServiceResponse<null, unknown>) => {
     if (result.status === 'success') {
       setSuccess(result.message || 'Registration successful!');
-      console.log(
+      logger.debug(
         '[Client] useRegistrationForm: Success result received, success state updated.',
         result
       );

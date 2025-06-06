@@ -127,9 +127,9 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     1.  The homepage (`/`) loads successfully with a 200-level status.
     2.  A key, persistent layout element (like the main `<header>` or `<footer>`) is visible.
     3.  A single navigation action to a public page (like `/about`) succeeds, and the URL is updated correctly.
-  - ~~Delete the now-redundant files (`tests/e2e/simple.spec.ts`, etc.) to declutter the test suite.~~ **Done:** Deleted `tests/e2e/simple.spec.ts` and `tests/e2e/simple-test.spec.ts`, leaving `tests/e2e/smoke.spec.ts` as the single, consolidated smoke test.
+  - **Done:** Deleted `tests/e2e/simple.spec.ts` and `tests/e2e/simple-test.spec.ts`, leaving `tests/e2e/smoke.spec.ts` as the single, consolidated smoke test.
 
-#### [ ] 2. Integrate Server-Side Log Checking into the E2E Workflow
+#### [x] 2. Integrate Server-Side Log Checking into the E2E Workflow
 
 - **Observation**: The project has a script `scripts/check-server-logs.js` to detect errors in server logs, but it is not integrated into the main E2E test command. This means server-side errors that don't cause an immediate test failure could go unnoticed, which is especially problematic for an AI-driven workflow.
 - **Best Practice**: The primary E2E test command should be a comprehensive check of the application's health, failing not only on UI test failures but also on underlying server errors that occurred _during_ the test run.
