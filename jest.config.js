@@ -220,6 +220,7 @@ const customJestConfig = {
     },
   },
 
+  verbose: true,
   testTimeout: 30000, // Increase timeout for potentially slow tests
 };
 

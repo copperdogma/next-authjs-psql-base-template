@@ -97,6 +97,7 @@ export interface MockUser {
   providerData: MockProviderData[];
   getIdToken: () => Promise<string>;
   getIdTokenResult: () => Promise<MockIdTokenResult>;
+  toJSON: () => object;
 }
 
 /**

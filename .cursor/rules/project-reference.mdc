@@ -18,6 +18,7 @@ ALWAYS use these non-interactive alternatives instead:
 1. For API testing: `npm test tests/unit/api/your-test.js`
 2. For E2E testing: `npm run test:e2e:auth-only` or `npm run test:e2e`
 3. For managed server: `npm run ai:start` then `npm run ai:health`
+4. NEVER lower global test thresholds ❌
 
 ## Project Structure
 ```
