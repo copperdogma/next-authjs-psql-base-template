@@ -24,20 +24,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Support light and dark mode at the document level with class-based approach */
-html.light,
-body.light {
-  color-scheme: light;
-  background-color: #ffffff;
-  color: #212121;
-}
-
-html.dark,
-body.dark {
-  color-scheme: dark;
-  background-color: #121212;
-  color: #ffffff;
-}
+/* Color scheme support is now handled by MUI ThemeProvider and CssBaseline */
 
 /* Removed MUI component-specific overrides now handled in the theme:
    - html.dark .MuiPaper-root

@@ -109,9 +109,8 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
       - [x] **Enhance Prisma Adapter Mock Documentation**: Added detailed JSDoc comments explaining the in-memory implementation and its benefits for testing.
   - [x] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
   - [x] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
-    - [x] **1. Simplify Global CSS by Removing Redundant Media Query**: Confirmed that the `@media (prefers-color-scheme: dark)` query was already not present, as the app correctly uses next-themes with class-based strategy.
-    - [x] **2. Optimize Performance by Scoping Global Transitions**: Changed the universal selector `*` to target only interactive elements (`a, button, [role="button"], input, textarea, select`) to improve performance and prevent unwanted visual glitches.
-    - [x] **3. Improve Maintainability by Abstracting Theme Names into Constants**: Created `lib/constants/theme.ts` with `THEME_MODES` constants and `ThemeMode` type, updated `ThemeMenu.tsx` and `ThemeToggle.tsx` to use these constants instead of hardcoded strings for better maintainability and type safety.
+    - [x] **1. Remove Redundant Global Styles**: Successfully removed redundant CSS rules for light/dark mode styling that were being handled by MUI's ThemeProvider and CssBaseline.
+    - [x] **2. Abstract Theme Names into Constants for Maintainability**: Theme constants were already properly implemented - verified `lib/constants/theme.ts` exists with proper `THEME_MODES` constants and both `ThemeMenu.tsx` and `ThemeToggle.tsx` are using these constants correctly.
   - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 - [ ] try to upgrade everything again
 - [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
@@ -125,69 +124,40 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ### Styling and Theming Enhancement Checklist
 
-- [ ] **1. Simplify Global CSS by Removing Redundant Media Query**
+Here is a comprehensive list of suggested improvements for the styling and theming subsystem:
+
+- [x] **1. Remove Redundant Global Styles**
 
   - **File to Modify**: `app/globals.css`
-  - **Reasoning**: Your application correctly uses the `next-themes` library with a `class` strategy (e.g., `<html class="dark">`). This means the theme is determined by the presence of a class on the HTML tag, not the user's OS-level preference via the `@media (prefers-color-scheme: dark)` query. The current CSS file contains both, which is redundant. Removing the media query establishes the `next-themes` provider as the single source of truth, simplifies the CSS, and prevents potential style conflicts.
+  - **Reasoning**: The application correctly uses Material-UI's `CssBaseline` and a `ThemeProvider` (`ThemeRegistry.tsx`) to manage base styles, including background and text colors for both light and dark modes. The rules for `html.light, body.light` and `html.dark, body.dark` in `globals.css` are therefore redundant. Removing them centralizes theme-based styling within the MUI theme provider, which is the correct architectural approach, preventing potential style conflicts and simplifying maintenance.
   - **Implementation Details**:
 
-    1.  Open the `app/globals.css` file.
-    2.  Locate and **delete** the entire `@media (prefers-color-scheme: dark)` block.
+    1.  Open the file `app/globals.css`.
+    2.  Locate and **delete** the following rule sets:
 
         ```css
-        /* DELETE THIS ENTIRE BLOCK */
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --background: #0a0a0a;
-            --foreground: #ededed;
-          }
+        /* DELETE THIS RULE SET */
+        html.light,
+        body.light {
+          color-scheme: light;
+          background-color: #ffffff;
+          color: #212121;
+        }
+
+        /* DELETE THIS RULE SET */
+        html.dark,
+        body.dark {
+          color-scheme: dark;
+          background-color: #121212;
+          color: #ffffff;
         }
         ```
 
-- [ ] **2. Optimize Performance by Scoping Global Transitions**
+- [x] **2. Abstract Theme Names into Constants for Maintainability**
 
-  - **File to Modify**: `app/globals.css`
-  - **Reasoning**: The file currently applies a CSS `transition` to every element on the page using the universal selector (`*`). This is inefficient and can cause performance issues (layout thrashing) and unwanted visual glitches on complex pages, as the browser must account for transitions on non-interactive elements. Best practice is to apply transitions only to elements that a user interacts with.
-  - **Implementation Details**:
-
-    1.  Open the `app/globals.css` file.
-    2.  Find the `*` selector that defines the transitions.
-    3.  Replace the universal selector (`*`) with a more specific list of selectors targeting interactive and state-changing elements.
-
-        ```css
-        /* ---- REPLACE THIS ---- */
-        * {
-          transition:
-            background-color var(--transition-normal) ease,
-            border-color var(--transition-normal) ease,
-            color var(--transition-normal) ease,
-            fill var(--transition-normal) ease,
-            stroke var(--transition-normal) ease,
-            box-shadow var(--transition-normal) ease;
-        }
-
-        /* ---- WITH THIS ---- */
-        a,
-        button,
-        [role='button'],
-        input,
-        textarea,
-        select {
-          transition:
-            background-color var(--transition-normal) ease,
-            border-color var(--transition-normal) ease,
-            color var(--transition-normal) ease,
-            fill var(--transition-normal) ease,
-            stroke var(--transition-normal) ease,
-            box-shadow var(--transition-normal) ease;
-        }
-        ```
-
-- [ ] **3. Improve Maintainability by Abstracting Theme Names into Constants**
-
-  - **Files to Modify**: `components/ui/theme/ThemeMenu.tsx`
+  - **Files to Modify**: `components/ui/theme/ThemeMenu.tsx`, `components/ui/ThemeToggle.tsx`
   - **File to Create**: `lib/constants/theme.ts`
-  - **Reasoning**: The `ThemeMenu.tsx` component uses hardcoded strings ('light', 'dark', 'system') to represent theme modes. This pattern, known as "magic strings," is prone to typos and makes the code harder to maintain. By abstracting these values into a shared constants file, you ensure consistency, enable type safety, and make the code self-documenting.
+  - **Reasoning**: The theme components currently use hardcoded strings ('light', 'dark', 'system'). This "magic string" pattern is prone to typos and makes the code harder to maintain. Abstracting these values into a shared constants file ensures consistency, enables TypeScript to enforce type safety, and makes the code more self-documenting.
   - **Implementation Details**:
 
     1.  **Create a new file** at `lib/constants/theme.ts` with the following content:
@@ -203,50 +173,54 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
         export type ThemeMode = (typeof THEME_MODES)[keyof typeof THEME_MODES];
         ```
 
-    2.  **Update `components/ui/theme/ThemeMenu.tsx`** to use these new constants.
+    2.  **Update `components/ui/theme/ThemeMenu.tsx`** to import and use these new constants and the `ThemeMode` type.
 
         ```typescript
-        // components/ui/theme/ThemeMenu.tsx
+        // In components/ui/theme/ThemeMenu.tsx
 
-        import React from 'react';
-        import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-        import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
-        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme'; // Import constants
+        // Add this import
+        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
 
+        // Update the interface
         interface ThemeMenuProps {
-          anchorEl: null | HTMLElement;
-          open: boolean;
-          onClose: () => void;
-          currentTheme: string | undefined;
-          onThemeChange: (theme: ThemeMode) => void; // Use ThemeMode type
+          // ...
+          onThemeChange: (theme: ThemeMode) => void; // Use the new type
         }
 
-        export default function ThemeMenu({
-          // ...props
-        }: ThemeMenuProps) {
-          const menuOptions = [
-            { value: THEME_MODES.LIGHT, label: 'Light', icon: <LightMode fontSize="small" /> },
-            { value: THEME_MODES.DARK, label: 'Dark', icon: <DarkMode fontSize="small" /> },
-            { value: THEME_MODES.SYSTEM, label: 'System', icon: <BrightnessAuto fontSize="small" /> },
-          ];
-
-          // ... rest of the component remains the same
-        }
+        // Update the menuOptions array
+        const menuOptions = [
+          { value: THEME_MODES.LIGHT, label: 'Light', icon: <LightMode fontSize="small" /> },
+          { value: THEME_MODES.DARK, label: 'Dark', icon: <DarkMode fontSize="small" /> },
+          { value: THEME_MODES.SYSTEM, label: 'System', icon: <BrightnessAuto fontSize="small" /> },
+        ] as const;
         ```
 
-    3.  **Update `components/ui/ThemeToggle.tsx`** to use the new `ThemeMode` type for better type safety.
+    3.  **Update `components/ui/ThemeToggle.tsx`** to also use the new constants for its logic and display.
 
         ```typescript
-        // components/ui/ThemeToggle.tsx
+        // In components/ui/ThemeToggle.tsx
 
-        import { ThemeMode } from '@/lib/constants/theme'; // Import ThemeMode type
-        //...
+        // Add this import
+        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
 
+        // Update the ThemeIcon component logic
+        function ThemeIcon({ theme, resolvedTheme }: { theme: string | undefined; resolvedTheme: string | undefined; }) {
+          if (theme === THEME_MODES.SYSTEM) { // Use constant
+            return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
+          }
+          return resolvedTheme === THEME_MODES.DARK ? ( // Use constant
+            <DarkMode fontSize="small" data-testid="DarkModeIcon" />
+          ) : (
+            <LightMode fontSize="small" data-testid="LightModeIcon" />
+          );
+        }
+
+        // Update handleThemeChange to use the ThemeMode type
         const handleThemeChange = (newTheme: ThemeMode) => {
-          // Use ThemeMode type here
-          setTheme(newTheme);
-          handleClose();
+            setTheme(newTheme);
+            handleClose();
         };
 
-        // ... rest of the component
+        // Update the Tooltip title logic
+        // <Tooltip title={`Theme: ${theme === THEME_MODES.SYSTEM ? 'Auto' : theme}`}>
         ```
