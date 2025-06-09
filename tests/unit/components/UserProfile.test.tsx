@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { screen, within } from '@testing-library/dom';
 import '@testing-library/jest-dom';
 import { ReactNode } from 'react';
 import UserProfile from '../../../components/auth/UserProfile';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen } from '@testing-library/react';
+import { screen } from '@testing-library/dom';
 import { renderWithProviders, renderWithAuth, renderWithSession } from '@/tests/utils/test-utils';
 import { SessionFixtures } from '@/tests/utils/test-fixtures';
 

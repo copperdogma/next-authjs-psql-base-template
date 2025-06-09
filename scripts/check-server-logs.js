@@ -18,7 +18,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const chalk = require('chalk'); // Make sure chalk is installed or handle missing module
+// Fallback chalk replacement to avoid ESM issues
+const chalk = {
+  red: text => `\x1b[31m${text}\x1b[0m`,
+  green: text => `\x1b[32m${text}\x1b[0m`,
+  yellow: text => `\x1b[33m${text}\x1b[0m`,
+  blue: text => `\x1b[34m${text}\x1b[0m`,
+};
 
 // Patterns that indicate an error or critical warning
 const ERROR_PATTERNS = [

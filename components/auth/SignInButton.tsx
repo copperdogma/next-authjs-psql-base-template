@@ -34,11 +34,6 @@ export default function SignInButton() {
         // If no session, we're signing in
         const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
 
-        // Only log in development mode
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Auth debug: Signing in with origin:', currentOrigin);
-        }
-
         await signInWithLogging('google', {
           callbackUrl: `${currentOrigin}/dashboard`,
           prompt: 'select_account',

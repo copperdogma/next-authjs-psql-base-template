@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import SignInButton from '@/components/auth/SignInButton';
 import { useSession } from 'next-auth/react';
@@ -191,13 +192,12 @@ describe('SignInButton Component', () => {
     consoleSpy.mockRestore();
   });
 
-  // Test for development mode console logging
-  it('logs to console when signing in during development mode', async () => {
+  // Test that sign in works correctly in development mode (console logging was removed)
+  it('handles sign in correctly in development mode', async () => {
     // Mock process.env.NODE_ENV without direct assignment
     const originalNodeEnv = process.env.NODE_ENV;
     jest.replaceProperty(process.env, 'NODE_ENV', 'development');
 
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     (useSession as jest.Mock).mockReturnValue({ data: null, status: 'unauthenticated' });
 
     const user = userEvent.setup();
@@ -205,14 +205,14 @@ describe('SignInButton Component', () => {
     const button = screen.getByTestId('auth-button');
     await user.click(button);
 
-    // Verify the dev mode console log was called
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Auth debug: Signing in with origin:',
-      expect.any(String)
+    // Verify signIn was called correctly in development mode
+    expect(signInWithLogging).toHaveBeenCalledTimes(1);
+    expect(signInWithLogging).toHaveBeenCalledWith(
+      'google',
+      expect.objectContaining({ callbackUrl: expect.stringContaining('/dashboard') })
     );
 
-    // Restore environment and cleanup
+    // Restore environment
     jest.replaceProperty(process.env, 'NODE_ENV', originalNodeEnv);
-    consoleSpy.mockRestore();
   });
 });
