@@ -2,6 +2,17 @@ const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({ dir: './' });
 
+/**
+ * Jest Configuration for Next.js Application
+ *
+ * This configuration uses Jest's multi-project setup to optimize testing:
+ * - `node` project: For server-side code (API routes, utilities, database operations)
+ * - `jsdom` project: For client-side code (React components, browser utilities)
+ *
+ * This separation allows for environment-specific optimizations and prevents
+ * JSDOM overhead when testing pure Node.js code.
+ */
+
 // Shared configuration for both test environments
 const sharedConfig = {
   // SWC options for faster and better ES module support
@@ -25,6 +36,9 @@ const sharedConfig = {
       },
     ],
   },
+
+  // Transform ESM modules from node_modules for compatibility with Jest
+  // These packages are published as ESM and need to be transpiled for Jest's CommonJS environment
   transformIgnorePatterns: [
     '/node_modules/(?!(@clerk|@radix-ui|@hookform|next|@mui|@emotion|@babel/runtime|next-auth|@auth\/core|oauth4webapi|jose|openid-client|@panva/hkdf|uuid|preact|preact-render-to-string|@auth/prisma-adapter|@prisma/client)/)',
   ],
@@ -101,7 +115,7 @@ const customJestConfig = {
   globalTeardown: '<rootDir>/tests/config/setup/globalTeardown.ts',
 
   projects: [
-    // Node environment
+    // Node environment - for server-side code testing (API routes, utilities, database operations)
     {
       displayName: 'node',
       testMatch: [
@@ -133,7 +147,7 @@ const customJestConfig = {
       ],
     },
 
-    // JSDOM environment
+    // JSDOM environment - for client-side code testing (React components, browser utilities)
     {
       displayName: 'jsdom',
       testMatch: [

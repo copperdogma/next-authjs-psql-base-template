@@ -148,32 +148,6 @@ export const AuthTestUtils = {
   renderWithExpiredSession: (ui: ReactElement): TestRenderResult => {
     return AuthTestUtils.renderWithSession(ui, SessionFixtures.expired);
   },
-
-  // For backward compatibility - deprecated
-  renderWithAuth: (ui: ReactElement): TestRenderResult => {
-    console.warn('renderWithAuth is deprecated, use renderWithSession instead');
-    const result = AuthTestUtils.renderWithSession(ui);
-    // Add mock auth functions for backward compatibility
-    return {
-      ...result,
-      mockSignIn: jest.fn(),
-      mockSignOut: jest.fn(),
-    };
-  },
-
-  renderLoading: (ui: ReactElement): TestRenderResult => {
-    console.warn(
-      'renderLoading is deprecated with NextAuth - use renderWithSession and mock useSession hook'
-    );
-    return AuthTestUtils.renderWithSession(ui);
-  },
-
-  renderWithError: (ui: ReactElement): TestRenderResult => {
-    console.warn(
-      'renderWithError is deprecated with NextAuth - use jest.mock to mock next-auth/react instead'
-    );
-    return AuthTestUtils.renderWithSession(ui);
-  },
 };
 
 // For backward compatibility

@@ -8,8 +8,18 @@ import { createSessionOperations } from './prisma-adapter/session-operations';
 import { createVerificationOperations } from './prisma-adapter/verification-operations';
 
 /**
- * Mock implementation of PrismaAdapter for testing
- * This serves as a drop-in replacement for @auth/prisma-adapter
+ * Mock implementation of PrismaAdapter for testing environments
+ *
+ * This is a full, in-memory re-implementation of the @auth/prisma-adapter that enables
+ * comprehensive testing of authentication logic without requiring a live database connection.
+ * It provides the same interface as the real adapter but operates entirely in memory,
+ * making tests faster and more isolated.
+ *
+ * Key features:
+ * - Full compatibility with NextAuth.js adapter interface
+ * - In-memory data storage for test isolation
+ * - Modular implementation for better maintainability
+ * - Comprehensive support for all auth operations (users, accounts, sessions, verification)
  *
  * The implementation is split into modular files for better code organization
  * and to comply with max-lines-per-function requirements.
