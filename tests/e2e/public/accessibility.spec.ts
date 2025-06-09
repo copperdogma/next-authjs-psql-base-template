@@ -1,8 +1,8 @@
-import { test, expect } from './utils/test-base';
+import { test, expect } from '../utils/test-base';
 import AxeBuilder from '@axe-core/playwright';
 import { ROUTES } from '../utils/routes';
 import { waitForElementToBeVisible } from '../utils/selectors';
-import { takeMobileScreenshot } from './utils/mobile-screenshot-helpers';
+import { takeMobileScreenshot } from '../utils/mobile-screenshot-helpers';
 
 /**
  * Accessibility Tests

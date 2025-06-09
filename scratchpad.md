@@ -2,36 +2,6 @@
 
 This document tracks progress, decisions, and issues encountered during the project setup.
 
-### Current Phase
-
-**✅ COMPLETED: Testing Suite Enhancement**
-
-All testing suite enhancements have been successfully implemented. The testing infrastructure is now optimized with:
-
-- ✅ All E2E test files properly organized into correct project directories
-- ✅ Standardized `.spec.ts` naming convention for E2E tests
-- ✅ Deprecated test utilities removed for cleaner codebase
-- ✅ Improved npm scripts for better local development workflow
-- ✅ Enhanced Jest configuration with comprehensive documentation
-- ✅ Better documented Prisma adapter mock for testing clarity
-- ✅ All unit tests passing (402/402)
-- ✅ All E2E tests passing (60/60)
-- ✅ Visual regression workflow scripts added
-
-**Next Steps**: Ready for subsystem analysis - Build, Configuration, and DX Scripts
-
-## Recent Actions ✅
-
-**2025-06-08 - Testing Suite Enhancement:**
-
-- ✅ **Organized E2E Test Structure**: Moved orphaned test files (`smoke.spec.ts`, `public-access.spec.ts`, `dashboard.spec.ts`) to appropriate project directories (`tests/e2e/public/` and `tests/e2e/authenticated/`)
-- ✅ **Standardized E2E Naming**: Renamed all E2E test files to use `.spec.ts` extension for consistency (e.g., `login-page.test.ts` → `login-page.spec.ts`)
-- ✅ **Cleaned Up Test Utilities**: Removed deprecated helper functions (`renderWithAuth`, `renderLoading`, `renderWithError`) from `test-fixtures.tsx` and updated corresponding tests
-- ✅ **Improved npm Scripts**: Changed `npm test` to run only unit tests for faster local development, added `npm run test:ci` for comprehensive testing, and added `npm run test:e2e:update-snapshots` for visual regression workflow
-- ✅ **Enhanced Jest Documentation**: Added comprehensive comments to `jest.config.js` explaining multi-project setup and ESM transformation requirements
-- ✅ **Documented Prisma Mock**: Added detailed JSDoc comments to `__mocks__/auth/prisma-adapter.ts` explaining the in-memory implementation benefits
-- ✅ **Verified Test Suite**: All 402 unit tests and 60 E2E tests passing with maintained coverage
-
 ## Codebase AnalysisAI Prompt
 
 I'm creating a github template with nextjs, authjs, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
@@ -146,54 +116,33 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ---
 
-Of course. Thank you for the feedback. You are absolutely correct to ask for a double-check, and your intuition on the first point was spot on. I have re-analyzed the codebase with your feedback in mind.
+### Comprehensive Testing Suite Enhancement Plan
 
-My previous analysis on the API route testing was mistaken. The project already follows the best practice of importing and testing the actual route handler directly in `tests/unit/api/user/me.test.ts`. This is an excellent implementation.
+Here is a refined, actionable checklist to improve the testing suite. Each item has been evaluated for genuine benefit to AI usability and template simplicity.
 
-I have re-validated my other suggestions and confirmed they represent meaningful enhancements toward the goal of a simple, elegant, and robust template. Below is the revised and verified comprehensive checklist.
+- [x] **Review E2E Test File Organization** ✅ _COMPLETED_
 
----
+  - **Objective**: Confirm that E2E test files are properly organized to match Playwright projects (`unauthenticated-tests` vs. `authenticated-chromium`).
+  - **Analysis**: Successfully moved all orphaned test files from `tests/e2e/auth/` to appropriate locations.
+  - **Implementation Results**:
+    1.  ✅ Moved unauthenticated auth flows (`invalid-credentials.spec.ts`, `registration.spec.ts`, `login-page.spec.ts`) to `tests/e2e/public/auth/`.
+    2.  ✅ Moved authenticated auth flows (`login-logout-cycle.spec.ts`, `auth-flow.spec.ts`, `mobile-auth.spec.ts`, `redirect.spec.ts`) to `tests/e2e/authenticated/auth/`.
+    3.  ✅ Moved shared `auth-selectors.ts` to central `tests/e2e/utils/`.
+    4.  ✅ Deleted empty `tests/e2e/auth/` directory.
 
-### ✅ **COMPLETED: Testing Suite Enhancement**
+- [x] **Eliminate Redundant E2E Utility Imports** ✅ _COMPLETED_
 
-All testing suite improvements have been successfully implemented:
+  - **Objective**: Simplify the project structure by removing unnecessary directory layers and making import paths more direct.
+  - **Analysis**: Successfully removed redundant utility directories and updated all import paths.
+  - **Implementation Results**:
+    1.  ✅ Deleted the `tests/e2e/public/utils` directory.
+    2.  ✅ Deleted the `tests/e2e/authenticated/utils` directory.
+    3.  ✅ Updated import paths in all test files to use central `tests/e2e/utils/` directory.
 
-**✅ 1. Unified Database Mocking Strategy**
-
-- Removed complex in-memory PrismaAdapter mock (`__mocks__/auth/prisma-adapter.ts` and entire `prisma-adapter/` directory)
-- Standardized on simple `jest-mock-extended` pattern via `prismaMock`
-- All tests now use consistent, maintainable mocking approach
-
-**✅ 2. Reorganized E2E Test Files**
-
-- Moved `theme-toggle.spec.ts` and `accessibility.spec.ts`, `navigation.spec.ts` to `tests/e2e/public/`
-- Removed duplicate profile test directory (kept correctly placed one in `authenticated/`)
-- All E2E tests now properly aligned with Playwright project structure
-
-**✅ 3. Consolidated Testing Documentation**
-
-- Created comprehensive `docs/TESTING.md` as single source of truth
-- Removed fragmented documentation files: `docs/testing/main.md`, `docs/e2e-testing.md`, `tests/README.md`, `tests/e2e/README-e2e.md`
-- Documentation now covers complete testing infrastructure with examples and best practices
-
-**✅ 4. Enhanced npm test Script**
-
-- Changed `npm test` from unit-only to comprehensive `test:ci` (unit + E2E)
-- Developers now get full validation by default with `npm test`
-- Faster `npm run test:unit` still available for development workflow
-
-**✅ 5. Simplified Browser API Mocks**
-
-- Consolidated all browser API mock factories into single `__mocks__/browser-api-mocks.js` file
-- Removed granular files: `headers.js`, `request.js`, `response.js`, `url.js`
-- Cleaner, more maintainable mock structure for template users
-
-**Verification Results:**
-
-- ✅ All 407 unit tests passing
-- ✅ Maintained 88.76% code coverage
-- ✅ E2E test structure properly organized
-- ✅ Database mocking unified and functional
-- ✅ Documentation consolidated and comprehensive
-
-The testing suite is now optimized for simplicity, clarity, and comprehensive validation - perfect for a template project.
+- [x] **Simplify Playwright WebServer Command** ✅ _COMPLETED_
+  - **Objective**: Remove an unnecessary layer of abstraction and improve cross-platform compatibility for running E2E tests.
+  - **Analysis**: Successfully replaced shell script wrapper with direct npm command for better cross-platform compatibility.
+  - **Implementation Results**:
+    1.  ✅ Updated `playwright.config.ts` webServer command from `'./scripts/run-e2e-server.sh'` to `'npm run dev:test'`.
+    2.  ✅ Deleted the unnecessary `scripts/run-e2e-server.sh` file.
+    3.  ✅ Fixed final import path issue in `edit-profile.spec.ts`.

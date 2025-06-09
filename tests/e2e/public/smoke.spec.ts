@@ -1,4 +1,4 @@
-import { test, expect } from './utils/test-base';
+import { test, expect } from '../utils/test-base';
 
 /**
  * Consolidated smoke test to verify basic application functionality

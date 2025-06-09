@@ -1,4 +1,4 @@
-import { test, expect, Page } from './utils/test-base';
+import { test, expect, Page } from '../utils/test-base';
 
 /**
  * Helper function to check if a color is dark based on its RGB values

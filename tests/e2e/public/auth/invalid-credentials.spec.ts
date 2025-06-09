@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { UI_ELEMENTS } from './auth-selectors';
+import { UI_ELEMENTS } from '../../utils/auth-selectors';
 
 test.describe('Authentication', () => {
   test('should display an error message for invalid credentials', async ({ page }) => {

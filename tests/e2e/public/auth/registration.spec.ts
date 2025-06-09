@@ -1,5 +1,5 @@
 import { test, expect, Page } from '../../utils/test-base';
-import { ROUTES } from '../../../../lib/constants/routes';
+import { ROUTES } from '../../utils/routes';
 import { faker } from '@faker-js/faker';
 
 // Base URL is set in playwright.config.ts

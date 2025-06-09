@@ -1,6 +1,6 @@
 import { test, expect, Page } from '../../utils/test-base';
-import { ROUTES } from '../../../../lib/constants/routes';
-import { UI_ELEMENTS } from './auth-selectors'; // Import from the new file
+import { ROUTES } from '../../utils/routes';
+import { UI_ELEMENTS } from '../../utils/auth-selectors';
 import { loggers } from '../../../../lib/logger';
 
 /**
@@ -47,7 +47,7 @@ test.describe('Authentication Cycle', () => {
     try {
       await page.waitForURL(`${baseUrl}${ROUTES.DASHBOARD}`, { timeout: 15000 });
       const dashboardIndicator = page.locator(
-        'h1, [data-testid="dashboard-heading"], [data-testid="dashboard-content"]'
+        '#page-title, [data-testid="dashboard-heading"], [data-testid="dashboard-content"]'
       );
       await expect(dashboardIndicator).toBeVisible({ timeout: 10000 });
       console.log('✅ Login successful - user is on the dashboard.');

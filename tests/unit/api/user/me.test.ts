@@ -38,7 +38,7 @@ jest.mock('@/lib/services/api-logger-service', () => ({
 
 // Create a test implementation that mimics the actual route structure
 // but can be directly tested without loading all the complex dependencies
-async function testRouteHandler(req: NextRequest, logger: pino.Logger): Promise<NextResponse> {
+async function testRouteHandler(_req: NextRequest, logger: pino.Logger): Promise<NextResponse> {
   try {
     // Import auth inside the function to ensure mocks are applied
     const { auth } = await import('@/lib/auth');

@@ -157,7 +157,7 @@ const config: PlaywrightTestConfig = defineConfig({
      * Use E2E_SERVER_COMMAND for local development and CI.
      * Fallback to a simpler command if E2E_SERVER_COMMAND is not set.
      */
-    command: './scripts/run-e2e-server.sh',
+    command: 'npm run dev:test',
     url: `http://127.0.0.1:${PORT}/api/health`,
     timeout: TIMEOUT_SERVER, // Keep a generous timeout for server start
     reuseExistingServer: !process.env.CI,

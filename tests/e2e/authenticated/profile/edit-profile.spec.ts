@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 // import { TEST_USER } from '../fixtures/test-fixtures'; // Old import
-import { TEST_USER } from '../utils/test-constants'; // Corrected TEST_USER import
+import { TEST_USER } from '../../utils/test-constants'; // Corrected TEST_USER import
 import * as path from 'path';
 // import { logger } from '@/lib/logger'; // Removed unused logger import
 

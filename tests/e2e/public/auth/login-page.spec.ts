@@ -13,8 +13,8 @@ test.describe('Login Page Rendering', () => {
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
     // Verify the page has rendered properly by checking for basic structure elements
-    const headingElement = page.getByRole('heading', { name: 'Login' });
-    await expect(headingElement).toBeVisible({ timeout: 5000 });
+    const loginHeading = page.locator('#login-header');
+    await expect(loginHeading).toBeVisible({ timeout: 5000 });
 
     // Verify page is not empty
     const bodyContent = await page.evaluate(() => {
@@ -45,8 +45,8 @@ test.describe('Login Page Rendering', () => {
     await expect(signInButton).toBeVisible({ timeout: 5000 });
 
     // Verify the page has rendered properly by checking for basic structure
-    const headingElement = page.getByRole('heading', { name: 'Login' });
-    await expect(headingElement).toBeVisible({ timeout: 5000 });
+    const loginHeading = page.locator('#login-header');
+    await expect(loginHeading).toBeVisible({ timeout: 5000 });
 
     // Verify page is not empty
     const bodyContent = await page.evaluate(() => {

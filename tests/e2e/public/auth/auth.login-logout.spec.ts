@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-describe('Authentication Redirects', () => {
+test.describe('Authentication Redirects', () => {
   test('Attempt to access /dashboard without login should redirect to /login', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/.*login/);
