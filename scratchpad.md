@@ -8,7 +8,9 @@ I'm creating a github template with nextjs, authjs, and psql. The idea is for th
 
 I'm going to paste the entire codebase below.
 
-I want you to analyze it for best practices. This should be a simple, elegant, ready to use out of the box template, so look for anything that should be removed, enhanced, or added to get it to that perfect state.
+I want you to analyze it for best practices. This should be a simple, elegant, ready to use out of the box template, so look for anything that could be improved. I want the architecture to be clean and following best practices and solid principles.
+
+I want you to be very thorough here. Break it down into clear sections or tasks that can be addressed item by item. I want this template to be production ready.
 
 ## Caveats For AI analysis:
 
@@ -36,7 +38,7 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [ ] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
+- [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
 
 Note that this may not be all of the files, so be sure to look at the entire codebase.
 
@@ -106,7 +108,10 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
       - [x] **Enhance Jest Configuration Clarity**: Added comprehensive comments explaining the multi-project setup and ESM transformation requirements.
       - [x] **Enhance Prisma Adapter Mock Documentation**: Added detailed JSDoc comments explaining the in-memory implementation and its benefits for testing.
   - [x] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
-  - [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
+  - [x] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
+    - [x] **1. Simplify Global CSS by Removing Redundant Media Query**: Confirmed that the `@media (prefers-color-scheme: dark)` query was already not present, as the app correctly uses next-themes with class-based strategy.
+    - [x] **2. Optimize Performance by Scoping Global Transitions**: Changed the universal selector `*` to target only interactive elements (`a, button, [role="button"], input, textarea, select`) to improve performance and prevent unwanted visual glitches.
+    - [x] **3. Improve Maintainability by Abstracting Theme Names into Constants**: Created `lib/constants/theme.ts` with `THEME_MODES` constants and `ThemeMode` type, updated `ThemeMenu.tsx` and `ThemeToggle.tsx` to use these constants instead of hardcoded strings for better maintainability and type safety.
   - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 - [ ] try to upgrade everything again
 - [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
@@ -116,35 +121,132 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ---
 
-### Build & Configuration Enhancement Checklist
+---
 
-- [x] **Enhance `package.json` Scripts for Seeding and Clarity** ✅ **EXCELLENT - High AI Development Value**
+### Styling and Theming Enhancement Checklist
 
-  - **Action**: Add a standard database seeding script and inline comments to `package.json` to improve usability and readability.
-  - **Reasoning**: A `db:seed` script is a common requirement for developers to populate their database for testing or development. Adding comments to complex scripts like `dev:test` and `test:e2e` makes their purpose immediately clear to new developers or AI agents using the template.
-  - **AI Benefits**: Clear script documentation allows AI to understand purpose without context switching, reduces setup time significantly.
-  - **File to Edit**: `package.json`
-  - **Status**: ✅ **COMPLETED** - Added `db:seed` script to package.json
+- [ ] **1. Simplify Global CSS by Removing Redundant Media Query**
 
-- [x] **Create a Database Seed File** ✅ **EXCELLENT - Very High AI Development Value**
+  - **File to Modify**: `app/globals.css`
+  - **Reasoning**: Your application correctly uses the `next-themes` library with a `class` strategy (e.g., `<html class="dark">`). This means the theme is determined by the presence of a class on the HTML tag, not the user's OS-level preference via the `@media (prefers-color-scheme: dark)` query. The current CSS file contains both, which is redundant. Removing the media query establishes the `next-themes` provider as the single source of truth, simplifies the CSS, and prevents potential style conflicts.
+  - **Implementation Details**:
 
-  - **Action**: Add a `seed.ts` file in the `prisma/` directory to provide a starting point for database seeding.
-  - **Reasoning**: This file works in conjunction with the `db:seed` script. It provides an immediate, working example of how to programmatically add data to the database, which is a critical feature for any new project.
-  - **AI Benefits**: Provides immediate working data for testing, eliminates need for AI to create seed data from scratch, demonstrates proper user creation patterns.
-  - **File to Create**: `prisma/seed.ts`
-  - **Status**: ✅ **COMPLETED** - Created seed file with admin user creation example
+    1.  Open the `app/globals.css` file.
+    2.  Locate and **delete** the entire `@media (prefers-color-scheme: dark)` block.
 
-- [x] **Configure Prisma for Seeding** ✅ **CORRECT - Medium-High AI Development Value**
+        ```css
+        /* DELETE THIS ENTIRE BLOCK */
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --background: #0a0a0a;
+            --foreground: #ededed;
+          }
+        }
+        ```
 
-  - **Action**: Add Prisma seed configuration to `package.json` to enable the `db seed` command.
-  - **Reasoning**: This step is required by Prisma to link the `npm run db:seed` command to the `prisma/seed.ts` file.
-  - **AI Benefits**: Makes seed script discoverable and executable via standard commands, provides clear integration point.
-  - **File to Edit**: `package.json` (NOT `prisma/schema.prisma` as originally stated)
-  - **Status**: ✅ **COMPLETED** - Added Prisma seed configuration to package.json
+- [ ] **2. Optimize Performance by Scoping Global Transitions**
 
-- [x] **Simplify `next.config.ts`** ✅ **GOOD - Medium AI Development Value**
-  - **Action**: Remove the obsolete commented-out `thread-stream` external configuration.
-  - **Reasoning**: The configuration contains commented-out code that was a workaround for older Pino.js versions. Modern Next.js handles Pino integration better through `serverExternalPackages` (which is already properly configured). Removing obsolete code improves maintainability.
-  - **AI Benefits**: Cleaner configuration reduces cognitive load, fewer commented-out lines mean less confusion about what's active.
-  - **File to Edit**: `next.config.ts`
-  - **Status**: ✅ **COMPLETED** - Removed obsolete thread-stream external configuration
+  - **File to Modify**: `app/globals.css`
+  - **Reasoning**: The file currently applies a CSS `transition` to every element on the page using the universal selector (`*`). This is inefficient and can cause performance issues (layout thrashing) and unwanted visual glitches on complex pages, as the browser must account for transitions on non-interactive elements. Best practice is to apply transitions only to elements that a user interacts with.
+  - **Implementation Details**:
+
+    1.  Open the `app/globals.css` file.
+    2.  Find the `*` selector that defines the transitions.
+    3.  Replace the universal selector (`*`) with a more specific list of selectors targeting interactive and state-changing elements.
+
+        ```css
+        /* ---- REPLACE THIS ---- */
+        * {
+          transition:
+            background-color var(--transition-normal) ease,
+            border-color var(--transition-normal) ease,
+            color var(--transition-normal) ease,
+            fill var(--transition-normal) ease,
+            stroke var(--transition-normal) ease,
+            box-shadow var(--transition-normal) ease;
+        }
+
+        /* ---- WITH THIS ---- */
+        a,
+        button,
+        [role='button'],
+        input,
+        textarea,
+        select {
+          transition:
+            background-color var(--transition-normal) ease,
+            border-color var(--transition-normal) ease,
+            color var(--transition-normal) ease,
+            fill var(--transition-normal) ease,
+            stroke var(--transition-normal) ease,
+            box-shadow var(--transition-normal) ease;
+        }
+        ```
+
+- [ ] **3. Improve Maintainability by Abstracting Theme Names into Constants**
+
+  - **Files to Modify**: `components/ui/theme/ThemeMenu.tsx`
+  - **File to Create**: `lib/constants/theme.ts`
+  - **Reasoning**: The `ThemeMenu.tsx` component uses hardcoded strings ('light', 'dark', 'system') to represent theme modes. This pattern, known as "magic strings," is prone to typos and makes the code harder to maintain. By abstracting these values into a shared constants file, you ensure consistency, enable type safety, and make the code self-documenting.
+  - **Implementation Details**:
+
+    1.  **Create a new file** at `lib/constants/theme.ts` with the following content:
+
+        ```typescript
+        // lib/constants/theme.ts
+        export const THEME_MODES = {
+          LIGHT: 'light',
+          DARK: 'dark',
+          SYSTEM: 'system',
+        } as const;
+
+        export type ThemeMode = (typeof THEME_MODES)[keyof typeof THEME_MODES];
+        ```
+
+    2.  **Update `components/ui/theme/ThemeMenu.tsx`** to use these new constants.
+
+        ```typescript
+        // components/ui/theme/ThemeMenu.tsx
+
+        import React from 'react';
+        import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+        import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
+        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme'; // Import constants
+
+        interface ThemeMenuProps {
+          anchorEl: null | HTMLElement;
+          open: boolean;
+          onClose: () => void;
+          currentTheme: string | undefined;
+          onThemeChange: (theme: ThemeMode) => void; // Use ThemeMode type
+        }
+
+        export default function ThemeMenu({
+          // ...props
+        }: ThemeMenuProps) {
+          const menuOptions = [
+            { value: THEME_MODES.LIGHT, label: 'Light', icon: <LightMode fontSize="small" /> },
+            { value: THEME_MODES.DARK, label: 'Dark', icon: <DarkMode fontSize="small" /> },
+            { value: THEME_MODES.SYSTEM, label: 'System', icon: <BrightnessAuto fontSize="small" /> },
+          ];
+
+          // ... rest of the component remains the same
+        }
+        ```
+
+    3.  **Update `components/ui/ThemeToggle.tsx`** to use the new `ThemeMode` type for better type safety.
+
+        ```typescript
+        // components/ui/ThemeToggle.tsx
+
+        import { ThemeMode } from '@/lib/constants/theme'; // Import ThemeMode type
+        //...
+
+        const handleThemeChange = (newTheme: ThemeMode) => {
+          // Use ThemeMode type here
+          setTheme(newTheme);
+          handleClose();
+        };
+
+        // ... rest of the component
+        ```

@@ -98,7 +98,12 @@ html:not(.light):not(.dark) * {
 }
 
 /* Base styles to ensure smooth animations when not in prevent-transition mode */
-* {
+a,
+button,
+[role='button'],
+input,
+textarea,
+select {
   transition:
     background-color var(--transition-normal) ease,
     border-color var(--transition-normal) ease,

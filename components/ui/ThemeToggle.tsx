@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
 import { useTheme } from 'next-themes';
+import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
 import ThemeMenu from './theme/ThemeMenu';
 
 /**
@@ -17,12 +18,12 @@ function ThemeIcon({
   resolvedTheme: string | undefined;
 }) {
   // First check if theme is set to system/auto
-  if (theme === 'system') {
+  if (theme === THEME_MODES.SYSTEM) {
     return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
   }
 
   // Otherwise use the resolved theme for the icon (what's actually showing)
-  return resolvedTheme === 'dark' ? (
+  return resolvedTheme === THEME_MODES.DARK ? (
     <DarkMode fontSize="small" data-testid="DarkModeIcon" />
   ) : (
     <LightMode fontSize="small" data-testid="LightModeIcon" />
@@ -60,7 +61,7 @@ export default function ThemeToggle() {
     setAnchorEl(null);
   };
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = (newTheme: ThemeMode) => {
     setTheme(newTheme);
     handleClose();
   };
@@ -70,7 +71,7 @@ export default function ThemeToggle() {
 
   return (
     <>
-      <Tooltip title={`Theme: ${theme === 'system' ? 'Auto' : theme}`}>
+      <Tooltip title={`Theme: ${theme === THEME_MODES.SYSTEM ? 'Auto' : theme}`}>
         <IconButton
           onClick={handleClick}
           color="inherit"

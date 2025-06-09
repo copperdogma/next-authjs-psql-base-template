@@ -3,13 +3,14 @@
 import React from 'react';
 import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { DarkMode, LightMode, BrightnessAuto } from '@mui/icons-material';
+import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
 
 interface ThemeMenuProps {
   anchorEl: null | HTMLElement;
   open: boolean;
   onClose: () => void;
   currentTheme: string | undefined;
-  onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
+  onThemeChange: (theme: ThemeMode) => void;
 }
 
 /**
@@ -22,11 +23,11 @@ export default function ThemeMenu({
   currentTheme,
   onThemeChange,
 }: ThemeMenuProps) {
-  // Menu options configuration
+  // Menu options configuration using theme constants
   const menuOptions = [
-    { value: 'light', label: 'Light', icon: <LightMode fontSize="small" /> },
-    { value: 'dark', label: 'Dark', icon: <DarkMode fontSize="small" /> },
-    { value: 'system', label: 'System', icon: <BrightnessAuto fontSize="small" /> },
+    { value: THEME_MODES.LIGHT, label: 'Light', icon: <LightMode fontSize="small" /> },
+    { value: THEME_MODES.DARK, label: 'Dark', icon: <DarkMode fontSize="small" /> },
+    { value: THEME_MODES.SYSTEM, label: 'System', icon: <BrightnessAuto fontSize="small" /> },
   ] as const;
 
   return (
