@@ -1,100 +1,65 @@
-# Testing Strategy
-
-This document provides an overview of the testing approach used in this project.
+# Testing Suite
 
 ## Overview
 
-The project uses a comprehensive testing strategy that includes:
-
-- **Unit Testing**: For testing individual components, functions, and API endpoints in isolation
-- **Integration Testing**: For testing interactions between components
-- **End-to-End (E2E) Testing**: For testing the application as a whole from a user's perspective
-- **Visual Regression Testing**: For catching unintended visual changes in the UI
-
-## Frameworks
-
-- **Jest**: For unit and integration tests
-- **React Testing Library**: For testing React components
-- **Playwright**: For E2E and visual regression testing
-- **Supertest**: For testing API endpoints
+Comprehensive testing strategy using Jest (unit/integration), Playwright (E2E), and React Testing Library (components).
 
 ## Directory Structure
 
 ```
 tests/
 ├── config/             # Test configuration files
-├── e2e/                # End-to-end tests
-│   ├── authenticated/  # Tests that require authentication
-│   ├── public/         # Tests that don't require authentication
-│   ├── setup/          # Setup files for E2E tests
-│   └── utils/          # Utilities for E2E tests
-├── integration/        # Integration tests
-├── setup/              # General test setup
-└── unit/               # Unit tests
-    ├── api/            # API tests
-    ├── components/     # Component tests
-    ├── lib/            # Library tests
-    └── utils/          # Utility tests
+├── e2e/                # End-to-end tests (Playwright)
+│   ├── authenticated/  # Tests requiring authentication
+│   ├── public/         # Unauthenticated tests
+│   ├── setup/          # E2E setup files
+│   └── utils/          # E2E utilities
+├── unit/               # Unit tests (Jest)
+│   ├── api/            # API endpoint tests
+│   ├── components/     # React component tests
+│   └── lib/            # Library/utility tests
+└── utils/              # Shared test utilities
 ```
 
 ## Running Tests
 
-The project provides several npm scripts for running tests:
-
-- `npm test` or `npm run test`: Run all tests (unit and E2E)
-- `npm run test:unit`: Run all unit tests
-- `npm run test:watch`: Run unit tests in watch mode
-- `npm run test:coverage`: Run unit tests with coverage reporting
-- `npm run test:e2e`: Run all E2E tests
-- `npm run test:e2e:ui-only`: Run only UI E2E tests
-- `npm run test:e2e:auth-only`: Run only authentication E2E tests
-- `npm run test:e2e:debug`: Run E2E tests with Playwright's debug mode
-- `npm run test:e2e:headed`: Run E2E tests in headed mode (visible browser)
-- `npm run test:e2e:report`: View the HTML test report from previous test runs
-
-To run a specific test file:
-
 ```bash
-npm test <test-file>
+npm test                    # All tests (unit + E2E)
+npm run test:unit          # Unit tests with coverage
+npm run test:watch         # Unit tests in watch mode
+npm run test:e2e           # All E2E tests
+npm run test:e2e:auth-only # Authentication E2E tests only
+npm run test:e2e:debug     # E2E tests with Playwright debugger
+npm run test:e2e:report    # View HTML test report
 ```
 
 ## Core Utilities
 
 ### Unit Testing
 
-The project provides several utilities for unit testing:
-
-- `renderWithProviders`: A wrapper around React Testing Library's `render` function that includes necessary providers (Theme, Redux, etc.)
-- `mockSession`: A utility for mocking the NextAuth.js session
-- `mockRouter`: A utility for mocking the Next.js router
-
-Example:
-
-```typescript
-import { renderWithProviders } from '@/tests/utils/render-with-providers';
-import MyComponent from '@/components/MyComponent';
-
-describe('MyComponent', () => {
-  it('renders correctly', () => {
-    const { getByText } = renderWithProviders(<MyComponent />);
-    expect(getByText('Hello, World!')).toBeInTheDocument();
-  });
-});
-```
+- `renderWithProviders()` from `@/tests/utils/test-utils` - Renders components with SessionProvider and ThemeProvider
+- `renderWithAuth()` - Renders with authenticated session
+- `mockSession` - Mock NextAuth.js session data
 
 ### E2E Testing
 
-The project uses Playwright for E2E testing. Key utilities include:
+- `auth.setup.ts` - Creates authenticated storage state for tests
+- `test-base.ts` - Extended Playwright fixtures with auth context
+- Visual regression tests use `--update-snapshots` to refresh baselines
 
-- `auth.setup.ts`: Sets up authentication for tests that require it
-- `test-base.ts`: Provides a base test fixture with common utilities
+## Playwright Projects
 
-## Visual Regression Testing
+- `setup` - Authentication setup (runs first)
+- `unauthenticated-tests` - Public routes and UI components
+- `authenticated-chromium` - Tests requiring authentication
+- `Mobile Chrome` - Mobile viewport testing
 
-The project uses Playwright's snapshot testing capabilities for visual regression testing. To update snapshots after intentional UI changes:
+## AI Development
+
+Use PM2-managed server for interactive development:
 
 ```bash
-npx playwright test --update-snapshots
+npm run ai:start    # Start background server
+npm run ai:health   # Check server status
+npm run ai:logs     # View server logs
 ```
-
-Visual regression tests are stored in the `tests/e2e/public/visual.spec.ts` file. Snapshots are stored in the repository and should be committed with code changes.

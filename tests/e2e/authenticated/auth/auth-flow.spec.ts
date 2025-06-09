@@ -20,7 +20,7 @@ test.describe('Authentication Flow', () => {
   });
 
   test('login page should redirect authenticated users', async ({ page }) => {
-    // This test runs in an authenticated context (chromium project depends on auth.setup.ts)
+    // This test runs in an authenticated context (authenticated-chromium project depends on auth.setup.ts)
     try {
       await page.goto(ROUTES.LOGIN, {
         waitUntil: 'domcontentloaded',

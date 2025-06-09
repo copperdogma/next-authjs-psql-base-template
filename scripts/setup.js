@@ -63,7 +63,7 @@ const FILES_TO_PROCESS = [
   'LICENSE',
   'app/manifest.ts',
   'tests/utils/test-constants.ts',
-  'tests/README-main.md',
+      'tests/README.md',
   'scripts/test-debug-helpers/simple-layout-test.js',
   'docs/testing',
   'docs/temp_project_reference_update.md',
@@ -374,7 +374,7 @@ function processFile(filePath, answers) {
     // For any file in docs/testing or with .md extension, we should always process
     const shouldAlwaysProcess =
       filePath.includes('docs/testing') ||
-      filePath.includes('tests/README-main.md') ||
+      filePath.includes('tests/README.md') ||
       extension === '.md';
 
     if (!shouldAlwaysProcess && !supportedExtensions.includes(extension)) {

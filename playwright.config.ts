@@ -99,7 +99,7 @@ const config: PlaywrightTestConfig = defineConfig({
 
     // UI tests that don't require authentication
     {
-      name: 'ui-tests',
+      name: 'unauthenticated-tests',
       testDir: './tests/e2e/public',
       use: {
         ...devices['Desktop Chrome'],
@@ -108,7 +108,7 @@ const config: PlaywrightTestConfig = defineConfig({
 
     // Authenticated tests in Chromium
     {
-      name: 'chromium',
+      name: 'authenticated-chromium',
       testDir: './tests/e2e/authenticated',
       use: {
         ...devices['Desktop Chrome'],

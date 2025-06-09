@@ -16,8 +16,8 @@ This document provides an overview of the end-to-end testing setup for this proj
 The tests are organized into several projects within the Playwright configuration:
 
 1. **`setup`**: Handles authentication setup, creating a reusable authenticated state
-2. **`ui-tests`**: Basic UI tests that don't require authentication
-3. **`chromium`**: Tests that run with authentication enabled
+2. **`unauthenticated-tests`**: Basic UI tests that don't require authentication
+3. **`authenticated-chromium`**: Tests that run with authentication enabled
 4. **`api`**: Tests for API endpoints without browser rendering
 
 ## Running Tests

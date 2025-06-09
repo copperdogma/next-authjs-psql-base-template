@@ -57,7 +57,7 @@ For more detailed guidance on specific testing topics, refer to these documentat
 
 For implementation-specific details, refer to the README files in each test directory:
 
-- **/tests/README-main.md**: Unit and API test implementation details
+- **/tests/README.md**: Unit and API test implementation details
 - **/tests/e2e/README-e2e.md**: E2E test implementation details
 
 ## Test Commands

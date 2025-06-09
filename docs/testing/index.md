@@ -9,7 +9,7 @@ This directory contains all the testing documentation for the next-auth-psql-app
 
 ## Implementation Documentation
 
-- [Unit and API Testing](../../tests/README-main.md) - Unit and API test implementation details
+- [Unit and API Testing](../../tests/README.md) - Unit and API test implementation details
 - [E2E Testing Implementation](../../tests/e2e/README-e2e.md) - Playwright E2E test suite implementation details
 
 ## Additional References
