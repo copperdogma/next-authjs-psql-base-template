@@ -54,7 +54,7 @@
     "dev:background": "npm run dev &"
   },
   "dependencies": {
-    "@auth/core": "^0.38.0",
+    "@auth/core": "^0.39.1",
     "@auth/prisma-adapter": "^2.8.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
