@@ -118,31 +118,43 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ### Comprehensive Testing Suite Enhancement Plan
 
-Here is a refined, actionable checklist to improve the testing suite. Each item has been evaluated for genuine benefit to AI usability and template simplicity.
+Here is a refined, actionable checklist to improve the testing suite. **Status updated based on current implementation analysis.**
 
-- [x] **Review E2E Test File Organization** ✅ _COMPLETED_
+- [x] **Consolidate E2E Selectors** ✅ **COMPLETED**
 
-  - **Objective**: Confirm that E2E test files are properly organized to match Playwright projects (`unauthenticated-tests` vs. `authenticated-chromium`).
-  - **Analysis**: Successfully moved all orphaned test files from `tests/e2e/auth/` to appropriate locations.
-  - **Implementation Results**:
-    1.  ✅ Moved unauthenticated auth flows (`invalid-credentials.spec.ts`, `registration.spec.ts`, `login-page.spec.ts`) to `tests/e2e/public/auth/`.
-    2.  ✅ Moved authenticated auth flows (`login-logout-cycle.spec.ts`, `auth-flow.spec.ts`, `mobile-auth.spec.ts`, `redirect.spec.ts`) to `tests/e2e/authenticated/auth/`.
-    3.  ✅ Moved shared `auth-selectors.ts` to central `tests/e2e/utils/`.
-    4.  ✅ Deleted empty `tests/e2e/auth/` directory.
+  - **Analysis**: The codebase contains duplicate `auth-selectors.ts` files in `tests/e2e/authenticated/auth/` and `tests/e2e/public/auth/` that are identical copies. A centralized version already exists at `tests/e2e/utils/auth-selectors.ts`.
+  - **Status**: **COMPLETED** - All duplicate files removed, tests using centralized selectors
+  - **AI Impact**: **HIGH** - Single source of truth prevents AI confusion about which selectors to use
+  - **Action**: ✅ Deleted the duplicate files in `tests/e2e/authenticated/auth/auth-selectors.ts` and `tests/e2e/public/auth/auth-selectors.ts`. All imports already use the centralized version at `tests/e2e/utils/auth-selectors.ts`.
 
-- [x] **Eliminate Redundant E2E Utility Imports** ✅ _COMPLETED_
+- [x] **Remove Redundant Mock Setup File** ✅ **COMPLETED**
 
-  - **Objective**: Simplify the project structure by removing unnecessary directory layers and making import paths more direct.
-  - **Analysis**: Successfully removed redundant utility directories and updated all import paths.
-  - **Implementation Results**:
-    1.  ✅ Deleted the `tests/e2e/public/utils` directory.
-    2.  ✅ Deleted the `tests/e2e/authenticated/utils` directory.
-    3.  ✅ Updated import paths in all test files to use central `tests/e2e/utils/` directory.
+  - **Analysis**: The file `__mocks__/jest-api-setup.js` exists but is orphaned. The `jest.config.js` correctly uses `jest.setup.api.js` and `tests/config/setup/jest.setup.api.mocks.ts`.
+  - **Status**: **COMPLETED** - Orphaned file removed
+  - **AI Impact**: **MEDIUM** - Reduces confusion about which setup file to use
+  - **Action**: ✅ Deleted the `__mocks__/jest-api-setup.js` file to remove unused code.
 
-- [x] **Simplify Playwright WebServer Command** ✅ _COMPLETED_
-  - **Objective**: Remove an unnecessary layer of abstraction and improve cross-platform compatibility for running E2E tests.
-  - **Analysis**: Successfully replaced shell script wrapper with direct npm command for better cross-platform compatibility.
-  - **Implementation Results**:
-    1.  ✅ Updated `playwright.config.ts` webServer command from `'./scripts/run-e2e-server.sh'` to `'npm run dev:test'`.
-    2.  ✅ Deleted the unnecessary `scripts/run-e2e-server.sh` file.
-    3.  ✅ Fixed final import path issue in `edit-profile.spec.ts`.
+- [x] **Optimize `package.json` Test Scripts for Better DX** ✅ **COMPLETED**
+
+  - **Analysis**:
+    1. ✅ The default `npm test` script now runs only unit tests for faster local development
+    2. ✅ The `test:e2e:update-snapshots` script already exists and works correctly
+  - **Status**: **COMPLETED** - Main test script optimized for faster local feedback
+  - **AI Impact**: **HIGH** - Faster feedback loops crucial for AI development workflows
+  - **Action**: ✅ Changed the `test` script in `package.json` from `"test": "npm run test:ci"` to `"test": "npm run test:unit"` for faster local validation.
+
+- [x] **Enhance Configuration File Clarity with Comments** ✅ **ALREADY IMPLEMENTED**
+
+  - **Analysis**: Both `jest.config.js` and `playwright.config.ts` already have excellent, comprehensive comments explaining multi-project setup, dependencies, transformIgnorePatterns, and storageState usage.
+  - **Status**: **COMPLETED** - Detailed JSDoc-style comments already present
+  - **AI Impact**: **Already achieved** - Well-documented configs help AI understand complex setups
+
+- [x] **Improve Mock Implementation Documentation** ✅ **COMPLETED**
+  - **Analysis**: Enhanced `__mocks__/db/prismaMocks.ts` with comprehensive JSDoc explaining singleton patterns, mock factories, and how tests can extend these mocks.
+  - **Status**: **COMPLETED** - Comprehensive documentation added with examples and best practices
+  - **AI Impact**: **MEDIUM-HIGH** - Well-documented mocks help AI understand testing patterns
+  - **Action**: ✅ Added detailed JSDoc comments to key mocking files explaining:
+    - The singleton pattern usage in prismaMocks.ts
+    - How to extend mocks in individual tests
+    - Usage examples and best practices
+    - Mock factory patterns and reset functionality

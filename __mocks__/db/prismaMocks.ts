@@ -1,7 +1,58 @@
+/**
+ * Prisma Mock Implementation
+ *
+ * This file provides a comprehensive mock implementation of the Prisma client for testing.
+ * It uses jest-mock-extended to create deep mocks and follows a singleton pattern to ensure
+ * consistent state across all tests.
+ *
+ * ## Architecture:
+ * - Singleton Pattern: One shared mock instance across all tests
+ * - Deep Mocking: All Prisma methods are automatically mocked
+ * - Default Implementations: Common operations have sensible defaults
+ * - Extensible: Individual tests can override specific behaviors
+ *
+ * ## Usage Examples:
+ *
+ * ### Basic Usage in Tests:
+ * ```typescript
+ * import { prismaMock } from '@/__mocks__/db/prismaMocks';
+ *
+ * // Use default mocks (returns mockUser data)
+ * const user = await userService.getUserById('123');
+ * expect(prismaMock.user.findUnique).toHaveBeenCalled();
+ * ```
+ *
+ * ### Override Specific Behaviors:
+ * ```typescript
+ * // Override for specific test scenarios
+ * prismaMock.user.findUnique.mockResolvedValue(null); // Simulate not found
+ * prismaMock.user.create.mockRejectedValue(new Error('DB error')); // Simulate error
+ * ```
+ *
+ * ### Reset Between Tests:
+ * ```typescript
+ * import { resetPrismaMock } from '@/__mocks__/db/prismaMocks';
+ *
+ * beforeEach(() => {
+ *   resetPrismaMock(); // Clears all call history and restores defaults
+ * });
+ * ```
+ *
+ * ## Mock Factory Pattern:
+ * The file provides factory functions that create mock data with sensible defaults.
+ * This ensures tests are predictable and reduces boilerplate setup code.
+ */
+
 import { PrismaClient, User } from '@prisma/client';
 import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
 import { mockUser as defaultMockUserData } from '../data/mockData'; // Corrected path
 
+/**
+ * Singleton Prisma mock instance
+ *
+ * This is the main mock that should be imported in tests. It provides deep mocking
+ * of all Prisma client methods with intelligent defaults for common operations.
+ */
 export const prismaMock = mockDeep<PrismaClient>();
 
 // Create a type for user relations to avoid using 'any'
@@ -17,7 +68,16 @@ const fullMockUser: User & UserRelations = {
   sessions: [],
 };
 
-// Function to set default mock implementations
+/**
+ * Mock Factory: Sets up intelligent default implementations for Prisma operations
+ *
+ * This function provides sensible defaults for common database operations:
+ * - CRUD operations return predictable mock data
+ * - Transactions are properly mocked to work with test code
+ * - Raw queries return empty results by default
+ *
+ * These defaults can be overridden in individual tests for specific scenarios.
+ */
 const setDefaultPrismaMocks = () => {
   // Default User mocks
   prismaMock.user.findUnique.mockResolvedValue(fullMockUser);
@@ -64,6 +124,19 @@ const setDefaultPrismaMocks = () => {
 // Apply defaults when the mock is initialized
 setDefaultPrismaMocks();
 
+/**
+ * Reset Function: Cleans mock state and restores defaults
+ *
+ * Use this function in test setup (beforeEach) to ensure clean state:
+ * - Clears all call history and mock implementations
+ * - Restores intelligent defaults for predictable test behavior
+ * - Prevents test pollution and interdependencies
+ *
+ * ## Best Practices:
+ * - Call in beforeEach for consistent test isolation
+ * - Call after tests that modify global mock state
+ * - Prefer this over manual mock.mockReset() calls
+ */
 export const resetPrismaMock = () => {
   mockReset(prismaMock);
   setDefaultPrismaMocks(); // Re-apply defaults after reset
