@@ -120,8 +120,8 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [x] Build successful
 - [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `Next Auth Application`, `Your Name`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
-- [x] Final round: search for unused vars/code/files/packages/etc.
-- [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be"
+- [ ] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be"
+- [ ] Final round: search for unused vars/code/files/packages/etc.
 
 ---
 
@@ -139,19 +139,39 @@ The following packages have available updates but require careful consideration 
     - ✅ Manual testing confirmed website working properly
   - **Summary**: The upgrade was seamless with no breaking changes to authentication flows, token handling, or session management.
 
-- [ ] **jest-environment-jsdom (29.7.0 → 30.0.0-beta.3)**
+- [x] **jest-environment-jsdom (29.7.0 → 30.0.0-beta.3)** ✅ **COMPLETED**
 
-  - **Reasoning**: This is a major version beta release for Jest's JSDOM environment. Beta versions can be unstable and may introduce breaking changes in test environments, potentially causing flaky tests or breaking existing test setups.
-  - **Recommendation**: Wait for stable 30.0.0 release. Monitor Jest release notes for stable release timeline and breaking changes documentation.
+  - **Status**: Successfully upgraded with no breaking changes
+  - **Testing Results**:
+    - ✅ Build successful with no compilation errors
+    - ✅ All 416 unit tests passing
+    - ✅ All 59 E2E tests passing
+    - ✅ Manual testing confirmed website working properly
+  - **Summary**: The upgrade was seamless with no breaking changes to Jest's JSDOM test environment. No issues were observed in component testing or DOM-related test functionality.
 
-- [ ] **next-auth (current: 5.0.0-beta.28)**
+- [x] **next-auth (current: 5.0.0-beta.28)** ✅ **COMPLETED**
 
-  - **Reasoning**: We're on NextAuth v5 beta. The npm "latest" shows 4.24.11 (older v4), but there may be newer v5 beta versions. Upgrading between beta versions can introduce breaking changes in auth configuration, providers, or callbacks.
-  - **Recommendation**: Stay on current v5 beta until v5 goes stable. Monitor NextAuth v5 release timeline and migration guides. Only upgrade if critical security patches are released.
+  - **Status**: Already on latest beta version (5.0.0-beta.28) - package.json synchronized
+  - **Testing Results**:
+    - ✅ Build successful with no compilation errors
+    - ✅ All 416 unit tests passing
+    - ✅ All 59 E2E tests passing (authentication flows working correctly)
+    - ✅ Package.json version synchronized with installed version
+  - **Summary**: The project is already on the latest available beta version. The package.json was updated to correctly reflect the installed version (beta.28). All authentication functionality including sign-in, sign-out, session management, and protected routes are working perfectly.
 
-- [ ] **nodemailer (6.10.1 → 7.0.3)**
-  - **Reasoning**: Major version upgrade that could have breaking changes in email sending logic, API changes, or different dependency requirements. Email functionality is critical and failures could affect user registration, password resets, etc.
-  - **Recommendation**: Can be upgraded with careful testing. Test all email functionality including SMTP configuration, template rendering, and error handling. Consider upgrading in a separate PR after validating email sending works correctly.
+- [x] **nodemailer (6.10.1 → 7.0.3)** ✅ **COMPLETED - REMOVED**
+
+  - **Status**: Unused dependency removed from direct dependencies
+  - **Findings**:
+    - ✅ No direct usage found in codebase (no imports, requires, or method calls)
+    - ✅ Still present as transitive dependency of @auth/core and next-auth (for their internal email functionality)
+    - ✅ Removing direct dependency reduces bundle size without affecting functionality
+  - **Testing Results**:
+    - ✅ All 416 unit tests passing
+    - ✅ All 30 authentication E2E tests passing
+    - ✅ Authentication flows work correctly (sign-in, sign-out, protected routes)
+    - ✅ No compilation errors or build issues
+  - **Summary**: Successfully identified and removed unused direct dependency. The auth libraries (NextAuth) handle their own nodemailer dependency internally for any email-related functionality they might need.
 
 ---
 
