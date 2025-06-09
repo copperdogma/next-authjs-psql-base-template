@@ -1,5 +1,5 @@
-import { test, expect } from '../utils/test-base';
-import { ROUTES } from '../../../lib/constants/routes';
+import { test, expect } from './utils/test-base';
+import { ROUTES } from '../utils/routes';
 import { waitForElementToBeVisible } from '../utils/selectors';
 
 /**

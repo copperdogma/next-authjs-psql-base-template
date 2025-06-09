@@ -23,7 +23,7 @@
     "build:analyze": "ANALYZE=true next build",
     "validate": "npm run lint && npm run format:check && npm run type-check",
     "prepare": "husky",
-    "test": "npm run test:unit",
+    "test": "npm run test:ci",
     "test:ci": "npm run test:unit && npm run test:e2e",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:unit": "cross-env NODE_ENV=test jest --passWithNoTests --coverage",
