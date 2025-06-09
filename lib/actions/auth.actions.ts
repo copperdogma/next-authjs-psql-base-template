@@ -10,8 +10,7 @@ import { logger as rootLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { signIn } from '@/lib/auth-node';
 import type { ServiceResponse } from '@/types';
-import { type Redis } from 'ioredis';
-import { getOptionalRedisClient } from '@/lib/redis';
+import { RateLimiterService } from '@/lib/services/rate-limiter.service';
 import { getClientIp } from '@/lib/utils/server-utils';
 import { env } from '@/lib/env';
 import { isValidUserResult } from '../utils/type-guards'; // Keep isValidUserResult if used
@@ -223,150 +222,6 @@ async function _handleMainRegistrationError(
       details: { originalError: errorPayload.originalErrorForDetails },
     },
   };
-}
-
-interface RateLimitResult {
-  limited: boolean;
-  error?: boolean;
-}
-
-interface ExecuteRateLimitPipelineOptions {
-  key: string;
-  windowSeconds: number;
-  clientIp: string;
-}
-
-// Adding the helper function and its interface before _executeRateLimitPipeline
-interface ParsedPipelineResult {
-  currentAttempts?: number;
-  errorOccurred: boolean;
-  logMessage?: string; // For logging in the caller
-  logContextAdditions?: Record<string, unknown>; // For additional context for the error log
-}
-
-function _parseRateLimitPipelineResults(
-  results: readonly [Error | null, unknown][] | null
-): ParsedPipelineResult {
-  if (!results) {
-    return {
-      errorOccurred: true,
-      logMessage: 'Redis pipeline execution returned null/undefined results array.',
-    };
-  }
-
-  const incrResult = results[0]; // expecting [error, value] from INCR
-
-  if (!incrResult) {
-    return {
-      errorOccurred: true,
-      logMessage: 'INCR result unexpectedly missing from pipeline results array.',
-    };
-  }
-
-  if (incrResult[0]) {
-    // Error from INCR command itself
-    const error = incrResult[0] as Error; // Type assertion for clarity
-    return {
-      errorOccurred: true,
-      logMessage: 'Error reported by Redis INCR command in pipeline.',
-      logContextAdditions: { redisIncrError: error.message, redisFullError: error },
-    };
-  }
-
-  const currentAttemptsRaw = incrResult[1];
-  if (typeof currentAttemptsRaw !== 'number') {
-    return {
-      errorOccurred: true,
-      logMessage: 'Invalid data type from Redis INCR result (expected number).',
-      logContextAdditions: {
-        incrValueType: typeof currentAttemptsRaw,
-        incrValue: currentAttemptsRaw,
-      },
-    };
-  }
-
-  // Success case
-  return {
-    currentAttempts: currentAttemptsRaw,
-    errorOccurred: false,
-  };
-}
-
-async function _executeRateLimitPipeline(
-  redisClient: Redis,
-  options: ExecuteRateLimitPipelineOptions,
-  log: Logger
-): Promise<{ currentAttempts?: number; errorOccurred: boolean }> {
-  const { key, windowSeconds, clientIp } = options;
-
-  try {
-    const pipeline = redisClient.pipeline();
-    pipeline.incr(key);
-    pipeline.expire(key, windowSeconds);
-    const results = await pipeline.exec();
-
-    const parsed = _parseRateLimitPipelineResults(results);
-
-    if (parsed.errorOccurred) {
-      log.error(
-        { redisKey: key, clientIp, ...parsed.logContextAdditions },
-        parsed.logMessage || 'Error parsing rate limit pipeline results.'
-      );
-      return { errorOccurred: true };
-    }
-
-    return { currentAttempts: parsed.currentAttempts, errorOccurred: false };
-  } catch (error) {
-    log.error(
-      { redisKey: key, clientIp, error },
-      'Generic error during Redis pipeline.exec() call.'
-    );
-    return { errorOccurred: true };
-  }
-}
-
-async function _checkRegistrationRateLimit(
-  redisClient: Redis | null,
-  clientIp: string,
-  log: Logger
-): Promise<RateLimitResult> {
-  const logContext = { clientIp };
-
-  if (!redisClient) {
-    log.warn(
-      { ...logContext },
-      'Redis client is not available for registration. Skipping rate limiting. Failing open.'
-    );
-    return { limited: false };
-  }
-
-  const maxAttempts = env.RATE_LIMIT_REGISTER_MAX_ATTEMPTS;
-  const windowSeconds = env.RATE_LIMIT_REGISTER_WINDOW_SECONDS;
-  const key = `rate-limit:register:${clientIp}`;
-
-  const { currentAttempts, errorOccurred } = await _executeRateLimitPipeline(
-    redisClient,
-    { key, windowSeconds, clientIp },
-    log
-  );
-
-  if (errorOccurred) {
-    log.error({ ...logContext, key }, 'Rate limit check failed due to Redis error. Failing open.');
-    // currentAttempts might be undefined here, but error:true signifies the problem.
-    return { limited: false, error: true };
-  }
-
-  // If errorOccurred is false, _parseRateLimitPipelineResults guarantees currentAttempts is a number.
-  // Thus, the explicit typeof currentAttempts !== 'number' check can be removed.
-  // We can directly cast/use currentAttempts as number here if TypeScript needs it, but it should infer.
-
-  if ((currentAttempts as number) > maxAttempts) {
-    // Type assertion for clarity in condition
-    log.warn({ ...logContext, key, currentAttempts, maxAttempts }, 'Rate limit exceeded.');
-    return { limited: true };
-  }
-
-  return { limited: false };
 }
 
 async function _checkExistingPrismaUser(
@@ -812,38 +667,22 @@ async function _handleRegistrationRateLimit(
   }
   if (!clientIp) {
     log.warn(logContext, 'Client IP not available, skipping rate limit check.');
-    return null; // Or return an error if IP is mandatory for rate limiting
-  }
-
-  const redisClient = await getOptionalRedisClient();
-  if (!redisClient) {
-    // FAIL-OPEN BEHAVIOR: If Redis is unavailable or misconfigured, we skip rate limiting entirely.
-    // This means registration attempts will not be limited if Redis is down or not properly configured.
-    // For production environments where rate limiting is critical for security, ensure Redis is properly
-    // configured and highly available. Consider implementing a fallback mechanism if needed.
-    log.warn(logContext, 'Redis client not available, skipping rate limit check.');
     return null;
   }
 
-  const { limited, error: redisError } = await _checkRegistrationRateLimit(
-    redisClient,
-    clientIp,
-    log.child(logContext)
-  );
+  const { limited, error } = await RateLimiterService.check(`register:${clientIp}`);
 
-  if (redisError) {
-    // FAIL-OPEN BEHAVIOR: If Redis encounters an error during the rate limit check,
-    // we proceed as if the user is not rate limited. This prioritizes service availability
-    // over strict rate limit enforcement.
+  if (error) {
+    // Fail-open: If the rate limiter service has an error, we allow registration to proceed.
     log.error(
-      { ...logContext, error: redisError },
-      'Error during rate limit check, proceeding as if not limited.'
+      { ...logContext, clientIp },
+      'Rate limiter service failed. Allowing registration to proceed.'
     );
-    return null; // Fail open on Redis error during rate limiting
+    return null;
   }
 
   if (limited) {
-    log.warn(logContext, 'Rate limit exceeded for registration.');
+    log.warn({ ...logContext, clientIp }, 'Rate limit exceeded for registration.');
     return {
       status: 'error',
       error: {
@@ -852,6 +691,7 @@ async function _handleRegistrationRateLimit(
       },
     };
   }
+
   return null;
 }
 

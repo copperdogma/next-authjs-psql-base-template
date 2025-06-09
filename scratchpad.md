@@ -38,7 +38,7 @@ I want you to analyze just a single subsystem for best practices. This should be
 
 For this round, the subsystem I want you to analyze is:
 
-- [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
+- [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 
 Note that this may not be all of the files, so be sure to look at the entire codebase.
 
@@ -111,7 +111,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [x] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
     - [x] **1. Remove Redundant Global Styles**: Successfully removed redundant CSS rules for light/dark mode styling that were being handled by MUI's ThemeProvider and CssBaseline.
     - [x] **2. Abstract Theme Names into Constants for Maintainability**: Theme constants were already properly implemented - verified `lib/constants/theme.ts` exists with proper `THEME_MODES` constants and both `ThemeMenu.tsx` and `ThemeToggle.tsx` are using these constants correctly.
-  - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
+  - [x] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 - [ ] try to upgrade everything again
 - [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `Next Auth Application`, `Your Name`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
@@ -122,105 +122,204 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ---
 
-### Styling and Theming Enhancement Checklist
+### Redis Integration Enhancement Checklist
 
-Here is a comprehensive list of suggested improvements for the styling and theming subsystem:
+Here is a list of suggested improvements for the Redis integration subsystem.
 
-- [x] **1. Remove Redundant Global Styles**
+- [x] **1. Abstract Rate Limiting into a Dedicated Service**
 
-  - **File to Modify**: `app/globals.css`
-  - **Reasoning**: The application correctly uses Material-UI's `CssBaseline` and a `ThemeProvider` (`ThemeRegistry.tsx`) to manage base styles, including background and text colors for both light and dark modes. The rules for `html.light, body.light` and `html.dark, body.dark` in `globals.css` are therefore redundant. Removing them centralizes theme-based styling within the MUI theme provider, which is the correct architectural approach, preventing potential style conflicts and simplifying maintenance.
-  - **Implementation Details**:
+  - **Reasoning**: Currently, the logic for Redis-based rate limiting is implemented directly within the `registerUserAction` server action in `lib/actions/auth.actions.ts`. This tightly couples the authentication logic to the Redis implementation. By abstracting this into a `RateLimiterService`, we can adhere to the Single Responsibility and Dependency Inversion principles. This makes the code cleaner, easier to test in isolation, and allows for easier replacement of the rate-limiting backend in the future without changing the authentication code.
+  - **Suggested Implementation**:
 
-    1.  Open the file `app/globals.css`.
-    2.  Locate and **delete** the following rule sets:
-
-        ```css
-        /* DELETE THIS RULE SET */
-        html.light,
-        body.light {
-          color-scheme: light;
-          background-color: #ffffff;
-          color: #212121;
-        }
-
-        /* DELETE THIS RULE SET */
-        html.dark,
-        body.dark {
-          color-scheme: dark;
-          background-color: #121212;
-          color: #ffffff;
-        }
-        ```
-
-- [x] **2. Abstract Theme Names into Constants for Maintainability**
-
-  - **Files to Modify**: `components/ui/theme/ThemeMenu.tsx`, `components/ui/ThemeToggle.tsx`
-  - **File to Create**: `lib/constants/theme.ts`
-  - **Reasoning**: The theme components currently use hardcoded strings ('light', 'dark', 'system'). This "magic string" pattern is prone to typos and makes the code harder to maintain. Abstracting these values into a shared constants file ensures consistency, enables TypeScript to enforce type safety, and makes the code more self-documenting.
-  - **Implementation Details**:
-
-    1.  **Create a new file** at `lib/constants/theme.ts` with the following content:
+    1.  Create a new file at `lib/services/rate-limiter.service.ts`.
+    2.  Add the following code to the new file. This service will encapsulate all direct Redis interactions for rate limiting.
 
         ```typescript
-        // lib/constants/theme.ts
-        export const THEME_MODES = {
-          LIGHT: 'light',
-          DARK: 'dark',
-          SYSTEM: 'system',
-        } as const;
+        // lib/services/rate-limiter.service.ts
+        import { getOptionalRedisClient } from '@/lib/redis';
+        import { env } from '@/lib/env';
+        import { logger } from '@/lib/logger';
 
-        export type ThemeMode = (typeof THEME_MODES)[keyof typeof THEME_MODES];
-        ```
+        const log = logger.child({ service: 'RateLimiterService' });
 
-    2.  **Update `components/ui/theme/ThemeMenu.tsx`** to import and use these new constants and the `ThemeMode` type.
-
-        ```typescript
-        // In components/ui/theme/ThemeMenu.tsx
-
-        // Add this import
-        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
-
-        // Update the interface
-        interface ThemeMenuProps {
-          // ...
-          onThemeChange: (theme: ThemeMode) => void; // Use the new type
+        interface RateLimitResult {
+          limited: boolean;
+          error: boolean;
         }
 
-        // Update the menuOptions array
-        const menuOptions = [
-          { value: THEME_MODES.LIGHT, label: 'Light', icon: <LightMode fontSize="small" /> },
-          { value: THEME_MODES.DARK, label: 'Dark', icon: <DarkMode fontSize="small" /> },
-          { value: THEME_MODES.SYSTEM, label: 'System', icon: <BrightnessAuto fontSize="small" /> },
-        ] as const;
-        ```
+        class RateLimiterServiceImpl {
+          /**
+           * Checks if a given key has exceeded the rate limit.
+           *
+           * @param key - A unique identifier for the action being rate-limited (e.g., `register:127.0.0.1`).
+           * @returns A promise that resolves to an object indicating if the request is limited.
+           */
+          public async check(key: string): Promise<RateLimitResult> {
+            const redisClient = getOptionalRedisClient();
+            if (!redisClient) {
+              log.warn(
+                { key },
+                'Redis client not available, skipping rate limit check (fail-open).'
+              );
+              return { limited: false, error: false }; // Fail open
+            }
 
-    3.  **Update `components/ui/ThemeToggle.tsx`** to also use the new constants for its logic and display.
+            const maxAttempts = env.RATE_LIMIT_REGISTER_MAX_ATTEMPTS;
+            const windowSeconds = env.RATE_LIMIT_REGISTER_WINDOW_SECONDS;
+            const redisKey = `rate-limit:${key}`;
 
-        ```typescript
-        // In components/ui/ThemeToggle.tsx
+            try {
+              const pipeline = redisClient.pipeline();
+              pipeline.incr(redisKey);
+              pipeline.expire(redisKey, windowSeconds);
+              const results = await pipeline.exec();
 
-        // Add this import
-        import { THEME_MODES, ThemeMode } from '@/lib/constants/theme';
+              // Check for pipeline execution errors
+              if (!results) {
+                log.error({ redisKey }, 'Redis pipeline for rate limiting returned null.');
+                return { limited: false, error: true }; // Fail open on error
+              }
 
-        // Update the ThemeIcon component logic
-        function ThemeIcon({ theme, resolvedTheme }: { theme: string | undefined; resolvedTheme: string | undefined; }) {
-          if (theme === THEME_MODES.SYSTEM) { // Use constant
-            return <BrightnessAuto fontSize="small" data-testid="BrightnessAutoIcon" />;
+              const [[incrErr, currentAttempts], [expireErr]] = results;
+
+              if (incrErr || expireErr) {
+                log.error(
+                  { redisKey, incrErr, expireErr },
+                  'Error in Redis rate-limiting command.'
+                );
+                return { limited: false, error: true }; // Fail open on error
+              }
+
+              if (typeof currentAttempts !== 'number') {
+                log.error({ redisKey, currentAttempts }, 'Invalid result from Redis INCR command.');
+                return { limited: false, error: true }; // Fail open on error
+              }
+
+              if (currentAttempts > maxAttempts) {
+                log.warn({ redisKey, currentAttempts, maxAttempts }, 'Rate limit exceeded.');
+                return { limited: true, error: false };
+              }
+
+              return { limited: false, error: false };
+            } catch (error) {
+              log.error({ redisKey, error }, 'Exception during Redis rate limit check.');
+              return { limited: false, error: true }; // Fail open on error
+            }
           }
-          return resolvedTheme === THEME_MODES.DARK ? ( // Use constant
-            <DarkMode fontSize="small" data-testid="DarkModeIcon" />
-          ) : (
-            <LightMode fontSize="small" data-testid="LightModeIcon" />
-          );
         }
 
-        // Update handleThemeChange to use the ThemeMode type
-        const handleThemeChange = (newTheme: ThemeMode) => {
-            setTheme(newTheme);
-            handleClose();
-        };
+        export const RateLimiterService = new RateLimiterServiceImpl();
+        ```
 
-        // Update the Tooltip title logic
-        // <Tooltip title={`Theme: ${theme === THEME_MODES.SYSTEM ? 'Auto' : theme}`}>
+    3.  Open `lib/actions/auth.actions.ts` and refactor the `_handleRegistrationRateLimit` function to use the new service.
+
+        - **Remove** the old `_checkRegistrationRateLimit` and `_executeRateLimitPipeline` helper functions from this file.
+        - **Replace** the entire `_handleRegistrationRateLimit` function with the following simplified version:
+
+          ```typescript
+          // In lib/actions/auth.actions.ts
+
+          // Add this import at the top
+          import { RateLimiterService } from '@/lib/services/rate-limiter.service';
+
+          // Replace the existing _handleRegistrationRateLimit with this new version
+          async function _handleRegistrationRateLimit(
+            log: Logger,
+            logContext: LogContext,
+            clientIp: string | null | undefined
+          ): Promise<RegistrationResult | null> {
+            if (!env.ENABLE_REDIS_RATE_LIMITING) {
+              log.info(logContext, 'Redis rate limiting is disabled. Skipping check.');
+              return null;
+            }
+            if (!clientIp) {
+              log.warn(logContext, 'Client IP not available, skipping rate limit check.');
+              return null;
+            }
+
+            const { limited, error } = await RateLimiterService.check(`register:${clientIp}`);
+
+            if (error) {
+              // Fail-open: If the rate limiter service has an error, we allow registration to proceed.
+              log.error(
+                { ...logContext, clientIp },
+                'Rate limiter service failed. Allowing registration to proceed.'
+              );
+              return null;
+            }
+
+            if (limited) {
+              log.warn({ ...logContext, clientIp }, 'Rate limit exceeded for registration.');
+              return {
+                status: 'error',
+                error: {
+                  code: 'RATE_LIMIT_EXCEEDED',
+                  message: 'Too many registration attempts. Please try again later.',
+                },
+              };
+            }
+
+            return null;
+          }
+          ```
+
+- [x] **2. Add Command Timeouts for Production Hardening**
+
+  - **Reasoning**: While `connectTimeout` is set, `ioredis` does not apply a timeout to individual commands by default. In a production scenario, a Redis command could hang due to network issues or a slow query, which would block the Node.js event loop. Adding a `commandTimeout` ensures that no single command can indefinitely stall the application.
+  - **Suggested Implementation**:
+
+    1.  Open the file `lib/redis.ts`.
+    2.  Locate the `_attemptRedisClientInstantiation` function.
+    3.  Add the `commandTimeout` option to the `Redis` constructor options object.
+
+        ```typescript
+        // In lib/redis.ts, inside _attemptRedisClientInstantiation
+
+        const client = new Redis(redisUrlToUse, {
+          maxRetriesPerRequest: 3,
+          connectTimeout: 5000,
+          commandTimeout: 1000, // Add this line (1000ms is a sensible default)
+          showFriendlyErrorStack: process.env.NODE_ENV === 'development',
+          retryStrategy: _createRedisRetryStrategy(baseLogger, redisUrlToUse),
+        });
+        ```
+
+- [x] **3. Implement Graceful Shutdown**
+
+  - **Reasoning**: A production application must handle shutdown signals (like `SIGTERM` in Docker or `SIGINT` via Ctrl+C) cleanly. Without a graceful shutdown handler, the Redis connection might be terminated abruptly, leaving open connections. This change ensures the application explicitly closes its connection to Redis before exiting.
+  - **Suggested Implementation**:
+
+    1.  Open the file `instrumentation.ts`.
+    2.  Modify the file to include listeners for `SIGTERM` and `SIGINT` signals.
+
+        ```typescript
+        // instrumentation.ts
+
+        export async function register() {
+          if (process.env.NEXT_RUNTIME === 'nodejs') {
+            console.log('[Instrumentation] Initializing server-side components...');
+
+            const { redisClient } = await import('@/lib/redis');
+
+            // Graceful shutdown handler
+            const gracefulShutdown = async (signal: string) => {
+              console.log(`Received ${signal}, shutting down gracefully...`);
+              if (redisClient) {
+                try {
+                  await redisClient.quit();
+                  console.log('Redis client disconnected successfully.');
+                } catch (err) {
+                  console.error('Error during Redis disconnection:', err);
+                }
+              }
+              process.exit(0);
+            };
+
+            // Listen for termination signals
+            process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+            process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+            console.log('[Instrumentation] Redis client initialization sequence initiated.');
+          }
+        }
         ```

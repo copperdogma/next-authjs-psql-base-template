@@ -8,7 +8,25 @@ export async function register() {
     // Import the redis module. This will trigger the getRedisClient() function
     // in lib/redis.ts due to the line: export const redisClient = getRedisClient();
     // The existing logging within lib/redis.ts will then occur.
-    await import('@/lib/redis');
+    const { redisClient } = await import('@/lib/redis');
+
+    // Graceful shutdown handler
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`Received ${signal}, shutting down gracefully...`);
+      if (redisClient) {
+        try {
+          await redisClient.quit();
+          console.log('Redis client disconnected successfully.');
+        } catch (err) {
+          console.error('Error during Redis disconnection:', err);
+        }
+      }
+      process.exit(0);
+    };
+
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
     // Log that the attempt was made (optional)
     console.log('[Instrumentation] Redis client initialization sequence initiated via import.');

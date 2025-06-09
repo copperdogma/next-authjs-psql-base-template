@@ -95,6 +95,7 @@ function _attemptRedisClientInstantiation(
     const client = new Redis(redisUrlToUse, {
       maxRetriesPerRequest: 3,
       connectTimeout: 5000,
+      commandTimeout: 1000, // Add command timeout for production hardening
       showFriendlyErrorStack: process.env.NODE_ENV === 'development',
       retryStrategy: _createRedisRetryStrategy(baseLogger, redisUrlToUse),
     });
