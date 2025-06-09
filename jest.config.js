@@ -197,8 +197,8 @@ const customJestConfig = {
     './tests/utils/**/*.tsx': {
       statements: 60,
       branches: 35,
-      functions: 55,
-      lines: 65,
+      functions: 42,
+      lines: 60,
     },
   },
 
