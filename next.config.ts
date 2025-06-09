@@ -139,12 +139,6 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Test building without this if using newer Next.js/Pino versions
-    config.externals = config.externals || [];
-    // config.externals.push({
-    //   'thread-stream': 'commonjs thread-stream',
-    // });
-
     // Let Next.js handle the rest of the configuration
     return config;
   },

@@ -23,6 +23,7 @@
     "build:analyze": "ANALYZE=true next build",
     "validate": "npm run lint && npm run format:check && npm run type-check",
     "prepare": "husky",
+    "db:seed": "npx prisma db seed",
     "test": "npm run test:unit",
     "test:ci": "npm run test:unit && npm run test:e2e",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
@@ -170,5 +171,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }
