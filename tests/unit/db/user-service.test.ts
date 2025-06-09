@@ -1,11 +1,5 @@
-import {
-  // Remove direct import of real prisma
-  // import { prisma } from '../../../lib/prisma';
-
-  // Import the singleton mock
-  prismaMock,
-  resetPrismaMock,
-} from '../../mocks/db/prismaMocks';
+// Import the singleton mock
+import { prismaMock, resetPrismaMock } from '../../../__mocks__/db/prismaMocks';
 
 // Import the consolidated service instance
 import { defaultUserService } from '../../../lib/services/user-service';

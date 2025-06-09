@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { prismaMock, resetPrismaMock } from '../../mocks/db/prismaMocks'; // Updated path
+import { prismaMock, resetPrismaMock } from '../../../__mocks__/db/prismaMocks'; // Updated path to use root __mocks__ directory
 import pino from 'pino';
 
 // --- Global Pino Mock ---

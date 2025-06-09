@@ -10,7 +10,7 @@ import { handleJwtSignIn, handleJwtUpdate } from '@/lib/auth/auth-jwt';
 import { type HandleJwtSignInArgs } from '@/lib/auth/auth-jwt-types';
 // Import UserRole directly from prisma
 import { UserRole } from '@prisma/client';
-import { mockUser } from '../../../mocks/data/mockData'; // Added import
+import { mockUser } from '../../../../__mocks__/data/mockData'; // Updated import path
 
 // Disable file length check for this large test file
 // Disable function length check for this large test file

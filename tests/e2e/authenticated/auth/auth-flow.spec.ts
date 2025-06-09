@@ -46,7 +46,6 @@ test.describe('Authentication Flow', () => {
   // Authentication state is now handled by Playwright's storageState from auth.setup.ts.
 
   test('protected route should require authentication and redirect to login', async ({
-    page,
     context,
   }) => {
     // Create a brand new context without any authentication

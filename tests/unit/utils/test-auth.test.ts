@@ -8,7 +8,7 @@ import {
   getTestUserFromCookies,
 } from '../../utils/test-auth';
 import { TEST_USER } from '../../utils/test-constants';
-import { mockUser } from '../../mocks/data/mockData';
+import { mockUser } from '../../../__mocks__/data/mockData';
 
 // Mock Page and BrowserContext objects
 const mockPage = {

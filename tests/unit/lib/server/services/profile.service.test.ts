@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { ProfileServiceImpl } from '@/lib/server/services/profile.service';
-import { prismaMock } from '../../../../mocks/db/prismaMocks';
+import { prismaMock } from '../../../../../__mocks__/db/prismaMocks';
 import { User } from '@prisma/client';
 
 // Mock the logger to prevent actual logging during tests and allow assertions

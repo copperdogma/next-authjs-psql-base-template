@@ -1,213 +1,100 @@
-# Testing Documentation
+# Testing Strategy
 
-This README documents the testing improvements made to the codebase and best practices being followed.
+This document provides an overview of the testing approach used in this project.
 
-## Testing Structure
+## Overview
 
-Our tests are organized into the following categories:
+The project uses a comprehensive testing strategy that includes:
 
-- `tests/unit`: Unit tests for individual components and functions
-- `tests/integration`: Integration tests that verify interactions between components
-- `tests/e2e`: End-to-end tests using Playwright
-- `tests/utils`: Shared test utilities and helpers
+- **Unit Testing**: For testing individual components, functions, and API endpoints in isolation
+- **Integration Testing**: For testing interactions between components
+- **End-to-End (E2E) Testing**: For testing the application as a whole from a user's perspective
+- **Visual Regression Testing**: For catching unintended visual changes in the UI
 
-## Jest Best Practices
+## Frameworks
 
-We've implemented the following best practices in our test suite:
+- **Jest**: For unit and integration tests
+- **React Testing Library**: For testing React components
+- **Playwright**: For E2E and visual regression testing
+- **Supertest**: For testing API endpoints
 
-### 1. Test Structure and Organization
+## Directory Structure
 
-We follow the Arrange-Act-Assert (AAA) pattern consistently:
-
-```typescript
-// Example from UserProfile.test.tsx
-it('renders loading state initially', () => {
-  // Arrange
-  const wrapper = (props) => (
-    <Wrapper value={{ user: null, loading: true }}>
-      {props.children}
-    </Wrapper>
-  );
-
-  // Act
-  render(<UserProfile />, { wrapper });
-
-  // Assert
-  expect(screen.getByText('Loading...')).toBeInTheDocument();
-});
 ```
-
-### 2. Testing React Components
-
-We focus on testing behavior over implementation details:
-
-```typescript
-// Good: Testing from user perspective
-expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
-
-// Avoid: Testing implementation details
-expect(component.state.isLoading).toBe(true);
-```
-
-### 3. Mocking Best Practices
-
-We use realistic mocks that closely match actual behavior:
-
-```typescript
-// Example from token.test.ts
-const createMockUser = (options: { lastLoginTime?: string; creationTime?: string }): User => {
-  return {
-    metadata: {
-      lastLoginTime: options.lastLoginTime,
-      creationTime: options.creationTime,
-    },
-  } as unknown as User;
-};
-```
-
-### 4. Test Performance and Reliability
-
-We ensure proper cleanup in all component tests:
-
-```typescript
-// Example from CleanupExample.test.tsx
-describe('Component with Proper Cleanup', () => {
-  // Store original values
-  const originalDateNow = Date.now;
-
-  afterEach(() => {
-    // Clean up DOM
-    cleanup();
-
-    // Reset mocks
-    jest.clearAllMocks();
-
-    // Restore original values
-    global.Date.now = originalDateNow;
-  });
-});
-```
-
-### 5. Integration with Next.js
-
-We've improved server component testing with dedicated utilities:
-
-```typescript
-// Example usage from server-component-utils.tsx
-it('should render server component correctly', async () => {
-  const { getByText } = await renderServerComponent(ServerComponent, { prop: 'value' });
-  expect(getByText('Expected content')).toBeTruthy();
-});
-```
-
-### 6. Code Coverage and Quality
-
-We've improved test coverage for utility functions:
-
-```typescript
-// Example from token.test.ts
-describe('shouldRefreshToken', () => {
-  it('should return true if token is about to expire', () => {
-    // Test implementation...
-  });
-
-  it('should use creation time if last login time is not available', () => {
-    // Test implementation...
-  });
-
-  it('should return true if no time stamps are available', () => {
-    // Test implementation...
-  });
-});
+tests/
+├── config/             # Test configuration files
+├── e2e/                # End-to-end tests
+│   ├── authenticated/  # Tests that require authentication
+│   ├── public/         # Tests that don't require authentication
+│   ├── setup/          # Setup files for E2E tests
+│   └── utils/          # Utilities for E2E tests
+├── integration/        # Integration tests
+├── setup/              # General test setup
+└── unit/               # Unit tests
+    ├── api/            # API tests
+    ├── components/     # Component tests
+    ├── lib/            # Library tests
+    └── utils/          # Utility tests
 ```
 
 ## Running Tests
 
-```bash
-# Run all Jest tests
-npm test
+The project provides several npm scripts for running tests:
 
-# Run unit tests only
-npm run test:unit
+- `npm test` or `npm run test`: Run all tests (unit and E2E)
+- `npm run test:unit`: Run all unit tests
+- `npm run test:watch`: Run unit tests in watch mode
+- `npm run test:coverage`: Run unit tests with coverage reporting
+- `npm run test:e2e`: Run all E2E tests
+- `npm run test:e2e:ui-only`: Run only UI E2E tests
+- `npm run test:e2e:auth-only`: Run only authentication E2E tests
+- `npm run test:e2e:debug`: Run E2E tests with Playwright's debug mode
+- `npm run test:e2e:headed`: Run E2E tests in headed mode (visible browser)
+- `npm run test:e2e:report`: View the HTML test report from previous test runs
 
-# Run integration tests only
-npm run test:integration
-
-# Run e2e tests with Playwright
-npm run test:e2e
-```
-
-## E2E Testing with Playwright
-
-This project uses Playwright for end-to-end (E2E) testing. E2E tests simulate real user interactions with your application in a browser environment.
-
-### Running E2E Tests
+To run a specific test file:
 
 ```bash
-# Run all E2E tests
-npm run test:e2e
-
-# Run E2E tests with UI mode for debugging
-npm run test:e2e:ui
-
-# Run E2E tests in debug mode
-npm run test:e2e:debug
-
-# Generate and view test report
-npm run test:e2e:report
+npm test <test-file>
 ```
 
-### Authentication Testing
+## Core Utilities
 
-For testing authentication flows, this project uses NextAuth.js with PostgreSQL. The setup is configured to:
+### Unit Testing
 
-1. Use a test database for authentication
-2. Create a test user in the database
-3. Perform login via the UI in a setup script
-4. Save the authentication state for authenticated tests
-5. Use the saved state for tests that require an authenticated user
+The project provides several utilities for unit testing:
 
-To run E2E tests:
+- `renderWithProviders`: A wrapper around React Testing Library's `render` function that includes necessary providers (Theme, Redux, etc.)
+- `mockSession`: A utility for mocking the NextAuth.js session
+- `mockRouter`: A utility for mocking the Next.js router
+
+Example:
+
+```typescript
+import { renderWithProviders } from '@/tests/utils/render-with-providers';
+import MyComponent from '@/components/MyComponent';
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    const { getByText } = renderWithProviders(<MyComponent />);
+    expect(getByText('Hello, World!')).toBeInTheDocument();
+  });
+});
+```
+
+### E2E Testing
+
+The project uses Playwright for E2E testing. Key utilities include:
+
+- `auth.setup.ts`: Sets up authentication for tests that require it
+- `test-base.ts`: Provides a base test fixture with common utilities
+
+## Visual Regression Testing
+
+The project uses Playwright's snapshot testing capabilities for visual regression testing. To update snapshots after intentional UI changes:
 
 ```bash
-# Run all E2E tests
-npm run test:e2e
-
-# Run only authentication tests
-npm run test:e2e:auth-only
+npx playwright test --update-snapshots
 ```
 
-### E2E Test Structure
-
-The E2E tests are organized as follows:
-
-- `tests/e2e/` - Main directory for E2E tests
-  - `tests/e2e/auth/` - Authentication-related tests
-    - `ui-login-logout.spec.ts` - Tests for the login/logout UI flow
-  - `tests/setup/` - Setup files for Playwright tests
-    - `auth.setup.ts` - Authentication setup that runs before tests
-
-### Authentication Testing Strategy
-
-The project uses two approaches for authentication testing:
-
-1. **Testing Auth UI Flow**: Direct UI testing of the login and logout functionality.
-
-   - These tests don't use pre-authenticated state
-   - Located in `tests/e2e/auth/ui-login-logout.spec.ts`
-   - Configured as a separate Playwright project (`auth-ui-tests`)
-
-2. **Testing Authenticated Features**: Tests for features that require a logged-in user.
-   - Uses Playwright's `storageState` to share authenticated sessions
-   - Setup script (`tests/setup/auth.setup.ts`) logs in once and saves the state
-   - All other tests use the saved state to avoid repetitive login
-   - Great for testing protected routes and features
-
-### Environment Configuration
-
-Authentication testing requires specific environment variables:
-
-- `TEST_USER_EMAIL` - Email for the test user
-- `TEST_USER_PASSWORD` - Password for the test user
-
-These variables are pre-configured in `.env.test` for convenience.
+Visual regression tests are stored in the `tests/e2e/public/visual.spec.ts` file. Snapshots are stored in the repository and should be committed with code changes.
