@@ -20,6 +20,11 @@ ALWAYS use these non-interactive alternatives instead:
 3. For managed server: `npm run ai:start` then `npm run ai:health`
 4. NEVER lower global test thresholds ❌
 
+### GitHub CLI Usage
+When working with repository operations or when diff analysis is needed:
+- Use `gh cli` commands when necessary for repository operations
+- **For diffs**: Always use `gh` CLI commands (e.g., `gh pr diff`, `gh repo view --json`) rather than web-based approaches when programmatic diff access is required
+
 ## Project Structure
 ```
 {{YOUR_PROJECT_NAME}}/

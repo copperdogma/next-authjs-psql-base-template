@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 # Creating a Milestone
 
-NOTE: If you weren't given access to @Diff you can't do this job. Halt and ask for @Diff access.
+NOTE: If you need to review changes, use `gh` CLI commands to get the diff (e.g., `git diff`, `gh pr diff`, or `gh repo view --json`).
 
 1. Check the @Diff to get a sense of what was done.
 2. Add a new milestone to the top of [log.md](mdc:docs/log.md) with the changes

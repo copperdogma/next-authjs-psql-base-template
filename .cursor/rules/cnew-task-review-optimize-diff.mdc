@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 # CODE REVIEW & OPTIMIZATION PROTOCOL
 
-NOTE: If you weren't given access to the code to review (diff, PR, file, etc.), you CANNOT do this job. Halt and ask for access to what you need to review.
+NOTE: If you need to review code changes, use `gh` CLI commands to get the diff (e.g., `git diff`, `gh pr diff`, or `gh repo view --json`).
 
 ## REVIEW PROCESS
 
