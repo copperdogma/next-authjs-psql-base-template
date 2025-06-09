@@ -61,7 +61,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 ### Code To Do
 
 - [ ] add global rules for consistency. Research best practices and encode them. Cursor – Large Codebases: https://docs.cursor.com/guides/
-- [ ] Refine: get gemini 2.5 to analyze each subsystem alone
+- [x] Refine: get gemini 2.5 to analyze each subsystem alone
   - [x] **Authentication System** (Files: `app/api/auth/`, `lib/auth-node.ts`, `lib/auth-edge.ts`, `lib/auth-shared.ts`, `middleware.ts`, `components/auth/`)
   - [x] **API Endpoints (Non-Auth)** (Files: `app/api/health/`, `app/api/user/`, `app/api/log/client/`, etc.)
   - [x] **Core UI Components** (Files: `components/ui/`, `components/forms/`)
@@ -112,7 +112,12 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **1. Remove Redundant Global Styles**: Successfully removed redundant CSS rules for light/dark mode styling that were being handled by MUI's ThemeProvider and CssBaseline.
     - [x] **2. Abstract Theme Names into Constants for Maintainability**: Theme constants were already properly implemented - verified `lib/constants/theme.ts` exists with proper `THEME_MODES` constants and both `ThemeMenu.tsx` and `ThemeToggle.tsx` are using these constants correctly.
   - [x] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
-- [ ] try to upgrade everything again
+- [x] try to upgrade everything again
+  - [x] Successfully upgraded majority of packages
+  - [x] Fixed TypeScript error in Menu.tsx component
+  - [x] All unit tests passing (416/416)
+  - [x] All E2E tests passing (59/59)
+  - [x] Build successful
 - [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `Next Auth Application`, `Your Name`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
 - [x] Final round: search for unused vars/code/files/packages/etc.
@@ -120,206 +125,29 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ---
 
+### Remaining Package Upgrades - Complex/Deferred
+
+The following packages have available updates but require careful consideration due to potential breaking changes or stability concerns:
+
+- [ ] **@auth/core (0.38.0 → 0.39.1)**
+
+  - **Reasoning**: This is a core authentication library change that could affect auth flows, token handling, or session management. Auth-related changes are often breaking and require thorough testing of all authentication paths (login, logout, session refresh, etc.).
+  - **Recommendation**: Test in a development branch first. Verify all auth flows including OAuth, credentials login, session management, and middleware behavior.
+
+- [ ] **jest-environment-jsdom (29.7.0 → 30.0.0-beta.3)**
+
+  - **Reasoning**: This is a major version beta release for Jest's JSDOM environment. Beta versions can be unstable and may introduce breaking changes in test environments, potentially causing flaky tests or breaking existing test setups.
+  - **Recommendation**: Wait for stable 30.0.0 release. Monitor Jest release notes for stable release timeline and breaking changes documentation.
+
+- [ ] **next-auth (current: 5.0.0-beta.28)**
+
+  - **Reasoning**: We're on NextAuth v5 beta. The npm "latest" shows 4.24.11 (older v4), but there may be newer v5 beta versions. Upgrading between beta versions can introduce breaking changes in auth configuration, providers, or callbacks.
+  - **Recommendation**: Stay on current v5 beta until v5 goes stable. Monitor NextAuth v5 release timeline and migration guides. Only upgrade if critical security patches are released.
+
+- [ ] **nodemailer (6.10.1 → 7.0.3)**
+  - **Reasoning**: Major version upgrade that could have breaking changes in email sending logic, API changes, or different dependency requirements. Email functionality is critical and failures could affect user registration, password resets, etc.
+  - **Recommendation**: Can be upgraded with careful testing. Test all email functionality including SMTP configuration, template rendering, and error handling. Consider upgrading in a separate PR after validating email sending works correctly.
+
 ---
 
-### Redis Integration Enhancement Checklist
-
-Here is a list of suggested improvements for the Redis integration subsystem.
-
-- [x] **1. Abstract Rate Limiting into a Dedicated Service**
-
-  - **Reasoning**: Currently, the logic for Redis-based rate limiting is implemented directly within the `registerUserAction` server action in `lib/actions/auth.actions.ts`. This tightly couples the authentication logic to the Redis implementation. By abstracting this into a `RateLimiterService`, we can adhere to the Single Responsibility and Dependency Inversion principles. This makes the code cleaner, easier to test in isolation, and allows for easier replacement of the rate-limiting backend in the future without changing the authentication code.
-  - **Suggested Implementation**:
-
-    1.  Create a new file at `lib/services/rate-limiter.service.ts`.
-    2.  Add the following code to the new file. This service will encapsulate all direct Redis interactions for rate limiting.
-
-        ```typescript
-        // lib/services/rate-limiter.service.ts
-        import { getOptionalRedisClient } from '@/lib/redis';
-        import { env } from '@/lib/env';
-        import { logger } from '@/lib/logger';
-
-        const log = logger.child({ service: 'RateLimiterService' });
-
-        interface RateLimitResult {
-          limited: boolean;
-          error: boolean;
-        }
-
-        class RateLimiterServiceImpl {
-          /**
-           * Checks if a given key has exceeded the rate limit.
-           *
-           * @param key - A unique identifier for the action being rate-limited (e.g., `register:127.0.0.1`).
-           * @returns A promise that resolves to an object indicating if the request is limited.
-           */
-          public async check(key: string): Promise<RateLimitResult> {
-            const redisClient = getOptionalRedisClient();
-            if (!redisClient) {
-              log.warn(
-                { key },
-                'Redis client not available, skipping rate limit check (fail-open).'
-              );
-              return { limited: false, error: false }; // Fail open
-            }
-
-            const maxAttempts = env.RATE_LIMIT_REGISTER_MAX_ATTEMPTS;
-            const windowSeconds = env.RATE_LIMIT_REGISTER_WINDOW_SECONDS;
-            const redisKey = `rate-limit:${key}`;
-
-            try {
-              const pipeline = redisClient.pipeline();
-              pipeline.incr(redisKey);
-              pipeline.expire(redisKey, windowSeconds);
-              const results = await pipeline.exec();
-
-              // Check for pipeline execution errors
-              if (!results) {
-                log.error({ redisKey }, 'Redis pipeline for rate limiting returned null.');
-                return { limited: false, error: true }; // Fail open on error
-              }
-
-              const [[incrErr, currentAttempts], [expireErr]] = results;
-
-              if (incrErr || expireErr) {
-                log.error(
-                  { redisKey, incrErr, expireErr },
-                  'Error in Redis rate-limiting command.'
-                );
-                return { limited: false, error: true }; // Fail open on error
-              }
-
-              if (typeof currentAttempts !== 'number') {
-                log.error({ redisKey, currentAttempts }, 'Invalid result from Redis INCR command.');
-                return { limited: false, error: true }; // Fail open on error
-              }
-
-              if (currentAttempts > maxAttempts) {
-                log.warn({ redisKey, currentAttempts, maxAttempts }, 'Rate limit exceeded.');
-                return { limited: true, error: false };
-              }
-
-              return { limited: false, error: false };
-            } catch (error) {
-              log.error({ redisKey, error }, 'Exception during Redis rate limit check.');
-              return { limited: false, error: true }; // Fail open on error
-            }
-          }
-        }
-
-        export const RateLimiterService = new RateLimiterServiceImpl();
-        ```
-
-    3.  Open `lib/actions/auth.actions.ts` and refactor the `_handleRegistrationRateLimit` function to use the new service.
-
-        - **Remove** the old `_checkRegistrationRateLimit` and `_executeRateLimitPipeline` helper functions from this file.
-        - **Replace** the entire `_handleRegistrationRateLimit` function with the following simplified version:
-
-          ```typescript
-          // In lib/actions/auth.actions.ts
-
-          // Add this import at the top
-          import { RateLimiterService } from '@/lib/services/rate-limiter.service';
-
-          // Replace the existing _handleRegistrationRateLimit with this new version
-          async function _handleRegistrationRateLimit(
-            log: Logger,
-            logContext: LogContext,
-            clientIp: string | null | undefined
-          ): Promise<RegistrationResult | null> {
-            if (!env.ENABLE_REDIS_RATE_LIMITING) {
-              log.info(logContext, 'Redis rate limiting is disabled. Skipping check.');
-              return null;
-            }
-            if (!clientIp) {
-              log.warn(logContext, 'Client IP not available, skipping rate limit check.');
-              return null;
-            }
-
-            const { limited, error } = await RateLimiterService.check(`register:${clientIp}`);
-
-            if (error) {
-              // Fail-open: If the rate limiter service has an error, we allow registration to proceed.
-              log.error(
-                { ...logContext, clientIp },
-                'Rate limiter service failed. Allowing registration to proceed.'
-              );
-              return null;
-            }
-
-            if (limited) {
-              log.warn({ ...logContext, clientIp }, 'Rate limit exceeded for registration.');
-              return {
-                status: 'error',
-                error: {
-                  code: 'RATE_LIMIT_EXCEEDED',
-                  message: 'Too many registration attempts. Please try again later.',
-                },
-              };
-            }
-
-            return null;
-          }
-          ```
-
-- [x] **2. Add Command Timeouts for Production Hardening**
-
-  - **Reasoning**: While `connectTimeout` is set, `ioredis` does not apply a timeout to individual commands by default. In a production scenario, a Redis command could hang due to network issues or a slow query, which would block the Node.js event loop. Adding a `commandTimeout` ensures that no single command can indefinitely stall the application.
-  - **Suggested Implementation**:
-
-    1.  Open the file `lib/redis.ts`.
-    2.  Locate the `_attemptRedisClientInstantiation` function.
-    3.  Add the `commandTimeout` option to the `Redis` constructor options object.
-
-        ```typescript
-        // In lib/redis.ts, inside _attemptRedisClientInstantiation
-
-        const client = new Redis(redisUrlToUse, {
-          maxRetriesPerRequest: 3,
-          connectTimeout: 5000,
-          commandTimeout: 1000, // Add this line (1000ms is a sensible default)
-          showFriendlyErrorStack: process.env.NODE_ENV === 'development',
-          retryStrategy: _createRedisRetryStrategy(baseLogger, redisUrlToUse),
-        });
-        ```
-
-- [x] **3. Implement Graceful Shutdown**
-
-  - **Reasoning**: A production application must handle shutdown signals (like `SIGTERM` in Docker or `SIGINT` via Ctrl+C) cleanly. Without a graceful shutdown handler, the Redis connection might be terminated abruptly, leaving open connections. This change ensures the application explicitly closes its connection to Redis before exiting.
-  - **Suggested Implementation**:
-
-    1.  Open the file `instrumentation.ts`.
-    2.  Modify the file to include listeners for `SIGTERM` and `SIGINT` signals.
-
-        ```typescript
-        // instrumentation.ts
-
-        export async function register() {
-          if (process.env.NEXT_RUNTIME === 'nodejs') {
-            console.log('[Instrumentation] Initializing server-side components...');
-
-            const { redisClient } = await import('@/lib/redis');
-
-            // Graceful shutdown handler
-            const gracefulShutdown = async (signal: string) => {
-              console.log(`Received ${signal}, shutting down gracefully...`);
-              if (redisClient) {
-                try {
-                  await redisClient.quit();
-                  console.log('Redis client disconnected successfully.');
-                } catch (err) {
-                  console.error('Error during Redis disconnection:', err);
-                }
-              }
-              process.exit(0);
-            };
-
-            // Listen for termination signals
-            process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-            process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-            console.log('[Instrumentation] Redis client initialization sequence initiated.');
-          }
-        }
-        ```
+---

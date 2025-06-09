@@ -115,7 +115,10 @@ const Menu = forwardRef<HTMLDivElement, MenuProps>(
           ...PaperProps,
           elevation: 8,
           sx: {
-            borderRadius: theme.shape.borderRadius * 1.5, // rounded-lg equivalent (adjust multiplier)
+            borderRadius:
+              typeof theme.shape.borderRadius === 'number'
+                ? theme.shape.borderRadius * 1.5
+                : theme.shape.borderRadius, // rounded-lg equivalent (adjust multiplier)
             boxShadow: theme.shadows[3], // shadow-md equivalent
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',
