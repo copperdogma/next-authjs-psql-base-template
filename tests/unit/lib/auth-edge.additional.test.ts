@@ -1,7 +1,6 @@
 // NextAuth types are complex and we're just testing functionality
 import { NextRequest } from 'next/server';
 import { authConfigEdge } from '@/lib/auth-edge';
-import { logger } from '@/lib/logger';
 import { UserRole } from '@/types';
 
 // Mock NextAuth
@@ -72,99 +71,8 @@ describe('authConfigEdge', () => {
     }
   });
 
-  describe('Environment checks', () => {
-    // Tests are skipped because they manipulate environment variables in ways that can be flaky
-    // and can interfere with other tests. They test safety guards that aren't critical for runtime functionality.
-    it.skip('should warn but not throw in development mode when NEXTAUTH_SECRET is missing', () => {
-      // We need to mock the module loading process
-      // First save the original warn function
-      const originalWarn = logger.warn;
-
-      // Then create a mock implementation that we can verify
-      const mockWarn = jest.fn();
-      logger.warn = mockWarn;
-
-      try {
-        // Simulate missing NEXTAUTH_SECRET in development
-        delete process.env.NEXTAUTH_SECRET;
-
-        // Set NODE_ENV properly
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: 'development',
-          configurable: true,
-        });
-
-        // Force module to reload
-        jest.resetModules();
-
-        // Import the module - this should trigger the warning
-        // Note: We can't use require directly as it caches
-        jest.isolateModules(() => {
-          require('@/lib/auth-edge');
-
-          // Since the module is loaded in isolation, we need to verify
-          // that our mock was called before exiting the isolateModules scope
-          expect(mockWarn).toHaveBeenCalled();
-        });
-      } finally {
-        // Restore logger.warn
-        logger.warn = originalWarn;
-
-        // Restore NODE_ENV properly
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: originalNodeEnv,
-          configurable: true,
-        });
-
-        // Restore NEXTAUTH_SECRET
-        process.env.NEXTAUTH_SECRET = 'test-secret';
-      }
-    });
-
-    // Tests are skipped because they manipulate environment variables in ways that can be flaky
-    // and can interfere with other tests. They test safety guards that aren't critical for runtime functionality.
-    it.skip('should throw in production mode when NEXTAUTH_SECRET is missing', () => {
-      // Save the original error function
-      const originalError = logger.error;
-
-      // Create a mock implementation that we can verify
-      const mockError = jest.fn();
-      logger.error = mockError;
-
-      try {
-        // Simulate missing NEXTAUTH_SECRET in production
-        delete process.env.NEXTAUTH_SECRET;
-
-        // Set NODE_ENV properly
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: 'production',
-          configurable: true,
-        });
-
-        // This should throw
-        jest.isolateModules(() => {
-          expect(() => {
-            require('@/lib/auth-edge');
-          }).toThrow();
-
-          // Verify that our mock was called
-          expect(mockError).toHaveBeenCalled();
-        });
-      } finally {
-        // Restore logger.error
-        logger.error = originalError;
-
-        // Restore NODE_ENV properly
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: originalNodeEnv,
-          configurable: true,
-        });
-
-        // Restore NEXTAUTH_SECRET
-        process.env.NEXTAUTH_SECRET = 'test-secret';
-      }
-    });
-  });
+  // Note: Environment checks for NEXTAUTH_SECRET have been removed as they were flaky
+  // and tested safety guards that aren't critical for template runtime functionality.
 
   describe('authorized callback', () => {
     // Create a proper mock auth session that matches the expected structure

@@ -63,7 +63,7 @@ const FILES_TO_PROCESS = [
   'LICENSE',
   'app/manifest.ts',
   'tests/utils/test-constants.ts',
-      'tests/README.md',
+  'tests/README.md',
   'scripts/test-debug-helpers/simple-layout-test.js',
   'docs/testing',
   'docs/temp_project_reference_update.md',

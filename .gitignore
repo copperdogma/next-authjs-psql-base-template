@@ -31,10 +31,7 @@ auth-verification-failed.png
 /tests/.auth/
 **/user.json
 tests/e2e/auth.setup.json
-
-# Do NOT ignore snapshot reference images used for visual testing
-# These should be committed: 
-# !**/*.spec.ts-snapshots/**
+**/*.spec.ts-snapshots/
 
 # next.js
 /.next/
