@@ -63,7 +63,6 @@ Keep in mind this project is meant to be an easy-to-use template for getting pro
 Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's okay, then run all tests (npm run test and npm run test:e2e). You have permission to run these commands. - If they pass, ask me to manually check the website. - THEN check it off as successful.
 
 - NOTE: The "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:" error in Chrome is caused by a personal plugin injecting stuff into the UI and isn't a real error.
-- NOTE: We're skipping 2 e2e tests on purpose. They're skipped by default keeps them from cluttering test output during normal runs but maintains them as a valuable resource. This approach aligns with the template's goal of providing a solid foundation that anticipates future needs.
 
 ### Code To Do
 
@@ -99,63 +98,73 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     - [x] **3. Standardize Invalid URL Path Extraction**
     - [x] **4. Clarify or Remove Unused `authApiLimiter`**
   - [x] **Testing Suite** (Files: `tests/`, `playwright.config.ts`, `jest.config.js`, mocks)
-    - [x] **Consolidate Basic E2E Smoke Tests**
-    - [x] **Evaluate and Potentially Remove `tests/e2e/auth/exact-repro.test.ts`**
-    - [x] **Relocate or Remove Debugging Helper Scripts from `tests/` Directory**
-    - [x] **Consolidate Jest Configuration**
-    - [x] **Consolidate Playwright Configuration**
-    - [x] **Remove Potentially Orphaned/Redundant Theme Mock**
+    - [x] **Consolidate E2E Smoke Tests**: Removed redundant basic.spec.ts test file as its functionality is covered by the more comprehensive smoke.spec.ts.
+    - [x] **Remove Potentially Orphaned/Redundant Theme Mock**: Removed duplicate next-themes.js mock file from tests/mocks directory, keeping only the one in the root **mocks** directory which is automatically used by Jest.
+    - [x] **Remove Unnecessary Transpiler Verification Tests**: Deleted unnecessary SWC transpiler verification tests that were not essential for application testing.
+    - [x] **Clean Up Outdated Playwright Setup Files**: Removed outdated global-setup.ts and auth.setup.ts files from the tests/e2e directory, keeping only the current version in tests/e2e/setup/.
+    - [x] **Enable Disabled Tests**: Enabled the disabled test in dashboard.spec.ts but kept environment check tests skipped in auth-edge.additional.test.ts due to their flaky nature.
+    - [x] **Improve the Main `npm test` Script**: Updated the main npm test script to run both unit and E2E tests for more comprehensive validation.
+    - [x] **Relocate Debugging Helper Scripts**: Confirmed that debug helper scripts are already correctly located in the scripts/test-debug-helpers directory.
   - [ ] **Build, Configuration, and DX Scripts** (Files: `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `package.json` scripts, `scripts/`)
   - [ ] **Styling and Theming** (Files: `app/globals.css`, `components/ui/theme/`)
   - [ ] **Redis Integration** (Files: `lib/redis.ts`, Redis-specific services)
 - [ ] try to upgrade everything again- [x] Ensure the AI or the `scripts/setup.js` adequately handles providing/replacing all necessary environment variables before the first build/run attempt, particularly due to the strict validation in `lib/env.ts`.
   - Ensure the setup script (`scripts/setup.js`) correctly replaces _all_ placeholders (e.g., `Next Auth Application`, `Your Name`, etc.) across all relevant files (`README.md`, `package.json`, code comments, etc.).
 - [x] Final round: search for unused vars/code/files/packages/etc.
-- [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be
+- [x] AutoGen(?) to do a FULL e2e test: download github repo, run setup script, run e2e test, take notes on issues/improvements: https://chatgpt.com/share/681acf9d-93fc-800a-a8cc-3e360a7a85be"
 
 ---
 
-### Comprehensive Testing Suite Enhancement Checklist
+Of course. After a thorough review of my initial analysis and the provided codebase, I have confirmed and refined my recommendations. The testing suite is strong, but these changes will enhance its simplicity, maintainability, and adherence to best practices, making it an even better template.
 
-#### [x] 1. Consolidate E2E Smoke Tests for Clarity and Efficiency
+Here is a comprehensive checklist of actionable suggestions to improve the testing suite.
 
-- **Observation**: The project currently has multiple, similar E2E tests for basic functionality, including `tests/e2e/simple.spec.ts` and `tests/e2e/smoke.spec.ts`. This creates redundancy.
-- **Best Practice**: A project template benefits from a single, clear "smoke test" that quickly verifies the most critical, high-level functionality is working.
-- **Recommendation**:
-  - Merge the essential checks from all basic test files into a single, definitive `tests/e2e/smoke.spec.ts`.
-  - This smoke test should verify:
-    1.  The homepage (`/`) loads successfully with a 200-level status.
-    2.  A key, persistent layout element (like the main `<header>` or `<footer>`) is visible.
-    3.  A single navigation action to a public page (like `/about`) succeeds, and the URL is updated correctly.
-  - **Done:** Deleted `tests/e2e/simple.spec.ts` and `tests/e2e/simple-test.spec.ts`, leaving `tests/e2e/smoke.spec.ts` as the single, consolidated smoke test.
+---
 
-#### [x] 2. Integrate Server-Side Log Checking into the E2E Workflow
+### 🚀 Comprehensive Testing Suite Enhancement Plan
 
-- **Observation**: The project has a script `scripts/check-server-logs.js` to detect errors in server logs, but it is not integrated into the main E2E test command. This means server-side errors that don't cause an immediate test failure could go unnoticed, which is especially problematic for an AI-driven workflow.
-- **Best Practice**: The primary E2E test command should be a comprehensive check of the application's health, failing not only on UI test failures but also on underlying server errors that occurred _during_ the test run.
-- **Recommendation**:
-  1.  Modify the `dev:test` script in `package.json` to pipe the server's output to a log file that can be scanned later. The `tee` command can be useful here.
-      - **Example**: `... next dev -p 3777 | tee ./logs/e2e-server.log | pino-pretty`
-  2.  Update the `test:e2e` script in `package.json` to execute `scripts/check-server-logs.js` immediately after the `playwright test` command completes successfully.
-      - **Example**: `"test:e2e": "... npx playwright test && node scripts/check-server-logs.js ./logs/e2e-server.log"`
-  3.  Ensure the `logs` directory is created if it doesn't exist and is included in `.gitignore`.
+#### [x] 1. Configuration & Structure Consolidation
 
-#### [x] 3. Fix or Remove All Skipped/Broken Tests
+These changes focus on simplifying configuration files and making the project structure more intuitive and maintainable.
 
-- **Observation**: The testing suite contains several files that are explicitly skipped or noted as broken, which undermines the reliability of the template.
-  - `tests/unit/db/utils.test.ts`: Comments indicate this file is skipped due to "persistent TypeScript errors (TS2305) related to resolving Prisma Client types".
-  - `tests/unit/lib/auth-node.callbacks.test.ts`: This entire suite is disabled with `describe.skip`.
-- **Best Practice**: A production-ready template should have a fully functional and passing test suite. Skipped or broken tests should be treated as bugs.
-- **Recommendation**:
-  - **For `tests/unit/db/utils.test.ts` (High Priority)**: Investigate and resolve the root cause of the Prisma type resolution errors in the Jest environment. This is critical for a template that features PostgreSQL integration. The fix may involve adjusting `tsconfig.json` paths, the `jest.config.js` `moduleNameMapper`, or the Prisma mock setup.
-  - **For `tests/unit/lib/auth-node.callbacks.test.ts`**: Either fix the underlying issues that led to the test being skipped or remove the file if its coverage is provided by more robust E2E tests.
+- [x] **Consolidate and Simplify Jest Configuration**
 
-#### [x] 4. Simplify Complex Unit Tests in Favor of E2E/Integration Tests
+  - **Observation**: The `jest.config.js` file is functional but overly complex. It contains a verbose multi-project setup and some redundant `moduleNameMapper` entries that could be streamlined.
+  - **Action**: Refactor `jest.config.js`. Merge the `jsdom` and `node` projects under a single configuration where possible, using `testEnvironment` overrides for specific file paths. Remove redundant path mappings in `moduleNameMapper` that are covered by the generic `^@/(.*)$` alias.
+  - **Benefit**: This will make the Jest configuration significantly cleaner, easier to understand for new users (or AI), and reduce the chance of misconfiguration.
+  - **File(s) to Modify**: `jest.config.js`
 
-- **Observation**: The suite contains highly complex unit tests for authentication and server actions (e.g., `tests/unit/lib/auth-credentials.test.ts`, `tests/unit/components/login/CredentialsLoginForm.test.tsx`). These tests require extensive mocking of `next-auth`, `prisma`, and prop-drilled state setters, making them brittle and difficult to maintain.
-- **Best Practice**: For full-stack user flows like login and registration, E2E tests provide more value and confidence than complex, heavily mocked unit tests. Unit tests are better suited for isolated business logic and pure functions.
-- **Recommendation**:
-  - Review the most complex unit tests that mock large parts of the auth or database stack.
-  - Ensure that the user flows these tests cover (e.g., "invalid credentials error," "successful registration") are fully validated by existing E2E tests in `tests/e2e/auth/`.
-  - Once E2E coverage is confirmed, consider simplifying or removing the corresponding complex unit tests. This reduces maintenance overhead and focuses testing effort where it provides the most value, aligning with the goal of an elegant and simple template.
-  - The file `tests/unit/lib/actions/auth.actions.test.ts` already follows this principle by explicitly deferring to E2E tests; this should be the model.
+- [x] **Simplify Playwright Project Configuration via Directory Structure**
+
+  - **Observation**: The `playwright.config.ts` file uses complex `testMatch` and `testIgnore` regular expressions to define which tests run in which project (e.g., `ui-tests` vs. `chromium` authenticated tests).
+  - **Action**:
+    1.  Create new subdirectories within `tests/e2e/` like `public/` and `authenticated/`.
+    2.  Move the respective test files into these directories (e.g., `public-access.spec.ts` into `public/`, `profile/edit-profile.spec.ts` into `authenticated/`).
+    3.  Update the `projects` in `playwright.config.ts` to use simple directory paths (e.g., `testDir: './tests/e2e/public'`) instead of complex regex matching.
+  - **Benefit**: This simplifies the Playwright configuration, makes it immediately obvious which tests require authentication, and provides a clear structure for adding new tests.
+  - **File(s) to Modify**: `playwright.config.ts`
+  - **Files to Move**: All test files within `tests/e2e/`.
+
+- [x] **Consolidate Mock Directories**
+  - **Observation**: The project has two mock directories: a root `__mocks__/` and `tests/mocks/`. While functional, this can be confusing. The standard Jest convention is to use the root `__mocks__/` for automatic module mocking.
+  - **Action**: Move all mocks from `tests/mocks/` into the root `__mocks__/` directory. Update any import paths that might break as a result. This standardizes the location for all mocks.
+  - **Benefit**: Adheres to Jest's standard conventions, making the project more intuitive and reducing developer confusion.
+  - **Files to Move**: All files and directories within `tests/mocks/`.
+
+---
+
+#### [x] 2. Redundancy and Cleanup
+
+These actions will remove duplicated, outdated, or unnecessary files, resulting in a cleaner and more focused template.
+
+- [x] **Consolidate E2E Smoke Tests**
+
+  - **Observation**: The files `tests/e2e/basic.spec.ts` and `tests/e2e/smoke.spec.ts` have overlapping intentions. The `smoke.spec.ts` is more comprehensive and provides better validation.
+  - **Action**: Delete the `tests/basic.spec.ts` file. Its simple check is already covered by the more robust `smoke.spec.ts`.
+  - **Benefit**: Reduces test suite clutter and removes a redundant, less valuable test.
+  - **File(s) to Delete**: `tests/basic.spec.ts`
+
+- [x] **Remove Redundant `next-themes` Mock**
+
+  - **Observation**: There are two identical mock files for the `next-themes` library: `__mocks__/next-themes.js` and `tests/mocks/next-themes.js`.
+  - **Action**: Delete the mock file located at `

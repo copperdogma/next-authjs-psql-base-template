@@ -7,9 +7,10 @@
  * allowing tests to import from either location as needed without creating import cycles.
  */
 
-import { jest } from '@jest/globals';
+import '@testing-library/jest-dom';
+import { afterEach, jest } from '@jest/globals';
 
-import { mockSession } from './tests/mocks/data/mockData';
+import { mockSession } from './__mocks__/data/mockData';
 
 /**
  * Create the Request class constructor
@@ -203,21 +204,12 @@ jest.mock('next/server', () => {
   };
 });
 
-// Reset mocks after each test
+// Setup global mock values
+globalThis.mockAuthSession = mockSession;
+
+// Clear all mocks after each test
 afterEach(() => {
   jest.clearAllMocks();
 });
 
-// Ensure these are assigned before tests run
-// const fetch = require('node-fetch');
-// global.fetch = fetch;
-// global.Request = fetch.Request;
-// global.Response = fetch.Response;
-
-// If node-fetch is strictly for Node environment API tests, it might be okay.
-// For jsdom, relying on its built-in fetch or msw is more common.
-// Consider if these global overrides are always desired or conflict with Jest's own env.
-// For now, commenting out the direct node-fetch overrides to avoid potential conflicts
-// if Jest environment (jsdom/node) already provides these.
-
-// Add any other Node-specific setup here
+// Additional API-specific setup can be added here

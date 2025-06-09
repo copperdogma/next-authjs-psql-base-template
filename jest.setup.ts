@@ -1,7 +1,8 @@
 // Generic setup file for both Node.js and JSDOM environments
 import path from 'path';
 import dotenv from 'dotenv';
-import { resetPrismaMock } from './tests/mocks/db/prismaMocks';
+import '@testing-library/jest-dom';
+import { resetPrismaMock } from './__mocks__/db/prismaMocks';
 
 // Environment configuration
 process.env.NEXTAUTH_SECRET = 'test-secret-key';
@@ -21,6 +22,11 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
+// Reset database mocks before each test
+beforeEach(() => {
+  resetPrismaMock();
+});
+
 // Comment out console overrides to help debugging
 /*
 const CONSOLE_FAIL_TYPES = ['error', 'warn'];
@@ -32,3 +38,5 @@ CONSOLE_FAIL_TYPES.forEach(type => {
   };
 });
 */
+
+// Add any global test setup here

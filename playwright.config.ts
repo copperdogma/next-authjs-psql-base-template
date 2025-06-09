@@ -73,9 +73,9 @@ const config: PlaywrightTestConfig = defineConfig({
   retries: TEST_RETRIES,
   workers: process.env.CI ? 1 : undefined, // Force serial execution on CI, use default otherwise
   reporter: process.env.CI ? [['html']] : [['list'], ['html', { open: 'never' }]],
-  // Comment out globalSetup as it causes ESM issues
+  // Comment out old globalSetup reference - it's no longer needed
   // globalSetup: './tests/e2e/global-setup.ts',
-  globalSetup: require.resolve('./tests/e2e/global-setup.ts'), // Use require.resolve for compatibility
+  // globalSetup: require.resolve('./tests/e2e/global-setup.ts'), // Use require.resolve for compatibility
 
   use: {
     baseURL: BASE_URL,
@@ -90,7 +90,8 @@ const config: PlaywrightTestConfig = defineConfig({
     // Authentication setup project - runs first to set up auth state
     {
       name: 'setup',
-      testMatch: /setup\/auth\.setup\.ts/, // Point to the specific setup file
+      testDir: './tests/e2e/setup',
+      testMatch: /auth\.setup\.ts/,
       use: {
         ...devices['Desktop Chrome'],
       },
@@ -99,27 +100,7 @@ const config: PlaywrightTestConfig = defineConfig({
     // UI tests that don't require authentication
     {
       name: 'ui-tests',
-      // Match basic navigation, simple tests, public access, specific non-auth flows
-      testMatch: [
-        /navigation-improved\.spec\.ts/,
-        /simple\.spec\.ts/,
-        /public-access\.spec\.ts/,
-        /theme-toggle\.spec\.ts/,
-        /accessibility-improved\.spec\.ts/, // Assuming this doesn't strictly need auth
-        /smoke\.spec\.ts/, // Our consolidated smoke test
-        /auth\/registration\.spec\.ts/, // Keep this specific inclusion
-        /auth\/invalid-credentials\.spec\.ts/,
-      ],
-      // Explicitly ignore tests known to require auth state or are handled by other projects
-      testIgnore: [
-        // Specific auth tests to ignore for this unauthenticated 'ui-tests' project
-        /auth\/login-logout-cycle\.spec\.ts/,
-        /auth\/redirect\.test\.ts/,
-        /auth\/auth-flow\.spec\.ts/, // Assuming this needs auth or is complex
-        // General patterns for other categories
-        /profile\/.*\.spec\.ts/,
-        /dashboard\.spec\.ts/,
-      ],
+      testDir: './tests/e2e/public',
       use: {
         ...devices['Desktop Chrome'],
       },
@@ -128,24 +109,7 @@ const config: PlaywrightTestConfig = defineConfig({
     // Authenticated tests in Chromium
     {
       name: 'chromium',
-      // Define tests that *require* authentication
-      testMatch: [
-        /auth\/login-logout-cycle\.spec\.ts/,
-        /auth\/redirect\.test\.ts/,
-        /auth\/auth-flow\.spec\.ts/, // Assuming this needs auth or is complex
-        // General patterns for other categories
-        /profile\/.*/, // All tests in the profile directory
-      ],
-      // You might still want to explicitly ignore the non-auth tests if patterns overlap
-      testIgnore: [
-        /.*\.setup\.ts/, // Always ignore setup
-        /navigation-improved\.spec\.ts/,
-        /simple\.spec\.ts/,
-        /public-access\.spec\.ts/,
-        /theme-toggle\.spec\.ts/,
-        /accessibility-improved\.spec\.ts/,
-        /smoke\.spec\.ts/, // Ignore our consolidated smoke test in the auth project
-      ],
+      testDir: './tests/e2e/authenticated',
       use: {
         ...devices['Desktop Chrome'],
         storageState: STORAGE_STATE, // Use the state saved by the 'setup' project
@@ -156,34 +120,19 @@ const config: PlaywrightTestConfig = defineConfig({
     // Mobile tests
     {
       name: 'Mobile Chrome',
+      testDir: './tests/e2e/authenticated',
       use: {
         ...devices['Pixel 7'],
         storageState: MOBILE_STORAGE_STATE, // Use mobile-specific storage state
       },
       dependencies: ['setup'],
-      // Define test patterns for mobile specifically
-      testMatch: [
-        /auth\/mobile-auth\.spec\.ts/, // Use our new mobile auth test file
-        /auth\/login-logout-cycle\.spec\.ts/,
-        /auth\/redirect\.test\.ts/,
-        /profile\/.*/,
-      ],
-      testIgnore: [
-        /.*\.setup\.ts/,
-        /navigation-improved\.spec\.ts/,
-        /simple\.spec\.ts/,
-        /public-access\.spec\.ts/,
-        /theme-toggle\.spec\.ts/,
-        /accessibility-improved\.spec\.ts/,
-        /smoke\.spec\.ts/,
-      ],
     },
 
     // API tests - no browser needed
     // Uncomment to enable dedicated API tests project
     // {
     //   name: 'api',
-    //   testMatch: /api\/.*\.spec\.ts/,
+    //   testDir: './tests/e2e/api',
     //   use: {
     //     // No browser is needed for API tests
     //     baseURL: BASE_URL,
@@ -193,12 +142,12 @@ const config: PlaywrightTestConfig = defineConfig({
     // Uncomment to add Firefox testing
     // {
     //   name: 'firefox',
+    //   testDir: './tests/e2e/authenticated',
     //   use: {
     //     ...devices['Desktop Firefox'],
     //     storageState: STORAGE_STATE,
     //   },
     //   dependencies: ['setup'],
-    //   testIgnore: /navigation|accessibility|performance|basic\.spec\.ts/,
     // },
   ],
 

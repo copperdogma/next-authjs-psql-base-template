@@ -29,25 +29,25 @@ const sharedConfig = {
     '/node_modules/(?!(@clerk|@radix-ui|@hookform|next|@mui|@emotion|@babel/runtime|next-auth|@auth\/core|oauth4webapi|jose|openid-client|@panva/hkdf|uuid|preact|preact-render-to-string|@auth/prisma-adapter|@prisma/client)/)',
   ],
   moduleNameMapper: {
-    // Restore original shared mappings
-    '^@/lib/(.*)$': '<rootDir>/lib/$1',
-    '^@/app/(.*)$': '<rootDir>/app/$1',
-    '^@/components/(.*)$': '<rootDir>/components/$1',
-    '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',
-    '^@/types/(.*)$': '<rootDir>/types/$1',
-    '^@/types$': '<rootDir>/types/index',
-    '^@/actions/(.*)$': '<rootDir>/lib/actions/$1',
-    '^@/tests/(.*)$': '<rootDir>/tests/$1',
+    // Handle CSS imports with identity-obj-proxy
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
-    '^@/(.*)$': '<rootDir>/$1',
 
-    // Add mocks from the tests/config/jest.config.js
-    '^next-themes$': '<rootDir>/tests/mocks/next-themes.js',
-    '^../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
-    '^../../../../lib/auth/session$': '<rootDir>/tests/mocks/lib/auth/session.ts',
-    '^../../../lib/auth/token$': '<rootDir>/tests/mocks/lib/auth/token.ts',
-    '^../../../lib/auth/token-refresh$': '<rootDir>/tests/mocks/lib/auth/token-refresh.ts',
-    '^../../../lib/auth/middleware$': '<rootDir>/tests/mocks/lib/auth/middleware.ts',
+    // Priority mappings for specific modules
+    '@/lib/prisma': '<rootDir>/lib/prisma.ts',
+    '@/lib/db/prisma': '<rootDir>/lib/db/prisma.ts',
+    '@/lib/logger': '<rootDir>/lib/logger.ts',
+    '@/lib/auth-node': '<rootDir>/lib/auth-node.ts',
+
+    // Essential auth mocks
+    '^next-themes$': '<rootDir>/__mocks__/next-themes.js',
+    '^../../../lib/auth/session$': '<rootDir>/__mocks__/lib/auth/session.ts',
+    '^../../../../lib/auth/session$': '<rootDir>/__mocks__/lib/auth/session.ts',
+    '^../../../lib/auth/token$': '<rootDir>/__mocks__/lib/auth/token.ts',
+    '^../../../lib/auth/token-refresh$': '<rootDir>/__mocks__/lib/auth/token-refresh.ts',
+    '^../../../lib/auth/middleware$': '<rootDir>/__mocks__/lib/auth/middleware.ts',
+
+    // Generic path alias that catches all other imports
+    '^@/(.*)$': '<rootDir>/$1',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFiles: ['<rootDir>/jest.setup.env.js'],
@@ -67,7 +67,7 @@ const sharedConfig = {
     'lib/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',
     'middleware.ts',
-    'tests/mocks/app/api/**/*.ts',
+    '__mocks__/app/api/**/*.ts',
     'types/**/*.ts',
     '!**/*.d.ts',
     '!**/node_modules/**',
@@ -131,30 +131,6 @@ const customJestConfig = {
         // Keep the default CSS/SASS ignore pattern if needed, assuming it came from next/jest
         '^.+\\.module\\.(css|sass|scss)$',
       ],
-
-      // Keep comprehensive, isolated mapper for node
-      roots: ['<rootDir>/lib', '<rootDir>/lib/actions', '<rootDir>/tests'],
-      moduleNameMapper: {
-        // Keep specific overrides first
-        '@/lib/prisma': '<rootDir>/lib/prisma.ts',
-        '@/lib/db/prisma': '<rootDir>/lib/db/prisma.ts',
-        '@/lib/logger': '<rootDir>/lib/logger.ts',
-        '@/lib/auth-node': '<rootDir>/lib/auth-node.ts',
-
-        // Add general lib mapping AFTER specific one
-        '^@/lib/(.*)$': '<rootDir>/lib/$1',
-
-        // Keep other specific mappings
-        '^@/types$': '<rootDir>/types/index.ts',
-        '^@/types/(.*)$': '<rootDir>/types/$1',
-        '^@/components/(.*)$': '<rootDir>/components/$1',
-        '^@/app/(.*)$': '<rootDir>/app/$1',
-        '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
-        '^@/tests/(.*)$': '<rootDir>/tests/$1',
-
-        // Add the general root mapping
-        '^@/(.*)$': '<rootDir>/$1',
-      },
     },
 
     // JSDOM environment
@@ -177,14 +153,10 @@ const customJestConfig = {
       globals: {
         DISABLE_CLIENT_LOGGER_FETCH: 'true', // Prevent client logger API calls in jsdom tests
       },
-      moduleNameMapper: {
-        ...sharedConfig.moduleNameMapper,
-        '^@/components/ui/(.*)$': '<rootDir>/components/ui/$1',
-      },
     },
   ],
 
-  // Restore global coverage options
+  // Global coverage options
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'text-summary'],
   coverageThreshold: {
