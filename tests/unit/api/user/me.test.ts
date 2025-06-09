@@ -1,8 +1,9 @@
 /**
  * @jest-environment node
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { jest } from '@jest/globals';
+import { createRequest } from 'node-mocks-http';
 import { UserRole } from '@/types';
 import type pino from 'pino';
 
@@ -20,12 +21,27 @@ jest.mock('@/lib/prisma', () => ({
   },
 }));
 
-// Create a test version of the handler function
-// This mirrors the implementation in app/api/user/me/route.ts but allows for direct testing
-async function testHandler(logger: pino.Logger): Promise<NextResponse> {
+// Mock pino logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+} as unknown as pino.Logger;
+
+// Mock the API logger service to avoid complex dependency loading
+jest.mock('@/lib/services/api-logger-service', () => ({
+  withApiLogger: (handler: any) => {
+    return (req: NextRequest) => handler(req, mockLogger);
+  },
+}));
+
+// Create a test implementation that mimics the actual route structure
+// but can be directly tested without loading all the complex dependencies
+async function testRouteHandler(req: NextRequest, logger: pino.Logger): Promise<NextResponse> {
   try {
-    // Get current session
-    const { auth } = require('@/lib/auth');
+    // Import auth inside the function to ensure mocks are applied
+    const { auth } = await import('@/lib/auth');
     const session = await auth();
 
     // Check if user is authenticated
@@ -37,8 +53,8 @@ async function testHandler(logger: pino.Logger): Promise<NextResponse> {
       );
     }
 
-    // Fetch user details from database (excluding sensitive fields)
-    const { prisma } = require('@/lib/prisma');
+    // Import prisma inside the function to ensure mocks are applied
+    const { prisma } = await import('@/lib/prisma');
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -73,27 +89,39 @@ async function testHandler(logger: pino.Logger): Promise<NextResponse> {
   }
 }
 
-// Mock pino logger
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-} as unknown as pino.Logger;
-
-describe('User Me API', () => {
+describe('User Me API Route Handler Logic', () => {
   // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  const createMockRequest = (options: any = {}): NextRequest => {
+    const mockHttpRequest = createRequest({
+      method: 'GET',
+      url: '/api/user/me',
+      ...options,
+    });
+
+    // Create a proper NextRequest-like object
+    return {
+      url: mockHttpRequest.url,
+      method: mockHttpRequest.method,
+      headers: new Headers(),
+      nextUrl: {
+        pathname: '/api/user/me',
+        search: '',
+        searchParams: new URLSearchParams(),
+      },
+    } as NextRequest;
+  };
 
   it('should return 401 if user is not authenticated', async () => {
     // Mock auth to return null session (unauthenticated)
     const { auth } = require('@/lib/auth');
     auth.mockResolvedValue(null);
 
-    // Call our test handler
-    const response = await testHandler(mockLogger);
+    const mockRequest = createMockRequest();
+    const response = await testRouteHandler(mockRequest, mockLogger);
 
     // Check status and response
     expect(response.status).toBe(401);
@@ -116,8 +144,8 @@ describe('User Me API', () => {
     const { prisma } = require('@/lib/prisma');
     prisma.user.findUnique.mockResolvedValue(null);
 
-    // Call our test handler
-    const response = await testHandler(mockLogger);
+    const mockRequest = createMockRequest();
+    const response = await testRouteHandler(mockRequest, mockLogger);
 
     // Check status and response
     expect(response.status).toBe(404);
@@ -165,8 +193,8 @@ describe('User Me API', () => {
     const { prisma } = require('@/lib/prisma');
     prisma.user.findUnique.mockResolvedValue(mockUser);
 
-    // Call our test handler
-    const response = await testHandler(mockLogger);
+    const mockRequest = createMockRequest();
+    const response = await testRouteHandler(mockRequest, mockLogger);
 
     // Check status and response
     expect(response.status).toBe(200);
@@ -208,8 +236,8 @@ describe('User Me API', () => {
     const { prisma } = require('@/lib/prisma');
     prisma.user.findUnique.mockRejectedValue(new Error('Database error'));
 
-    // Call our test handler
-    const response = await testHandler(mockLogger);
+    const mockRequest = createMockRequest();
+    const response = await testRouteHandler(mockRequest, mockLogger);
 
     // Check status and response
     expect(response.status).toBe(500);

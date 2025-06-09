@@ -140,15 +140,15 @@ const config: PlaywrightTestConfig = defineConfig({
     // },
 
     // Uncomment to add Firefox testing
-    // {
-    //   name: 'firefox',
-    //   testDir: './tests/e2e/authenticated',
-    //   use: {
-    //     ...devices['Desktop Firefox'],
-    //     storageState: STORAGE_STATE,
-    //   },
-    //   dependencies: ['setup'],
-    // },
+    {
+      name: 'firefox',
+      testDir: './tests/e2e/authenticated',
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: STORAGE_STATE,
+      },
+      dependencies: ['setup'],
+    },
   ],
 
   // Built-in webServer configuration - manages Next.js server for tests
