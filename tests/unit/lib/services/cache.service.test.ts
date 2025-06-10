@@ -103,6 +103,44 @@ describe('CacheService', () => {
         error: 'Failed to deserialize cached value',
       });
     });
+
+    it('should decompress compressed values correctly', async () => {
+      const originalData = {
+        content: 'x'.repeat(2000),
+        metadata: { id: 1, type: 'large' },
+      };
+
+      // First, set the compressed value
+      mockGetOptionalRedisClient.mockReturnValue(mockRedisClient);
+      mockRedisClient.setex.mockResolvedValue('OK');
+
+      await CacheService.set('test:compressed', originalData, { compress: true });
+
+      // Get the compressed value that was stored
+      const compressedValue = mockRedisClient.setex.mock.calls[0][2];
+
+      // Now mock getting the compressed value back
+      mockRedisClient.get.mockResolvedValue(compressedValue);
+
+      const result = await CacheService.get<typeof originalData>('test:compressed');
+
+      expect(result.hit).toBe(true);
+      expect(result.value).toEqual(originalData);
+    });
+
+    it('should handle compressed data decompression errors gracefully', async () => {
+      mockGetOptionalRedisClient.mockReturnValue(mockRedisClient);
+      // Mock invalid compressed data
+      mockRedisClient.get.mockResolvedValue('gzip:invalid_base64_data');
+
+      const result = await CacheService.get('test:key');
+
+      expect(result).toEqual({
+        value: null,
+        hit: false,
+        error: 'Failed to deserialize cached value',
+      });
+    });
   });
 
   describe('set', () => {
@@ -162,6 +200,64 @@ describe('CacheService', () => {
       const result = await CacheService.set('test:key', { data: 'test' });
 
       expect(result).toBe(false);
+    });
+
+    it('should compress large values when compress option is true', async () => {
+      // Create a large object that exceeds 1KB threshold
+      const largeData = {
+        content: 'x'.repeat(2000),
+        metadata: { id: 1, type: 'large' },
+      };
+      mockGetOptionalRedisClient.mockReturnValue(mockRedisClient);
+      mockRedisClient.setex.mockResolvedValue('OK');
+
+      const result = await CacheService.set('test:large', largeData, {
+        compress: true,
+        ttl: 3600,
+      });
+
+      expect(result).toBe(true);
+
+      // Verify that the stored value is compressed (should start with 'gzip:')
+      const storedValue = mockRedisClient.setex.mock.calls[0][2];
+      expect(storedValue).toMatch(/^gzip:/);
+      expect(storedValue.length).toBeLessThan(JSON.stringify(largeData).length);
+    });
+
+    it('should not compress small values even when compress option is true', async () => {
+      const smallData = { id: 1, name: 'Small' };
+      mockGetOptionalRedisClient.mockReturnValue(mockRedisClient);
+      mockRedisClient.setex.mockResolvedValue('OK');
+
+      const result = await CacheService.set('test:small', smallData, {
+        compress: true,
+        ttl: 3600,
+      });
+
+      expect(result).toBe(true);
+
+      // Small values should not be compressed
+      const storedValue = mockRedisClient.setex.mock.calls[0][2];
+      expect(storedValue).toBe(JSON.stringify(smallData));
+      expect(storedValue).not.toMatch(/^gzip:/);
+    });
+
+    it('should not compress values when compress option is false', async () => {
+      const largeData = { content: 'x'.repeat(2000) };
+      mockGetOptionalRedisClient.mockReturnValue(mockRedisClient);
+      mockRedisClient.setex.mockResolvedValue('OK');
+
+      const result = await CacheService.set('test:large-uncompressed', largeData, {
+        compress: false,
+        ttl: 3600,
+      });
+
+      expect(result).toBe(true);
+
+      // Should store as plain JSON even if large
+      const storedValue = mockRedisClient.setex.mock.calls[0][2];
+      expect(storedValue).toBe(JSON.stringify(largeData));
+      expect(storedValue).not.toMatch(/^gzip:/);
     });
   });
 

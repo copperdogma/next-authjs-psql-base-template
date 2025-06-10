@@ -1,5 +1,6 @@
 import { getOptionalRedisClient } from '@/lib/redis';
 import { logger } from '@/lib/logger';
+import { gzipSync, gunzipSync } from 'zlib';
 
 const log = logger.child({ service: 'CacheService' });
 
@@ -287,28 +288,78 @@ class CacheServiceImpl {
   }
 
   /**
-   * Serialize a value for storage
+   * Serialize a value for storage with optional compression
+   *
+   * When compression is enabled and the serialized value exceeds the
+   * compression threshold (1KB), the data is gzipped and stored with
+   * a 'gzip:' prefix to indicate compression. Small values remain
+   * uncompressed for efficiency.
+   *
+   * @param value - The value to serialize
+   * @param compress - Whether to apply compression for large values
+   * @returns Serialized string, optionally compressed with 'gzip:' prefix
    */
   private serializeValue<T>(value: T, compress = false): string {
     const serialized = JSON.stringify(value);
 
-    // For now, just return serialized JSON
-    // Future enhancement: implement compression if compress=true and size > threshold
+    // Compress large values if compression is enabled
     if (compress && serialized.length > this.compressionThreshold) {
-      log.debug(
-        { size: serialized.length },
-        'Large value detected, compression not yet implemented'
-      );
+      try {
+        const compressed = gzipSync(Buffer.from(serialized, 'utf8'));
+        const compressedString = `gzip:${compressed.toString('base64')}`;
+
+        log.debug(
+          {
+            originalSize: serialized.length,
+            compressedSize: compressedString.length,
+            compressionRatio:
+              ((1 - compressedString.length / serialized.length) * 100).toFixed(1) + '%',
+          },
+          'Value compressed for storage'
+        );
+
+        return compressedString;
+      } catch (error) {
+        log.error({ error, size: serialized.length }, 'Compression failed, storing uncompressed');
+        return serialized;
+      }
     }
 
     return serialized;
   }
 
   /**
-   * Deserialize a value from storage
+   * Deserialize a value from storage with automatic decompression
+   *
+   * Automatically detects and decompresses values that were stored with
+   * compression (indicated by 'gzip:' prefix). Handles both compressed
+   * and uncompressed values transparently.
+   *
+   * @param serialized - The serialized string from storage
+   * @returns The deserialized value
+   * @throws Error if decompression or JSON parsing fails
    */
   private deserializeValue<T>(serialized: string): T {
     try {
+      // Check if the value is compressed
+      if (serialized.startsWith('gzip:')) {
+        const compressedData = serialized.slice(5); // Remove 'gzip:' prefix
+        const compressedBuffer = Buffer.from(compressedData, 'base64');
+        const decompressedBuffer = gunzipSync(compressedBuffer);
+        const decompressedString = decompressedBuffer.toString('utf8');
+
+        log.debug(
+          {
+            compressedSize: serialized.length,
+            decompressedSize: decompressedString.length,
+          },
+          'Value decompressed from storage'
+        );
+
+        return JSON.parse(decompressedString) as T;
+      }
+
+      // Not compressed, parse as regular JSON
       return JSON.parse(serialized) as T;
     } catch (error) {
       log.error(
