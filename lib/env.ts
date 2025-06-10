@@ -121,7 +121,6 @@ export function validateEnv(): z.SafeParseReturnType<Env, Env> {
       throw new Error('Invalid environment variables');
     } else {
       // Optionally, log a less intrusive message in test env, or nothing
-      // console.log('Skipping env validation error logging in test environment.');
     }
   }
 

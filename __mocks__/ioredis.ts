@@ -37,7 +37,6 @@ class MockIORedis {
     // Immediately transition to a "connected" state for simplicity in many tests
     // unless specific tests need to control this via the connect/disconnect mocks.
     this.connected = true;
-    // console.log('MockIORedis constructor called with:', args);
   }
 
   // Instance methods

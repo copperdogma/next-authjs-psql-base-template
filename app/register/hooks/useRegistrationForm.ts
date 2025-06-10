@@ -112,9 +112,7 @@ function handleRegistrationSubmitError(
   setError: (message: string | null) => void,
   setSuccess: (message: string | null) => void
 ) {
-  // Use console.log instead of console.error to avoid failing the test
-  // due to console errors
-  // console.log('Registration form submission error in hook', { error: err }); // Removed this log
+  // Use logger.error() for proper error logging
 
   if (_isFetchRelatedError(err)) {
     // If this is a fetch error but user was created, show success message

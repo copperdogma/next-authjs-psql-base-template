@@ -437,7 +437,6 @@ async function main() {
     console.log(chalk.green.bold('✅ Setup completed successfully!'));
     console.log(chalk.blue('Next steps:'));
 
-    // console.log(chalk.blue('1. Run `npm install` to install dependencies')); // Already done
     console.log(chalk.blue('1. Ensure your PostgreSQL server is running and accessible.'));
     console.log(
       chalk.blue('2. The DATABASE_URL in .env.local has been set to:'),

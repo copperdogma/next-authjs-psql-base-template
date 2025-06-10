@@ -8,6 +8,5 @@ export function NextThemesProviderWrapper({
   children,
   ...props
 }: React.ComponentProps<typeof ThemeProvider>) {
-  // console.log('[NextThemesProviderWrapper] Rendering...'); // Removed log
   return <ThemeProvider {...props}>{children}</ThemeProvider>;
 }

@@ -15,7 +15,6 @@ I want you to be very thorough here. Break it down into clear sections or tasks 
 ## Caveats For AI analysis:
 
 - Placeholders: These are intentional. Because this is a base project I plan to install a plugin that leads the user through customizing it for their uses and replacing those placeholders. Igore them for now.
-- Outdated Project Documentation: It's currently outdated as it's going to get updated all at once at the end of the project. Just ignore the docs for now. The CODE-level documention should be 100% accurate, though.
 - Redundant Cursor Rules: Just ignore them. They're mind to deal with.
 
 Here is the code:
@@ -132,56 +131,9 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [x] **Code Fix**: Fixed unused `_session` variable in `app/page.tsx`
   - [x] **Validation**: All 408 unit tests and 30 E2E authentication tests passing after cleanup
 
----
+## Secondary
 
-### Remaining Package Upgrades - Complex/Deferred
-
-The following packages have available updates but require careful consideration due to potential breaking changes or stability concerns:
-
-- [x] **@auth/core (0.38.0 → 0.39.1)** ✅ **COMPLETED**
-
-  - **Status**: Successfully upgraded with no breaking changes
-  - **Testing Results**:
-    - ✅ Build successful with no compilation errors
-    - ✅ All 416 unit tests passing
-    - ✅ All 59 E2E tests passing (authentication flows work correctly)
-    - ✅ Manual testing confirmed website working properly
-  - **Summary**: The upgrade was seamless with no breaking changes to authentication flows, token handling, or session management.
-
-- [x] **jest-environment-jsdom (29.7.0 → 30.0.0-beta.3)** ✅ **COMPLETED**
-
-  - **Status**: Successfully upgraded with no breaking changes
-  - **Testing Results**:
-    - ✅ Build successful with no compilation errors
-    - ✅ All 416 unit tests passing
-    - ✅ All 59 E2E tests passing
-    - ✅ Manual testing confirmed website working properly
-  - **Summary**: The upgrade was seamless with no breaking changes to Jest's JSDOM test environment. No issues were observed in component testing or DOM-related test functionality.
-
-- [x] **next-auth (current: 5.0.0-beta.28)** ✅ **COMPLETED**
-
-  - **Status**: Already on latest beta version (5.0.0-beta.28) - package.json synchronized
-  - **Testing Results**:
-    - ✅ Build successful with no compilation errors
-    - ✅ All 416 unit tests passing
-    - ✅ All 59 E2E tests passing (authentication flows working correctly)
-    - ✅ Package.json version synchronized with installed version
-  - **Summary**: The project is already on the latest available beta version. The package.json was updated to correctly reflect the installed version (beta.28). All authentication functionality including sign-in, sign-out, session management, and protected routes are working perfectly.
-
-- [x] **nodemailer (6.10.1 → 7.0.3)** ✅ **COMPLETED - REMOVED**
-
-  - **Status**: Unused dependency removed from direct dependencies
-  - **Findings**:
-    - ✅ No direct usage found in codebase (no imports, requires, or method calls)
-    - ✅ Still present as transitive dependency of @auth/core and next-auth (for their internal email functionality)
-    - ✅ Removing direct dependency reduces bundle size without affecting functionality
-  - **Testing Results**:
-    - ✅ All 416 unit tests passing
-    - ✅ All 30 authentication E2E tests passing
-    - ✅ Authentication flows work correctly (sign-in, sign-out, protected routes)
-    - ✅ No compilation errors or build issues
-  - **Summary**: Successfully identified and removed unused direct dependency. The auth libraries (NextAuth) handle their own nodemailer dependency internally for any email-related functionality they might need.
-
----
+- [ ] Redis testing could be enhanced for better cache layer confidence
+- [ ] User store could benefit from additional edge case testing
 
 ---

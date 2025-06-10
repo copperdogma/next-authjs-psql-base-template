@@ -10,6 +10,7 @@ import NameEditSection from './NameEditSection';
 import { toast } from '@/components/ui/Toaster'; // Import toast
 import ProfileField from './ProfileField'; // Correct default import
 import { updateUserName, NameUpdateState } from '@/app/profile/actions'; // Use correct type
+import { logger } from '@/lib/logger';
 
 // Custom Hook for Profile Details Logic
 /**
@@ -56,8 +57,8 @@ const useProfileDetails = (
     if (state.success && state.updatedName && !storeUpdateAttemptedRef.current) {
       storeUpdateAttemptedRef.current = true;
       setIsEditingName(false);
-      console.log('Profile action success, updating Zustand store with:', {
-        name: state.updatedName,
+      logger.info('Profile action success, updating Zustand store with:', {
+        updatedName: state.updatedName,
       });
       setUserDetails({ name: state.updatedName });
       if (state.message) {
