@@ -161,56 +161,31 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
     ```
   - **Rationale:** This removes ambiguity and reinforces the best practice of avoiding server-side code on the client unless a developer makes a conscious choice to add polyfills.
 
-### **Area 2: Authentication & Middleware**
+### **Area 2: Authentication & Middleware** ✅ COMPLETED
 
-- #### [ ] Centralize Middleware Route Definitions
+- #### [x] Centralize Middleware Route Definitions ✅ COMPLETED
 
   - **Objective:** Adhere to the DRY (Don't Repeat Yourself) principle by using a single source of truth for route paths used in the authentication middleware.
   - **Files:** `lib/auth-edge.ts`, `lib/constants/routes.ts`
   - **Task:** The `lib/auth-edge.ts` file currently defines its own arrays for public and authentication routes (`PUBLIC_ROUTES`, `AUTH_ROUTES`). A `lib/constants/routes.ts` file already exists with these routes defined. Refactor `lib/auth-edge.ts` to import and use the constants from `lib/constants/routes.ts` instead of defining its own local arrays.
-  - **Example Implementation:**
+  - **✅ IMPLEMENTATION COMPLETED:**
+    - Enhanced `lib/constants/routes.ts` with missing routes and utility arrays
+    - Refactored `lib/auth-edge.ts` to import and use centralized route constants
+    - Created comprehensive test coverage for route constants and middleware integration
+    - All tests passing: Unit tests ✅ E2E tests ✅
 
-    ```typescript
-    // in lib/auth-edge.ts
-    import { ROUTES } from '@/lib/constants/routes';
-
-    // REMOVE these local constants:
-    // const PUBLIC_ROUTES = ['/', '/about', ...];
-    // const AUTH_ROUTES = ['/login', '/register'];
-
-    // UPDATE the logic to use the imported constants:
-    const isPublicRoute = (pathname: string): boolean => {
-      return pathname === ROUTES.HOME || pathname === ROUTES.ABOUT || ...;
-    };
-
-    const isAuthRoute = (pathname: string): boolean => {
-      return pathname === ROUTES.LOGIN || pathname === ROUTES.REGISTER;
-    };
-    ```
-
-  - **Rationale:** This makes the codebase easier to maintain. If a route changes, it only needs to be updated in one place.
-
-- #### [ ] Enhance JWT Type Definitions for Stronger Type Safety
+- #### [x] Enhance JWT Type Definitions for Stronger Type Safety ✅ COMPLETED
 
   - **Objective:** Improve type safety and developer experience within the `jwt` callback by explicitly defining the custom properties on the JWT type.
   - **File:** `types/next-auth.d.ts`
   - **Task:** Extend the `JWT` interface from `next-auth/jwt` to include the custom `id` and `role` properties that are being added in the `jwt` callback.
-  - **Suggested Implementation:**
-
-    ```typescript
-    // in types/next-auth.d.ts
-    import { UserRole } from './index';
-
-    declare module 'next-auth/jwt' {
-      /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
-      interface JWT {
-        id: string;
-        role: UserRole;
-      }
-    }
-    ```
-
-  - **Rationale:** This provides full type checking and autocompletion for the token object within the `jwt` callback, preventing potential runtime errors and making the code easier for an AI to work with.
+  - **✅ IMPLEMENTATION COMPLETED:**
+    - Extended JWT interface with required `id` and `role` properties
+    - Updated all authentication code to use `token.id` instead of `token.sub`
+    - Fixed all test files and mock objects to include required JWT properties
+    - Updated auth implementation to properly set `id` field in all JWT creation flows
+    - All tests passing: Unit tests (408/408) ✅ E2E tests (30/30) ✅
+    - All validation checks passing ✅
 
 ### **Area 3: Services & Data Layer**
 

@@ -38,7 +38,7 @@ describe('lib/auth-shared', () => {
         expires: '1',
       };
       const mockToken: JWT = {
-        sub: 'user-123',
+        id: 'user-123',
         role: UserRole.ADMIN,
         name: 'Token Name',
         email: 'token@test.com',
@@ -53,7 +53,7 @@ describe('lib/auth-shared', () => {
         token: mockToken,
       });
 
-      expect(updatedSession.user.id).toBe(mockToken.sub);
+      expect(updatedSession.user.id).toBe(mockToken.id);
       expect(updatedSession.user.role).toBe(mockToken.role);
       expect(updatedSession.user.name).toBe(mockToken.name);
       expect(updatedSession.user.email).toBe(mockToken.email);
@@ -74,7 +74,7 @@ describe('lib/auth-shared', () => {
         expires: '1',
       };
       const mockToken: JWT = {
-        sub: 'user-456',
+        id: 'user-456',
         role: UserRole.USER,
         // Missing name, email, picture
       };
@@ -84,7 +84,7 @@ describe('lib/auth-shared', () => {
         token: mockToken,
       });
 
-      expect(updatedSession.user.id).toBe(mockToken.sub);
+      expect(updatedSession.user.id).toBe(mockToken.id);
       expect(updatedSession.user.role).toBe(mockToken.role);
       // Should retain initial session values if not in token
       expect(updatedSession.user.name).toBe(mockSession.user?.name);

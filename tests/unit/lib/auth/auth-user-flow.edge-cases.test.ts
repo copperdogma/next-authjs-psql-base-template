@@ -166,6 +166,7 @@ describe('User Authentication Flow Edge Cases', () => {
       boundaryTimes.forEach((timestamp, index) => {
         const token: JWT = {
           sub: `boundary-user-${index}`,
+          id: `boundary-user-${index}`,
           exp: Math.floor(timestamp / 1000),
           iat: Math.floor((timestamp - 86400000) / 1000),
           role: UserRole.USER,
@@ -346,6 +347,7 @@ describe('User Authentication Flow Edge Cases', () => {
       timezoneTests.forEach((date, index) => {
         const token: JWT = {
           sub: `timezone-user-${index}`,
+          id: `timezone-user-${index}`,
           iat: Math.floor(date.getTime() / 1000),
           exp: Math.floor((date.getTime() + 86400000) / 1000),
           role: UserRole.USER,

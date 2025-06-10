@@ -9,6 +9,7 @@ import { type AdapterUser } from 'next-auth/adapters';
 import { type Account, type User as NextAuthUser } from 'next-auth';
 import { type JWT } from 'next-auth/jwt';
 import { validateSignInInputs } from '@/lib/auth/auth-helpers'; // Mock this
+import { UserRole } from '@/types';
 // import { defaultDependencies } from '@/lib/auth/auth-jwt-types'; // For uuidv4 - uuidv4 is mocked directly
 
 // Mock dependencies
@@ -51,7 +52,7 @@ const sampleAccount: Account = {
 };
 
 const sampleCorrelationId = 'corr-id-123';
-const sampleBaseToken: JWT = { name: 'Test Token' };
+const sampleBaseToken: JWT = { name: 'Test Token', id: 'unknown', role: UserRole.USER };
 
 describe('lib/auth/oauth-validation-helpers', () => {
   // Reset mocks before each test
@@ -143,7 +144,7 @@ describe('lib/auth/oauth-validation-helpers', () => {
     it('should return isValid: false and errorToken if account is null', () => {
       const result = validateOAuthSignInInputs(sampleUser, null, sampleCorrelationId, dependencies);
       expect(result.isValid).toBe(false);
-      expect(result.errorToken).toEqual({ jti: 'mock-jti' });
+      expect(result.errorToken).toEqual({ jti: 'mock-jti', id: 'unknown', role: 'USER' });
       expect(mockUuidv4).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         { correlationId: sampleCorrelationId },
@@ -161,7 +162,7 @@ describe('lib/auth/oauth-validation-helpers', () => {
         dependencies
       );
       expect(result.isValid).toBe(false);
-      expect(result.errorToken).toEqual({ jti: 'mock-jti' });
+      expect(result.errorToken).toEqual({ jti: 'mock-jti', id: 'unknown', role: 'USER' });
       expect(mockUuidv4).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         { correlationId: sampleCorrelationId, provider: sampleAccount.provider },
@@ -173,9 +174,14 @@ describe('lib/auth/oauth-validation-helpers', () => {
   describe('createFallbackToken', () => {
     it('should return a token with a new JTI', () => {
       const jtiGenerator = jest.fn().mockReturnValue('new-generated-jti');
-      const baseToken: JWT = { name: 'Some Token', sub: 'user-sub' };
+      const baseToken: JWT = {
+        name: 'Some Token',
+        sub: 'user-sub',
+        id: 'user-sub',
+        role: UserRole.USER,
+      };
       const fallbackToken = createFallbackToken(baseToken, jtiGenerator);
-      expect(fallbackToken).toEqual({ jti: 'new-generated-jti' });
+      expect(fallbackToken).toEqual({ jti: 'new-generated-jti', id: 'unknown', role: 'USER' });
       expect(jtiGenerator).toHaveBeenCalledTimes(1);
     });
   });
@@ -218,7 +224,7 @@ describe('lib/auth/oauth-validation-helpers', () => {
       const result = validateOAuthRequestInputs(params);
       expect(result.isValid).toBe(false);
       expect(result.validAccount).toBeUndefined();
-      expect(result.fallbackToken).toEqual({ jti: 'mock-jti' });
+      expect(result.fallbackToken).toEqual({ jti: 'mock-jti', id: 'unknown', role: 'USER' });
       expect(mockUuidv4).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         { correlationId: sampleCorrelationId },
@@ -239,7 +245,7 @@ describe('lib/auth/oauth-validation-helpers', () => {
       const result = validateOAuthRequestInputs(params);
       expect(result.isValid).toBe(false);
       expect(result.validAccount).toBeUndefined();
-      expect(result.fallbackToken).toEqual({ jti: 'mock-jti' });
+      expect(result.fallbackToken).toEqual({ jti: 'mock-jti', id: 'unknown', role: 'USER' });
       expect(mockUuidv4).toHaveBeenCalledTimes(1); // Called by createFallbackToken
       expect(logger.error).toHaveBeenCalledWith(
         { correlationId: sampleCorrelationId, provider: sampleAccount.provider },

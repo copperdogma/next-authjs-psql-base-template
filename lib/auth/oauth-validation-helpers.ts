@@ -48,7 +48,10 @@ export function validateOAuthSignInInputs(
   // Check for null account first
   if (!account) {
     logger.error({ correlationId }, 'Cannot process OAuth sign-in with null account');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
+    return {
+      isValid: false,
+      errorToken: { jti: dependencies.uuidv4(), id: 'unknown', role: 'USER' },
+    }; // Return basic token with JTI
   }
 
   // Perform main validation
@@ -57,7 +60,10 @@ export function validateOAuthSignInInputs(
   // Check validation result
   if (!validationResult.isValid) {
     logger.error({ correlationId, provider: account.provider }, 'Failed JWT OAuth validation');
-    return { isValid: false, errorToken: { jti: dependencies.uuidv4() } }; // Return basic token with JTI
+    return {
+      isValid: false,
+      errorToken: { jti: dependencies.uuidv4(), id: 'unknown', role: 'USER' },
+    }; // Return basic token with JTI
   }
 
   // Inputs are valid
@@ -69,7 +75,7 @@ export function validateOAuthSignInInputs(
  */
 export function createFallbackToken(_baseToken: JWT, jtiGenerator: () => string): JWT {
   // For failed OAuth, return just a minimal token with new JTI
-  return { jti: jtiGenerator() };
+  return { jti: jtiGenerator(), id: 'unknown', role: 'USER' };
 }
 
 /**

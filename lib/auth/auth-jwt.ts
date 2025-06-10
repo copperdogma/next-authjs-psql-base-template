@@ -58,6 +58,7 @@ const _handleCredentialsSignIn = async (params: {
   return {
     ...tokenWithJti,
     sub: credentialsUser.id,
+    id: credentialsUser.id,
     name: credentialsUser.name,
     email: credentialsUser.email,
     picture: credentialsUser.image,

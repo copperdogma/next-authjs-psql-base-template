@@ -30,14 +30,18 @@ export const createMockAccount = (provider: string, overrides: Partial<Account> 
 });
 
 // Mock JWT
-export const createMockToken = (overrides: Partial<JWT> = {}): JWT => ({
-  sub: `user-${Math.random().toString(36).substring(2, 15)}`,
-  name: 'Test User Token Name',
-  email: 'test-token@example.com',
-  picture: null,
-  role: UserRole.USER,
-  iat: Math.floor(Date.now() / 1000),
-  exp: Math.floor(Date.now() / 1000) + 3600,
-  jti: `jwt-${Math.random().toString(36).substring(2, 15)}`,
-  ...overrides,
-});
+export const createMockToken = (overrides: Partial<JWT> = {}): JWT => {
+  const baseId = `user-${Math.random().toString(36).substring(2, 15)}`;
+  return {
+    sub: baseId,
+    id: baseId,
+    name: 'Test User Token Name',
+    email: 'test-token@example.com',
+    picture: null,
+    role: UserRole.USER,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    jti: `jwt-${Math.random().toString(36).substring(2, 15)}`,
+    ...overrides,
+  };
+};

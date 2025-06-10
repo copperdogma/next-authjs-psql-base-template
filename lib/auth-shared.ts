@@ -76,7 +76,7 @@ export async function handleSharedSessionCallback({
   }
 
   if (token) {
-    if (token.sub) session.user.id = token.sub;
+    if (token.id) session.user.id = token.id;
     if (token.role) session.user.role = token.role as UserRole;
     if (token.name) session.user.name = token.name;
     if (token.email) session.user.email = token.email;

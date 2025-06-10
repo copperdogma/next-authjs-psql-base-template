@@ -7,6 +7,7 @@ import type { Account, Profile, User } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import type { AdapterUser } from 'next-auth/adapters';
 import type { CredentialsConfig, CredentialInput } from 'next-auth/providers/credentials';
+import { UserRole } from '@/types';
 
 // Mock all dependencies before importing the module under test
 // Mock NextAuth
@@ -275,7 +276,7 @@ describe('auth-node.ts', () => {
   describe('JWT callback', () => {
     it('should handle sign-in flow correctly', async () => {
       // Setup
-      const mockToken: JWT = { sub: 'user-123' };
+      const mockToken: JWT = { sub: 'user-123', id: 'user-123', role: UserRole.USER };
       const mockUser: AdapterUser = {
         id: 'user-123',
         email: 'test@example.com',

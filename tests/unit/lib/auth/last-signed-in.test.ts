@@ -45,10 +45,12 @@ describe('JWT Callback LastSignedIn', () => {
       name: 'Test User',
       email: 'test@example.com',
       sub: 'user-123', // user ID
+      id: 'user-123',
       jti: 'token-abc', // existing token ID
       iat: Math.floor(Date.now() / 1000), // issued at time
       exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // expiration time
       picture: null,
+      role: UserRole.USER,
     };
     mockUser = {
       id: 'user-123',

@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import { sharedAuthConfig, handleSharedSessionCallback, SESSION_MAX_AGE } from './auth-shared'; // Import shared config, callback, and SESSION_MAX_AGE
 import { logRequestResponse } from '@/middleware/request-logger'; // Corrected import path
 import { type NextRequest, NextResponse } from 'next/server';
+import { ROUTES, PUBLIC_ROUTES, AUTH_ROUTES, API_PREFIXES } from '@/lib/constants/routes';
 
 // Define a unique symbol for storing the NextAuth instance globally
 const NEXTAUTH_INSTANCE = Symbol.for('nextAuthInstanceEdge');
@@ -84,23 +85,15 @@ interface LogContext {
 // =============================================================================
 // Constants for Edge Runtime (Keep specific to Edge)
 // =============================================================================
-const PUBLIC_ROUTES = [
-  '/', // Allow access to the home page when logged out
-  '/about',
-  '/api/health',
-  '/api/log/client',
-  '/manifest.webmanifest', // Explicitly allow manifest
-];
-const AUTH_ROUTES = ['/login', '/register'];
-const API_AUTH_PREFIX = '/api/auth';
-const API_TEST_PREFIX = '/api/test';
-const DEFAULT_LOGIN_REDIRECT = '/dashboard';
+const DEFAULT_LOGIN_REDIRECT = ROUTES.DASHBOARD;
 
 // --- Route Type Checkers (Keep specific to Edge) ---
-const isPublicRoute = (pathname: string): boolean => PUBLIC_ROUTES.includes(pathname);
+const isPublicRoute = (pathname: string): boolean =>
+  PUBLIC_ROUTES.includes(pathname as (typeof PUBLIC_ROUTES)[number]);
 const isApiRoute = (pathname: string): boolean =>
-  pathname.startsWith(API_AUTH_PREFIX) || pathname.startsWith(API_TEST_PREFIX);
-const isAuthRoute = (pathname: string): boolean => AUTH_ROUTES.includes(pathname);
+  pathname.startsWith(API_PREFIXES.AUTH) || pathname.startsWith(API_PREFIXES.TEST);
+const isAuthRoute = (pathname: string): boolean =>
+  AUTH_ROUTES.includes(pathname as (typeof AUTH_ROUTES)[number]);
 
 // =============================================================================
 // Environment Variable Check for Edge Runtime (Keep specific to Edge)
@@ -296,14 +289,14 @@ export const authConfigEdge: NextAuthConfig = {
       // If user object exists (e.g., during initial sign-in via Edge? Unlikely but possible)
       if (user) {
         // Populate basic info if available from user obj
-        token.sub = user.id;
+        token.id = user.id ?? '';
         token.role = user.role; // Assumes User type from shared config has role
         token.name = user.name;
         token.email = user.email;
         token.picture = user.image;
         logger.debug({
           msg: '[Auth Edge] jwt callback: Populated token from user object',
-          sub: token.sub,
+          id: token.id,
         });
       }
 

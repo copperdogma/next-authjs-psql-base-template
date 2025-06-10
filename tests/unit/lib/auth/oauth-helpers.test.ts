@@ -260,8 +260,13 @@ describe('OAuth Helpers', () => {
       image: 'img.jpg',
       sub: 'sub123',
     };
-    const sampleJwt: JWT = { sub: 'user1', jti: 'jwt123' }; // Original session JWT
-    const sampleToken: JWT = { accessToken: 'token123', jti: 'token-jti123' }; // Provider token
+    const sampleJwt: JWT = { sub: 'user1', id: 'user1', jti: 'jwt123', role: UserRole.USER }; // Original session JWT
+    const sampleToken: JWT = {
+      accessToken: 'token123',
+      id: 'unknown',
+      jti: 'token-jti123',
+      role: UserRole.USER,
+    }; // Provider token
 
     const createMockAuthUserInternalLocal = (
       overrides: Partial<AuthUserInternal> = {}
@@ -350,7 +355,11 @@ describe('OAuth Helpers', () => {
         { correlationId: specificCorrelationId, provider: sampleAccount.provider },
         'OAuth callback validation failed'
       );
-      expect(resultToken).toEqual({ jti: 'uuid-for-invalid-inputs-jti' }); // Minimal token, does not spread original JWT
+      expect(resultToken).toEqual({
+        jti: 'uuid-for-invalid-inputs-jti',
+        id: 'unknown',
+        role: UserRole.USER,
+      }); // Minimal token, does not spread original JWT
       expect(mockUuidV4Instance).toHaveBeenCalledTimes(1); // For the JTI
     });
 
@@ -460,7 +469,7 @@ describe('OAuth Helpers', () => {
   });
 
   describe('createOAuthJwtPayload', () => {
-    const mockBaseToken: JWT = { jti: 'base-jti' };
+    const mockBaseToken: JWT = { jti: 'base-jti', id: 'unknown', role: UserRole.USER };
     const mockProvider = 'google';
     const mockUuid = 'mock-jwt-uuid';
     const mockPassThruDeps = { uuidv4: jest.fn(() => mockUuid) }; // Changed name to avoid clash

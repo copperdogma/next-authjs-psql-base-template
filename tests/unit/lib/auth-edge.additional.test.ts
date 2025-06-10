@@ -232,7 +232,12 @@ describe('authConfigEdge', () => {
         role: UserRole.USER,
       };
 
-      const token = { sub: 'user-123', name: 'Test User' };
+      const token = {
+        sub: 'user-123',
+        id: 'user-123',
+        name: 'Test User',
+        role: UserRole.USER,
+      };
 
       // Use the same mockAuthSession format to maintain consistency
       const result = await authConfigEdge.callbacks?.jwt?.({
@@ -246,7 +251,9 @@ describe('authConfigEdge', () => {
       expect(result).toEqual(
         expect.objectContaining({
           sub: 'user-123',
+          id: 'user-123',
           name: 'Test User',
+          role: UserRole.USER,
         })
       );
     });
@@ -256,6 +263,7 @@ describe('authConfigEdge', () => {
     it('should handle the session callback', async () => {
       const token = {
         sub: 'user-123',
+        id: 'user-123',
         name: 'Test User',
         email: 'test@example.com',
         picture: 'http://example.com/picture.jpg',

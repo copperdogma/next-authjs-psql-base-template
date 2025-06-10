@@ -126,6 +126,7 @@ export function createOAuthJwtPayload(params: {
   // Return only the expected fields without the 'provider' field
   return {
     sub: dbUser.userId,
+    id: dbUser.userId,
     name: dbUser.name,
     email: dbUser.userEmail,
     picture: dbUser.image,
@@ -229,7 +230,7 @@ async function processOauthUserAndCreateJwt(params: {
       { correlationId, provider: account.provider },
       'OAuth callback failed to get DB user'
     );
-    return { jti: localDeps.uuidv4() }; // Minimal token on DB error
+    return { jti: localDeps.uuidv4(), id: 'unknown', role: UserRole.USER }; // Minimal token on DB error
   }
 
   // Successfully processed, create new JWT payload
@@ -243,6 +244,7 @@ async function processOauthUserAndCreateJwt(params: {
   return {
     ...baseJwt,
     sub: dbUser.userId,
+    id: dbUser.userId,
     name: dbUser.name,
     email: dbUser.userEmail,
     picture: dbUser.image,
@@ -296,7 +298,7 @@ export function createOAuthSignInCallback(params: {
           { correlationId: callbackExecutionCorrelationId, provider: account.provider },
           'OAuth callback validation failed'
         );
-        return { jti: localDeps.uuidv4() }; // Minimal token on validation failure
+        return { jti: localDeps.uuidv4(), id: 'unknown', role: UserRole.USER }; // Minimal token on validation failure
       }
       return await processOauthUserAndCreateJwt({
         user,
@@ -314,7 +316,7 @@ export function createOAuthSignInCallback(params: {
         },
         'Error in OAuth sign-in callback'
       );
-      return { jti: localDeps.uuidv4() }; // Minimal token on catch
+      return { jti: localDeps.uuidv4(), id: 'unknown', role: UserRole.USER }; // Minimal token on catch
     }
   };
 }

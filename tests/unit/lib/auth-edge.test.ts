@@ -176,6 +176,7 @@ describe('authConfigEdge', () => {
       const mockSession = mockAuthSession({ id: 'token-user-id', role: UserRole.ADMIN });
       const mockToken: JWT = {
         sub: 'token-user-id',
+        id: 'token-user-id',
         role: UserRole.ADMIN,
         name: 'Token User',
         email: 'token@example.com',
@@ -185,11 +186,16 @@ describe('authConfigEdge', () => {
       expect(result.user.role).toBe(UserRole.ADMIN);
     });
 
-    it('should return original session if token has no sub', async () => {
+    it('should return session with token id when token has id but no sub', async () => {
       const mockSession = mockAuthSession({ id: 'session-user-id', role: UserRole.USER });
-      const mockToken: JWT = { name: 'Token User', email: 'token@example.com' }; // No sub or role
+      const mockToken: JWT = {
+        name: 'Token User',
+        email: 'token@example.com',
+        id: 'no-id',
+        role: UserRole.USER,
+      }; // No sub or role
       const result = await sessionCallback({ session: mockSession, token: mockToken });
-      expect(result.user.id).toBe('session-user-id');
+      expect(result.user.id).toBe('no-id'); // Should use token.id
       expect(result.user.role).toBe(UserRole.USER);
     });
   });
@@ -207,16 +213,16 @@ describe('authConfigEdge', () => {
         id: string;
         role: UserRole;
       };
-      const mockToken: JWT = {}; // Empty token
+      const mockToken: JWT = { id: '', role: UserRole.USER }; // Minimal token
       const resultToken = await jwtCallback({ token: mockToken, user: mockUser });
       expect(resultToken.role).toBe(UserRole.USER);
-      expect(resultToken.sub).toBe('new-user-id'); // 'sub' should be populated with user.id
+      expect(resultToken.id).toBe('new-user-id'); // 'id' should be populated with user.id
     });
 
     it('should return original token if no user object (e.g. session update)', async () => {
-      const mockToken: JWT = { sub: 'existing-user-id', role: UserRole.USER };
+      const mockToken: JWT = { id: 'existing-user-id', role: UserRole.USER };
       const resultToken = await jwtCallback({ token: mockToken });
-      expect(resultToken.sub).toBe('existing-user-id');
+      expect(resultToken.id).toBe('existing-user-id');
       expect(resultToken.role).toBe(UserRole.USER);
     });
   });
@@ -237,10 +243,10 @@ describe('authConfigEdge', () => {
         email: 'testuser@example.com',
         image: 'test-image.jpg',
       } as NextAuthUser & { id: string; role: UserRole };
-      const mockToken: JWT = {}; // Empty token
+      const mockToken: JWT = { id: '', role: UserRole.USER }; // Minimal token
       const resultToken = await jwtCallback({ token: mockToken, user: mockUser });
 
-      expect(resultToken.sub).toBe('user-id-123');
+      expect(resultToken.id).toBe('user-id-123');
       expect(resultToken.role).toBe(UserRole.ADMIN);
       expect(resultToken.name).toBe('Test User Name');
       expect(resultToken.email).toBe('testuser@example.com');
@@ -248,7 +254,7 @@ describe('authConfigEdge', () => {
     });
 
     it('should handle session update trigger correctly', async () => {
-      const mockToken: JWT = { sub: 'existing-user-id', name: 'Old Name' };
+      const mockToken: JWT = { id: 'existing-user-id', role: UserRole.USER, name: 'Old Name' };
       const mockSession = { user: { name: 'New Name' } } as Session;
       const resultToken = await jwtCallback({
         token: mockToken,

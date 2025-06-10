@@ -55,6 +55,7 @@ const correlationId = 'test-correlation-id-jwt';
 
 const baseJwt: JWT = {
   sub: 'initial-sub',
+  id: 'initial-sub',
   name: 'Initial Name',
   email: 'initial@example.com',
   picture: null,
@@ -158,6 +159,7 @@ describe('auth-jwt Callbacks', () => {
       // We don't assert on JTI here since it's not using our mock
       expect(result).toEqual({
         sub: credentialsUser.id,
+        id: credentialsUser.id,
         name: credentialsUser.name,
         email: credentialsUser.email,
         picture: credentialsUser.image,
@@ -250,6 +252,7 @@ describe('auth-jwt Callbacks', () => {
       // Assert - Check important values passed through and transformed
       expect(result).toEqual({
         sub: testDbUser.id,
+        id: testDbUser.id,
         name: testDbUser.name,
         email: testDbUser.email,
         picture: testDbUser.image,
@@ -295,6 +298,8 @@ describe('auth-jwt Callbacks', () => {
       // The original token is discarded, and no user data is merged.
       expect(result).toEqual({
         jti: mockUuidReturnedValue,
+        id: 'unknown',
+        role: UserRole.USER,
       });
       expect(mockValidateInputs).toHaveBeenCalledWith(oAuthUser, oAuthAccount, correlationId);
       expect(mockValidateInputs).toHaveBeenCalledTimes(1);

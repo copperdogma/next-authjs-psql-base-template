@@ -122,7 +122,7 @@ export function validateOAuthRequestInputs(params: {
  */
 export function createFallbackToken(_baseToken: JWT, jtiGenerator: () => string): JWT {
   // For failed OAuth, return just a minimal token with new JTI
-  return { jti: jtiGenerator() };
+  return { jti: jtiGenerator(), id: 'unknown', role: UserRole.USER };
 }
 
 /**
@@ -306,6 +306,7 @@ export function createOAuthJwtPayload(params: {
   // Create OAuth token with required structure
   return {
     sub: dbUser.userId,
+    id: dbUser.userId,
     name: dbUser.name,
     email: dbUser.userEmail,
     picture: dbUser.image,
