@@ -61,8 +61,16 @@ CardHeader.displayName = 'CardHeader';
 
 /**
  * Card title component.
- * For accessibility, consider using unique IDs that can be referenced by CardDescription
- * using aria-labelledby to establish proper relationships between title and description.
+ * For accessibility, provide a unique `id` and reference it in an associated
+ * CardDescription's `aria-labelledby` prop to create a semantic link.
+ *
+ * @example
+ * ```tsx
+ * <CardTitle id="user-profile-title">User Profile</CardTitle>
+ * <CardDescription aria-labelledby="user-profile-title">
+ *   Manage your profile settings and preferences
+ * </CardDescription>
+ * ```
  */
 const CardTitle = forwardRef<
   HTMLHeadingElement,
@@ -85,9 +93,16 @@ CardTitle.displayName = 'CardTitle';
 
 /**
  * Card description component.
- * For accessibility, consider manually establishing a relationship with CardTitle
- * using aria-labelledby on this component (referencing the CardTitle's ID)
- * when these components are used together.
+ * For accessibility, use the `aria-labelledby` prop to reference the `id` of the
+ * corresponding CardTitle to programmatically link this description to its title.
+ *
+ * @example
+ * ```tsx
+ * <CardTitle id="user-profile-title">User Profile</CardTitle>
+ * <CardDescription aria-labelledby="user-profile-title">
+ *   Manage your profile settings and preferences
+ * </CardDescription>
+ * ```
  */
 const CardDescription = forwardRef<
   HTMLParagraphElement,
