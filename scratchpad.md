@@ -131,9 +131,157 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
   - [x] **Code Fix**: Fixed unused `_session` variable in `app/page.tsx`
   - [x] **Validation**: All 408 unit tests and 30 E2E authentication tests passing after cleanup
 
-## Secondary
-
-- [x] Redis testing could be enhanced for better cache layer confidence
-- [x] User store could benefit from additional edge case testing
-
 ---
+
+### **Area 1: Project Configuration & Developer Experience**
+
+- #### [x] Refine Webpack Configuration Comments in `next.config.ts`
+  - **Objective:** Make the template's stance on client-side Node.js modules explicit to guide developers and AI agents.
+  - **File:** `next.config.ts`
+  - **Task:** In the `webpack` configuration function, locate the `resolve.fallback` section. The current comments suggest considering browser polyfills (e.g., `// Consider 'process/browser' if needed`). Replace these with more definitive comments that clarify _why_ these modules are disabled.
+  - **Suggested Implementation:**
+    ```diff
+    // in next.config.ts inside the webpack function
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+    -    // ... more modules
+    -    // Consider 'process/browser' if needed for client-side process.env
+    +    // These Node.js modules are not available in the browser environment.
+    +    // Setting them to 'false' prevents webpack from bundling large, unnecessary polyfills.
+    +    process: false,
+    +    path: false,
+    +    stream: false,
+    +    // ... and so on for the other modules
+      };
+    }
+    ```
+  - **Rationale:** This removes ambiguity and reinforces the best practice of avoiding server-side code on the client unless a developer makes a conscious choice to add polyfills.
+
+### **Area 2: Authentication & Middleware**
+
+- #### [ ] Centralize Middleware Route Definitions
+
+  - **Objective:** Adhere to the DRY (Don't Repeat Yourself) principle by using a single source of truth for route paths used in the authentication middleware.
+  - **Files:** `lib/auth-edge.ts`, `lib/constants/routes.ts`
+  - **Task:** The `lib/auth-edge.ts` file currently defines its own arrays for public and authentication routes (`PUBLIC_ROUTES`, `AUTH_ROUTES`). A `lib/constants/routes.ts` file already exists with these routes defined. Refactor `lib/auth-edge.ts` to import and use the constants from `lib/constants/routes.ts` instead of defining its own local arrays.
+  - **Example Implementation:**
+
+    ```typescript
+    // in lib/auth-edge.ts
+    import { ROUTES } from '@/lib/constants/routes';
+
+    // REMOVE these local constants:
+    // const PUBLIC_ROUTES = ['/', '/about', ...];
+    // const AUTH_ROUTES = ['/login', '/register'];
+
+    // UPDATE the logic to use the imported constants:
+    const isPublicRoute = (pathname: string): boolean => {
+      return pathname === ROUTES.HOME || pathname === ROUTES.ABOUT || ...;
+    };
+
+    const isAuthRoute = (pathname: string): boolean => {
+      return pathname === ROUTES.LOGIN || pathname === ROUTES.REGISTER;
+    };
+    ```
+
+  - **Rationale:** This makes the codebase easier to maintain. If a route changes, it only needs to be updated in one place.
+
+- #### [ ] Enhance JWT Type Definitions for Stronger Type Safety
+
+  - **Objective:** Improve type safety and developer experience within the `jwt` callback by explicitly defining the custom properties on the JWT type.
+  - **File:** `types/next-auth.d.ts`
+  - **Task:** Extend the `JWT` interface from `next-auth/jwt` to include the custom `id` and `role` properties that are being added in the `jwt` callback.
+  - **Suggested Implementation:**
+
+    ```typescript
+    // in types/next-auth.d.ts
+    import { UserRole } from './index';
+
+    declare module 'next-auth/jwt' {
+      /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
+      interface JWT {
+        id: string;
+        role: UserRole;
+      }
+    }
+    ```
+
+  - **Rationale:** This provides full type checking and autocompletion for the token object within the `jwt` callback, preventing potential runtime errors and making the code easier for an AI to work with.
+
+### **Area 3: Services & Data Layer**
+
+- #### [ ] Standardize Server Action and Service Response Format
+
+  - **Objective:** Create a consistent and predictable data contract for all server-side operations, whether they are services or server actions.
+  - **Files:** `app/profile/actions.ts`, `types/index.ts`
+  - **Task:** The server action `updateUserName` in `app/profile/actions.ts` currently returns a custom type `NameUpdateState`. Refactor this action to return the standardized `ServiceResponse` type defined in `types/index.ts`.
+  - **Example Implementation:**
+
+    ```typescript
+    // in app/profile/actions.ts
+    import { ServiceResponse, User } from '@/types'; // Assuming User type is also available
+
+    // Old type to be replaced
+    // export type NameUpdateState = { message: string; success: boolean; updatedName: string | null; };
+
+    // New type definition using ServiceResponse
+    export type NameUpdateState = ServiceResponse<User | null, { originalError?: unknown }>;
+
+    export async function updateUserName(
+      _prevState: NameUpdateState,
+      formData: FormData
+    ): Promise<NameUpdateState> {
+      // ... existing logic ...
+      // Example of returning the new format on success:
+      // return { status: 'success', data: updatedUser, message: 'Name updated successfully' };
+      // Example of returning the new format on error:
+      // return { status: 'error', message: 'Validation failed', error: { code: 'VALIDATION_ERROR', message: 'Name must be...' } };
+    }
+    ```
+
+  - **Rationale:** This consistency simplifies client-side state management (e.g., when using `useActionState`), as the shape of the response from any server operation will be the same.
+
+### **Area 4: UI Components**
+
+- #### [ ] Improve `Card` Component Accessibility with JSDoc
+
+  - **Objective:** Guide developers and AI agents to correctly implement accessibility for the `Card` component.
+  - **File:** `components/ui/Card.tsx`
+  - **Task:** Add JSDoc comments to the `CardTitle` and `CardDescription` components. Since the `id` and `aria-labelledby` attributes must be context-specific, the components themselves cannot enforce the relationship. The JSDoc will serve as clear documentation.
+  - **Suggested Implementation:**
+
+    ```tsx
+    // in components/ui/Card.tsx
+
+    /**
+     * Card title component.
+     * For accessibility, provide a unique `id` and reference it in an associated
+     * CardDescription's `aria-labelledby` prop to create a semantic link.
+     */
+    const CardTitle = forwardRef<...>(...)
+
+    /**
+      * Card description component.
+      * For accessibility, use the `aria-labelledby` prop to reference the `id` of the
+      * corresponding CardTitle to programmatically link this description to its title.
+      */
+    const CardDescription = forwardRef<...>(...)
+    ```
+
+  - **Rationale:** This makes accessibility a documented feature of the component, prompting correct usage without over-engineering the component's props.
+
+### **Area 5: Caching Service**
+
+- #### [ ] Implement Compression in `CacheService`
+  - **Objective:** Enhance the `CacheService` to reduce Redis memory usage and network latency for large cached objects.
+  - **File:** `lib/services/cache.service.ts`
+  - **Task:** The `serializeValue` method within `CacheServiceImpl` currently has a placeholder for compression. Implement this feature using Node.js's built-in `zlib` module. When the `compress` option is true and the serialized data exceeds a defined threshold (e.g., 1KB), the data should be gzipped before being stored. The `deserializeValue` method will need to be updated to detect and decompress this data.
+  - **Suggested Implementation:**
+    1.  Import `gzipSync` and `gunzipSync` from `zlib`.
+    2.  In `serializeValue`, if `compress` is true and `serialized.length > this.compressionThreshold`, prefix the gzipped buffer with a marker (e.g., `gzip:`), convert to a string (e.g., base64), and return that.
+    3.  In `deserializeValue`, check for the `gzip:` prefix. If present, decode from base64, decompress using `gunzipSync`, and then parse the JSON. If not present, parse the JSON as normal.
+  - **Rationale:** This is a valuable, production-ready optimization that makes the template more powerful for a wider range of applications without adding external dependencies.

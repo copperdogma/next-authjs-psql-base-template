@@ -121,21 +121,24 @@ const nextConfig: NextConfig = {
     config.resolve.fallback = config.resolve.fallback || {};
 
     if (!isServer) {
-      // Don't bundle server-only modules on the client side
+      // These Node.js modules are not available in the browser environment.
+      // Setting them to 'false' prevents webpack from bundling large, unnecessary polyfills.
+      // This approach is recommended for better performance and smaller bundle sizes.
+      // Only add browser polyfills if your application specifically requires them.
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-        process: false, // Consider 'process/browser' if needed for client-side process.env
-        path: false, // Consider 'path-browserify' if needed
-        stream: false, // Consider 'stream-browserify' if needed
-        util: false, // Consider 'util/' if needed
-        buffer: false, // Consider 'buffer/' if needed
-        http: false, // Consider 'stream-http' if needed
-        https: false, // Consider 'https-browserify' if needed
-        zlib: false, // Consider 'browserify-zlib' if needed
+        fs: false, // File system operations (server-only)
+        net: false, // Network operations (server-only)
+        tls: false, // TLS/SSL operations (server-only)
+        crypto: false, // Node.js crypto module (use Web Crypto API in browser)
+        process: false, // Node.js process object (consider environment variables instead)
+        path: false, // File path utilities (server-only)
+        stream: false, // Node.js streams (use browser APIs or lighter alternatives)
+        util: false, // Node.js utilities (use modern JavaScript equivalents)
+        buffer: false, // Node.js Buffer (use browser ArrayBuffer/Uint8Array)
+        http: false, // HTTP client for Node.js (use fetch API in browser)
+        https: false, // HTTPS client for Node.js (use fetch API in browser)
+        zlib: false, // Compression utilities (server-only)
       };
     }
 
