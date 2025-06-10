@@ -155,6 +155,7 @@ const customJestConfig = {
         '<rootDir>/tests/unit/utils/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/providers/**/*.test.ts?(x)',
         '<rootDir>/tests/unit/pages/**/*.test.ts?(x)',
+        '<rootDir>/tests/unit/store/**/*.test.ts?(x)',
       ],
       setupFilesAfterEnv: [
         '<rootDir>/jest.setup.ts', // Shared base setup

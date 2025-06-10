@@ -133,7 +133,7 @@ Use this methodolgy: - Attempt to upgrade and make sure nothing broke - If it's 
 
 ## Secondary
 
-- [ ] Redis testing could be enhanced for better cache layer confidence
-- [ ] User store could benefit from additional edge case testing
+- [x] Redis testing could be enhanced for better cache layer confidence
+- [x] User store could benefit from additional edge case testing
 
 ---

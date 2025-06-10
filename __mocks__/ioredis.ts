@@ -4,6 +4,9 @@
 const createPipelineMock = () => ({
   incr: jest.fn().mockReturnThis(),
   expire: jest.fn().mockReturnThis(),
+  set: jest.fn().mockReturnThis(),
+  setex: jest.fn().mockReturnThis(),
+  del: jest.fn().mockReturnThis(),
   exec: jest.fn().mockResolvedValue([
     [null, 1],
     [null, 'OK'],
@@ -18,12 +21,22 @@ const quitMock = jest.fn().mockResolvedValue(undefined as void); // Or 'OK'
 const onMock = jest.fn().mockReturnThis(); // Common for event emitters
 const incrMock = jest.fn().mockResolvedValue(1);
 const expireMock = jest.fn().mockResolvedValue(1);
+const getMock = jest.fn().mockResolvedValue(null);
+const setMock = jest.fn().mockResolvedValue('OK');
+const setexMock = jest.fn().mockResolvedValue('OK');
+const delMock = jest.fn().mockResolvedValue(1);
+const existsMock = jest.fn().mockResolvedValue(1);
+const mgetMock = jest.fn().mockResolvedValue([]);
+const dbsizeMock = jest.fn().mockResolvedValue(0);
+const infoMock = jest.fn().mockResolvedValue('used_memory_human:1M\n');
+const flushdbMock = jest.fn().mockResolvedValue('OK');
 
 // The actual mock class for IORedis
 class MockIORedis {
   // Store options if needed for assertions or specific mock behavior
   options: Record<string, unknown> | unknown[]; // More specific than any, assuming options is an object or array
   connected: boolean = false; // Simple state tracking
+  status: string = 'ready'; // Default to ready status
 
   constructor(...args: unknown[]) {
     // Use unknown[] for variadic arguments
@@ -59,8 +72,18 @@ class MockIORedis {
   });
 
   on = onMock;
+  removeAllListeners = jest.fn();
   incr = incrMock;
   expire = expireMock;
+  get = getMock;
+  set = setMock;
+  setex = setexMock;
+  del = delMock;
+  exists = existsMock;
+  mget = mgetMock;
+  dbsize = dbsizeMock;
+  info = infoMock;
+  flushdb = flushdbMock;
 
   // Expose specific internal mocks if tests need to directly manipulate or assert them
   // This is a pattern to allow tests to reach into the mock's functions
@@ -71,6 +94,15 @@ class MockIORedis {
     on: onMock,
     incr: incrMock,
     expire: expireMock,
+    get: getMock,
+    set: setMock,
+    setex: setexMock,
+    del: delMock,
+    exists: existsMock,
+    mget: mgetMock,
+    dbsize: dbsizeMock,
+    info: infoMock,
+    flushdb: flushdbMock,
   };
 
   // Add any other ioredis instance methods your SUT might use
