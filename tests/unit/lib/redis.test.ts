@@ -27,6 +27,10 @@ jest.mock('@/lib/env', () => ({
 
 jest.mock('@/lib/logger', () => ({
   logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
     child: jest.fn(() => ({
       info: jest.fn(),
       warn: jest.fn(),
@@ -76,6 +80,22 @@ describe('Redis Client', () => {
           env: { REDIS_URL: undefined },
         }));
 
+        // Mock logger
+        jest.doMock('@/lib/logger', () => ({
+          logger: {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            child: jest.fn(() => ({
+              info: jest.fn(),
+              warn: jest.fn(),
+              error: jest.fn(),
+              debug: jest.fn(),
+            })),
+          },
+        }));
+
         const { getOptionalRedisClient: isolatedGetClient } = require('@/lib/redis');
         const client = isolatedGetClient();
 
@@ -87,6 +107,21 @@ describe('Redis Client', () => {
       jest.isolateModules(() => {
         jest.doMock('@/lib/env', () => ({
           env: { REDIS_URL: undefined },
+        }));
+
+        jest.doMock('@/lib/logger', () => ({
+          logger: {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            child: jest.fn(() => ({
+              info: jest.fn(),
+              warn: jest.fn(),
+              error: jest.fn(),
+              debug: jest.fn(),
+            })),
+          },
         }));
 
         const { getOptionalRedisClient: isolatedGetClient } = require('@/lib/redis');
@@ -113,6 +148,21 @@ describe('Redis Client', () => {
         jest.doMock('ioredis', () => jest.fn(() => mockRedisInstance));
         jest.doMock('@/lib/env', () => ({
           env: { REDIS_URL: 'redis://localhost:6379' },
+        }));
+
+        jest.doMock('@/lib/logger', () => ({
+          logger: {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            child: jest.fn(() => ({
+              info: jest.fn(),
+              warn: jest.fn(),
+              error: jest.fn(),
+              debug: jest.fn(),
+            })),
+          },
         }));
 
         const { getOptionalRedisClient: isolatedGetClient } = require('@/lib/redis');
@@ -215,6 +265,21 @@ describe('Redis Client', () => {
           env: { REDIS_URL: 'redis://localhost:6379' },
         }));
 
+        jest.doMock('@/lib/logger', () => ({
+          logger: {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            child: jest.fn(() => ({
+              info: jest.fn(),
+              warn: jest.fn(),
+              error: jest.fn(),
+              debug: jest.fn(),
+            })),
+          },
+        }));
+
         const { getOptionalRedisClient: isolatedGetClient } = require('@/lib/redis');
         isolatedGetClient();
 
@@ -222,7 +287,8 @@ describe('Redis Client', () => {
         expect(capturedRetryStrategy!(1)).toBe(200); // First retry: 200ms
         expect(capturedRetryStrategy!(2)).toBe(400); // Second retry: 400ms
         expect(capturedRetryStrategy!(3)).toBe(600); // Third retry: 600ms
-        expect(capturedRetryStrategy!(10)).toBe(3000); // Capped at 3000ms
+        expect(capturedRetryStrategy!(5)).toBe(1000); // Fifth retry: 1000ms (Math.min(5 * 200, 3000))
+        expect(capturedRetryStrategy!(6)).toBeNull(); // Sixth retry: null (stops after 5)
       });
     });
 

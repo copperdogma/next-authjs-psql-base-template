@@ -256,7 +256,12 @@ describe('useUserStore', () => {
 
     // Add test cases for each conditional branch in setUserDetails
     it('should handle all conditional branches in setUserDetails', () => {
-      // Test with empty update object
+      // First clear the state to start with a clean slate
+      act(() => {
+        useUserStore.getState().clearUserDetails();
+      });
+
+      // Test with empty update object (should preserve null state)
       act(() => {
         useUserStore.getState().setUserDetails({});
       });

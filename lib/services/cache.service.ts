@@ -61,7 +61,7 @@ class CacheServiceImpl {
 
     try {
       const serializedValue = this.serializeValue(value, options.compress);
-      const ttl = options.ttl || this.defaultTtl;
+      const ttl = options.ttl !== undefined ? options.ttl : this.defaultTtl;
 
       if (ttl > 0) {
         await redisClient.setex(key, ttl, serializedValue);
@@ -140,7 +140,7 @@ class CacheServiceImpl {
 
       for (const entry of entries) {
         const serializedValue = this.serializeValue(entry.value, entry.options?.compress);
-        const ttl = entry.options?.ttl || this.defaultTtl;
+        const ttl = entry.options?.ttl !== undefined ? entry.options.ttl : this.defaultTtl;
 
         if (ttl > 0) {
           pipeline.setex(entry.key, ttl, serializedValue);
