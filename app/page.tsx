@@ -12,7 +12,7 @@ import { CombinedLoginOptions } from '@/components/auth/CombinedLoginOptions';
 
 // --- Home Page Component --- // Renamed component
 export default function HomePage() {
-  const { data: _session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   // Effect to redirect authenticated users to dashboard
