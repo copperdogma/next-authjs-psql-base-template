@@ -28,7 +28,7 @@ import { logger } from '@/lib/logger';
  * @returns {object} An object containing:
  *  - `isEditingName`: Boolean state indicating if the name field is in edit mode.
  *  - `setIsEditingName`: Function to toggle the `isEditingName` state.
- *  - `state`: The state returned by `useActionState` from the `updateUserName` server action (contains `message`, `success`, `updatedName`).
+ *  - `state`: The state returned by `useActionState` from the `updateUserName` server action (contains `status`, `message`, `data`).
  *  - `handleFormSubmit`: A memoized function to wrap the `formAction` from `useActionState`, ensuring `storeUpdateAttemptedRef` is reset.
  *  - `effectiveUserName`: The current name to be displayed, derived from the `currentName` prop.
  *  - `formAction`: The action function returned by `useActionState` to be passed to the form.
@@ -39,9 +39,9 @@ const useProfileDetails = (
 ) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [state, formAction] = useActionState<NameUpdateState, FormData>(updateUserName, {
+    status: 'success',
     message: '',
-    success: false,
-    updatedName: null,
+    data: null,
   });
   const storeUpdateAttemptedRef = useRef(false);
 
@@ -54,20 +54,20 @@ const useProfileDetails = (
   ); // Depend on formAction
 
   useEffect(() => {
-    if (state.success && state.updatedName && !storeUpdateAttemptedRef.current) {
+    if (state.status === 'success' && state.data?.name && !storeUpdateAttemptedRef.current) {
       storeUpdateAttemptedRef.current = true;
       setIsEditingName(false);
       logger.info('Profile action success, updating Zustand store with:', {
-        updatedName: state.updatedName,
+        updatedName: state.data.name,
       });
-      setUserDetails({ name: state.updatedName });
+      setUserDetails({ name: state.data.name });
       if (state.message) {
         toast.success(state.message);
       }
-    } else if (!state.success && state.message) {
+    } else if (state.status === 'error' && state.message) {
       storeUpdateAttemptedRef.current = false;
       toast.error(state.message);
-    } else if (!state.success) {
+    } else if (state.status === 'error') {
       storeUpdateAttemptedRef.current = false;
     }
   }, [state, setUserDetails]);

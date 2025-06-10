@@ -5,16 +5,14 @@ import { User } from 'next-auth';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { NameUpdateState } from '@/app/profile/actions';
 
 interface NameEditSectionProps {
   user: User;
   isEditingName: boolean;
   setIsEditingName: (isEditing: boolean) => void;
   formAction: (payload: FormData) => void;
-  state: {
-    message: string;
-    success: boolean;
-  };
+  state: NameUpdateState;
 }
 
 /**
@@ -93,10 +91,7 @@ export default function NameEditSection({
 interface EditNameFormProps {
   defaultValue: string | null;
   formAction: (payload: FormData) => void;
-  state: {
-    message: string;
-    success: boolean;
-  };
+  state: NameUpdateState;
   onCancel: () => void;
 }
 
@@ -116,7 +111,7 @@ function EditNameForm({ defaultValue, formAction, state, onCancel }: EditNameFor
         {state.message && (
           <Typography
             variant="caption"
-            color={state.success ? 'success.main' : 'error.main'}
+            color={state.status === 'success' ? 'success.main' : 'error.main'}
             sx={{ display: 'block', mt: 1 }}
           >
             {state.message}

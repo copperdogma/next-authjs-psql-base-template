@@ -20,34 +20,44 @@ import { ServiceResponse } from '@/types';
  * due to challenges with server actions and session in Jest.
  *
  * This file contains unit tests to verify proper response handling from the
- * ProfileService during name updates
+ * ProfileService during name updates using the standardized ServiceResponse format.
  */
 
 // Mock the entire action module instead of trying to import the real one
 jest.mock('@/app/profile/actions', () => {
-  // Original _performNameUpdate logic from the actions file
+  // Mock the _performNameUpdate logic that handles ServiceResponse format
   const mockPerformNameUpdate = async (serviceResponse: any) => {
-    // Handle the new ServiceResponse format with status field
+    // Handle the ServiceResponse format from the service
     if (serviceResponse.status === 'error') {
       return {
+        status: 'error',
         message: serviceResponse.message || 'An error occurred while updating your name',
-        success: false,
-        updatedName: null,
+        error: {
+          message: serviceResponse.message || 'An error occurred while updating your name',
+          code: serviceResponse.error?.code || 'UPDATE_FAILED',
+          details: {
+            originalError: serviceResponse.error?.details?.originalError,
+          },
+        },
       };
     }
 
     // Handle success response with status='success'
     return {
+      status: 'success',
       message: 'Name updated successfully',
-      success: true,
-      updatedName: 'Updated Name',
+      data: serviceResponse.data,
     };
   };
 
   return {
     updateUserName: jest.fn().mockImplementation(async (_prevState, _formData) => {
       // This will be replaced in tests
-      return { success: true, message: 'Test mock', updatedName: 'Test' };
+      return {
+        status: 'success',
+        message: 'Test mock',
+        data: { name: 'Test' },
+      };
     }),
     // Expose the logic for testing
     __mockPerformNameUpdate: mockPerformNameUpdate,
@@ -65,11 +75,12 @@ const { __mockPerformNameUpdate } = require('@/app/profile/actions');
 
 describe('Profile Actions', () => {
   describe('_performNameUpdate logic', () => {
-    it('should handle the new ServiceResponse format with status correctly', async () => {
+    it('should handle the ServiceResponse format with status=success correctly', async () => {
       // Arrange: New format with status='success'
       const mockUser = {
         id: 'test-user-id',
         name: 'Updated Name',
+        email: 'test@example.com',
       } as User;
 
       const successResponse: ServiceResponse<User, ProfileServiceErrorDetails> = {
@@ -81,13 +92,13 @@ describe('Profile Actions', () => {
       // Act: Call the internal logic directly
       const result = await __mockPerformNameUpdate(successResponse);
 
-      // Assert
-      expect(result.success).toBe(true);
+      // Assert: Should return standardized ServiceResponse format
+      expect(result.status).toBe('success');
       expect(result.message).toBe('Name updated successfully');
-      expect(result.updatedName).toBe('Updated Name');
+      expect(result.data).toEqual(mockUser);
     });
 
-    it('should handle error responses in the new format', async () => {
+    it('should handle error responses in the ServiceResponse format', async () => {
       // Arrange: Setup with new error format
       const errorResponse: ServiceResponse<User, ProfileServiceErrorDetails> = {
         status: 'error',
@@ -102,9 +113,34 @@ describe('Profile Actions', () => {
       const result = await __mockPerformNameUpdate(errorResponse);
 
       // Assert: Should handle the error format correctly
-      expect(result.success).toBe(false);
+      expect(result.status).toBe('error');
       expect(result.message).toBe('Failed to update user name.');
-      expect(result.updatedName).toBeNull();
+      expect(result.error?.code).toBe('DB_UPDATE_FAILED');
+      expect(result.data).toBeUndefined();
+    });
+
+    it('should handle service errors with proper error code mapping', async () => {
+      // Arrange: Setup with database error
+      const errorResponse: ServiceResponse<User, ProfileServiceErrorDetails> = {
+        status: 'error',
+        message: 'User not found.',
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found.',
+          details: {
+            originalError: new Error('P2025: Record to update not found'),
+          },
+        },
+      };
+
+      // Act: Call the internal logic directly
+      const result = await __mockPerformNameUpdate(errorResponse);
+
+      // Assert: Should properly map error codes
+      expect(result.status).toBe('error');
+      expect(result.message).toBe('User not found.');
+      expect(result.error?.code).toBe('USER_NOT_FOUND');
+      expect(result.error?.details?.originalError).toBeDefined();
     });
   });
 });
