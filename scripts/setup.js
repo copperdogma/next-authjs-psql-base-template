@@ -23,11 +23,11 @@ async function initializeESMModules() {
     console.error('Failed to import chalk:', error.message);
     // Fallback to basic console output
     chalk = {
-      yellow: (text) => `⚠️  ${text}`,
-      green: (text) => `✅ ${text}`,
-      red: (text) => `❌ ${text}`,
-      blue: (text) => `ℹ️  ${text}`,
-      bold: (text) => `**${text}**`
+      yellow: text => `⚠️  ${text}`,
+      green: text => `✅ ${text}`,
+      red: text => `❌ ${text}`,
+      blue: text => `ℹ️  ${text}`,
+      bold: text => `**${text}**`,
     };
   }
 
