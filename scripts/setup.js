@@ -91,6 +91,7 @@ const FILES_TO_PROCESS = [
   'SETUP.md',
   'LICENSE',
   'app/manifest.ts',
+  'components',
   'tests/utils/test-constants.ts',
   'tests/README.md',
   'scripts/test-debug-helpers/simple-layout-test.js',
@@ -417,9 +418,22 @@ function processFile(filePath, answers) {
     Object.entries(answers).forEach(([placeholder, value]) => {
       // Ensure value is a string for replacement; null/undefined can cause issues
       const replacementValue = value === null || value === undefined ? '' : String(value);
-      const regex = new RegExp(`{{${placeholder}}}`, 'g');
-      if (content.match(regex)) {
-        content = content.replace(regex, replacementValue);
+      
+      // Handle multiple placeholder formats:
+      // 1. {{PLACEHOLDER}} - standard format
+      // 2. {'{PLACEHOLDER}'} - React/JSX format
+      const standardRegex = new RegExp(`{{${placeholder}}}`, 'g');
+      // For React format: {'{PLACEHOLDER}'} - pattern: \{'{PLACEHOLDER}'\}
+      const reactPattern = "\\{'{" + placeholder + "}'\\}";
+      const reactRegex = new RegExp(reactPattern, 'g');
+      
+      if (content.match(standardRegex)) {
+        content = content.replace(standardRegex, replacementValue);
+        modified = true;
+      }
+      
+      if (content.match(reactRegex)) {
+        content = content.replace(reactRegex, replacementValue);
         modified = true;
       }
     });
