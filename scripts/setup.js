@@ -10,8 +10,36 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const chalk = require('chalk');
-const inquirer = require('inquirer');
+// Dynamic imports for ESM modules
+let chalk, inquirer;
+
+// Function to initialize ESM modules
+async function initializeESMModules() {
+  try {
+    chalk = await import('chalk');
+    // Handle different chalk export patterns
+    chalk = chalk.default || chalk;
+  } catch (error) {
+    console.error('Failed to import chalk:', error.message);
+    // Fallback to basic console output
+    chalk = {
+      yellow: (text) => `⚠️  ${text}`,
+      green: (text) => `✅ ${text}`,
+      red: (text) => `❌ ${text}`,
+      blue: (text) => `ℹ️  ${text}`,
+      bold: (text) => `**${text}**`
+    };
+  }
+
+  try {
+    inquirer = await import('inquirer');
+    // Handle different inquirer export patterns
+    inquirer = inquirer.default || inquirer;
+  } catch (error) {
+    console.error('Failed to import inquirer:', error.message);
+    process.exit(1);
+  }
+}
 
 // Function to get the prompt method
 const getPromptMethod = () => {
@@ -24,12 +52,12 @@ const getPromptMethod = () => {
   throw new Error('Inquirer.prompt function not found. Incompatible Inquirer version.');
 };
 
-const promptUser = getPromptMethod();
+let promptUser;
 
 // Function to load answers from a JSON file
 function loadAnswersFromFile(filePath) {
   console.log(
-    chalk.yellow(`Attempting to load answers from: ${filePath}`),
+    `⚠️  Attempting to load answers from: ${filePath}`,
     'CWD for answers load:',
     process.cwd()
   );
@@ -40,9 +68,7 @@ function loadAnswersFromFile(filePath) {
       return JSON.parse(rawData);
     } catch (error) {
       console.warn(
-        chalk.yellow(
-          `Warning: Could not read or parse ${filePath}. Proceeding with interactive prompts. Error: ${error.message}`
-        )
+        `⚠️  Warning: Could not read or parse ${filePath}. Proceeding with interactive prompts. Error: ${error.message}`
       );
 
       return {};
@@ -408,6 +434,10 @@ function processFile(filePath, answers) {
  * Main function to run the setup
  */
 async function main() {
+  // Initialize ESM modules first
+  await initializeESMModules();
+  promptUser = getPromptMethod();
+
   console.log(chalk.blue.bold('🚀 Setting up your Next.js + NextAuth.js + PostgreSQL project...'));
 
   // Add a check for non-interactive environment if no answers are preloaded
@@ -457,4 +487,7 @@ async function main() {
 }
 
 // Run the script
-main();
+main().catch(error => {
+  console.error('❌ Setup script failed:', error.message);
+  process.exit(1);
+});

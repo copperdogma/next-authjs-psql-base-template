@@ -28,24 +28,36 @@ const portInfo = `[ecosystem.config.js] Determined port: ${dynamicPort}`;
 
 // Optional: fs.appendFileSync('./logs/config-info.log', portInfo + '\n');
 
+// Determine which script to run based on environment
+const isTestEnvironment = process.env.NODE_ENV === 'test' || process.argv.includes('--env=test');
+const scriptArgs = isTestEnvironment ? 'run dev:test' : 'run dev:3001';
+
 module.exports = {
   apps: [
     {
       name: 'next-dev',
       script: 'npm',
-      args: 'run dev:test',
+      args: scriptArgs,
       watch: ['.'],
       ignore_watch: ['node_modules', '.next', 'logs', '.git', '*.log'],
       autorestart: true,
       env_development: {
+        NODE_ENV: 'development',
+        PORT: 3001,
+        NEXTAUTH_URL: 'http://localhost:3001',
+      },
+      env_test: {
         NODE_ENV: 'test',
         DATABASE_URL:
-          'postgresql://postgres:postgres@localhost:5432/ai-calendar-helper-test?schema=public',
+          'postgresql://postgres:postgres@localhost:5432/next_auth_psql_app_test?schema=public',
         NEXTAUTH_SECRET: 'test_nextauth_secret',
         PORT: 3777,
         NEXTAUTH_URL: 'http://localhost:3777',
         TEST_USER_EMAIL: 'test@example.com',
         TEST_USER_PASSWORD: 'Test123!',
+        ALLOW_TEST_ENDPOINTS: 'true',
+        NEXT_PUBLIC_IS_E2E_TEST_ENV: 'true',
+        RATE_LIMIT_REGISTER_MAX_ATTEMPTS: '1000',
       },
       out_file: './logs/next-dev-out.log',
       error_file: './logs/next-dev-err.log',
