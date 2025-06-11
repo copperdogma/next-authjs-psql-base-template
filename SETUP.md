@@ -2,6 +2,8 @@
 
 This template is designed for AI agents to quickly set up a Next.js application with NextAuth.js authentication and PostgreSQL database.
 
+It should take an AI agent about 5 minutes to fully set up, not including the time it will take you to create a Google OAuth client ID and secret on their website.
+
 ## Prerequisites
 
 - PostgreSQL server running and accessible
