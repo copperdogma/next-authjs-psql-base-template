@@ -17,10 +17,12 @@ let chalk, inquirer;
 async function initializeESMModules() {
   try {
     chalk = await import('chalk');
+
     // Handle different chalk export patterns
     chalk = chalk.default || chalk;
   } catch (error) {
     console.error('Failed to import chalk:', error.message);
+
     // Fallback to basic console output
     chalk = {
       yellow: text => `⚠️  ${text}`,
@@ -33,6 +35,7 @@ async function initializeESMModules() {
 
   try {
     inquirer = await import('inquirer');
+
     // Handle different inquirer export patterns
     inquirer = inquirer.default || inquirer;
   } catch (error) {

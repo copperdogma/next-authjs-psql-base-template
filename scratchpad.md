@@ -2,6 +2,52 @@
 
 This document tracks progress, decisions, and issues encountered during the project setup.
 
+## Current Phase: ✅ Dependencies Resolved
+
+**Status**: All npm install issues have been resolved successfully.
+
+## Recent Actions
+
+- ✅ Resolved Jest version conflicts by downgrading from v30 beta to stable v29
+- ✅ Fixed dependency conflicts between jest-mock-extended and @jest/globals
+- ✅ Restored proper TypeScript ESLint plugin versions after audit fix issues
+- ✅ Verified all unit tests pass (543 tests, 88.62% coverage)
+- ✅ Confirmed linter works correctly with 9 warnings (no errors)
+
+## Completed Tasks
+
+### Dependency Management ✅
+
+- [x] **Npm Install Issues Resolved** - Fixed Jest v30 beta conflicts with jest-mock-extended
+  - Downgraded @jest/globals, jest-environment-jsdom, jest-mock from v30 beta to v29 stable
+  - All dependencies now install cleanly without --legacy-peer-deps
+  - Unit tests pass with excellent coverage (88.62% statements, 74.51% branches)
+  - Linter working correctly with only 9 warnings (no errors)
+
+## Issues or Blockers
+
+### Security Vulnerabilities - Low Priority ⚠️
+
+- 8 low severity vulnerabilities remain in brace-expansion and related packages
+- Attempted audit fix with --force caused breaking changes to ESLint
+- **Decision**: Keep current stable versions rather than risk breaking changes
+- These are low-severity RegEx DoS vulnerabilities in dev dependencies only
+
+## Decisions Made
+
+- **Jest Versions**: Use stable Jest 29.x instead of beta 30.x for compatibility
+- **Security Audits**: Prioritize stability over fixing low-severity dev dependency vulnerabilities
+- **ESLint Versions**: Maintain current TypeScript ESLint 8.x versions for compatibility
+
+## Next Steps
+
+1. Run E2E tests to ensure full functionality
+2. Test the build process
+3. Verify the development server starts correctly
+4. Review remaining security vulnerabilities if critical
+
+---
+
 ## Codebase AnalysisAI Prompt
 
 I'm creating a github template with nextjs, authjs, and psql. The idea is for this to be used by AI when starting new project. The AI, if appropriate for the project, will pull from this template to get started. I've been getting AI to vibe code projects and it always takes a day or two at the start to get it to slowly set up the basics (especially auth). I want that step to be minutes instead of hours.
