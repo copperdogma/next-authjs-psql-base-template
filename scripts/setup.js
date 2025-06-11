@@ -423,6 +423,7 @@ function processFile(filePath, answers) {
       // 1. {{PLACEHOLDER}} - standard format
       // 2. {'{PLACEHOLDER}'} - React/JSX format
       const standardRegex = new RegExp(`{{${placeholder}}}`, 'g');
+      
       // For React format: {'{PLACEHOLDER}'} - pattern: \{'{PLACEHOLDER}'\}
       const reactPattern = "\\{'{" + placeholder + "}'\\}";
       const reactRegex = new RegExp(reactPattern, 'g');
